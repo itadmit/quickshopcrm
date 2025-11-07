@@ -217,3 +217,8 @@ input[type="datetime-local"] {
   text-align: right;
 }
 
+/* Smooth scroll behavior */
+html {
+  scroll-behavior: smooth;
+}
+

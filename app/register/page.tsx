@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { signIn } from "next-auth/react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -13,6 +13,7 @@ import Image from "next/image"
 
 export default function RegisterPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -22,6 +23,14 @@ export default function RegisterPage() {
     companyName: "",
     phone: "",
   })
+
+  useEffect(() => {
+    // קבלת אימייל מה-URL query parameter
+    const emailFromUrl = searchParams.get("email")
+    if (emailFromUrl) {
+      setFormData((prev) => ({ ...prev, email: emailFromUrl }))
+    }
+  }, [searchParams])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -95,9 +104,12 @@ export default function RegisterPage() {
           </div>
 
           <div className="mb-8">
+            <div className="mb-4 inline-flex items-center rounded-full border border-purple-200 bg-purple-50 px-4 py-2 text-sm">
+              <span className="text-purple-700 font-semibold">✨ 7 ימי נסיון חינם - ללא צורך באשראי</span>
+            </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">צור חשבון חדש</h2>
             <p className="text-sm text-gray-600">
-              מלא את הפרטים ליצירת חשבון
+              מלא את הפרטים ליצירת חשבון והתחל למכור אונליין
             </p>
           </div>
 
