@@ -1,5 +1,6 @@
 import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
+import GoogleProvider from "next-auth/providers/google"
 import bcrypt from "bcryptjs"
 import { prisma } from "./prisma"
 
@@ -43,16 +44,98 @@ export const authOptions: NextAuthOptions = {
           companyName: user.company.name,
         }
       }
+    }),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID || "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
     })
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account, profile }) {
+      // אם זה Google OAuth
+      if (account?.provider === "google") {
+        try {
+          // בדיקה אם המשתמש כבר קיים
+          let existingUser = await prisma.user.findUnique({
+            where: { email: user.email! },
+            include: { company: true }
+          })
+
+          // אם המשתמש לא קיים, יצירת משתמש חדש
+          if (!existingUser) {
+            // יצירת חברה, משתמש ומנוי נסיון
+            const trialEndDate = new Date()
+            trialEndDate.setDate(trialEndDate.getDate() + 7)
+
+            const company = await prisma.company.create({
+              data: {
+                name: `${user.name}'s Company`,
+                plan: "free",
+              }
+            })
+
+            existingUser = await prisma.user.create({
+              data: {
+                email: user.email!,
+                name: user.name || "User",
+                password: "", // אין סיסמה ב-OAuth
+                role: "ADMIN",
+                companyId: company.id,
+              },
+              include: { company: true }
+            })
+
+            // יצירת מנוי נסיון
+            await prisma.subscription.create({
+              data: {
+                companyId: company.id,
+                plan: "TRIAL",
+                status: "TRIAL",
+                trialStartDate: new Date(),
+                trialEndDate: trialEndDate,
+              }
+            })
+          }
+
+          // עדכון המידע ב-user object
+          user.id = existingUser.id
+          user.role = existingUser.role
+          user.companyId = existingUser.companyId
+          user.companyName = existingUser.company.name
+        } catch (error) {
+          console.error("Error in Google sign in:", error)
+          return false
+        }
+      }
+      return true
+    },
+    async jwt({ token, user, account }) {
       if (user) {
         token.id = user.id
         token.name = user.name
         token.role = user.role
         token.companyId = user.companyId
         token.companyName = user.companyName
+      }
+      
+      // אם זה Google OAuth, עדכון המידע מה-DB
+      if (account?.provider === "google" && token.email) {
+        try {
+          const existingUser = await prisma.user.findUnique({
+            where: { email: token.email as string },
+            include: { company: true }
+          })
+          
+          if (existingUser) {
+            token.id = existingUser.id
+            token.name = existingUser.name
+            token.role = existingUser.role
+            token.companyId = existingUser.companyId
+            token.companyName = existingUser.company.name
+          }
+        } catch (error) {
+          console.error("Error updating token from Google:", error)
+        }
       }
       
       // בדיקה שהמשתמש עדיין קיים בכל פעם ש-JWT מתעדכן

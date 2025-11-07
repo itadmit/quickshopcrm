@@ -6,108 +6,126 @@ import { prisma } from "@/lib/prisma"
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
-    
     if (!session?.user?.companyId) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
     const companyId = session.user.companyId
 
-    // Get stats
-    const [
-      totalLeads,
-      newLeads7Days,
-      totalClients,
-      activeClients,
-      totalProjects,
-      openProjects,
-      totalBudgets,
-      pendingBudgets,
-      myTasks,
-      upcomingEvents,
-      recentNotifications,
-    ] = await Promise.all([
-      prisma.lead.count({ where: { companyId } }),
-      prisma.lead.count({
-        where: {
-          companyId,
-          createdAt: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+    // Get all shops for the company
+    const shops = await prisma.shop.findMany({
+      where: { companyId },
+      select: {
+        id: true,
+        isPublished: true,
+        _count: {
+          select: {
+            products: true,
+            orders: true,
+            customers: true,
           },
         },
-      }),
-      prisma.client.count({ where: { companyId } }),
-      prisma.client.count({ where: { companyId, status: "ACTIVE" } }),
-      prisma.project.count({ where: { companyId } }),
-      prisma.project.count({
-        where: {
+      },
+    })
+
+    // Get all products across all shops
+    const products = await prisma.product.findMany({
+      where: {
+        shop: {
           companyId,
-          status: { in: ["PLANNING", "IN_PROGRESS"] },
         },
-      }),
-      prisma.budget.aggregate({
-        where: { companyId },
-        _sum: { amount: true },
-      }),
-      prisma.budget.aggregate({
-        where: { companyId, status: "PENDING" },
-        _sum: { amount: true },
-      }),
-      prisma.task.findMany({
-        where: {
+      },
+      select: {
+        status: true,
+      },
+    })
+
+    // Get all orders across all shops
+    const orders = await prisma.order.findMany({
+      where: {
+        shop: {
           companyId,
-          assigneeId: session.user.id,
-          status: { in: ["TODO", "IN_PROGRESS"] },
         },
-        take: 10,
-        orderBy: { dueDate: 'asc' },
-        include: {
-          project: { select: { name: true } },
-          assignee: { select: { name: true, email: true } },
-        },
-      }),
-      prisma.event.findMany({
-        where: {
-          companyId,
-          startTime: { gte: new Date() },
-        },
-        take: 3,
-        orderBy: { startTime: 'asc' },
-      }),
-      prisma.notification.findMany({
-        where: {
-          companyId,
-          userId: session.user.id,
-        },
-        take: 3,
-        orderBy: { createdAt: 'desc' },
-      }),
-    ])
+      },
+      select: {
+        status: true,
+        total: true,
+        createdAt: true,
+      },
+    })
+
+    // Calculate stats
+    const shopsTotal = shops.length
+    // "חנויות פעילות" = כל החנויות במערכת (לא רק אלה שפורסמו)
+    const shopsActive = shops.length
+
+    const productsTotal = products.length
+    const productsPublished = products.filter((p) => p.status === "PUBLISHED").length
+
+    const ordersTotal = orders.length
+    const ordersPending = orders.filter((o) => o.status === "PENDING").length
+
+    // Calculate revenue
+    const revenueTotal = orders.reduce((sum, order) => sum + order.total, 0)
+    
+    // Revenue this month
+    const now = new Date()
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+    const revenueThisMonth = orders
+      .filter((order) => new Date(order.createdAt) >= startOfMonth)
+      .reduce((sum, order) => sum + order.total, 0)
+
+    // Get recent notifications
+    const recentNotifications = await prisma.notification.findMany({
+      where: {
+        companyId,
+      },
+      select: {
+        id: true,
+        title: true,
+        message: true,
+        type: true,
+        isRead: true,
+        createdAt: true,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: 5,
+    })
 
     return NextResponse.json({
-      leads: {
-        total: totalLeads,
-        new7Days: newLeads7Days,
+      shops: {
+        total: shopsTotal,
+        active: shopsActive,
       },
-      clients: {
-        total: totalClients,
-        active: activeClients,
+      products: {
+        total: productsTotal,
+        published: productsPublished,
       },
-      projects: {
-        total: totalProjects,
-        open: openProjects,
+      orders: {
+        total: ordersTotal,
+        pending: ordersPending,
       },
-      budgets: {
-        total: totalBudgets._sum.amount || 0,
-        pending: pendingBudgets._sum.amount || 0,
+      revenue: {
+        total: revenueTotal,
+        thisMonth: revenueThisMonth,
       },
-      myTasks,
-      upcomingEvents,
-      recentNotifications,
+      recentNotifications: recentNotifications.map((n) => ({
+        id: n.id,
+        title: n.title,
+        message: n.message,
+        type: n.type,
+        isRead: n.isRead,
+        createdAt: n.createdAt.toISOString(),
+      })),
     })
   } catch (error) {
     console.error("Error fetching dashboard stats:", error)
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
   }
 }
 

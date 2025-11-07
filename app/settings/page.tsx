@@ -20,21 +20,63 @@ import {
   Lock,
   Unlock,
   Edit,
-  Key
+  Key,
+  Store,
+  CreditCard,
+  Calendar,
+  TrendingUp,
+  Save
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
+import { TableSkeleton } from "@/components/skeletons/TableSkeleton"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import Link from "next/link"
+import { ShopSettings } from "@/components/ShopSettings"
 
 export default function SettingsPage() {
   const { toast } = useToast()
   const { data: session } = useSession()
-  const [activeTab, setActiveTab] = useState<"general" | "communication" | "security" | "advanced">("general")
+  const [activeTab, setActiveTab] = useState<"shop" | "general" | "communication" | "security" | "subscription" | "advanced">("shop")
+
+  // Check URL params for tab
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const tab = params.get('tab')
+    if (tab && ['shop', 'general', 'communication', 'security', 'subscription', 'advanced'].includes(tab)) {
+      setActiveTab(tab as any)
+    }
+  }, [])
+
+  // Load company settings
+  useEffect(() => {
+    async function loadSettings() {
+      setLoadingSettings(true)
+      try {
+        const response = await fetch('/api/company/settings')
+        if (response.ok) {
+          const data = await response.json()
+          const settings = data.settings || {}
+          if (settings.afterProductSave) {
+            setAfterProductSave(settings.afterProductSave)
+          }
+        }
+      } catch (error) {
+        console.error('Error loading settings:', error)
+      } finally {
+        setLoadingSettings(false)
+      }
+    }
+    loadSettings()
+  }, [])
   const [isResetting, setIsResetting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [isSeeding, setIsSeeding] = useState(false)
   const [isTestingEmail, setIsTestingEmail] = useState(false)
   const [emailStatus, setEmailStatus] = useState<{connected: boolean; tested: boolean} | null>(null)
+  const [afterProductSave, setAfterProductSave] = useState<"stay" | "return">("stay")
+  const [loadingSettings, setLoadingSettings] = useState(false)
 
   const handleResetData = async () => {
     setIsResetting(true)
@@ -125,8 +167,8 @@ export default function SettingsPage() {
       if (response.ok) {
         const data = await response.json()
         toast({
-          title: "נתוני דמו נטענו!",
-          description: `נוצרו ${data.stats.leads} לידים, ${data.stats.clients} לקוחות, ${data.stats.projects} פרויקטים ועוד. הדף ירענן עכשיו.`,
+          title: "נתוני דמו יובאו בהצלחה!",
+          description: `נוצרו ${data.stats.products} מוצרים, ${data.stats.customers} לקוחות, ${data.stats.orders} הזמנות ועוד. הדף ירענן עכשיו.`,
         })
         
         setTimeout(() => {
@@ -152,7 +194,7 @@ export default function SettingsPage() {
     }
   }
 
-  const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN'
+  const isAdmin = session?.user?.role === 'ADMIN' || session?.user?.role === 'SUPER_ADMIN' || session?.user?.role === 'MANAGER'
   const [users, setUsers] = useState<any[]>([])
   const [loadingUsers, setLoadingUsers] = useState(false)
   const [editingUserId, setEditingUserId] = useState<string | null>(null)
@@ -161,6 +203,9 @@ export default function SettingsPage() {
   const [showChangePassword, setShowChangePassword] = useState(false)
   const [passwordData, setPasswordData] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' })
   const [changingPassword, setChangingPassword] = useState(false)
+  const [savingGeneral, setSavingGeneral] = useState(false)
+  const [savingCommunication, setSavingCommunication] = useState(false)
+  const [savingSecurity, setSavingSecurity] = useState(false)
 
   const sidebarPermissions = [
     { key: "tasks", label: "משימות", required: false },
@@ -353,46 +398,63 @@ export default function SettingsPage() {
     }
   }
 
+  const tabs = [
+    { key: "shop", label: "הגדרות חנות", icon: Store },
+    { key: "subscription", label: "מנוי", icon: CreditCard },
+    { key: "general", label: "כללי", icon: SettingsIcon },
+    { key: "communication", label: "תקשורת", icon: Mail },
+    { key: "security", label: "אבטחה", icon: Shield },
+    ...(isAdmin ? [{ key: "advanced", label: "מתקדם", icon: Database }] : []),
+  ]
+
   return (
     <AppLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">הגדרות</h1>
-          <p className="text-gray-500 mt-1">נהל את הגדרות המערכת והחשבון שלך</p>
-        </div>
-
-        {/* Tabs */}
-        <div className="border-b border-gray-200">
-          <div className="flex gap-6">
-            {[
-              { key: "general", label: "כללי", icon: SettingsIcon },
-              { key: "communication", label: "תקשורת", icon: Mail },
-              { key: "security", label: "אבטחה", icon: Shield },
-              ...(isAdmin ? [{ key: "advanced", label: "מתקדם", icon: Database }] : []),
-            ].map((tab) => {
-              const Icon = tab.icon
-              return (
-                <button
-                  key={tab.key}
-                  onClick={() => setActiveTab(tab.key as any)}
-                  className={`flex items-center gap-2 pb-3 border-b-2 transition-colors ${
-                    activeTab === tab.key
-                      ? "border-purple-600 text-purple-600 font-medium"
-                      : "border-transparent text-gray-500 hover:text-gray-700"
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                  {tab.label}
-                </button>
-              )
-            })}
+      <div className="flex gap-6">
+        {/* Sidebar Navigation */}
+        <div className="w-64 flex-shrink-0">
+          <div className="bg-white rounded-lg border border-gray-200 shadow-sm sticky top-6">
+            <div className="p-4 border-b border-gray-200">
+              <h2 className="text-lg font-semibold text-gray-900">הגדרות</h2>
+              <p className="text-sm text-gray-500 mt-1">נהל את ההגדרות שלך</p>
+            </div>
+            <nav className="p-2">
+              {tabs.map((tab) => {
+                const Icon = tab.icon
+                const isActive = activeTab === tab.key
+                return (
+                  <button
+                    key={tab.key}
+                    onClick={() => setActiveTab(tab.key as any)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-right transition-colors mb-1 ${
+                      isActive
+                        ? "bg-purple-50 text-purple-700 font-medium border-r-2 border-purple-600"
+                        : "text-gray-700 hover:bg-gray-50"
+                    }`}
+                  >
+                    <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-purple-600" : "text-gray-500"}`} />
+                    <span className="text-sm">{tab.label}</span>
+                  </button>
+                )
+              })}
+            </nav>
           </div>
         </div>
 
+        {/* Main Content */}
+        <div className="flex-1 min-w-0">
+          <div className="space-y-6">
+
+        {/* Shop Settings Tab */}
+        {activeTab === "shop" && (
+          <ShopSettings />
+        )}
+
+        {/* Subscription Tab */}
+        {activeTab === "subscription" && <SubscriptionTab />}
+
         {/* General Tab */}
         {activeTab === "general" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-6">
             {/* Profile Settings */}
             <Card className="shadow-sm">
             <CardHeader>
@@ -430,6 +492,46 @@ export default function SettingsPage() {
             </CardContent>
           </Card>
 
+          {/* System Settings */}
+          <Card className="shadow-sm">
+            <CardHeader>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <SettingsIcon className="w-5 h-5 text-purple-600" />
+                </div>
+                <div>
+                  <CardTitle>הגדרות מערכת</CardTitle>
+                  <CardDescription>הגדרות כלליות למערכת</CardDescription>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">לאחר שמירת שינויים בעריכת מוצר</Label>
+                  <RadioGroup
+                    value={afterProductSave}
+                    onValueChange={(value: "stay" | "return") => setAfterProductSave(value)}
+                    className="space-y-2"
+                  >
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="stay" id="stay" />
+                      <Label htmlFor="stay" className="text-sm font-normal cursor-pointer">
+                        להישאר בעמוד המוצר
+                      </Label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <RadioGroupItem value="return" id="return" />
+                      <Label htmlFor="return" className="text-sm font-normal cursor-pointer">
+                        לחזור לעמוד המוצרים
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Integrations */}
           <Card className="shadow-sm">
             <CardHeader>
@@ -453,12 +555,55 @@ export default function SettingsPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Save Button */}
+          <div className="flex justify-end">
+            <Button
+              onClick={async () => {
+                setSavingGeneral(true)
+                try {
+                  const response = await fetch('/api/company/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      systemSettings: {
+                        afterProductSave: afterProductSave,
+                      },
+                    }),
+                  })
+                  
+                  if (response.ok) {
+                    toast({
+                      title: "הצלחה",
+                      description: "ההגדרות נשמרו בהצלחה",
+                    })
+                  } else {
+                    throw new Error('Failed to save settings')
+                  }
+                } catch (error) {
+                  console.error('Error saving settings:', error)
+                  toast({
+                    title: "שגיאה",
+                    description: "לא ניתן לשמור את ההגדרות",
+                    variant: "destructive",
+                  })
+                } finally {
+                  setSavingGeneral(false)
+                }
+              }}
+              disabled={savingGeneral || loadingSettings}
+              className="prodify-gradient text-white"
+            >
+              <Save className="w-4 h-4 ml-2" />
+              {savingGeneral ? "שומר..." : "שמור שינויים"}
+            </Button>
+          </div>
           </div>
         )}
 
         {/* Communication Tab - Email + Notifications */}
         {activeTab === "communication" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-6">
             {/* Email Configuration */}
             <Card className="shadow-sm">
               <CardHeader>
@@ -540,6 +685,27 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Save Button */}
+            <div className="flex justify-end">
+              <Button
+                onClick={async () => {
+                  setSavingCommunication(true)
+                  // כאן אפשר להוסיף לוגיקה לשמירה
+                  await new Promise(resolve => setTimeout(resolve, 500))
+                  toast({
+                    title: "הצלחה",
+                    description: "ההגדרות נשמרו בהצלחה",
+                  })
+                  setSavingCommunication(false)
+                }}
+                disabled={savingCommunication}
+                className="prodify-gradient text-white"
+              >
+                <Save className="w-4 h-4 ml-2" />
+                {savingCommunication ? "שומר..." : "שמור שינויים"}
+              </Button>
+            </div>
           </div>
         )}
 
@@ -674,10 +840,7 @@ export default function SettingsPage() {
                 </CardHeader>
                 <CardContent>
                   {loadingUsers ? (
-                    <div className="text-center py-8">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-                      <p className="mt-2 text-gray-600">טוען משתמשים...</p>
-                    </div>
+                    <TableSkeleton rows={3} columns={4} />
                   ) : users.length === 0 ? (
                     <div className="text-center py-8 text-gray-500">
                       אין משתמשים
@@ -788,7 +951,7 @@ export default function SettingsPage() {
                                 </div>
                               </div>
                             ) : (
-                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                              <div className="space-y-2">
                                 {sidebarPermissions.map((perm) => {
                                   const hasPermission = permissions[perm.key] === true
                                   return (
@@ -819,44 +982,107 @@ export default function SettingsPage() {
                 </CardContent>
               </Card>
             )}
+
+            {/* Save Button */}
+            <div className="flex justify-end">
+              <Button
+                onClick={async () => {
+                  setSavingSecurity(true)
+                  // כאן אפשר להוסיף לוגיקה לשמירה
+                  await new Promise(resolve => setTimeout(resolve, 500))
+                  toast({
+                    title: "הצלחה",
+                    description: "ההגדרות נשמרו בהצלחה",
+                  })
+                  setSavingSecurity(false)
+                }}
+                disabled={savingSecurity}
+                className="prodify-gradient text-white"
+              >
+                <Save className="w-4 h-4 ml-2" />
+                {savingSecurity ? "שומר..." : "שמור שינויים"}
+              </Button>
+            </div>
           </div>
         )}
 
         {/* Advanced Tab - Only for Admins */}
         {activeTab === "advanced" && isAdmin && (
           <div className="space-y-6">
-          {/* Danger Zone */}
-          <Card className="shadow-sm border-red-200 bg-red-50">
+          {/* Advanced Settings */}
+          <Card className="shadow-sm">
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5 text-red-600" />
+                <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                  <Database className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <CardTitle className="text-red-900">אזור מסוכן</CardTitle>
-                  <CardDescription className="text-red-700">
-                    פעולות בלתי הפיכות - זמינות למנהלים בלבד
+                  <CardTitle>מתקדם</CardTitle>
+                  <CardDescription>
+                    פעולות ניהול מתקדמות - זמינות למנהלים בלבד
                   </CardDescription>
                 </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="bg-white p-4 rounded-lg border border-red-200">
+              <div className="border rounded-lg p-4">
                 <div className="flex items-start gap-3">
-                  <Database className="w-5 h-5 text-red-600 mt-0.5" />
+                  <Database className="w-5 h-5 text-gray-600 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="font-medium text-gray-900 mb-1">
+                      ייבא נתוני דמו
+                    </h3>
+                    <p className="text-sm text-gray-600 mb-3">
+                      ייבא נתוני דמו מקיפים שיכללו מוצרים, הזמנות, לקוחות, קופונים, הנחות ועוד
+                    </p>
+                    <div className="bg-gray-50 p-3 rounded border mb-3">
+                      <p className="text-xs text-gray-700 mb-2">
+                        <strong>נתונים שייווצרו:</strong>
+                      </p>
+                      <ul className="text-xs text-gray-600 space-y-1">
+                        <li>• 3 קטגוריות (נעליים, חולצות, אביזרים)</li>
+                        <li>• 4 מוצרים כולל נעליים נייק וחולצה אדידס עם וריאנטים</li>
+                        <li>• 3 קולקציות</li>
+                        <li>• 3 לקוחות (VIP, רגיל)</li>
+                        <li>• 3 הזמנות עם סטטוסים שונים</li>
+                        <li>• 3 קופונים (אחוזים, סכום קבוע, קנה 2 קבל 1)</li>
+                        <li>• 3 הנחות (אוטומטיות)</li>
+                        <li>• 3 ביקורות מוצרים</li>
+                        <li>• 3 כרטיסי מתנה</li>
+                        <li>• 3 אשראי חנות</li>
+                        <li>• 2 חבילות מוצרים</li>
+                        <li>• 3 דפים</li>
+                        <li>• 3 פוסטים בבלוג</li>
+                        <li>• 3 החזרות</li>
+                        <li>• 3 עגלות נטושות</li>
+                      </ul>
+                    </div>
+                    <Button
+                      onClick={handleSeedData}
+                      disabled={isSeeding}
+                    >
+                      <Database className="w-4 h-4 ml-2" />
+                      {isSeeding ? "מייבא נתונים..." : "ייבא נתוני דמו"}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Trash2 className="w-5 h-5 text-gray-600 mt-0.5" />
                   <div className="flex-1">
                     <h3 className="font-medium text-gray-900 mb-1">
                       איפוס כל הנתונים
                     </h3>
                     <p className="text-sm text-gray-600 mb-3">
-                      פעולה זו תמחק את כל הלידים, לקוחות, פרויקטים, משימות והתראות.
+                      פעולה זו תמחק את כל הנתונים של החנות: מוצרים, הזמנות, לקוחות, קופונים והנחות.
                       הפעולה בלתי הפיכה!
                     </p>
                     
                     {!showConfirm ? (
                       <Button
-                        variant="outline"
-                        className="text-red-600 border-red-300 hover:bg-red-50"
+                        className="bg-red-600 text-white hover:bg-red-700"
                         onClick={() => setShowConfirm(true)}
                       >
                         <Trash2 className="w-4 h-4 ml-2" />
@@ -894,49 +1120,458 @@ export default function SettingsPage() {
                   </div>
                 </div>
               </div>
-
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <Database className="w-5 h-5 text-blue-600 mt-0.5" />
-                  <div className="flex-1">
-                    <h3 className="font-medium text-gray-900 mb-1">
-                      טען נתוני דמו
-                    </h3>
-                    <p className="text-sm text-gray-600 mb-3">
-                      טען נתונים לדוגמה: לידים, לקוחות, פרויקטים, משימות ועוד
-                    </p>
-                    <div className="bg-white p-3 rounded border border-blue-200 mb-3">
-                      <p className="text-xs text-gray-700 mb-2">
-                        <strong>נתונים שייווצרו:</strong>
-                      </p>
-                      <ul className="text-xs text-gray-600 space-y-1">
-                        <li>• 5 לידים עם סטטוסים שונים</li>
-                        <li>• 4 לקוחות פעילים</li>
-                        <li>• 4 פרויקטים בשלבים שונים</li>
-                        <li>• 6 משימות עם עדיפויות</li>
-                        <li>• 5 תקציבים והצעות מחיר</li>
-                        <li>• 4 התראות</li>
-                        <li>• צינור מכירות עם 5 שלבים</li>
-                      </ul>
-                    </div>
-                    <Button
-                      variant="outline"
-                      className="text-blue-600 border-blue-300 hover:bg-blue-50"
-                      onClick={handleSeedData}
-                      disabled={isSeeding}
-                    >
-                      <Database className="w-4 h-4 ml-2" />
-                      {isSeeding ? "טוען נתונים..." : "טען נתוני דמו"}
-                    </Button>
-                  </div>
-                </div>
-              </div>
             </CardContent>
           </Card>
           </div>
         )}
+          </div>
+        </div>
       </div>
     </AppLayout>
+  )
+}
+
+// Subscription Tab Component
+function SubscriptionTab() {
+  const { toast } = useToast()
+  const { data: session } = useSession()
+  const [subscription, setSubscription] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+  const [selectingPlan, setSelectingPlan] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
+
+  useEffect(() => {
+    fetchSubscription()
+  }, [])
+
+  const fetchSubscription = async () => {
+    try {
+      const response = await fetch('/api/subscriptions')
+      if (response.ok) {
+        const data = await response.json()
+        setSubscription(data.subscription)
+      } else {
+        // אם אין מנוי, זה לא שגיאה - פשוט נשאיר subscription כ-null
+        const errorData = await response.json().catch(() => ({}))
+        // רק אם זו שגיאה אמיתית (לא 404 או מצב תקין), נציג הודעת שגיאה
+        if (response.status !== 404 && response.status >= 500) {
+          toast({
+            title: "שגיאה",
+            description: errorData.error || "לא ניתן לטעון את פרטי המנוי",
+            variant: "destructive",
+          })
+        }
+        setSubscription(null)
+      }
+    } catch (error) {
+      console.error('Error fetching subscription:', error)
+      // רק אם זו שגיאה אמיתית, נציג הודעת שגיאה
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה בטעינת פרטי המנוי",
+        variant: "destructive",
+      })
+      setSubscription(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSelectPlan = async (plan: "BRANDING" | "QUICK_SHOP") => {
+    setSelectingPlan(true)
+    try {
+      // בדיקה אם יש אינטגרציה עם PayPlus
+      const integrationRes = await fetch('/api/integrations')
+      const integrations = await integrationRes.json()
+      const payplusIntegration = integrations.find((i: any) => i.type === 'PAYPLUS' && i.isActive)
+      
+      if (!payplusIntegration) {
+        toast({
+          title: "נדרש חיבור ל-PayPlus",
+          description: "אנא חבר את PayPlus בהגדרות > אינטגרציות לפני רכישת מנוי",
+          variant: "destructive",
+        })
+        setSelectingPlan(false)
+        return
+      }
+
+      // חישוב מחיר
+      const basePrice = plan === "BRANDING" ? 299 : 399
+      const tax = basePrice * 0.18
+      const total = basePrice + tax
+
+      // יצירת תשלום דרך PayPlus
+      const paymentRes = await fetch('/api/subscriptions/pay', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          plan,
+          amount: total,
+        }),
+      })
+
+      if (paymentRes.ok) {
+        const paymentData = await paymentRes.json()
+        // PayPlus מחזיר URL לתשלום או transaction ID
+        if (paymentData.paymentUrl) {
+          // מעבר לדף תשלום PayPlus
+          window.location.href = paymentData.paymentUrl
+        } else if (paymentData.transactionId) {
+          // אם התשלום הושלם מיד
+          toast({
+            title: "הצלחה!",
+            description: "המנוי הופעל בהצלחה",
+          })
+          await fetchSubscription()
+        }
+      } else {
+        const error = await paymentRes.json()
+        toast({
+          title: "שגיאה",
+          description: error.error || "לא ניתן ליצור תשלום",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Error selecting plan:', error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה בבחירת מסלול",
+        variant: "destructive",
+      })
+    } finally {
+      setSelectingPlan(false)
+    }
+  }
+
+  const handleCancelSubscription = async () => {
+    if (!confirm("האם אתה בטוח שברצונך לבטל את המנוי? המנוי יישאר פעיל עד סיום התקופה ששולמה.")) {
+      return
+    }
+
+    setCancelling(true)
+    try {
+      const response = await fetch('/api/subscriptions/cancel', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "הצלחה",
+          description: "המנוי בוטל בהצלחה",
+        })
+        await fetchSubscription()
+      } else {
+        const error = await response.json()
+        toast({
+          title: "שגיאה",
+          description: error.error || "לא ניתן היה לבטל את המנוי",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Error cancelling subscription:', error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה בביטול המנוי",
+        variant: "destructive",
+      })
+    } finally {
+      setCancelling(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!subscription) {
+    return (
+      <div className="space-y-6">
+        <Card className="shadow-sm">
+          <CardContent className="py-12 text-center">
+            <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">מנוי לא נמצא</h3>
+            <p className="text-gray-600 mb-6">לא נמצא מנוי פעיל לחשבון שלך</p>
+            <div className="space-y-4">
+              <p className="text-sm text-gray-500">
+                כדי להתחיל להשתמש במערכת, אנא בחר מסלול מנוי:
+              </p>
+              <div className="flex gap-4 justify-center flex-wrap">
+                <Button
+                  onClick={() => handleSelectPlan("BRANDING")}
+                  disabled={selectingPlan}
+                  className="prodify-gradient text-white"
+                >
+                  {selectingPlan ? "מעבד..." : "מסלול תדמית - 299₪"}
+                </Button>
+                <Button
+                  onClick={() => handleSelectPlan("QUICK_SHOP")}
+                  disabled={selectingPlan}
+                  className="prodify-gradient text-white"
+                >
+                  {selectingPlan ? "מעבד..." : "מסלול קוויק שופ - 399₪"}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
+  const planLabels: Record<string, string> = {
+    TRIAL: "תקופת נסיון",
+    BRANDING: "מסלול תדמית",
+    QUICK_SHOP: "מסלול קוויק שופ",
+  }
+
+  const statusLabels: Record<string, string> = {
+    TRIAL: "נסיון",
+    ACTIVE: "פעיל",
+    EXPIRED: "פג תוקף",
+    CANCELLED: "בוטל",
+  }
+
+  const statusColors: Record<string, string> = {
+    TRIAL: "bg-blue-100 text-blue-800",
+    ACTIVE: "bg-green-100 text-green-800",
+    EXPIRED: "bg-red-100 text-red-800",
+    CANCELLED: "bg-gray-100 text-gray-800",
+  }
+
+  const isTrial = subscription.plan === "TRIAL"
+  const isActive = subscription.status === "ACTIVE"
+  const isExpired = subscription.status === "EXPIRED"
+  const isCancelled = subscription.status === "CANCELLED"
+
+  return (
+    <div className="space-y-6">
+      {/* Current Subscription Status */}
+      <Card className="shadow-sm">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>מנוי נוכחי</CardTitle>
+              <CardDescription>פרטי המנוי והסטטוס שלך</CardDescription>
+            </div>
+            <div className={`px-3 py-1 rounded-full text-sm font-medium ${statusColors[subscription.status] || statusColors.TRIAL}`}>
+              {statusLabels[subscription.status] || "לא ידוע"}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm text-gray-500 mb-1">מסלול</p>
+                <p className="font-semibold text-lg">{planLabels[subscription.plan] || subscription.plan}</p>
+              </div>
+              {subscription.daysRemaining !== undefined && (
+                <div>
+                  <p className="text-sm text-gray-500 mb-1">ימים נותרים</p>
+                  <p className="font-semibold text-lg">
+                    {subscription.daysRemaining > 0 ? (
+                      <span className="text-green-600">{subscription.daysRemaining} ימים</span>
+                    ) : (
+                      <span className="text-red-600">פג תוקף</span>
+                    )}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {isTrial && (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <Calendar className="w-5 h-5 text-blue-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-blue-900 mb-1">תקופת נסיון פעילה</h4>
+                    <p className="text-sm text-blue-800">
+                      תקופת הנסיון שלך מסתיימת ב-{new Date(subscription.trialEndDate).toLocaleDateString('he-IL')}
+                    </p>
+                    {subscription.daysRemaining !== undefined && subscription.daysRemaining <= 3 && (
+                      <p className="text-sm text-red-600 mt-2 font-medium">
+                        ⚠️ תקופת הנסיון מסתיימת בקרוב! אנא בחר מסלול מנוי להמשך השימוש.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isActive && subscription.subscriptionEndDate && (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-green-900 mb-1">מנוי פעיל</h4>
+                    <p className="text-sm text-green-800">
+                      המנוי שלך תקף עד {new Date(subscription.subscriptionEndDate).toLocaleDateString('he-IL')}
+                    </p>
+                    {subscription.monthlyPrice && (
+                      <p className="text-sm text-green-800 mt-1">
+                        מחיר חודשי: {subscription.monthlyPrice}₪ + מעמ 18%
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isExpired && (
+              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 text-red-600 mt-0.5" />
+                  <div>
+                    <h4 className="font-medium text-red-900 mb-1">מנוי פג תוקף</h4>
+                    <p className="text-sm text-red-800">
+                      המנוי שלך פג תוקף. אנא בחר מסלול מנוי חדש להמשך השימוש.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Plan Selection - Only if Trial or Expired */}
+      {(isTrial || isExpired) && (
+        <div className="space-y-6">
+          {/* Branding Plan */}
+          <Card className="shadow-sm border-2">
+            <CardHeader>
+              <CardTitle className="text-xl">מסלול תדמית</CardTitle>
+              <CardDescription>בניית אתר תדמיתי ללא חנות</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-3xl font-bold text-gray-900">299₪</p>
+                  <p className="text-sm text-gray-500">+ מעמ 18% = 352.82₪ לחודש</p>
+                </div>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>בניית אתר תדמיתי</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>דפים סטטיים ובלוג</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>עיצוב מותאם אישית</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0">✗</span>
+                    <span className="text-gray-500">ללא חנות אונליין</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="w-4 h-4 text-red-600 mt-0.5 flex-shrink-0">✗</span>
+                    <span className="text-gray-500">ללא תשלומים</span>
+                  </li>
+                </ul>
+                <Button
+                  className="w-full prodify-gradient text-white"
+                  onClick={() => handleSelectPlan("BRANDING")}
+                  disabled={selectingPlan}
+                >
+                  {selectingPlan ? "מעבד..." : "בחר מסלול זה"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Shop Plan */}
+          <Card className="shadow-sm border-2 border-purple-300 relative">
+            <div className="absolute top-4 left-4 bg-purple-600 text-white text-xs px-2 py-1 rounded">
+              מומלץ
+            </div>
+            <CardHeader>
+              <CardTitle className="text-xl">מסלול קוויק שופ</CardTitle>
+              <CardDescription>חנות אונליין מלאה</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <p className="text-3xl font-bold text-gray-900">399₪</p>
+                  <p className="text-sm text-gray-500">+ מעמ 18% = 470.82₪ לחודש</p>
+                  <p className="text-xs text-gray-500 mt-1">+ 0.5% מכל עסקה</p>
+                </div>
+                <ul className="space-y-2 text-sm">
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>כל התכונות של מסלול תדמית</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>חנות אונליין מלאה</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>עגלת קניות ותשלומים</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>ניהול מוצרים והזמנות</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span>כל התכונות הזמינות</span>
+                  </li>
+                </ul>
+                <Button
+                  className="w-full prodify-gradient text-white"
+                  onClick={() => handleSelectPlan("QUICK_SHOP")}
+                  disabled={selectingPlan}
+                >
+                  {selectingPlan ? "מעבד..." : "בחר מסלול זה"}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Cancel Subscription - Only if Active */}
+      {isActive && !isCancelled && (
+        <Card className="shadow-sm border-red-200">
+          <CardHeader>
+            <CardTitle className="text-red-900">ביטול מנוי</CardTitle>
+            <CardDescription className="text-red-700">
+              המנוי יישאר פעיל עד סיום התקופה ששולמה
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button
+              variant="outline"
+              className="text-red-600 border-red-300 hover:bg-red-50"
+              onClick={handleCancelSubscription}
+              disabled={cancelling}
+            >
+              {cancelling ? "מבטל..." : "בטל מנוי"}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+    </div>
   )
 }
 

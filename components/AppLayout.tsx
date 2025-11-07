@@ -46,11 +46,9 @@ export function AppLayout({ children, title, hideSidebar = false, hideHeader = f
   // אם צריך להסתיר Sidebar ו-Header (למשל בדף הזמנה)
   if (hideSidebar && hideHeader) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: '#f7f9fe' }} dir="rtl">
-        <main className="flex items-center justify-center py-12">
-          <div className="w-full max-w-md">
-            {children}
-          </div>
+      <div className="h-screen overflow-hidden" style={{ backgroundColor: '#f7f9fe' }} dir="rtl">
+        <main className="h-full overflow-y-auto">
+          {children}
         </main>
       </div>
     )

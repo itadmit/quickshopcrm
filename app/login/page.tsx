@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { useToast } from "@/components/ui/use-toast"
-import { Sparkles } from "lucide-react"
+import { Sparkles, Mail, Lock } from "lucide-react"
+import Image from "next/image"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -19,6 +20,20 @@ export default function LoginPage() {
     email: "",
     password: "",
   })
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true)
+    try {
+      await signIn("google", { callbackUrl: "/dashboard" })
+    } catch (error) {
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה בהתחברות עם Google",
+        variant: "destructive",
+      })
+      setLoading(false)
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -40,9 +55,27 @@ export default function LoginPage() {
       } else {
         toast({
           title: "התחברת בהצלחה!",
-          description: "מעביר אותך לדשבורד...",
+          description: "מעביר אותך...",
         })
-        router.push("/dashboard")
+        
+        // בדיקה אם יש חנות
+        try {
+          const shopsResponse = await fetch("/api/shops")
+          if (shopsResponse.ok) {
+            const shops = await shopsResponse.json()
+            if (shops.length === 0) {
+              // אין חנות, מעבר לאשף
+              router.push("/onboarding")
+            } else {
+              // יש חנות, מעבר לדשבורד
+              router.push("/dashboard")
+            }
+          } else {
+            router.push("/dashboard")
+          }
+        } catch (error) {
+          router.push("/dashboard")
+        }
         router.refresh()
       }
     } catch (error) {
@@ -57,38 +90,50 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center prodify-gradient p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <h1 className="text-5xl font-pacifico text-white mb-2" style={{ letterSpacing: '2px' }}>
-            Quick crm
-          </h1>
-          <p className="text-purple-100">מערכת ניהול לקוחות מתקדמת</p>
-        </div>
+    <div className="min-h-screen flex">
+      {/* Left Form - 40% */}
+      <div className="flex-1 lg:w-2/5 flex items-center justify-center bg-white p-8 lg:p-12">
+        <div className="w-full max-w-md">
+          {/* Logo */}
+          <div className="mb-8 overflow-visible pt-2 pb-1">
+            <h1 className="text-3xl font-pacifico prodify-gradient-text mb-2 whitespace-nowrap overflow-visible" style={{ letterSpacing: '2px', lineHeight: '1.5', paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>
+              Quick Shop
+            </h1>
+            <p className="text-sm text-gray-500 whitespace-nowrap">מערכת ניהול חנויות אונליין</p>
+          </div>
 
-        <Card className="shadow-2xl">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">התחברות</CardTitle>
-            <CardDescription className="text-center">
-              הזן את פרטי ההתחברות שלך
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">אימייל</Label>
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">התחבר לחשבון שלך</h2>
+            <p className="text-sm text-gray-600">
+              אנא הזן את הפרטים שלך
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                אימייל
+              </Label>
+              <div className="relative">
+                <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <Input
                   id="email"
                   type="email"
-                  placeholder="your@email.com"
+                  placeholder="הזן את האימייל שלך"
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
                   disabled={loading}
+                  className="h-12 text-base border-gray-300 focus:border-purple-500 focus:ring-purple-500 pr-10"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">סיסמה</Label>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password" className="text-sm font-medium text-gray-700">
+                סיסמה
+              </Label>
+              <div className="relative">
+                <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <Input
                   id="password"
                   type="password"
@@ -97,27 +142,117 @@ export default function LoginPage() {
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
                   disabled={loading}
+                  className="h-12 text-base border-gray-300 focus:border-purple-500 focus:ring-purple-500 pr-10"
                 />
               </div>
-              <Button type="submit" className="w-full prodify-gradient text-white" disabled={loading}>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center space-x-2 space-x-reverse">
+                <input type="checkbox" id="remember" className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500" />
+                <Label htmlFor="remember" className="text-gray-600 cursor-pointer">
+                  זכור ל-30 יום
+                </Label>
+              </div>
+              <Link href="#" className="text-purple-600 hover:text-purple-700 hover:underline">
+                שכחת סיסמה?
+              </Link>
+            </div>
+            <div className="pt-2">
+              <Button 
+                type="submit" 
+                className="w-full h-12 bg-gradient-to-l from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all" 
+                disabled={loading}
+              >
                 {loading ? "מתחבר..." : "התחבר"}
               </Button>
-            </form>
-          </CardContent>
-          <CardFooter className="flex flex-col space-y-2">
-            <div className="text-sm text-center text-muted-foreground">
+            </div>
+          </form>
+
+          <div className="mt-8">
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 bg-white text-gray-500">או</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleGoogleSignIn}
+              disabled={loading}
+              className="w-full h-12 border-2 border-gray-300 hover:border-gray-400 hover:bg-gray-50 transition-all"
+            >
+              <svg className="w-5 h-5 ml-2" viewBox="0 0 24 24">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+              </svg>
+              התחבר עם Google
+            </Button>
+          </div>
+
+          <div className="mt-6">
+            <div className="text-sm text-center text-gray-600">
               אין לך חשבון?{" "}
-              <Link href="/register" className="text-primary hover:underline font-medium">
+              <Link href="/register" className="text-purple-600 hover:text-purple-700 hover:underline font-semibold">
                 הירשם כעת
               </Link>
             </div>
-          </CardFooter>
-        </Card>
-
-        <div className="mt-6 text-center text-sm text-purple-100">
-          <p>סופר אדמין? השתמש ב-itadmit@gmail.com / 115599</p>
+          </div>
         </div>
       </div>
+
+      {/* Right Preview - 60% */}
+      <div className="hidden lg:flex lg:w-3/5 relative overflow-hidden">
+        {/* Background Images */}
+        <div className="absolute inset-0">
+          <Image
+            src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1200&q=80"
+            alt="Online shopping"
+            fill
+            className="object-cover"
+            priority
+            sizes="(max-width: 1024px) 0vw, 60vw"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-purple-900/85 via-purple-800/75 to-purple-900/85"></div>
+        </div>
+
+        <div className="relative z-10 w-full flex items-center justify-center p-12 lg:p-16">
+          <div className="max-w-2xl text-white">
+            <h2 className="text-4xl lg:text-5xl font-bold mb-4">Empowering your business</h2>
+            <p className="text-xl text-purple-100 mb-8">ניהול חנות אונליין מקצועי במקום אחד</p>
+            
+            {/* Feature Cards */}
+            <div className="grid grid-cols-2 gap-6">
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <h3 className="text-lg font-semibold mb-2">חנות מקצועית</h3>
+                <p className="text-sm text-purple-100">צור חנות אונליין מקצועית תוך דקות</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <h3 className="text-lg font-semibold mb-2">ניהול פשוט</h3>
+                <p className="text-sm text-purple-100">ממשק ניהול אינטואיטיבי ונוח</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <h3 className="text-lg font-semibold mb-2">ניתוחים ודוחות</h3>
+                <p className="text-sm text-purple-100">מעקב אחר מכירות והכנסות</p>
+              </div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
+                <h3 className="text-lg font-semibold mb-2">תשלומים ומשלוחים</h3>
+                <p className="text-sm text-purple-100">תמיכה מלאה בתשלומים ומשלוחים</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile View */}
+      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 -z-10 opacity-20"></div>
     </div>
   )
 }

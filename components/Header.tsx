@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
-import { Bell, Search, ChevronDown, Settings, LogOut, User } from "lucide-react"
+import { Bell, Search, ChevronDown, Settings, LogOut, User, Store, ExternalLink } from "lucide-react"
+import { useShop } from "@/components/providers/ShopProvider"
+import Link from "next/link"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,6 +17,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { NotificationsDrawer } from "@/components/NotificationsDrawer"
+import { getShopBaseUrl } from "@/lib/utils"
 
 interface HeaderProps {
   title?: string
@@ -22,6 +25,7 @@ interface HeaderProps {
 
 export function Header({ title }: HeaderProps) {
   const { data: session } = useSession()
+  const { selectedShop, shops, setSelectedShop, loading: shopsLoading } = useShop()
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
 
@@ -62,6 +66,54 @@ export function Header({ title }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-4">
+        {/* Shop Selector - מוצג רק אם יש יותר מחנות אחת או שהמשתמש הוזמן לחנות אחרת */}
+        {!shopsLoading && shops.length > 0 && selectedShop && (
+          <div className="flex items-center gap-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2 hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors border border-gray-200">
+                  <Store className="w-4 h-4 text-purple-600" />
+                  <span className="text-sm font-medium text-gray-900">
+                    {selectedShop.name}
+                  </span>
+                  {shops.length > 1 && (
+                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              {shops.length > 1 && (
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>בחר חנות</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {shops.map((shop) => (
+                    <DropdownMenuItem
+                      key={shop.id}
+                      onClick={() => setSelectedShop(shop)}
+                      className={selectedShop?.id === shop.id ? "bg-purple-50" : ""}
+                    >
+                      <Store className="ml-2 h-4 w-4" />
+                      <span>{shop.name}</span>
+                      {selectedShop?.id === shop.id && (
+                        <span className="mr-auto text-purple-600">✓</span>
+                      )}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              )}
+            </DropdownMenu>
+            <a
+              href={getShopBaseUrl(selectedShop)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg px-2 py-1 transition-colors"
+              title="צפה בחנות"
+            >
+              <ExternalLink className="w-4 h-4" />
+              <span className="hidden sm:inline">צפה בחנות</span>
+            </a>
+          </div>
+        )}
+
         {/* Search */}
         <div className="relative w-64">
           <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />

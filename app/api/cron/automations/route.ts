@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { AutomationEngine } from "@/lib/automation-engine"
 
 /**
  * Cron Job for running periodic automations

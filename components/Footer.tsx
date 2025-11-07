@@ -12,7 +12,7 @@ export function Footer() {
             <Heart className="w-4 h-4 text-red-500 fill-red-500" />
             <span>על ידי</span>
             <span className="font-pacifico prodify-gradient-text">
-              Quick crm
+              Quick Shop
             </span>
           </div>
           <div className="flex items-center gap-6">

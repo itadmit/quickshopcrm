@@ -16,6 +16,7 @@ export async function GET(req: NextRequest) {
       // החזר כל ההרשאות כפעילות
       return NextResponse.json({
         permissions: {
+          // Quick CRM הרשאות
           dashboard: true,
           tasks: true,
           calendar: true,
@@ -29,6 +30,25 @@ export async function GET(req: NextRequest) {
           settings: true,
           integrations: true,
           automations: true,
+          // Quick Shop הרשאות
+          products: true,
+          orders: true,
+          customers: true,
+          inventory: true,
+          discounts: true,
+          coupons: true,
+          collections: true,
+          gift_cards: true,
+          abandoned_carts: true,
+          pages: true,
+          navigation: true,
+          blog: true,
+          reviews: true,
+          returns: true,
+          store_credits: true,
+          bundles: true,
+          analytics: true,
+          webhooks: true,
         },
       })
     }

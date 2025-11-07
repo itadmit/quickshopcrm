@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { quoteTemplate, companyInfo } = body
+    const { quoteTemplate, companyInfo, systemSettings } = body
 
     // קבלת הגדרות קיימות
     const company = await prisma.company.findUnique({
@@ -54,14 +54,21 @@ export async function POST(req: NextRequest) {
     // עדכון ההגדרות
     const updatedSettings = {
       ...currentSettings,
-      quoteTemplate: {
-        ...(currentSettings.quoteTemplate || {}),
-        ...quoteTemplate,
-      },
-      companyInfo: {
-        ...(currentSettings.companyInfo || {}),
-        ...companyInfo,
-      },
+      ...(quoteTemplate && {
+        quoteTemplate: {
+          ...(currentSettings.quoteTemplate || {}),
+          ...quoteTemplate,
+        },
+      }),
+      ...(companyInfo && {
+        companyInfo: {
+          ...(currentSettings.companyInfo || {}),
+          ...companyInfo,
+        },
+      }),
+      ...(systemSettings && {
+        ...systemSettings,
+      }),
     }
 
     // שמירה במסד הנתונים

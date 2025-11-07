@@ -7,9 +7,15 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     
-    // Only allow admins to seed data
-    if (!session?.user?.companyId || session.user.role !== 'ADMIN') {
-      return NextResponse.json({ error: "Unauthorized - Admin only" }, { status: 401 })
+    // Only allow admins and managers to seed data
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: "Unauthorized - No session or company" }, { status: 401 })
+    }
+    
+    // Allow ADMIN, MANAGER, and SUPER_ADMIN
+    const allowedRoles = ['ADMIN', 'MANAGER', 'SUPER_ADMIN']
+    if (!allowedRoles.includes(session.user.role)) {
+      return NextResponse.json({ error: "Unauthorized - Admin or Manager only" }, { status: 401 })
     }
 
     const companyId = session.user.companyId
@@ -17,575 +23,1180 @@ export async function POST(req: NextRequest) {
 
     console.log('🌱 Starting seed for company:', companyId)
 
-    // Create demo pipeline
-    const pipeline = await prisma.pipeline.create({
+    // Get or create shop (use first shop or create new one)
+    let shop = await prisma.shop.findFirst({
+      where: { companyId }
+    })
+
+    if (!shop) {
+      shop = await prisma.shop.create({
+        data: {
+          name: 'חנות הדגמה',
+          slug: 'demo-shop',
+          description: 'חנות הדגמה של Quick Shop - מוצרים איכותיים במחירים מעולים',
+          category: 'אופנה',
+          email: 'info@demo-shop.com',
+          phone: '03-1234567',
+          address: 'רחוב הרצל 1, תל אביב',
+          currency: 'ILS',
+          taxEnabled: true,
+          taxRate: 18,
+          isPublished: true,
+          companyId,
+        },
+      })
+    }
+
+    console.log('✅ Shop ready:', shop.name)
+
+    // Delete existing categories for clean seed
+    await prisma.category.deleteMany({
+      where: { shopId: shop.id },
+    })
+
+    // Create categories
+    const categories = await Promise.all([
+      prisma.category.create({
+        data: {
+          name: 'נעליים',
+          slug: 'shoes',
+          description: 'נעליים אופנתיות ואיכותיות',
+          shopId: shop.id,
+        },
+      }),
+      prisma.category.create({
+        data: {
+          name: 'חולצות',
+          slug: 'shirts',
+          description: 'חולצות איכותיות',
+          shopId: shop.id,
+        },
+      }),
+      prisma.category.create({
+        data: {
+          name: 'אביזרים',
+          slug: 'accessories',
+          description: 'אביזרים משלימים',
+          shopId: shop.id,
+        },
+      }),
+    ])
+
+    console.log(`✅ Created ${categories.length} categories`)
+
+    // Create Nike Shoes with variants (black/yellow, sizes 38-42)
+    const nikeShoes = await prisma.product.create({
       data: {
-        name: 'צינור מכירות ראשי',
-        isDefault: true,
-        companyId,
-        stages: {
+        name: 'נעליים נייק Air Max',
+        slug: 'nike-air-max',
+        description: 'נעליים נייק Air Max איכותיות ונוחות, מושלמות לספורט ולחיי היום יום',
+        price: 599.90,
+        comparePrice: 799.90,
+        cost: 350,
+        sku: 'NIKE-AM-001',
+        inventoryQty: 0, // Will be calculated from variants
+        lowStockAlert: 5,
+        status: 'PUBLISHED',
+        availability: 'IN_STOCK',
+        images: [],
+        shopId: shop.id,
+        categories: {
+          create: {
+            categoryId: categories[0].id,
+          },
+        },
+        tags: {
           create: [
-            { name: 'ליד חדש', position: 1, winProbability: 10, color: '#3B82F6' },
-            { name: 'יצירת קשר', position: 2, winProbability: 25, color: '#F59E0B' },
-            { name: 'מתאים', position: 3, winProbability: 50, color: '#8B5CF6' },
-            { name: 'הצעת מחיר', position: 4, winProbability: 75, color: '#F97316' },
-            { name: 'משא ומתן', position: 5, winProbability: 90, color: '#10B981' },
+            { name: 'נייק' },
+            { name: 'נעליים' },
+            { name: 'ספורט' },
+          ],
+        },
+        options: {
+          create: [
+            {
+              name: 'צבע',
+              type: 'color',
+              values: [
+                { id: 'black', label: 'שחור', metadata: { color: '#000000' } },
+                { id: 'yellow', label: 'צהוב', metadata: { color: '#FFD700' } },
+              ],
+              position: 0,
+            },
+            {
+              name: 'מידה',
+              type: 'button',
+              values: [
+                { id: '38', label: '38' },
+                { id: '39', label: '39' },
+                { id: '40', label: '40' },
+                { id: '41', label: '41' },
+                { id: '42', label: '42' },
+              ],
+              position: 1,
+            },
+          ],
+        },
+        variants: {
+          create: [
+            // Black variants
+            { name: 'שחור / 38', sku: 'NIKE-AM-BLK-38', price: 599.90, inventoryQty: 3, option1: 'צבע', option1Value: 'שחור', option2: 'מידה', option2Value: '38' },
+            { name: 'שחור / 39', sku: 'NIKE-AM-BLK-39', price: 599.90, inventoryQty: 5, option1: 'צבע', option1Value: 'שחור', option2: 'מידה', option2Value: '39' },
+            { name: 'שחור / 40', sku: 'NIKE-AM-BLK-40', price: 599.90, inventoryQty: 8, option1: 'צבע', option1Value: 'שחור', option2: 'מידה', option2Value: '40' },
+            { name: 'שחור / 41', sku: 'NIKE-AM-BLK-41', price: 599.90, inventoryQty: 4, option1: 'צבע', option1Value: 'שחור', option2: 'מידה', option2Value: '41' },
+            { name: 'שחור / 42', sku: 'NIKE-AM-BLK-42', price: 599.90, inventoryQty: 2, option1: 'צבע', option1Value: 'שחור', option2: 'מידה', option2Value: '42' },
+            // Yellow variants
+            { name: 'צהוב / 38', sku: 'NIKE-AM-YLW-38', price: 599.90, inventoryQty: 2, option1: 'צבע', option1Value: 'צהוב', option2: 'מידה', option2Value: '38' },
+            { name: 'צהוב / 39', sku: 'NIKE-AM-YLW-39', price: 599.90, inventoryQty: 4, option1: 'צבע', option1Value: 'צהוב', option2: 'מידה', option2Value: '39' },
+            { name: 'צהוב / 40', sku: 'NIKE-AM-YLW-40', price: 599.90, inventoryQty: 6, option1: 'צבע', option1Value: 'צהוב', option2: 'מידה', option2Value: '40' },
+            { name: 'צהוב / 41', sku: 'NIKE-AM-YLW-41', price: 599.90, inventoryQty: 3, option1: 'צבע', option1Value: 'צהוב', option2: 'מידה', option2Value: '41' },
+            { name: 'צהוב / 42', sku: 'NIKE-AM-YLW-42', price: 599.90, inventoryQty: 1, option1: 'צבע', option1Value: 'צהוב', option2: 'מידה', option2Value: '42' },
           ],
         },
       },
     })
 
-    // Create demo leads
-    const leads = await Promise.all([
-      prisma.lead.create({
+    // Create Adidas Shirt with variants (white/black, sizes S/M/L)
+    const adidasShirt = await prisma.product.create({
+      data: {
+        name: 'חולצה אדידס קלאסית',
+        slug: 'adidas-classic-shirt',
+        description: 'חולצה אדידס קלאסית ואיכותית, 100% כותנה, נוחה ונושמת',
+        price: 149.90,
+        comparePrice: 199.90,
+        cost: 80,
+        sku: 'ADIDAS-SH-001',
+        inventoryQty: 0, // Will be calculated from variants
+        lowStockAlert: 3,
+        status: 'PUBLISHED',
+        availability: 'IN_STOCK',
+        images: [],
+        shopId: shop.id,
+        categories: {
+          create: {
+            categoryId: categories[1].id,
+          },
+        },
+        tags: {
+          create: [
+            { name: 'אדידס' },
+            { name: 'חולצות' },
+            { name: 'קלאסי' },
+          ],
+        },
+        options: {
+          create: [
+            {
+              name: 'צבע',
+              type: 'color',
+              values: [
+                { id: 'white', label: 'לבן', metadata: { color: '#FFFFFF' } },
+                { id: 'black', label: 'שחור', metadata: { color: '#000000' } },
+              ],
+              position: 0,
+            },
+            {
+              name: 'מידה',
+              type: 'button',
+              values: [
+                { id: 'S', label: 'S' },
+                { id: 'M', label: 'M' },
+                { id: 'L', label: 'L' },
+              ],
+              position: 1,
+            },
+          ],
+        },
+        variants: {
+          create: [
+            // White variants
+            { name: 'לבן / S', sku: 'ADIDAS-SH-WHT-S', price: 149.90, inventoryQty: 5, option1: 'צבע', option1Value: 'לבן', option2: 'מידה', option2Value: 'S' },
+            { name: 'לבן / M', sku: 'ADIDAS-SH-WHT-M', price: 149.90, inventoryQty: 8, option1: 'צבע', option1Value: 'לבן', option2: 'מידה', option2Value: 'M' },
+            { name: 'לבן / L', sku: 'ADIDAS-SH-WHT-L', price: 149.90, inventoryQty: 6, option1: 'צבע', option1Value: 'לבן', option2: 'מידה', option2Value: 'L' },
+            // Black variants
+            { name: 'שחור / S', sku: 'ADIDAS-SH-BLK-S', price: 149.90, inventoryQty: 4, option1: 'צבע', option1Value: 'שחור', option2: 'מידה', option2Value: 'S' },
+            { name: 'שחור / M', sku: 'ADIDAS-SH-BLK-M', price: 149.90, inventoryQty: 7, option1: 'צבע', option1Value: 'שחור', option2: 'מידה', option2Value: 'M' },
+            { name: 'שחור / L', sku: 'ADIDAS-SH-BLK-L', price: 149.90, inventoryQty: 5, option1: 'צבע', option1Value: 'שחור', option2: 'מידה', option2Value: 'L' },
+          ],
+        },
+      },
+    })
+
+    // Create additional products (2-3 more)
+    const additionalProducts = await Promise.all([
+      prisma.product.create({
         data: {
-          name: 'יוסי כהן',
-          email: 'yossi@example.com',
+          name: 'תיק ספורט נייק',
+          slug: 'nike-sport-bag',
+          description: 'תיק ספורט נייק איכותי ונוח, מושלם לאימונים',
+          price: 249.90,
+          comparePrice: 349.90,
+          cost: 120,
+          sku: 'NIKE-BAG-001',
+          inventoryQty: 15,
+          lowStockAlert: 5,
+          status: 'PUBLISHED',
+          availability: 'IN_STOCK',
+          images: [],
+          shopId: shop.id,
+          categories: {
+            create: {
+              categoryId: categories[2].id,
+            },
+          },
+          tags: {
+            create: [
+              { name: 'תיקים' },
+              { name: 'נייק' },
+            ],
+          },
+        },
+      }),
+      prisma.product.create({
+        data: {
+          name: 'כובע אדידס',
+          slug: 'adidas-cap',
+          description: 'כובע אדידס קלאסי עם לוגו, מגן מפני השמש',
+          price: 89.90,
+          comparePrice: 129.90,
+          cost: 45,
+          sku: 'ADIDAS-CAP-001',
+          inventoryQty: 20,
+          lowStockAlert: 5,
+          status: 'PUBLISHED',
+          availability: 'IN_STOCK',
+          images: [],
+          shopId: shop.id,
+          categories: {
+            create: {
+              categoryId: categories[2].id,
+            },
+          },
+          tags: {
+            create: [
+              { name: 'כובעים' },
+              { name: 'אדידס' },
+            ],
+          },
+        },
+      }),
+    ])
+
+    const allProducts = [nikeShoes, adidasShirt, ...additionalProducts]
+    console.log(`✅ Created ${allProducts.length} products`)
+
+    // Create collections (2-3)
+    const collections = await Promise.all([
+      prisma.collection.create({
+        data: {
+          name: 'מוצרים מומלצים',
+          slug: 'featured',
+          description: 'המוצרים המומלצים שלנו',
+          type: 'MANUAL',
+          shopId: shop.id,
+          products: {
+            create: [
+              { productId: nikeShoes.id, position: 0 },
+              { productId: adidasShirt.id, position: 1 },
+            ],
+          },
+        },
+      }),
+      prisma.collection.create({
+        data: {
+          name: 'מבצעים',
+          slug: 'sale',
+          description: 'מוצרים במבצע',
+          type: 'MANUAL',
+          shopId: shop.id,
+          products: {
+            create: [
+              { productId: additionalProducts[0].id, position: 0 },
+              { productId: additionalProducts[1].id, position: 1 },
+            ],
+          },
+        },
+      }),
+      prisma.collection.create({
+        data: {
+          name: 'חדש בחנות',
+          slug: 'new-arrivals',
+          description: 'מוצרים חדשים שהגיעו לחנות',
+          type: 'MANUAL',
+          shopId: shop.id,
+          products: {
+            create: [
+              { productId: nikeShoes.id, position: 0 },
+              { productId: adidasShirt.id, position: 1 },
+              { productId: additionalProducts[0].id, position: 2 },
+            ],
+          },
+        },
+      }),
+    ])
+
+    console.log(`✅ Created ${collections.length} collections`)
+
+    // Create customers (2-3)
+    const customers = await Promise.all([
+      prisma.customer.create({
+        data: {
+          email: 'yossi.cohen@example.com',
+          firstName: 'יוסי',
+          lastName: 'כהן',
           phone: '050-1234567',
-          source: 'Facebook',
-          status: 'NEW',
-          notes: 'מעוניין באתר חדש לעסק',
-          companyId,
-          ownerId: userId,
+          shopId: shop.id,
+          totalSpent: 899.80,
+          orderCount: 3,
+          tier: 'VIP',
+          isSubscribed: true,
+          addresses: [
+            {
+              street: 'רחוב הרצל 10',
+              city: 'תל אביב',
+              zip: '12345',
+              country: 'ישראל',
+            },
+          ],
         },
       }),
-      prisma.lead.create({
+      prisma.customer.create({
         data: {
-          name: 'שרה לוי',
-          email: 'sara@example.com',
+          email: 'sara.levi@example.com',
+          firstName: 'שרה',
+          lastName: 'לוי',
           phone: '052-9876543',
-          source: 'Google',
-          status: 'CONTACTED',
-          notes: 'דיברנו בטלפון, מעוניינת במערכת CRM',
-          companyId,
-          ownerId: userId,
+          shopId: shop.id,
+          totalSpent: 449.70,
+          orderCount: 2,
+          tier: 'REGULAR',
+          isSubscribed: true,
+          addresses: [
+            {
+              street: 'דרך המלך 50',
+              city: 'חיפה',
+              zip: '54321',
+              country: 'ישראל',
+            },
+          ],
         },
       }),
-      prisma.lead.create({
+      prisma.customer.create({
         data: {
-          name: 'דוד מזרחי',
-          email: 'david@tech.co.il',
-          phone: '054-5555555',
-          source: 'המלצה',
-          status: 'QUALIFIED',
-          notes: 'חברת הייטק מתעניינת בפיתוח אפליקציה',
-          companyId,
-          ownerId: userId,
-        },
-      }),
-      prisma.lead.create({
-        data: {
-          name: 'רחל אברהם',
-          email: 'rachel@store.com',
-          phone: '053-7777777',
-          source: 'אתר',
-          status: 'PROPOSAL',
-          notes: 'שלחנו הצעת מחיר למערכת ניהול מלאי',
-          companyId,
-          ownerId: userId,
-        },
-      }),
-      prisma.lead.create({
-        data: {
-          name: 'משה ישראלי',
-          email: 'moshe@biz.co.il',
-          phone: '050-8888888',
-          source: 'טלפון',
-          status: 'NEGOTIATION',
-          notes: 'במשא ומתן על פרויקט גדול',
-          companyId,
-          ownerId: userId,
+          email: 'david.mizrahi@example.com',
+          firstName: 'דוד',
+          lastName: 'מזרחי',
+          phone: '054-5551234',
+          shopId: shop.id,
+          totalSpent: 149.90,
+          orderCount: 1,
+          tier: 'REGULAR',
+          isSubscribed: false,
         },
       }),
     ])
 
-    // Create demo clients
-    const clients = await Promise.all([
-      prisma.client.create({
-        data: {
-          name: 'חברת ABC בע"מ',
-          email: 'info@abc.co.il',
-          phone: '03-5551234',
-          address: 'רחוב הרצל 1, תל אביב',
-          status: 'ACTIVE',
-          notes: 'לקוח VIP - תשומת לב מיוחדת',
-          companyId,
-          ownerId: userId,
+    console.log(`✅ Created ${customers.length} customers`)
+
+    // Delete existing coupons for clean seed (by shopId and code)
+    const couponCodes = ['WELCOME10', 'SUMMER50', 'BUY2GET1']
+    await prisma.coupon.deleteMany({
+      where: {
+        OR: [
+          { shopId: shop.id },
+          { code: { in: couponCodes } }
+        ]
+      },
+    })
+
+    // Create coupons (2-3) using upsert to handle existing codes
+    const coupons = await Promise.all([
+      prisma.coupon.upsert({
+        where: { code: 'WELCOME10' },
+        update: {
+          type: 'PERCENTAGE',
+          value: 10,
+          minOrder: 100,
+          maxUses: 100,
+          usedCount: 2,
+          isActive: true,
+          shopId: shop.id,
+        },
+        create: {
+          code: 'WELCOME10',
+          type: 'PERCENTAGE',
+          value: 10,
+          minOrder: 100,
+          maxUses: 100,
+          usedCount: 2,
+          isActive: true,
+          shopId: shop.id,
         },
       }),
-      prisma.client.create({
-        data: {
-          name: 'XYZ Solutions',
-          email: 'contact@xyz.com',
-          phone: '09-9876543',
-          address: 'דרך המלך 50, חיפה',
-          status: 'ACTIVE',
-          companyId,
-          ownerId: userId,
+      prisma.coupon.upsert({
+        where: { code: 'SUMMER50' },
+        update: {
+          type: 'FIXED',
+          value: 50,
+          minOrder: 200,
+          maxUses: 50,
+          usedCount: 1,
+          isActive: true,
+          shopId: shop.id,
+        },
+        create: {
+          code: 'SUMMER50',
+          type: 'FIXED',
+          value: 50,
+          minOrder: 200,
+          maxUses: 50,
+          usedCount: 1,
+          isActive: true,
+          shopId: shop.id,
         },
       }),
-      prisma.client.create({
-        data: {
-          name: 'הנדסת קידום',
-          email: 'info@kidum.co.il',
-          phone: '08-6543210',
-          address: 'שד\' בן גוריון 100, באר שבע',
-          status: 'ACTIVE',
-          companyId,
-          ownerId: userId,
+      prisma.coupon.upsert({
+        where: { code: 'BUY2GET1' },
+        update: {
+          type: 'BUY_X_GET_Y',
+          value: 2,
+          buyQuantity: 2,
+          getQuantity: 1,
+          getDiscount: 100,
+          minOrder: 300,
+          maxUses: 20,
+          usedCount: 0,
+          isActive: true,
+          shopId: shop.id,
         },
-      }),
-      prisma.client.create({
-        data: {
-          name: 'דיגיטל פרו',
-          email: 'hello@digitalpro.co.il',
-          phone: '04-7654321',
-          address: 'רחוב הנשיא 25, ירושלים',
-          status: 'ACTIVE',
-          companyId,
-          ownerId: userId,
+        create: {
+          code: 'BUY2GET1',
+          type: 'BUY_X_GET_Y',
+          value: 2,
+          buyQuantity: 2,
+          getQuantity: 1,
+          getDiscount: 100,
+          minOrder: 300,
+          maxUses: 20,
+          usedCount: 0,
+          isActive: true,
+          shopId: shop.id,
         },
       }),
     ])
 
-    // Create demo projects
-    const projects = await Promise.all([
-      prisma.project.create({
+    console.log(`✅ Created ${coupons.length} coupons`)
+
+    // Create discounts (2-3)
+    const discounts = await Promise.all([
+      prisma.discount.create({
         data: {
-          name: 'פיתוח אתר תדמית',
-          description: 'אתר תדמית מודרני עם ממשק ניהול תוכן',
-          status: 'IN_PROGRESS',
-          budget: 45000,
-          progress: 60,
-          startDate: new Date('2024-01-15'),
-          endDate: new Date('2024-03-30'),
-          companyId,
-          clientId: clients[0].id,
+          title: 'הנחה על נעליים',
+          description: '15% הנחה על כל הנעליים',
+          type: 'PERCENTAGE',
+          value: 15,
+          target: 'SPECIFIC_CATEGORIES',
+          applicableCategories: [categories[0].id],
+          isActive: true,
+          isAutomatic: true,
+          shopId: shop.id,
         },
       }),
-      prisma.project.create({
+      prisma.discount.create({
         data: {
-          name: 'מערכת ניהול מלאי',
-          description: 'מערכת מקיפה לניהול מלאי והזמנות',
-          status: 'IN_PROGRESS',
-          budget: 120000,
-          progress: 35,
-          startDate: new Date('2024-02-01'),
-          endDate: new Date('2024-06-30'),
-          companyId,
-          clientId: clients[1].id,
+          title: 'הנחת כמות',
+          description: 'הנחה על קנייה בכמויות',
+          type: 'VOLUME_DISCOUNT',
+          value: 0,
+          volumeRules: [
+            { quantity: 3, discount: 10 },
+            { quantity: 5, discount: 20 },
+          ],
+          target: 'ALL_PRODUCTS',
+          isActive: true,
+          isAutomatic: true,
+          shopId: shop.id,
         },
       }),
-      prisma.project.create({
+      prisma.discount.create({
         data: {
-          name: 'אפליקציית מובייל',
-          description: 'אפליקציית React Native עבור iOS ו-Android',
-          status: 'PLANNING',
-          budget: 200000,
-          progress: 10,
-          startDate: new Date('2024-03-01'),
-          endDate: new Date('2024-09-30'),
-          companyId,
-          clientId: clients[2].id,
+          title: 'הנחה ללקוחות VIP',
+          description: '20% הנחה ללקוחות VIP',
+          type: 'PERCENTAGE',
+          value: 20,
+          customerTarget: 'CUSTOMER_TIERS',
+          customerTiers: ['VIP'],
+          isActive: true,
+          isAutomatic: true,
+          shopId: shop.id,
         },
       }),
-      prisma.project.create({
+    ])
+
+    console.log(`✅ Created ${discounts.length} discounts`)
+
+    // Create orders (2-3)
+    const nikeVariant = await prisma.productVariant.findFirst({
+      where: { productId: nikeShoes.id, sku: 'NIKE-AM-BLK-40' },
+    })
+    const adidasVariant = await prisma.productVariant.findFirst({
+      where: { productId: adidasShirt.id, sku: 'ADIDAS-SH-WHT-M' },
+    })
+
+    // Delete existing orders for clean seed (by shopId and orderNumber)
+    const orderNumbers = ['ORD-000001', 'ORD-000002', 'ORD-000003']
+    await prisma.order.deleteMany({
+      where: {
+        OR: [
+          { shopId: shop.id },
+          { orderNumber: { in: orderNumbers } }
+        ]
+      },
+    })
+
+    const orders = await Promise.all([
+      prisma.order.create({
         data: {
-          name: 'מיתוג ועיצוב',
-          description: 'עיצוב לוגו, מיתוג ומדיה חברתית',
+          orderNumber: 'ORD-000001',
+          shopId: shop.id,
+          customerId: customers[0].id,
+          customerName: `${customers[0].firstName} ${customers[0].lastName}`,
+          customerEmail: customers[0].email,
+          customerPhone: customers[0].phone,
+          shippingAddress: customers[0].addresses?.[0] || {
+            street: 'רחוב הרצל 10',
+            city: 'תל אביב',
+            zip: '12345',
+            country: 'ישראל',
+          },
+          subtotal: 599.90,
+          shipping: 20,
+          tax: 111.58,
+          discount: 0,
+          total: 731.48,
+          status: 'CONFIRMED',
+          paymentStatus: 'PAID',
+          fulfillmentStatus: 'UNFULFILLED',
+          paymentMethod: 'Credit Card',
+          items: {
+            create: {
+              productId: nikeShoes.id,
+              variantId: nikeVariant?.id,
+              name: nikeShoes.name,
+              sku: nikeVariant?.sku || nikeShoes.sku,
+              quantity: 1,
+              price: 599.90,
+              total: 599.90,
+            },
+          },
+        },
+      }),
+      prisma.order.create({
+        data: {
+          orderNumber: 'ORD-000002',
+          shopId: shop.id,
+          customerId: customers[1].id,
+          customerName: `${customers[1].firstName} ${customers[1].lastName}`,
+          customerEmail: customers[1].email,
+          customerPhone: customers[1].phone,
+          shippingAddress: customers[1].addresses?.[0] || {
+            street: 'דרך המלך 50',
+            city: 'חיפה',
+            zip: '54321',
+            country: 'ישראל',
+          },
+          subtotal: 149.90,
+          shipping: 15,
+          tax: 29.68,
+          discount: 0,
+          total: 194.58,
+          status: 'SHIPPED',
+          paymentStatus: 'PAID',
+          fulfillmentStatus: 'FULFILLED',
+          paymentMethod: 'Credit Card',
+          trackingNumber: 'TRACK123456',
+          shippedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+          items: {
+            create: {
+              productId: adidasShirt.id,
+              variantId: adidasVariant?.id,
+              name: adidasShirt.name,
+              sku: adidasVariant?.sku || adidasShirt.sku,
+              quantity: 1,
+              price: 149.90,
+              total: 149.90,
+            },
+          },
+        },
+      }),
+      prisma.order.create({
+        data: {
+          orderNumber: 'ORD-000003',
+          shopId: shop.id,
+          customerId: customers[0].id,
+          customerName: `${customers[0].firstName} ${customers[0].lastName}`,
+          customerEmail: customers[0].email,
+          customerPhone: customers[0].phone,
+          shippingAddress: customers[0].addresses?.[0] || {
+            street: 'רחוב הרצל 10',
+            city: 'תל אביב',
+            zip: '12345',
+            country: 'ישראל',
+          },
+          subtotal: 749.80,
+          shipping: 0,
+          tax: 134.96,
+          discount: 50,
+          total: 834.76,
+          status: 'DELIVERED',
+          paymentStatus: 'PAID',
+          fulfillmentStatus: 'FULFILLED',
+          paymentMethod: 'Credit Card',
+          couponCode: 'SUMMER50',
+          deliveredAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+          items: {
+            create: [
+              {
+                productId: nikeShoes.id,
+                variantId: nikeVariant?.id,
+                name: nikeShoes.name,
+                sku: nikeVariant?.sku || nikeShoes.sku,
+                quantity: 1,
+                price: 599.90,
+                total: 599.90,
+              },
+              {
+                productId: adidasShirt.id,
+                variantId: adidasVariant?.id,
+                name: adidasShirt.name,
+                sku: adidasVariant?.sku || adidasShirt.sku,
+                quantity: 1,
+                price: 149.90,
+                total: 149.90,
+              },
+            ],
+          },
+        },
+      }),
+    ])
+
+    console.log(`✅ Created ${orders.length} orders`)
+
+    // Create reviews (2-3)
+    const reviews = await Promise.all([
+      prisma.review.create({
+        data: {
+          shopId: shop.id,
+          productId: nikeShoes.id,
+          customerId: customers[0].id,
+          rating: 5,
+          title: 'נעליים מעולות!',
+          comment: 'נעליים מאוד נוחות ואיכותיות, ממליץ בחום!',
+          isApproved: true,
+          isVerified: true,
+        },
+      }),
+      prisma.review.create({
+        data: {
+          shopId: shop.id,
+          productId: adidasShirt.id,
+          customerId: customers[1].id,
+          rating: 4,
+          title: 'חולצה איכותית',
+          comment: 'חולצה נוחה ואיכותית, רק הצבע דהה קצת אחרי כביסה',
+          isApproved: true,
+          isVerified: true,
+        },
+      }),
+      prisma.review.create({
+        data: {
+          shopId: shop.id,
+          productId: nikeShoes.id,
+          customerId: customers[2].id,
+          rating: 5,
+          title: 'מושלם!',
+          comment: 'נעליים מדהימות, בדיוק מה שחיפשתי',
+          isApproved: false, // Pending approval
+          isVerified: false,
+        },
+      }),
+    ])
+
+    console.log(`✅ Created ${reviews.length} reviews`)
+
+    // Delete existing gift cards for clean seed (by shopId and code)
+    const giftCardCodes = ['GIFT100', 'GIFT200', 'GIFT50']
+    await prisma.giftCard.deleteMany({
+      where: {
+        OR: [
+          { shopId: shop.id },
+          { code: { in: giftCardCodes } }
+        ]
+      },
+    })
+
+    // Create gift cards (2-3) using upsert to handle existing codes
+    const giftCards = await Promise.all([
+      prisma.giftCard.upsert({
+        where: { code: 'GIFT100' },
+        update: {
+          shopId: shop.id,
+          amount: 100,
+          balance: 100,
+          recipientEmail: 'recipient1@example.com',
+          recipientName: 'יוסי כהן',
+          senderName: 'שרה לוי',
+          message: 'מתנה ליום הולדת!',
+          isActive: true,
+        },
+        create: {
+          shopId: shop.id,
+          code: 'GIFT100',
+          amount: 100,
+          balance: 100,
+          recipientEmail: 'recipient1@example.com',
+          recipientName: 'יוסי כהן',
+          senderName: 'שרה לוי',
+          message: 'מתנה ליום הולדת!',
+          isActive: true,
+        },
+      }),
+      prisma.giftCard.upsert({
+        where: { code: 'GIFT200' },
+        update: {
+          shopId: shop.id,
+          amount: 200,
+          balance: 150,
+          recipientEmail: 'recipient2@example.com',
+          recipientName: 'דוד מזרחי',
+          senderName: 'יוסי כהן',
+          message: 'תודה על הרכישה!',
+          isActive: true,
+        },
+        create: {
+          shopId: shop.id,
+          code: 'GIFT200',
+          amount: 200,
+          balance: 150,
+          recipientEmail: 'recipient2@example.com',
+          recipientName: 'דוד מזרחי',
+          senderName: 'יוסי כהן',
+          message: 'תודה על הרכישה!',
+          isActive: true,
+        },
+      }),
+      prisma.giftCard.upsert({
+        where: { code: 'GIFT50' },
+        update: {
+          shopId: shop.id,
+          amount: 50,
+          balance: 50,
+          recipientEmail: 'recipient3@example.com',
+          recipientName: 'מיכל רוזן',
+          isActive: true,
+          expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
+        },
+        create: {
+          shopId: shop.id,
+          code: 'GIFT50',
+          amount: 50,
+          balance: 50,
+          recipientEmail: 'recipient3@example.com',
+          recipientName: 'מיכל רוזן',
+          isActive: true,
+          expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
+        },
+      }),
+    ])
+
+    console.log(`✅ Created ${giftCards.length} gift cards`)
+
+    // Create store credits (2-3)
+    const storeCredits = await Promise.all([
+      prisma.storeCredit.create({
+        data: {
+          shopId: shop.id,
+          customerId: customers[0].id,
+          amount: 50,
+          balance: 50,
+          reason: 'החזר על הזמנה',
+        },
+      }),
+      prisma.storeCredit.create({
+        data: {
+          shopId: shop.id,
+          customerId: customers[1].id,
+          amount: 25,
+          balance: 25,
+          reason: 'בונוס לקוח VIP',
+        },
+      }),
+      prisma.storeCredit.create({
+        data: {
+          shopId: shop.id,
+          customerId: customers[0].id,
+          amount: 100,
+          balance: 0, // Used
+          reason: 'קרדיט על ביטול הזמנה',
+        },
+      }),
+    ])
+
+    console.log(`✅ Created ${storeCredits.length} store credits`)
+
+    // Delete existing bundles for clean seed
+    await prisma.bundle.deleteMany({
+      where: { shopId: shop.id },
+    })
+
+    // Create bundles (2-3)
+    const bundles = await Promise.all([
+      prisma.bundle.create({
+        data: {
+          shopId: shop.id,
+          name: 'חבילת ספורט',
+          description: 'נעליים נייק + חולצה אדידס במחיר מיוחד',
+          price: 699.90,
+          comparePrice: 749.80,
+          isActive: true,
+          products: {
+            create: [
+              { productId: nikeShoes.id, quantity: 1, position: 0 },
+              { productId: adidasShirt.id, quantity: 1, position: 1 },
+            ],
+          },
+        },
+      }),
+      prisma.bundle.create({
+        data: {
+          shopId: shop.id,
+          name: 'חבילת אביזרים',
+          description: 'תיק + כובע במחיר מיוחד',
+          price: 299.90,
+          comparePrice: 339.80,
+          isActive: true,
+          products: {
+            create: [
+              { productId: additionalProducts[0].id, quantity: 1, position: 0 },
+              { productId: additionalProducts[1].id, quantity: 1, position: 1 },
+            ],
+          },
+        },
+      }),
+    ])
+
+    console.log(`✅ Created ${bundles.length} bundles`)
+
+    // Delete existing pages for clean seed
+    await prisma.page.deleteMany({
+      where: { shopId: shop.id },
+    })
+
+    // Create pages (2-3)
+    const pages = await Promise.all([
+      prisma.page.create({
+        data: {
+          shopId: shop.id,
+          title: 'אודות',
+          slug: 'about',
+          content: '<h1>אודות החנות</h1><p>ברוכים הבאים לחנות שלנו! אנחנו מתמחים במוצרי ספורט איכותיים.</p>',
+          isPublished: true,
+          showInMenu: true,
+          menuPosition: 1,
+        },
+      }),
+      prisma.page.create({
+        data: {
+          shopId: shop.id,
+          title: 'מדיניות החזרות',
+          slug: 'returns',
+          content: '<h1>מדיניות החזרות</h1><p>אפשר להחזיר מוצרים תוך 14 יום מהרכישה.</p>',
+          isPublished: true,
+          showInMenu: true,
+          menuPosition: 2,
+        },
+      }),
+      prisma.page.create({
+        data: {
+          shopId: shop.id,
+          title: 'צור קשר',
+          slug: 'contact',
+          content: '<h1>צור קשר</h1><p>ניתן ליצור קשר במייל: info@demo-shop.com</p>',
+          isPublished: true,
+          showInMenu: true,
+          menuPosition: 3,
+        },
+      }),
+    ])
+
+    console.log(`✅ Created ${pages.length} pages`)
+
+    // Delete existing blog for clean seed
+    await prisma.blog.deleteMany({
+      where: { shopId: shop.id },
+    })
+
+    // Create blog and posts (2-3)
+    const blog = await prisma.blog.create({
+      data: {
+        shopId: shop.id,
+        title: 'בלוג החנות',
+        slug: 'blog',
+        description: 'עדכונים וטיפים על מוצרי ספורט',
+      },
+    })
+
+    // Delete existing blog posts for clean seed
+    await prisma.blogPost.deleteMany({
+      where: { blogId: blog.id },
+    })
+
+    const blogPosts = await Promise.all([
+      prisma.blogPost.create({
+        data: {
+          blogId: blog.id,
+          title: 'איך לבחור נעליים לספורט',
+          slug: 'how-to-choose-sports-shoes',
+          content: '<p>מדריך מקיף לבחירת נעליים לספורט...</p>',
+          excerpt: 'מדריך מקיף לבחירת נעליים לספורט',
+          authorId: userId,
+          isPublished: true,
+          publishedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+        },
+      }),
+      prisma.blogPost.create({
+        data: {
+          blogId: blog.id,
+          title: 'טיפים לטיפול במוצרי ספורט',
+          slug: 'sports-care-tips',
+          content: '<p>איך לשמור על מוצרי הספורט שלכם...</p>',
+          excerpt: 'איך לשמור על מוצרי הספורט שלכם',
+          authorId: userId,
+          isPublished: true,
+          publishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+        },
+      }),
+      prisma.blogPost.create({
+        data: {
+          blogId: blog.id,
+          title: 'מבצעים חדשים',
+          slug: 'new-sales',
+          content: '<p>מבצעים חדשים על כל המוצרים...</p>',
+          excerpt: 'מבצעים חדשים על כל המוצרים',
+          authorId: userId,
+          isPublished: false, // Draft
+        },
+      }),
+    ])
+
+    console.log(`✅ Created blog with ${blogPosts.length} posts`)
+
+    // Delete existing returns for clean seed
+    await prisma.return.deleteMany({
+      where: { shopId: shop.id },
+    })
+
+    // Create returns (2-3)
+    const returns = await Promise.all([
+      prisma.return.create({
+        data: {
+          shopId: shop.id,
+          orderId: orders[0].id,
+          customerId: customers[0].id,
+          status: 'PENDING',
+          reason: 'לא מתאים',
+          items: [
+            {
+              productId: nikeShoes.id,
+              variantId: nikeVariant?.id,
+              quantity: 1,
+              reason: 'מידה לא מתאימה',
+            },
+          ],
+        },
+      }),
+      prisma.return.create({
+        data: {
+          shopId: shop.id,
+          orderId: orders[1].id,
+          customerId: customers[1].id,
+          status: 'APPROVED',
+          reason: 'פגם במוצר',
+          refundAmount: 149.90,
+          refundMethod: 'Credit Card',
+          items: [
+            {
+              productId: adidasShirt.id,
+              variantId: adidasVariant?.id,
+              quantity: 1,
+              reason: 'קרע במוצר',
+            },
+          ],
+        },
+      }),
+      prisma.return.create({
+        data: {
+          shopId: shop.id,
+          orderId: orders[2].id,
+          customerId: customers[0].id,
           status: 'COMPLETED',
-          budget: 25000,
-          progress: 100,
-          startDate: new Date('2023-11-01'),
-          endDate: new Date('2024-01-15'),
-          companyId,
-          clientId: clients[3].id,
+          reason: 'שינוי דעה',
+          refundAmount: 599.90,
+          refundMethod: 'Store Credit',
+          items: [
+            {
+              productId: nikeShoes.id,
+              variantId: nikeVariant?.id,
+              quantity: 1,
+              reason: 'לא רציתי',
+            },
+          ],
         },
       }),
     ])
 
-    // Create demo tasks
-    const tasks = await Promise.all([
-      prisma.task.create({
+    console.log(`✅ Created ${returns.length} returns`)
+
+    // Delete existing carts for clean seed
+    await prisma.cart.deleteMany({
+      where: { shopId: shop.id },
+    })
+
+    // Create abandoned carts (2-3)
+    const abandonedCarts = await Promise.all([
+      prisma.cart.create({
         data: {
-          title: 'עיצוב דף הבית',
-          description: 'יצירת מוקאפים ועיצוב ויזואלי',
-          status: 'DONE',
-          priority: 'HIGH',
-          dueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-          companyId,
-          projectId: projects[0].id,
-          assigneeId: userId,
+          shopId: shop.id,
+          customerId: customers[2].id,
+          items: [
+            {
+              productId: nikeShoes.id,
+              variantId: nikeVariant?.id,
+              quantity: 1,
+              price: 599.90,
+            },
+          ],
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          abandonedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
         },
       }),
-      prisma.task.create({
+      prisma.cart.create({
         data: {
-          title: 'פיתוח ממשק ניהול',
-          description: 'בניית ממשק ניהול תוכן בReact',
-          status: 'IN_PROGRESS',
-          priority: 'HIGH',
-          dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          companyId,
-          projectId: projects[0].id,
-          assigneeId: userId,
+          shopId: shop.id,
+          sessionId: 'session-123',
+          items: [
+            {
+              productId: adidasShirt.id,
+              variantId: adidasVariant?.id,
+              quantity: 2,
+              price: 149.90,
+            },
+          ],
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          abandonedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
         },
       }),
-      prisma.task.create({
+      prisma.cart.create({
         data: {
-          title: 'אינטגרציה עם API',
-          description: 'חיבור למערכת החיצונית',
-          status: 'TODO',
-          priority: 'NORMAL',
-          dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-          companyId,
-          projectId: projects[1].id,
-          assigneeId: userId,
-        },
-      }),
-      prisma.task.create({
-        data: {
-          title: 'בדיקות QA',
-          description: 'בדיקות איכות מקיפות',
-          status: 'TODO',
-          priority: 'URGENT',
-          dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
-          companyId,
-          projectId: projects[0].id,
-          assigneeId: userId,
-        },
-      }),
-      prisma.task.create({
-        data: {
-          title: 'תיעוד מערכת',
-          description: 'כתיבת תיעוד מקיף למשתמש הקצה',
-          status: 'TODO',
-          priority: 'LOW',
-          dueDate: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
-          companyId,
-          projectId: projects[1].id,
-          assigneeId: userId,
-        },
-      }),
-      prisma.task.create({
-        data: {
-          title: 'הדרכת לקוח',
-          description: 'הדרכה למערכת החדשה',
-          status: 'TODO',
-          priority: 'NORMAL',
-          dueDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000),
-          companyId,
-          projectId: projects[0].id,
-          assigneeId: userId,
+          shopId: shop.id,
+          sessionId: 'session-456',
+          items: [
+            {
+              productId: additionalProducts[0].id,
+              quantity: 1,
+              price: 249.90,
+            },
+          ],
+          couponCode: 'WELCOME10',
+          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          abandonedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
         },
       }),
     ])
 
-    // Create demo budgets
-    const budgets = await Promise.all([
-      prisma.budget.create({
-        data: {
-          name: 'תשלום ראשון - אתר תדמית',
-          amount: 15000,
-          status: 'PAID',
-          expectedAt: new Date('2024-02-01'),
-          notes: 'תשלום ראשון של 3',
-          companyId,
-          projectId: projects[0].id,
-          clientId: clients[0].id,
-        },
-      }),
-      prisma.budget.create({
-        data: {
-          name: 'תשלום שני - אתר תדמית',
-          amount: 15000,
-          status: 'PENDING',
-          expectedAt: new Date('2024-03-01'),
-          companyId,
-          projectId: projects[0].id,
-          clientId: clients[0].id,
-        },
-      }),
-      prisma.budget.create({
-        data: {
-          name: 'תשלום שלישי - אתר תדמית',
-          amount: 15000,
-          status: 'PENDING',
-          expectedAt: new Date('2024-04-01'),
-          companyId,
-          projectId: projects[0].id,
-          clientId: clients[0].id,
-        },
-      }),
-      prisma.budget.create({
-        data: {
-          name: 'מקדמה - מערכת מלאי',
-          amount: 40000,
-          status: 'WON',
-          expectedAt: new Date('2024-02-15'),
-          companyId,
-          projectId: projects[1].id,
-          clientId: clients[1].id,
-        },
-      }),
-      prisma.budget.create({
-        data: {
-          name: 'הצעת מחיר - מיתוג',
-          amount: 25000,
-          status: 'WON',
-          expectedAt: new Date('2023-11-15'),
-          companyId,
-          projectId: projects[3].id,
-          clientId: clients[3].id,
-        },
-      }),
-    ])
+    console.log(`✅ Created ${abandonedCarts.length} abandoned carts`)
 
-    // Create demo notifications
+    // Create notifications
     const notifications = await Promise.all([
       prisma.notification.create({
         data: {
-          type: 'task',
-          title: 'משימה חדשה הוקצתה לך',
-          message: 'פיתוח ממשק ניהול - דחוף',
+          type: 'order',
+          title: 'הזמנה חדשה התקבלה',
+          message: `הזמנה ${orders[0].orderNumber} בסכום של ₪${orders[0].total.toFixed(2)}`,
           companyId,
           userId,
+          entityType: 'order',
+          entityId: orders[0].id,
           isRead: false,
         },
       }),
       prisma.notification.create({
         data: {
-          type: 'lead',
-          title: 'ליד חדש נוצר',
-          message: 'יוסי כהן מ-Facebook Ads',
+          type: 'product',
+          title: 'מלאי נמוך',
+          message: `מוצר ${additionalProducts[1].name} - נותרו רק ${additionalProducts[1].inventoryQty} יחידות`,
           companyId,
           userId,
+          entityType: 'product',
+          entityId: additionalProducts[1].id,
           isRead: false,
         },
       }),
       prisma.notification.create({
         data: {
-          type: 'reminder',
-          title: 'תזכורת: משימה מתקרבת',
-          message: 'בדיקות QA - תאריך יעד בעוד 3 ימים',
+          type: 'review',
+          title: 'ביקורת חדשה',
+          message: `ביקורת חדשה על ${nikeShoes.name}`,
           companyId,
           userId,
+          entityType: 'review',
+          entityId: reviews[0].id,
           isRead: false,
         },
       }),
-      prisma.notification.create({
-        data: {
-          type: 'document',
-          title: 'תשלום התקבל',
-          message: 'תשלום של 15,000 ₪ מלקוח ABC',
-          companyId,
-          userId,
-          isRead: true,
-        },
-      }),
     ])
 
-    // Create demo email templates
-    const emailTemplates = await Promise.all([
-      prisma.emailTemplate.create({
-        data: {
-          name: 'ברוכים הבאים',
-          subject: 'ברוכים הבאים ל{{company_name}}',
-          body: 'שלום {{customer_name}},\n\nשמחים שהצטרפת אלינו!\n\nבברכה,\nצוות {{company_name}}',
-          variables: ['customer_name', 'company_name'],
-          companyId,
-        },
-      }),
-      prisma.emailTemplate.create({
-        data: {
-          name: 'הצעת מחיר',
-          subject: 'הצעת מחיר מ-{{company_name}}',
-          body: 'שלום {{customer_name}},\n\nמצורפת הצעת המחיר עבור {{project_name}}.\n\nסכום: {{amount}} ₪\n\nנשמח לשמוע ממך,\n{{sender_name}}',
-          variables: ['customer_name', 'company_name', 'project_name', 'amount', 'sender_name'],
-          companyId,
-        },
-      }),
-      prisma.emailTemplate.create({
-        data: {
-          name: 'תזכורת לפגישה',
-          subject: 'תזכורת: פגישה מחר ב-{{time}}',
-          body: 'שלום {{customer_name}},\n\nרק להזכיר שיש לנו פגישה מחר ב-{{time}}.\n\nמיקום: {{location}}\n\nנתראה!',
-          variables: ['customer_name', 'time', 'location'],
-          companyId,
-        },
-      }),
-    ])
+    console.log(`✅ Created ${notifications.length} notifications`)
 
-    // Create demo automations
-    const automations = await Promise.all([
-      prisma.automation.create({
-        data: {
-          name: 'שליחת אימייל ללידים חדשים',
-          description: 'שולח אימייל אוטומטי כאשר ליד חדש נוצר',
-          isActive: true,
-          trigger: { event: 'lead.created' },
-          conditions: { status: 'NEW' },
-          actions: { 
-            sendEmail: {
-              templateId: emailTemplates[0].id,
-              to: '{{lead.email}}'
-            }
-          },
-          companyId,
-          createdBy: userId,
+    // Create shop event
+    await prisma.shopEvent.create({
+      data: {
+        shopId: shop.id,
+        type: 'shop.seeded',
+        entityType: 'shop',
+        entityId: shop.id,
+        payload: {
+          shopId: shop.id,
+          name: shop.name,
+          seededAt: new Date().toISOString(),
         },
-      }),
-      prisma.automation.create({
-        data: {
-          name: 'התראה על משימות דחופות',
-          description: 'שולח התראה כאשר משימה דחופה נוצרת',
-          isActive: true,
-          trigger: { event: 'task.created' },
-          conditions: { priority: 'URGENT' },
-          actions: { 
-            createNotification: {
-              title: 'משימה דחופה חדשה',
-              message: '{{task.title}} - דורש טיפול מיידי'
-            }
-          },
-          companyId,
-          createdBy: userId,
-        },
-      }),
-      prisma.automation.create({
-        data: {
-          name: 'עדכון סטטוס ליד אוטומטי',
-          description: 'מעדכן סטטוס ליד ל-CONTACTED לאחר 24 שעות',
-          isActive: false,
-          trigger: { event: 'lead.created' },
-          conditions: { status: 'NEW', hoursElapsed: 24 },
-          actions: { 
-            updateStatus: {
-              newStatus: 'CONTACTED'
-            }
-          },
-          companyId,
-          createdBy: userId,
-        },
-      }),
-    ])
-
-    // Create demo audit logs
-    const auditLogs = await Promise.all([
-      prisma.auditLog.create({
-        data: {
-          action: 'CREATE',
-          entityType: 'Lead',
-          entityId: leads[0].id,
-          diff: { name: leads[0].name, email: leads[0].email },
-          companyId,
-          userId,
-        },
-      }),
-      prisma.auditLog.create({
-        data: {
-          action: 'UPDATE',
-          entityType: 'Project',
-          entityId: projects[0].id,
-          diff: { progress: { from: 50, to: 60 } },
-          companyId,
-          userId,
-        },
-      }),
-      prisma.auditLog.create({
-        data: {
-          action: 'CREATE',
-          entityType: 'Client',
-          entityId: clients[0].id,
-          diff: { name: clients[0].name },
-          companyId,
-          userId,
-        },
-      }),
-    ])
-
-    // Create demo events/meetings
-    const now = new Date()
-    const events = await Promise.all([
-      prisma.event.create({
-        data: {
-          title: 'פגישת One-on-One עם VP',
-          description: 'דיון על התקדמות הפרויקטים והצעות לשיפור',
-          startTime: new Date(now.getTime() + 2 * 60 * 60 * 1000), // בעוד שעתיים
-          endTime: new Date(now.getTime() + 3 * 60 * 60 * 1000), // שעה אחת
-          location: 'Google Meet',
-          attendees: ['vp@company.com', session.user.email || ''],
-          companyId,
-          createdBy: userId,
-        },
-      }),
-      prisma.event.create({
-        data: {
-          title: 'פגישת סטטוס פרויקט ABC',
-          description: 'עדכון התקדמות ודיון בנושאים פתוחים',
-          startTime: new Date(now.getTime() + 24 * 60 * 60 * 1000), // מחר
-          endTime: new Date(now.getTime() + 24 * 60 * 60 * 1000 + 30 * 60 * 1000), // 30 דקות
-          location: 'חדר ישיבות 1',
-          attendees: [clients[0].email || '', session.user.email || ''],
-          companyId,
-          createdBy: userId,
-        },
-      }),
-      prisma.event.create({
-        data: {
-          title: 'הדרכת לקוח - XYZ',
-          description: 'הדרכה למערכת החדשה',
-          startTime: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000), // בעוד 3 ימים
-          endTime: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000), // שעתיים
-          location: 'Zoom',
-          attendees: [clients[1].email || '', session.user.email || ''],
-          companyId,
-          createdBy: userId,
-        },
-      }),
-      prisma.event.create({
-        data: {
-          title: 'פגישת צוות שבועית',
-          description: 'עדכונים שבועיים וסנכרון',
-          startTime: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000), // בעוד שבוע
-          endTime: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000 + 60 * 60 * 1000), // שעה
-          location: 'משרד',
-          attendees: [session.user.email || '', 'team@company.com'],
-          companyId,
-          createdBy: userId,
-        },
-      }),
-      prisma.event.create({
-        data: {
-          title: 'הצגת הצעת מחיר - הנדסת קידום',
-          description: 'מצגת והצגת ההצעה ללקוח',
-          startTime: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000), // בעוד 5 ימים
-          endTime: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000 + 90 * 60 * 1000), // שעה וחצי
-          location: 'משרדי הלקוח',
-          attendees: [clients[2].email || '', session.user.email || ''],
-          companyId,
-          createdBy: userId,
-        },
-      }),
-    ])
+        userId,
+      },
+    })
 
     console.log('✅ Seed completed successfully!')
-    console.log(`Created: ${leads.length} leads, ${clients.length} clients, ${projects.length} projects, ${tasks.length} tasks, ${budgets.length} budgets, ${notifications.length} notifications, ${emailTemplates.length} email templates, ${automations.length} automations, ${auditLogs.length} audit logs, ${events.length} events`)
 
     return NextResponse.json({ 
       success: true,
       message: "נתוני הדמו נטענו בהצלחה!",
       stats: {
-        leads: leads.length,
-        clients: clients.length,
-        projects: projects.length,
-        tasks: tasks.length,
-        budgets: budgets.length,
+        shop: 1,
+        categories: categories.length,
+        products: allProducts.length,
+        collections: collections.length,
+        customers: customers.length,
+        orders: orders.length,
+        coupons: coupons.length,
+        discounts: discounts.length,
+        reviews: reviews.length,
+        giftCards: giftCards.length,
+        storeCredits: storeCredits.length,
+        bundles: bundles.length,
+        pages: pages.length,
+        blogPosts: blogPosts.length,
+        returns: returns.length,
+        abandonedCarts: abandonedCarts.length,
         notifications: notifications.length,
-        emailTemplates: emailTemplates.length,
-        automations: automations.length,
-        auditLogs: auditLogs.length,
-        events: events.length,
-        pipeline: 1,
       }
     })
   } catch (error) {
@@ -596,4 +1207,3 @@ export async function POST(req: NextRequest) {
     }, { status: 500 })
   }
 }
-

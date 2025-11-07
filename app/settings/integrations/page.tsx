@@ -556,7 +556,6 @@ X-API-KEY: ${apiKey}
                     onClick={() => setShowInvoice4uDocsSettings(!showInvoice4uDocsSettings)}
                     variant={showInvoice4uDocsSettings ? "outline" : "default"}
                     size="sm"
-                    className={!showInvoice4uDocsSettings ? "prodify-gradient text-white border-0" : ""}
                   >
                     {showInvoice4uDocsSettings ? "הסתר" : invoice4uConnected ? "ערוך" : "הפעל"}
                   </Button>
@@ -708,7 +707,6 @@ X-API-KEY: ${apiKey}
                     onClick={() => setShowInvoice4uClearingSettings(!showInvoice4uClearingSettings)}
                     variant={showInvoice4uClearingSettings ? "outline" : "default"}
                     size="sm"
-                    className={!showInvoice4uClearingSettings ? "prodify-gradient text-white border-0" : ""}
                   >
                     {showInvoice4uClearingSettings ? "הסתר" : invoice4uClearingConnected ? "ערוך" : "הפעל"}
                   </Button>
@@ -980,7 +978,6 @@ X-API-KEY: ${apiKey}
                     onClick={() => setShowPayplusSettings(!showPayplusSettings)}
                     variant={showPayplusSettings ? "outline" : "default"}
                     size="sm"
-                    className={!showPayplusSettings ? "prodify-gradient text-white border-0" : ""}
                   >
                     {showPayplusSettings ? "הסתר" : payplusConnected ? "ערוך" : "הפעל"}
                   </Button>

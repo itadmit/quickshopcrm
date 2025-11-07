@@ -354,7 +354,7 @@ export default function NotificationsPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {notifications.map((notification) => {
               const Icon = getNotificationIcon(notification.type)
               const colorClass = getNotificationColor(notification.type)
@@ -371,24 +371,24 @@ export default function NotificationsPage() {
                 <Card 
                   key={notification.id} 
                   onClick={() => handleNotificationClick(notification)}
-                  className={`shadow-sm hover:shadow-md transition-all cursor-pointer ${
-                    !notification.isRead ? "border-r-4 border-r-purple-600 bg-purple-50/30" : ""
+                  className={`shadow-sm hover:shadow-md transition-all cursor-pointer bg-white ${
+                    !notification.isRead ? "border-r-4 border-r-purple-600" : ""
                   } hover:bg-gray-50`}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-4">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}`}>
-                        <Icon className="w-6 h-6" />
+                  <CardContent className="py-3 px-4">
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}`}>
+                        <Icon className="w-5 h-5" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <h3 className={`font-medium ${!notification.isRead ? "text-gray-900" : "text-gray-600"}`}>
+                            <h3 className={`font-medium text-sm ${!notification.isRead ? "text-gray-900" : "text-gray-600"}`}>
                               {notification.title}
                             </h3>
-                            <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                            <p className="text-sm text-gray-600 mt-0.5">{notification.message}</p>
                             {details && (
-                              <div className="mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                              <div className="mt-1.5 p-2 bg-gray-50 rounded-lg border border-gray-200">
                                 {details}
                               </div>
                             )}
@@ -397,7 +397,7 @@ export default function NotificationsPage() {
                             <div className="w-2 h-2 bg-purple-600 rounded-full flex-shrink-0 mt-1"></div>
                           )}
                         </div>
-                        <div className="flex items-center gap-4 mt-3">
+                        <div className="flex items-center gap-4 mt-2">
                           <span className="text-xs text-gray-500">{timeAgo}</span>
                           {!notification.isRead && (
                             <Button 

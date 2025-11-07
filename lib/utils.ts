@@ -26,4 +26,63 @@ export function formatNumber(num: number): string {
   return new Intl.NumberFormat('he-IL').format(num);
 }
 
+/**
+ * מחזיר את ה-URL הבסיסי של החנות
+ * אם יש custom domain, מחזיר אותו (עם https://)
+ * אחרת מחזיר את ה-slug path
+ */
+export function getShopBaseUrl(shop: { slug: string; domain?: string | null }): string {
+  if (shop.domain) {
+    // אם יש custom domain, מחזיר אותו עם פרוטוקול
+    const domain = shop.domain.startsWith('http') ? shop.domain : `https://${shop.domain}`;
+    return domain;
+  }
+  // אחרת מחזיר את ה-slug path
+  return `/shop/${shop.slug}`;
+}
+
+/**
+ * מחזיר את ה-URL המלא של מוצר בחנות
+ */
+export function getShopProductUrl(
+  shop: { slug: string; domain?: string | null },
+  productIdOrSlug: string
+): string {
+  const baseUrl = getShopBaseUrl(shop);
+  return `${baseUrl}/products/${productIdOrSlug}`;
+}
+
+/**
+ * מחזיר את ה-URL המלא של קטגוריה בחנות
+ */
+export function getShopCategoryUrl(
+  shop: { slug: string; domain?: string | null },
+  categoryIdOrSlug: string
+): string {
+  const baseUrl = getShopBaseUrl(shop);
+  return `${baseUrl}/categories/${categoryIdOrSlug}`;
+}
+
+/**
+ * מחזיר את ה-URL המלא של אוסף בחנות
+ */
+export function getShopCollectionUrl(
+  shop: { slug: string; domain?: string | null },
+  collectionIdOrSlug: string
+): string {
+  const baseUrl = getShopBaseUrl(shop);
+  return `${baseUrl}/collections/${collectionIdOrSlug}`;
+}
+
+/**
+ * מחזיר את ה-URL המלא של דף בחנות
+ */
+export function getShopPageUrl(
+  shop: { slug: string; domain?: string | null },
+  pageIdOrSlug: string
+): string {
+  const baseUrl = getShopBaseUrl(shop);
+  return `${baseUrl}/pages/${pageIdOrSlug}`;
+}
+
 

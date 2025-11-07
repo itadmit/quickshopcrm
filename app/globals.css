@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+/* הסרת סגנון מובנה של דפדפן לשדות מספר */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
@@ -72,7 +83,13 @@ body {
 
 /* Prodify-like styling */
 .prodify-gradient {
-  background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%);
+  background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%) !important;
+}
+
+/* Switch gradient when checked */
+button[role="switch"][data-state="checked"],
+[role="switch"][data-state="checked"] {
+  background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%) !important;
 }
 
 .prodify-gradient-text {
@@ -165,5 +182,38 @@ body {
 
 .project-orange {
   @apply bg-orange-500;
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Checkbox gradient */
+.checkbox-gradient[data-state="checked"] {
+  background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%) !important;
+  background-color: transparent !important;
+}
+
+/* RTL Date/Time Input - Calendar icon on the right */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  right: 0.75rem;
+  left: auto;
+  cursor: pointer;
+}
+
+input[type="date"],
+input[type="datetime-local"] {
+  position: relative;
+  padding-right: 2.5rem;
+  padding-left: 0.75rem;
+  text-align: right;
 }
 

@@ -3,6 +3,8 @@ import { Noto_Sans_Hebrew, Pacifico } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/components/providers/AuthProvider'
+import { ShopProvider } from '@/components/providers/ShopProvider'
+import { QueryProvider } from '@/components/providers/QueryProvider'
 
 const notoSansHebrew = Noto_Sans_Hebrew({
   subsets: ['hebrew'],
@@ -19,8 +21,13 @@ const pacifico = Pacifico({
 })
 
 export const metadata: Metadata = {
-  title: 'QuickCRM - מערכת ניהול לקוחות',
-  description: 'מערכת CRM מתקדמת לניהול לידים, לקוחות, פרויקטים ומשימות',
+  title: 'Quick Shop - מערכת ניהול חנויות אונליין',
+  description: 'מערכת מתקדמת ליצירה וניהול חנויות אונליין',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 }
 
 export default function RootLayout({
@@ -31,10 +38,14 @@ export default function RootLayout({
   return (
     <html lang="he" dir="rtl">
       <body className={`${notoSansHebrew.variable} ${pacifico.variable}`}>
-        <AuthProvider>
-          {children}
-          <Toaster />
-        </AuthProvider>
+        <QueryProvider>
+          <AuthProvider>
+            <ShopProvider>
+              {children}
+              <Toaster />
+            </ShopProvider>
+          </AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   )
