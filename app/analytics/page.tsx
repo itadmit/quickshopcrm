@@ -46,7 +46,7 @@ interface Analytics {
 }
 
 export default function AnalyticsPage() {
-  const { selectedShop } = useShop()
+  const { selectedShop, loading: shopLoading } = useShop()
   const [loading, setLoading] = useState(true)
   const [timeRange, setTimeRange] = useState("month")
   const [analytics, setAnalytics] = useState<Analytics | null>(null)
@@ -100,6 +100,19 @@ export default function AnalyticsPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // הצגת מסך טעינה בזמן שהנתונים נטענים מהשרת
+  if (shopLoading) {
+    return (
+      <AppLayout title="אנליטיקה">
+        <div className="text-center py-12">
+          <TrendingUp className="w-16 h-16 mx-auto text-gray-400 mb-4 animate-pulse" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">טוען נתונים...</h3>
+          <p className="text-gray-600">אנא המתן</p>
+        </div>
+      </AppLayout>
+    )
   }
 
   if (!selectedShop) {

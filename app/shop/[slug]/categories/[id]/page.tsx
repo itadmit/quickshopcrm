@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -11,6 +11,7 @@ import {
   Grid3x3,
   List,
   X,
+  Palette,
 } from "lucide-react"
 import Link from "next/link"
 import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton"
@@ -58,6 +59,8 @@ interface Product {
 
 export default function CategoryPage() {
   const params = useParams()
+  const searchParams = useSearchParams()
+  const router = useRouter()
   const slug = params.slug as string
   const categoryId = params.id as string
 
@@ -68,6 +71,15 @@ export default function CategoryPage() {
   const [shop, setShop] = useState<any>(null)
   const [showFilters, setShowFilters] = useState(false)
   const [viewMode, setViewMode] = useState<"grid" | "list" | "compact-grid" | "large-grid">("grid")
+  const [isAdmin, setIsAdmin] = useState(false)
+
+  // קריאת preview_layout מ-query params לעדכון בזמן אמת
+  useEffect(() => {
+    const previewLayout = searchParams.get("preview_layout") as "grid" | "list" | "compact-grid" | "large-grid" | null
+    if (previewLayout && ["grid", "list", "compact-grid", "large-grid"].includes(previewLayout)) {
+      setViewMode(previewLayout)
+    }
+  }, [searchParams])
   const [filters, setFilters] = useState({
     availability: "",
     sortBy: "createdAt",

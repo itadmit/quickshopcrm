@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -47,6 +47,8 @@ import {
   trackRemoveFromWishlist,
 } from "@/lib/tracking-events"
 import { ProductPageDesigner } from "@/components/storefront/ProductPageDesigner"
+import { ProductPageElement, ProductPageElementType } from "@/components/storefront/ProductPageLayoutDesigner"
+import { EditableProductElement } from "@/components/storefront/EditableProductElement"
 import { cn } from "@/lib/utils"
 
 type GalleryLayout = "standard" | "right-side" | "left-side" | "masonry" | "fixed"
@@ -80,6 +82,7 @@ interface Product {
 export default function ProductPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const slug = params.slug as string
   const productId = params.id as string
@@ -111,13 +114,35 @@ export default function ProductPage() {
   const [isDuplicating, setIsDuplicating] = useState(false)
   const [showDesigner, setShowDesigner] = useState(false)
   const [galleryLayout, setGalleryLayout] = useState<GalleryLayout>("standard")
+  const [productPageLayout, setProductPageLayout] = useState<{ elements: ProductPageElement[] } | null>(null)
+  const [isEditingLayout, setIsEditingLayout] = useState(false)
   const { trackEvent } = useTracking()
+
+  // בדיקה אם אנחנו במצב עריכה דרך query params
+  useEffect(() => {
+    const editMode = searchParams.get("edit_layout") === "true"
+    setIsEditingLayout(editMode)
+  }, [searchParams])
+
+  // קריאת preview_layout מ-query params לעדכון בזמן אמת - בעדיפות עליונה
+  useEffect(() => {
+    const previewLayout = searchParams.get("preview_layout") as GalleryLayout | null
+    if (previewLayout && ["standard", "right-side", "left-side", "masonry", "fixed"].includes(previewLayout)) {
+      setGalleryLayout(previewLayout)
+    }
+  }, [searchParams])
 
   const handleOpenCart = useCallback((callback: () => void) => {
     setCartOpenCallback(() => callback)
   }, [])
 
   useEffect(() => {
+    // עדכון מידי של preview_layout אם קיים - לפני כל הטעינות
+    const previewLayout = searchParams.get("preview_layout") as GalleryLayout | null
+    if (previewLayout && ["standard", "right-side", "left-side", "masonry", "fixed"].includes(previewLayout)) {
+      setGalleryLayout(previewLayout)
+    }
+
     // טעינה מקבילה של כל הנתונים
     const loadData = async () => {
       const customerData = localStorage.getItem(`storefront_customer_${slug}`)
@@ -131,22 +156,91 @@ export default function ProductPage() {
         }
       }
 
+      // בדיקה אם יש preview_layout - אם כן, לא נטען את הפריסה מהשרת
+      const shouldFetchLayout = !previewLayout || !["standard", "right-side", "left-side", "masonry", "fixed"].includes(previewLayout)
+
       // טעינה מקבילה של כל הנתונים
       await Promise.all([
         fetchShopInfo(),
         fetchProduct(),
         fetchCartCount(),
         fetchShopSettings(),
-        fetchGalleryLayout(),
+        shouldFetchLayout ? fetchGalleryLayout() : Promise.resolve(),
         parsedCustomer ? checkWishlist(parsedCustomer.id) : Promise.resolve(),
         fetchReviews(),
         fetchRelatedProducts(),
         checkAdminStatus(),
+        fetchProductPageLayout(),
       ])
     }
 
     loadData()
-  }, [slug, productId])
+  }, [slug, productId, searchParams])
+
+  const fetchProductPageLayout = async () => {
+    // בדיקה אם אנחנו במצב preview - אם כן, קרא מ-localStorage
+    const isPreviewMode = searchParams.get("preview_mode") === "true"
+    
+    if (isPreviewMode) {
+      const storageKey = `productPageLayout_${slug}`
+      const storedData = localStorage.getItem(storageKey)
+      if (storedData) {
+        try {
+          const parsed = JSON.parse(storedData)
+          if (parsed.elements) {
+            setProductPageLayout({ elements: parsed.elements })
+            return
+          }
+        } catch (error) {
+          console.error("Error parsing stored layout:", error)
+        }
+      }
+    }
+    
+    // אם לא במצב preview או אין נתונים ב-localStorage, קרא מהשרת
+    try {
+      const response = await fetch(`/api/storefront/${slug}/product-page-layout`)
+      if (response.ok) {
+        const data = await response.json()
+        setProductPageLayout(data.layout)
+      }
+    } catch (error) {
+      console.error("Error fetching product page layout:", error)
+    }
+  }
+
+  // האזנה לעדכון layout מה-localStorage (כשעושים שינויים ב-customizer)
+  useEffect(() => {
+    const isPreviewMode = searchParams.get("preview_mode") === "true"
+    if (!isPreviewMode) return
+
+    const storageKey = `productPageLayout_${slug}`
+    
+    const checkForUpdates = () => {
+      const storedData = localStorage.getItem(storageKey)
+      if (storedData) {
+        try {
+          const parsed = JSON.parse(storedData)
+          if (parsed.elements && parsed.timestamp) {
+            // בדיקה אם יש עדכון חדש
+            const currentTimestamp = productPageLayout ? (productPageLayout as any).timestamp : 0
+            if (parsed.timestamp > currentTimestamp) {
+              setProductPageLayout({ elements: parsed.elements })
+            }
+          }
+        } catch (error) {
+          console.error("Error parsing stored layout:", error)
+        }
+      }
+    }
+
+    // בדיקה כל 200ms לעדכונים
+    const interval = setInterval(checkForUpdates, 200)
+    
+    return () => {
+      clearInterval(interval)
+    }
+  }, [slug, searchParams, productPageLayout])
 
   // עדכון meta tags ל-SEO + PageView event
   useEffect(() => {
@@ -1015,6 +1109,460 @@ export default function ProductPage() {
     ? product.variants.find((v) => v.id === selectedVariant)?.price || product.price
     : product.price
 
+  // שמות האלמנטים
+  const elementLabels: Record<ProductPageElementType, string> = {
+    "product-name": "שם מוצר",
+    "product-price": "מחיר",
+    "product-description": "תיאור מוצר",
+    "product-gallery": "גלריה",
+    "product-variants": "וריאציות",
+    "product-quantity": "כמות",
+    "product-buttons": "כפתורים",
+    "product-reviews": "ביקורות",
+    "product-related": "מוצרים קשורים",
+    "custom-text": "טקסט מותאם",
+    "custom-accordion": "אקורדיון",
+    "custom-html": "HTML מותאם",
+  }
+
+  // פונקציות לניהול layout
+  const moveElement = (elementId: string, direction: "up" | "down") => {
+    if (!productPageLayout) return
+    
+    const newElements = [...productPageLayout.elements]
+    const index = newElements.findIndex((el) => el.id === elementId)
+    if (index === -1) return
+
+    const newIndex = direction === "up" ? index - 1 : index + 1
+    if (newIndex < 0 || newIndex >= newElements.length) return
+
+    // החלפת מיקומים
+    const temp = newElements[index].position
+    newElements[index].position = newElements[newIndex].position
+    newElements[newIndex].position = temp
+
+    // מיון מחדש ושמירה
+    const sortedElements = newElements.sort((a, b) => a.position - b.position)
+    saveProductPageLayout({ elements: sortedElements })
+  }
+
+  const toggleElementVisibility = (elementId: string) => {
+    if (!productPageLayout) return
+    
+    const newElements = productPageLayout.elements.map((el) =>
+      el.id === elementId ? { ...el, visible: !el.visible } : el
+    )
+    saveProductPageLayout({ elements: newElements })
+  }
+
+  const saveProductPageLayout = async (layout: { elements: ProductPageElement[] }) => {
+    try {
+      const response = await fetch(`/api/storefront/${slug}/product-page-layout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ elements: layout.elements }),
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setProductPageLayout(data.layout)
+      }
+    } catch (error) {
+      console.error("Error saving layout:", error)
+    }
+  }
+
+  // פונקציה עוזרת לחילוץ style config - רק אם יש הגדרות מותאמות
+  const getElementStyle = (element: ProductPageElement): React.CSSProperties => {
+    const style = element.config?.style || {}
+    // אם אין הגדרות מותאמות, נחזיר אובייקט ריק כדי לא לדרוס את ה-classNames
+    if (!style || Object.keys(style).length === 0) {
+      return {}
+    }
+    return {
+      fontFamily: style.fontFamily,
+      fontSize: style.fontSize ? `${style.fontSize}px` : undefined,
+      fontWeight: style.fontWeight,
+      lineHeight: style.lineHeight,
+      textAlign: style.textAlign,
+      marginTop: style.marginTop !== undefined ? `${style.marginTop}px` : undefined,
+      marginBottom: style.marginBottom !== undefined ? `${style.marginBottom}px` : undefined,
+      paddingTop: style.paddingTop !== undefined ? `${style.paddingTop}px` : undefined,
+      paddingBottom: style.paddingBottom !== undefined ? `${style.paddingBottom}px` : undefined,
+      color: style.color,
+    }
+  }
+
+  // פונקציות רינדור לכל אלמנט
+  const renderElement = (element: ProductPageElement, index?: number, totalElements?: number) => {
+    if (!element.visible && !isEditingLayout) return null
+
+    // מציאת המיקום הנוכחי של האלמנט
+    const currentIndex = productPageLayout?.elements.findIndex(el => el.id === element.id) ?? index ?? 0
+    const sortedElements = productPageLayout?.elements.sort((a, b) => a.position - b.position) || []
+    const canMoveUp = currentIndex > 0
+    const canMoveDown = currentIndex < sortedElements.length - 1
+
+    const elementStyle = getElementStyle(element)
+
+    const elementContent = (() => {
+      if (!element.visible && isEditingLayout) {
+        // במצב עריכה, גם אלמנטים מוסתרים מוצגים (עם opacity)
+        return <div className="p-4 text-gray-400 text-center">אלמנט מוסתר</div>
+      }
+
+      switch (element.type) {
+      case "product-gallery":
+        return (
+          <div key={element.id} className={cn(
+            galleryLayout === "masonry" || galleryLayout === "fixed" 
+              ? "order-1 lg:order-2" 
+              : galleryLayout === "left-side"
+              ? "order-1 lg:order-1"
+              : galleryLayout === "right-side"
+              ? "order-1 lg:order-2"
+              : "order-1"
+          )} style={elementStyle}>
+            {renderGallery()}
+          </div>
+        )
+
+      case "product-name":
+        return (
+          <div key={element.id} style={elementStyle}>
+            <h1 className="text-4xl font-bold text-gray-900 mb-4" style={elementStyle}>{product.seoTitle || product.name}</h1>
+          </div>
+        )
+
+      case "product-price":
+        const priceStyle = {
+          ...elementStyle,
+          color: element.config?.style?.priceColor || elementStyle.color || undefined,
+        }
+        const comparePriceStyle = {
+          fontSize: element.config?.style?.comparePriceFontSize 
+            ? `${element.config.style.comparePriceFontSize}px` 
+            : "1rem",
+          color: element.config?.style?.comparePriceColor || undefined,
+        }
+        return (
+          <div key={element.id} className="flex items-baseline gap-4 mb-6" style={elementStyle}>
+            {product.comparePrice && (
+              <span className="line-through text-gray-500" style={comparePriceStyle}>
+                ₪{product.comparePrice.toFixed(2)}
+              </span>
+            )}
+            <span className="text-3xl font-bold" style={priceStyle}>
+              ₪{currentPrice.toFixed(2)}
+            </span>
+          </div>
+        )
+
+      case "product-description":
+        return product.description ? (
+          <div key={element.id} className="mb-6" style={elementStyle}>
+            {element.config?.title && (
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{element.config.title}</h3>
+            )}
+            <p className="text-gray-700 whitespace-pre-line" style={elementStyle}>{product.description}</p>
+          </div>
+        ) : null
+
+      case "product-variants":
+        return product.options && product.options.length > 0 ? (
+          <div key={element.id} className="space-y-4" style={elementStyle}>
+            {product.options.map((option) => {
+              const isOptionSelected = selectedOptionValues[option.id] !== undefined
+              return (
+                <div key={option.id}>
+                  <label className="block text-sm font-semibold text-gray-900 mb-3" style={elementStyle}>
+                    {option.name}
+                  </label>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {(Array.isArray(option.values) ? option.values : []).map((value: any) => {
+                      const valueId = typeof value === 'object' ? value.id : value
+                      const valueLabel = typeof value === 'object' ? value.label : value
+                      const isSelected = selectedOptionValues[option.id] === valueId
+                      return (
+                        <button
+                          key={valueId}
+                          onClick={() => setSelectedOptionValues({ ...selectedOptionValues, [option.id]: valueId })}
+                          className={`px-4 py-2 border-2 rounded-sm text-sm font-medium transition-all ${
+                            isSelected
+                              ? "text-white"
+                              : "border-gray-300 text-gray-700 hover:border-gray-400"
+                          }`}
+                          style={isSelected ? {
+                            borderColor: theme.primaryColor,
+                            backgroundColor: theme.primaryColor,
+                          } : {}}
+                        >
+                          {valueLabel}
+                        </button>
+                      )
+                    })}
+                    {isOptionSelected && (
+                      <button
+                        onClick={() => {
+                          const updated = { ...selectedOptionValues }
+                          delete updated[option.id]
+                          setSelectedOptionValues(updated)
+                        }}
+                        className="text-xs text-gray-500 hover:text-gray-700 underline"
+                      >
+                        נקה
+                      </button>
+                    )}
+                  </div>
+                  {!isOptionSelected && (
+                    <p className="text-red-600 text-sm mt-2 font-medium flex items-center gap-1.5">
+                      <AlertCircle className="w-4 h-4" />
+                      יש לבחור {option.name}
+                    </p>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+        ) : null
+
+      case "product-quantity":
+        return (
+          <div key={element.id} style={elementStyle}>
+            <label className="block text-sm font-semibold text-gray-900 mb-3" style={elementStyle}>
+              כמות
+            </label>
+            <div className="flex items-center gap-2 w-fit">
+              {(() => {
+                let availableQty = product.inventoryQty
+                if (selectedVariant && product.variants) {
+                  const variant = product.variants.find((v) => v.id === selectedVariant)
+                  if (variant) {
+                    availableQty = variant.inventoryQty
+                  }
+                }
+                const maxQty = product.availability === "OUT_OF_STOCK" ? 0 : availableQty
+                
+                return (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                      className="rounded-sm"
+                      disabled={quantity <= 1}
+                    >
+                      <Minus className="w-4 h-4" />
+                    </Button>
+                    <Input
+                      type="number"
+                      value={quantity}
+                      onChange={(e) => {
+                        const newQty = parseInt(e.target.value) || 1
+                        setQuantity(Math.max(1, Math.min(maxQty || 1, newQty)))
+                      }}
+                      className="w-20 text-center rounded-sm"
+                      min="1"
+                      max={maxQty || 1}
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setQuantity(Math.min(maxQty || 1, quantity + 1))}
+                      className="rounded-sm"
+                      disabled={quantity >= (maxQty || 1)}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                    {maxQty > 0 && (
+                      <span className="text-sm text-gray-500">
+                        (זמין: {maxQty})
+                      </span>
+                    )}
+                  </>
+                )
+              })()}
+            </div>
+          </div>
+        )
+
+      case "product-buttons":
+        return (
+          <div key={element.id} className="space-y-3">
+            <button
+              onClick={() => handleAddToCart(true)}
+              disabled={product.availability === "OUT_OF_STOCK"}
+              className="w-full text-white rounded-sm h-11 px-8 font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              style={{ backgroundColor: theme.primaryColor || "#000000" }}
+            >
+              <ShoppingCart className="w-5 h-5 ml-2" />
+              הוסף לעגלה
+            </button>
+            <Button
+              onClick={() => setShowQuickBuy(true)}
+              disabled={product.availability === "OUT_OF_STOCK"}
+              variant="outline"
+              className="w-full border-2 rounded-sm hover:bg-gray-50"
+              style={{
+                borderColor: theme.primaryColor,
+                color: theme.primaryColor,
+              }}
+              size="lg"
+            >
+              קנה עכשיו
+            </Button>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                size="lg"
+                onClick={handleToggleWishlist}
+                className={`flex-1 rounded-sm ${
+                  isInWishlist 
+                    ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100" 
+                    : ""
+                }`}
+              >
+                <Heart className={`w-5 h-5 ml-2 ${isInWishlist ? "fill-red-600" : ""}`} />
+                {isInWishlist ? "הוסר מרשימת משאלות" : "הוסף לרשימת משאלות"}
+              </Button>
+            </div>
+          </div>
+        )
+
+      case "product-reviews":
+        return totalReviews > 0 ? (
+          <div key={element.id} className="mb-6 p-4 bg-gray-50 rounded-lg" style={elementStyle}>
+            <div className="flex items-center gap-4">
+              <div className="text-center">
+                <div className="text-3xl font-bold text-gray-900" style={elementStyle}>{averageRating.toFixed(1)}</div>
+                {renderStars(Math.round(averageRating))}
+                <div className="text-sm text-gray-600 mt-1" style={elementStyle}>{totalReviews} ביקורות</div>
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setShowReviews(!showReviews)}
+              >
+                {showReviews ? "הסתר ביקורות" : "הצג ביקורות"}
+              </Button>
+            </div>
+          </div>
+        ) : null
+
+      case "product-related":
+        return relatedProducts.length > 0 ? (
+          <div key={element.id} className="mt-16 border-t border-gray-200 pt-12" style={elementStyle}>
+            <h2 className="text-2xl font-bold text-gray-900 mb-8" style={elementStyle}>מוצרים קשורים</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {relatedProducts.map((relatedProduct) => (
+                <ProductCard
+                  key={relatedProduct.id}
+                  product={relatedProduct}
+                  slug={slug}
+                />
+              ))}
+            </div>
+          </div>
+        ) : null
+
+      case "custom-text":
+        return element.config?.content ? (
+          <div key={element.id} className="mb-6" style={elementStyle}>
+            {element.config.title && (
+              <h3 className="text-lg font-semibold text-gray-900 mb-2" style={elementStyle}>{element.config.title}</h3>
+            )}
+            <p className="text-gray-700 whitespace-pre-line" style={elementStyle}>{element.config.content}</p>
+          </div>
+        ) : null
+
+      case "custom-accordion":
+        return element.config?.content ? (
+          <div key={element.id} className="mb-6" style={elementStyle}>
+            <details className="group">
+              <summary className="cursor-pointer list-none">
+                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
+                  <span className="font-semibold text-gray-900" style={elementStyle}>{element.config.title || "פרטים נוספים"}</span>
+                  <ChevronRight className="w-5 h-5 text-gray-500 group-open:rotate-90 transition-transform" />
+                </div>
+              </summary>
+              <div className="p-4 text-gray-700 whitespace-pre-line" style={elementStyle}>
+                {element.config.content}
+              </div>
+            </details>
+          </div>
+        ) : null
+
+      case "custom-html":
+        return element.config?.html ? (
+          <div key={element.id} className="mb-6" style={elementStyle}>
+            {element.config.title && (
+              <h3 className="text-lg font-semibold text-gray-900 mb-2" style={elementStyle}>{element.config.title}</h3>
+            )}
+            <div dangerouslySetInnerHTML={{ __html: element.config.html }} />
+          </div>
+        ) : null
+
+      default:
+        return null
+      }
+    })()
+
+    // עטיפה ב-EditableProductElement במצב עריכה
+    if (isEditingLayout) {
+      return (
+        <EditableProductElement
+          key={element.id}
+          elementId={element.id}
+          elementName={elementLabels[element.type]}
+          isEditing={isEditingLayout}
+          onMoveUp={() => moveElement(element.id, "up")}
+          onMoveDown={() => moveElement(element.id, "down")}
+          onToggleVisibility={() => toggleElementVisibility(element.id)}
+          onOpenSettings={() => {
+            // שליחת הודעה לדף הקסטומייזר אם אנחנו ב-iframe
+            if (window.parent !== window) {
+              window.parent.postMessage({
+                type: "openElementSettings",
+                elementId: element.id
+              }, window.location.origin)
+            } else {
+              // פתיחת דף ההתאמה האישית עם פרמטר של האלמנט
+              router.push(`/customize?page=product&id=${productId}&element=${element.id}`)
+            }
+          }}
+          isVisible={element.visible}
+          canMoveUp={canMoveUp}
+          canMoveDown={canMoveDown}
+        >
+          {elementContent}
+        </EditableProductElement>
+      )
+    }
+
+    return elementContent
+  }
+
+  // קבלת layout או layout ברירת מחדל
+  const layoutElements = productPageLayout?.elements || [
+    { id: "gallery", type: "product-gallery" as ProductPageElementType, visible: true, position: 0 },
+    { id: "name", type: "product-name" as ProductPageElementType, visible: true, position: 1 },
+    { id: "price", type: "product-price" as ProductPageElementType, visible: true, position: 2 },
+    { id: "description", type: "product-description" as ProductPageElementType, visible: true, position: 3 },
+    { id: "variants", type: "product-variants" as ProductPageElementType, visible: true, position: 4 },
+    { id: "quantity", type: "product-quantity" as ProductPageElementType, visible: true, position: 5 },
+    { id: "buttons", type: "product-buttons" as ProductPageElementType, visible: true, position: 6 },
+    { id: "reviews", type: "product-reviews" as ProductPageElementType, visible: true, position: 7 },
+    { id: "related", type: "product-related" as ProductPageElementType, visible: true, position: 8 },
+  ]
+
+  // הפרדת גלריה ומוצרים קשורים משאר האלמנטים
+  // סינון אלמנטים מוסתרים - רק אם לא במצב עריכה
+  const visibleElements = isEditingLayout 
+    ? layoutElements 
+    : layoutElements.filter(el => el.visible !== false)
+  
+  const galleryElement = visibleElements.find(el => el.type === "product-gallery")
+  const relatedElement = visibleElements.find(el => el.type === "product-related")
+  const otherElements = visibleElements.filter(el => el.type !== "product-gallery" && el.type !== "product-related")
+
   return (
     <div className="min-h-screen bg-white" dir="rtl" style={getThemeStyles(theme)}>
       {/* Header */}
@@ -1088,9 +1636,12 @@ export default function ProductPage() {
               </DropdownMenuContent>
             </DropdownMenu>
           
-          {/* כפתור עיצוב */}
+          {/* כפתור עיצוב - פתיחת Customizer */}
           <Button
-            onClick={() => setShowDesigner(true)}
+            onClick={() => {
+              // פתיחת Customizer עם פרמטרים של דף המוצר הנוכחי
+              router.push(`/customize?page=product&id=${productId}`)
+            }}
             className="fixed right-6 bottom-24 z-50 rounded-full w-14 h-14 p-0 shadow-lg hover:shadow-xl transition-all flex items-center justify-center aspect-square"
             style={{ 
               backgroundColor: theme.primaryColor || "#000000",
@@ -1109,236 +1660,28 @@ export default function ProductPage() {
             ? "grid-cols-1 lg:grid-cols-2"
             : "grid-cols-1 lg:grid-cols-2"
         )}>
-          {/* Images Gallery */}
-          <div className={cn(
-            galleryLayout === "masonry" || galleryLayout === "fixed" 
-              ? "order-1 lg:order-2" 
-              : "order-1"
-          )}>
-            {renderGallery()}
-          </div>
+          {/* רינדור גלריה */}
+          {galleryElement && renderElement(galleryElement)}
 
-          {/* Product Info */}
+          {/* Product Info - רינדור שאר האלמנטים */}
           <div className={cn(
             "space-y-6",
             galleryLayout === "masonry" || galleryLayout === "fixed" 
               ? "order-2 lg:order-1 lg:sticky lg:top-4 lg:h-fit" 
+              : galleryLayout === "left-side"
+              ? "order-2 lg:order-2"
+              : galleryLayout === "right-side"
+              ? "order-2 lg:order-1"
               : "order-2"
           )}>
-            <div>
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">{product.seoTitle || product.name}</h1>
-              
-              <div className="flex items-center gap-4 mb-6">
-                <span className="text-3xl font-bold text-gray-900">
-                  ₪{currentPrice.toFixed(2)}
-                </span>
-                {product.comparePrice && (
-                  <span className="text-xl text-gray-500 line-through">
-                    ₪{product.comparePrice.toFixed(2)}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {product.description && (
-              <div className="mb-6">
-                <p className="text-gray-700 whitespace-pre-line">{product.description}</p>
-              </div>
-            )}
-
-            {/* Variants */}
-            {product.options && product.options.length > 0 && (
-              <div className="space-y-4">
-                {product.options.map((option) => {
-                  const isOptionSelected = selectedOptionValues[option.id] !== undefined
-                  return (
-                    <div key={option.id}>
-                      <label className="block text-sm font-semibold text-gray-900 mb-3">
-                        {option.name}
-                      </label>
-                      <div className="flex flex-wrap items-center gap-2">
-                        {(Array.isArray(option.values) ? option.values : []).map((value: any) => {
-                          const valueId = typeof value === 'object' ? value.id : value
-                          const valueLabel = typeof value === 'object' ? value.label : value
-                          const isSelected = selectedOptionValues[option.id] === valueId
-                          return (
-                            <button
-                              key={valueId}
-                              onClick={() => setSelectedOptionValues({ ...selectedOptionValues, [option.id]: valueId })}
-                              className={`px-4 py-2 border-2 rounded-sm text-sm font-medium transition-all ${
-                                isSelected
-                                  ? "text-white"
-                                  : "border-gray-300 text-gray-700 hover:border-gray-400"
-                              }`}
-                              style={isSelected ? {
-                                borderColor: theme.primaryColor,
-                                backgroundColor: theme.primaryColor,
-                              } : {}}
-                            >
-                              {valueLabel}
-                            </button>
-                          )
-                        })}
-                        {isOptionSelected && (
-                          <button
-                            onClick={() => {
-                              const updated = { ...selectedOptionValues }
-                              delete updated[option.id]
-                              setSelectedOptionValues(updated)
-                            }}
-                            className="text-xs text-gray-500 hover:text-gray-700 underline"
-                          >
-                            נקה
-                          </button>
-                        )}
-                      </div>
-                      {!isOptionSelected && (
-                        <p className="text-red-600 text-sm mt-2 font-medium flex items-center gap-1.5">
-                          <AlertCircle className="w-4 h-4" />
-                          יש לבחור {option.name}
-                        </p>
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* Quantity */}
-            <div>
-              <label className="block text-sm font-semibold text-gray-900 mb-3">
-                כמות
-              </label>
-              <div className="flex items-center gap-2 w-fit">
-                {(() => {
-                  // חישוב המלאי הזמין
-                  let availableQty = product.inventoryQty
-                  if (selectedVariant && product.variants) {
-                    const variant = product.variants.find((v) => v.id === selectedVariant)
-                    if (variant) {
-                      availableQty = variant.inventoryQty
-                    }
-                  }
-                  const maxQty = product.availability === "OUT_OF_STOCK" ? 0 : availableQty
-                  
-                  return (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="rounded-sm"
-                        disabled={quantity <= 1}
-                      >
-                        <Minus className="w-4 h-4" />
-                      </Button>
-                      <Input
-                        type="number"
-                        value={quantity}
-                        onChange={(e) => {
-                          const newQty = parseInt(e.target.value) || 1
-                          setQuantity(Math.max(1, Math.min(maxQty || 1, newQty)))
-                        }}
-                        className="w-20 text-center rounded-sm"
-                        min="1"
-                        max={maxQty || 1}
-                      />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setQuantity(Math.min(maxQty || 1, quantity + 1))}
-                        className="rounded-sm"
-                        disabled={quantity >= (maxQty || 1)}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                      {maxQty > 0 && (
-                        <span className="text-sm text-gray-500">
-                          (זמין: {maxQty})
-                        </span>
-                      )}
-                    </>
-                  )
-                })()}
-              </div>
-            </div>
-
-            {/* Add to Cart & Buy Now */}
-            <div className="space-y-3">
-              <button
-                onClick={() => handleAddToCart(true)}
-                disabled={product.availability === "OUT_OF_STOCK"}
-                className="w-full text-white rounded-sm h-11 px-8 font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                style={{ backgroundColor: theme.primaryColor || "#000000" }}
-              >
-                <ShoppingCart className="w-5 h-5 ml-2" />
-                הוסף לעגלה
-              </button>
-              <Button
-                onClick={() => setShowQuickBuy(true)}
-                disabled={product.availability === "OUT_OF_STOCK"}
-                variant="outline"
-                className="w-full border-2 rounded-sm hover:bg-gray-50"
-                style={{
-                  borderColor: theme.primaryColor,
-                  color: theme.primaryColor,
-                }}
-                size="lg"
-              >
-                קנה עכשיו
-              </Button>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  size="lg"
-                  onClick={handleToggleWishlist}
-                  className={`flex-1 rounded-sm ${
-                    isInWishlist 
-                      ? "bg-red-50 border-red-200 text-red-600 hover:bg-red-100" 
-                      : ""
-                  }`}
-                >
-                  <Heart className={`w-5 h-5 ml-2 ${isInWishlist ? "fill-red-600" : ""}`} />
-                  {isInWishlist ? "הוסר מרשימת משאלות" : "הוסף לרשימת משאלות"}
-                </Button>
-              </div>
-            </div>
-
-            {/* Availability */}
-            {product.availability === "OUT_OF_STOCK" && (
-              <Badge className="bg-red-100 text-red-800 mb-4">
-                אזל מהמלאי
-              </Badge>
-            )}
-            {product.availability === "PRE_ORDER" && (
-              <Badge className="bg-blue-100 text-blue-800 mb-4">
-                הזמנה מראש
-              </Badge>
-            )}
-
-            {/* Rating Summary */}
-            {totalReviews > 0 && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <div className="flex items-center gap-4">
-                  <div className="text-center">
-                    <div className="text-3xl font-bold text-gray-900">{averageRating.toFixed(1)}</div>
-                    {renderStars(Math.round(averageRating))}
-                    <div className="text-sm text-gray-600 mt-1">{totalReviews} ביקורות</div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowReviews(!showReviews)}
-                  >
-                    {showReviews ? "הסתר ביקורות" : "הצג ביקורות"}
-                  </Button>
-                </div>
-              </div>
-            )}
+            {otherElements
+              .sort((a, b) => a.position - b.position)
+              .map((element) => renderElement(element))}
           </div>
         </div>
 
-        {/* Reviews Section */}
-        {showReviews && (
+        {/* Reviews Section - רק אם לא כלול ב-layout */}
+        {showReviews && !layoutElements.find(el => el.type === "product-reviews") && (
           <div className="mt-12">
             <h2 className="text-2xl font-bold text-gray-900 mb-6">ביקורות ({totalReviews})</h2>
             {reviews.length === 0 ? (
@@ -1394,21 +1737,8 @@ export default function ProductPage() {
           </div>
         )}
 
-        {/* Related Products */}
-        {relatedProducts.length > 0 && (
-          <section className="mt-16 border-t border-gray-200 pt-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-8">מוצרים קשורים</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.map((relatedProduct) => (
-                <ProductCard
-                  key={relatedProduct.id}
-                  product={relatedProduct}
-                  slug={slug}
-                />
-              ))}
-            </div>
-          </section>
-        )}
+        {/* רינדור מוצרים קשורים מחוץ ל-grid */}
+        {relatedElement && renderElement(relatedElement)}
       </main>
 
       {/* Quick Buy Modal */}

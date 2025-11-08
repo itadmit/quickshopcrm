@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { useShop } from "@/components/providers/ShopProvider"
 import { AppLayout } from "@/components/AppLayout"
@@ -11,6 +11,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
 import { ProductsSkeleton } from "@/components/skeletons/ProductsSkeleton"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   Package,
   Plus,
@@ -28,6 +36,11 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  FileText,
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  AlertCircle,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -85,6 +98,18 @@ export default function ProductsPage() {
   const [sortBy, setSortBy] = useState<string>("createdAt")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [viewMode, setViewMode] = useState<"table" | "grid">("table")
+
+  // Import dialog state
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [importing, setImporting] = useState(false)
+  const [importResult, setImportResult] = useState<{
+    imported: number
+    errors: number
+    errorDetails: string[]
+    products: Array<{ id: string; name: string }>
+  } | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (selectedShop) {
@@ -160,13 +185,31 @@ export default function ProductsPage() {
 
   const handleDuplicate = async (product: Product) => {
     try {
-      // TODO: Implement duplicate logic
-      toast({
-        title: "בפיתוח",
-        description: "תכונת שכפול תהיה זמינה בקרוב",
+      const response = await fetch(`/api/products/${product.id}/duplicate`, {
+        method: "POST",
       })
-    } catch (error) {
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "שגיאה בשכפול המוצר")
+      }
+
+      const duplicatedProduct = await response.json()
+
+      toast({
+        title: "המוצר שוכפל בהצלחה",
+        description: `המוצר "${duplicatedProduct.name}" נוצר בהצלחה`,
+      })
+
+      // רענון רשימת המוצרים
+      fetchProducts()
+    } catch (error: any) {
       console.error("Error duplicating product:", error)
+      toast({
+        title: "שגיאה בשכפול המוצר",
+        description: error.message || "אירעה שגיאה בשכפול המוצר",
+        variant: "destructive",
+      })
     }
   }
 
@@ -228,6 +271,89 @@ export default function ProductsPage() {
     return <Badge className={variant.className}>{variant.label}</Badge>
   }
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      // בדיקה שהקובץ הוא CSV
+      if (!file.name.endsWith('.csv') && !file.name.endsWith('.CSV')) {
+        toast({
+          title: "שגיאה",
+          description: "יש לבחור קובץ CSV בלבד",
+          variant: "destructive",
+        })
+        return
+      }
+      setSelectedFile(file)
+      setImportResult(null)
+    }
+  }
+
+  const handleImport = async () => {
+    if (!selectedFile || !selectedShop) {
+      toast({
+        title: "שגיאה",
+        description: "יש לבחור קובץ וחנות",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setImporting(true)
+    setImportResult(null)
+
+    try {
+      const formData = new FormData()
+      formData.append("file", selectedFile)
+      formData.append("shopId", selectedShop.id)
+
+      const response = await fetch("/api/products/import", {
+        method: "POST",
+        body: formData,
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.error || "שגיאה בייבוא מוצרים")
+      }
+
+      setImportResult(data)
+
+      if (data.imported > 0) {
+        toast({
+          title: "ייבוא הושלם",
+          description: `יובאו ${data.imported} מוצרים בהצלחה${data.errors > 0 ? `, ${data.errors} שגיאות` : ""}`,
+        })
+        // רענון רשימת המוצרים
+        fetchProducts()
+      } else {
+        toast({
+          title: "ייבוא נכשל",
+          description: "לא יובאו מוצרים. בדוק את השגיאות",
+          variant: "destructive",
+        })
+      }
+    } catch (error: any) {
+      console.error("Error importing products:", error)
+      toast({
+        title: "שגיאה",
+        description: error.message || "אירעה שגיאה בייבוא המוצרים",
+        variant: "destructive",
+      })
+    } finally {
+      setImporting(false)
+    }
+  }
+
+  const handleCloseImportDialog = () => {
+    setImportDialogOpen(false)
+    setSelectedFile(null)
+    setImportResult(null)
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
+  }
+
   return (
     <AppLayout title="מוצרים">
       {/* Header */}
@@ -237,7 +363,21 @@ export default function ProductsPage() {
           <p className="text-gray-600 mt-1">נהל את כל המוצרים שלך</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => toast({ title: "בפיתוח", description: "תכונת ייבוא תהיה זמינה בקרוב" })}>
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              if (!selectedShop) {
+                toast({
+                  title: "שגיאה",
+                  description: "יש לבחור חנות מההדר לפני ייבוא מוצרים",
+                  variant: "destructive",
+                })
+                return
+              }
+              setImportDialogOpen(true)
+            }}
+            disabled={!selectedShop}
+          >
             <Upload className="w-4 h-4 ml-2" />
             ייבוא
           </Button>
@@ -547,6 +687,177 @@ export default function ProductsPage() {
           </div>
         </div>
       )}
+
+      {/* Import Products Dialog */}
+      <Dialog open={importDialogOpen} onOpenChange={handleCloseImportDialog}>
+        <DialogContent className="max-w-2xl" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>ייבוא מוצרים מקובץ CSV</DialogTitle>
+            <DialogDescription>
+              העלה קובץ CSV עם פרטי המוצרים. השדות החובה הם: name, price
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* File Selection */}
+            {!importResult && (
+              <div className="space-y-4">
+                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".csv"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="csv-file-input"
+                  />
+                  <div className="cursor-pointer" onClick={() => fileInputRef.current?.click()}>
+                    <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                    <p className="text-sm text-gray-600 mb-2">
+                      {selectedFile ? selectedFile.name : "לחץ לבחירת קובץ CSV"}
+                    </p>
+                    <Button variant="outline" type="button">
+                      <Upload className="w-4 h-4 ml-2" />
+                      בחר קובץ
+                    </Button>
+                  </div>
+                  <label htmlFor="csv-file-input" className="hidden">
+                    בחר קובץ CSV
+                  </label>
+                </div>
+
+                {selectedFile && (
+                  <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg">
+                    <FileText className="w-5 h-5 text-gray-600" />
+                    <span className="flex-1 text-sm text-gray-700">{selectedFile.name}</span>
+                    <span className="text-xs text-gray-500">
+                      {(selectedFile.size / 1024).toFixed(2)} KB
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedFile(null)
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = ""
+                        }
+                      }}
+                    >
+                      <XCircle className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+
+                {/* CSV Format Info */}
+                <Card className="bg-blue-50 border-blue-200">
+                  <CardContent className="pt-4">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                      <div className="text-sm text-blue-800">
+                        <p className="font-semibold mb-2">פורמט הקובץ:</p>
+                        <p className="mb-1">השדות החובה: <strong>name, price</strong></p>
+                        <p className="mb-1">שדות אופציונליים: description, sku, comparePrice, cost, taxEnabled, inventoryEnabled, inventoryQty, lowStockAlert, weight, status, images (מופרדים ב-|), video, minQuantity, maxQuantity, availability, seoTitle, seoDescription</p>
+                        <p className="text-xs mt-2 text-blue-700">דוגמה: name,price,description,sku</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Import Results */}
+            {importResult && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      <span className="font-semibold text-green-700">
+                        יובאו {importResult.imported} מוצרים בהצלחה
+                      </span>
+                    </div>
+                    {importResult.errors > 0 && (
+                      <div className="flex items-center gap-2">
+                        <XCircle className="w-5 h-5 text-red-600" />
+                        <span className="font-semibold text-red-700">
+                          {importResult.errors} שגיאות
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Error Details */}
+                {importResult.errorDetails && importResult.errorDetails.length > 0 && (
+                  <Card className="border-red-200">
+                    <CardHeader>
+                      <CardTitle className="text-red-700 text-base">פרטי שגיאות:</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="max-h-48 overflow-y-auto space-y-1">
+                        {importResult.errorDetails.map((error, index) => (
+                          <div key={index} className="text-sm text-red-600 p-2 bg-red-50 rounded">
+                            {error}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Imported Products List */}
+                {importResult.products && importResult.products.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">מוצרים שיובאו:</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="max-h-48 overflow-y-auto space-y-1">
+                        {importResult.products.map((product) => (
+                          <div key={product.id} className="text-sm p-2 bg-green-50 rounded">
+                            {product.name}
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            {!importResult ? (
+              <>
+                <Button variant="outline" onClick={handleCloseImportDialog}>
+                  ביטול
+                </Button>
+                <Button
+                  onClick={handleImport}
+                  disabled={!selectedFile || importing}
+                  className="prodify-gradient text-white"
+                >
+                  {importing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+                      מייבא...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 ml-2" />
+                      ייבא מוצרים
+                    </>
+                  )}
+                </Button>
+              </>
+            ) : (
+              <Button onClick={handleCloseImportDialog} className="prodify-gradient text-white">
+                סגור
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   )
 }

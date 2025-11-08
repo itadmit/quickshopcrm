@@ -14,7 +14,7 @@ import { Switch } from "@/components/ui/switch"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
-import { Save, Tag, Zap, Percent, DollarSign, Package, Users, Calendar, Search, X } from "lucide-react"
+import { Save, Tag, Zap, Percent, DollarSign, Package, Users, Calendar, Search, X, Plus } from "lucide-react"
 import { NewDiscountSkeleton } from "@/components/skeletons/NewDiscountSkeleton"
 
 interface Product {
@@ -72,6 +72,7 @@ export default function NewDiscountPage() {
     getQuantity: "",
     getDiscount: "",
     nthItem: "",
+    volumeRules: [] as Array<{ quantity: number; discount: number }>,
     minOrderAmount: "",
     maxDiscount: "",
     maxUses: "",
@@ -235,6 +236,7 @@ export default function NewDiscountPage() {
         getQuantity: formData.getQuantity ? parseInt(formData.getQuantity) : undefined,
         getDiscount: formData.getDiscount ? parseFloat(formData.getDiscount) : undefined,
         nthItem: formData.nthItem ? parseInt(formData.nthItem) : undefined,
+        volumeRules: formData.type === "VOLUME_DISCOUNT" && formData.volumeRules.length > 0 ? formData.volumeRules : undefined,
         minOrderAmount: formData.minOrderAmount ? parseFloat(formData.minOrderAmount) : undefined,
         maxDiscount: formData.maxDiscount ? parseFloat(formData.maxDiscount) : undefined,
         maxUses: formData.maxUses ? parseInt(formData.maxUses) : undefined,
@@ -505,10 +507,85 @@ export default function NewDiscountPage() {
                 {/* VOLUME_DISCOUNT */}
                 {formData.type === "VOLUME_DISCOUNT" && (
                   <div className="space-y-4 p-4 bg-purple-50 rounded-lg">
-                    <Label>הנחת כמות (בפיתוח)</Label>
-                    <p className="text-sm text-gray-600">
-                      תכונה זו תתווסף בקרוב. תוכל להגדיר הנחות לפי כמות (למשל: קנה 3+ קבל 10% הנחה, קנה 5+ קבל 15% הנחה)
+                    <Label>הנחת כמות</Label>
+                    <p className="text-sm text-gray-600 mb-4">
+                      הגדר הנחות לפי כמות פריטים בעגלה (למשל: קנה 3+ קבל 10% הנחה, קנה 5+ קבל 15% הנחה)
                     </p>
+                    
+                    <div className="space-y-3">
+                      {formData.volumeRules.map((rule, index) => (
+                        <div key={index} className="flex items-center gap-2 p-3 bg-white rounded-lg border">
+                          <div className="flex-1 grid grid-cols-2 gap-2">
+                            <div>
+                              <Label className="text-xs text-gray-500">כמות מינימלית</Label>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={rule.quantity}
+                                onChange={(e) => {
+                                  const newRules = [...formData.volumeRules]
+                                  newRules[index].quantity = parseInt(e.target.value) || 0
+                                  setFormData((prev) => ({ ...prev, volumeRules: newRules }))
+                                }}
+                                placeholder="3"
+                              />
+                            </div>
+                            <div>
+                              <Label className="text-xs text-gray-500">אחוז הנחה</Label>
+                              <div className="flex items-center gap-2">
+                                <Input
+                                  type="number"
+                                  min="0"
+                                  max="100"
+                                  step="0.1"
+                                  value={rule.discount}
+                                  onChange={(e) => {
+                                    const newRules = [...formData.volumeRules]
+                                    newRules[index].discount = parseFloat(e.target.value) || 0
+                                    setFormData((prev) => ({ ...prev, volumeRules: newRules }))
+                                  }}
+                                  placeholder="10"
+                                />
+                                <span className="text-sm text-gray-500">%</span>
+                              </div>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              const newRules = formData.volumeRules.filter((_, i) => i !== index)
+                              setFormData((prev) => ({ ...prev, volumeRules: newRules }))
+                            }}
+                            className="text-red-600 hover:text-red-700"
+                          >
+                            <X className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                          setFormData((prev) => ({
+                            ...prev,
+                            volumeRules: [...prev.volumeRules, { quantity: 0, discount: 0 }],
+                          }))
+                        }}
+                        className="w-full"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        הוסף כלל חדש
+                      </Button>
+                    </div>
+                    
+                    {formData.volumeRules.length === 0 && (
+                      <p className="text-sm text-gray-500 text-center py-4">
+                        לחץ על "הוסף כלל חדש" כדי להתחיל
+                      </p>
+                    )}
                   </div>
                 )}
               </CardContent>

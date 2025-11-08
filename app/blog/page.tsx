@@ -31,7 +31,7 @@ interface BlogPost {
 export default function BlogPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, loading: shopLoading } = useShop()
   const [posts, setPosts] = useState<BlogPost[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -67,6 +67,19 @@ export default function BlogPage() {
   const filteredPosts = posts.filter((post) =>
     post.title.toLowerCase().includes(search.toLowerCase())
   )
+
+  // הצגת מסך טעינה בזמן שהנתונים נטענים מהשרת
+  if (shopLoading) {
+    return (
+      <AppLayout title="בלוג">
+        <div className="text-center py-12">
+          <BookOpen className="w-16 h-16 mx-auto text-gray-400 mb-4 animate-pulse" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">טוען נתונים...</h3>
+          <p className="text-gray-600">אנא המתן</p>
+        </div>
+      </AppLayout>
+    )
+  }
 
   if (!selectedShop) {
     return (

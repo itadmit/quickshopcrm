@@ -59,12 +59,21 @@ export default function StorefrontLoginPage() {
   const fetchCartCount = async () => {
     try {
       const token = localStorage.getItem(`storefront_token_${slug}`)
-      if (!token) {
-        setCartItemCount(0)
-        return
+      const headers: HeadersInit = {}
+      if (token) {
+        headers["x-customer-id"] = token
       }
-      // TODO: Implement cart count API
-      setCartItemCount(0)
+
+      const response = await fetch(`/api/storefront/${slug}/cart/count`, {
+        headers,
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setCartItemCount(data.count || 0)
+      } else {
+        setCartItemCount(0)
+      }
     } catch (error) {
       console.error("Error fetching cart count:", error)
     }

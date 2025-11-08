@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { CustomizeMenu } from "@/components/CustomizeMenu"
 import {
   Home,
   Settings,
@@ -29,6 +28,7 @@ import {
   TrendingUp,
   Warehouse,
   ScanLine,
+  Palette,
 } from "lucide-react"
 
 const menuItems = [
@@ -55,6 +55,7 @@ const contentItems = [
   { icon: FileText, label: "דפים", href: "/pages", permission: "pages" },
   { icon: Menu, label: "תפריט ניווט", href: "/navigation", permission: "navigation" },
   { icon: BookOpen, label: "בלוג", href: "/blog", permission: "blog" },
+  { icon: Palette, label: "התאמה אישית", href: "/customize", permission: "settings" },
 ]
 
 const customerServiceItems = [
@@ -333,9 +334,6 @@ export function Sidebar() {
                   </Link>
                 )
               })}
-            {hasPermission("settings") && (
-              <CustomizeMenu />
-            )}
           </nav>
         </div>
 

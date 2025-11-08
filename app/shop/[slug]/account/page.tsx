@@ -98,12 +98,21 @@ export default function StorefrontAccountPage() {
   const fetchCartCount = async () => {
     try {
       const token = localStorage.getItem(`storefront_token_${slug}`)
-      if (!token) {
-        setCartItemCount(0)
-        return
+      const headers: HeadersInit = {}
+      if (token) {
+        headers["x-customer-id"] = token
       }
-      // TODO: Implement cart count API
-      setCartItemCount(0)
+
+      const response = await fetch(`/api/storefront/${slug}/cart/count`, {
+        headers,
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setCartItemCount(data.count || 0)
+      } else {
+        setCartItemCount(0)
+      }
     } catch (error) {
       console.error("Error fetching cart count:", error)
     }
@@ -111,12 +120,15 @@ export default function StorefrontAccountPage() {
 
   const fetchOrders = async (customerId: string) => {
     try {
-      // TODO: Implement storefront orders API
-      // const response = await fetch(`/api/storefront/${slug}/orders?customerId=${customerId}`)
-      // if (response.ok) {
-      //   const data = await response.json()
-      //   setOrders(data)
-      // }
+      const response = await fetch(`/api/storefront/${slug}/orders?customerId=${customerId}`, {
+        headers: {
+          "x-customer-id": customerId,
+        },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setOrders(data.orders || [])
+      }
     } catch (error) {
       console.error("Error fetching orders:", error)
     }

@@ -154,7 +154,7 @@ async function calculateAutomaticDiscounts(
       continue
     }
 
-    // בדיקת target (מוצרים/קטגוריות)
+    // בדיקת target (מוצרים/קטגוריות/קולקציות)
     let productMatch = false
     if (autoDiscount.target === "ALL_PRODUCTS") {
       productMatch = true
@@ -163,10 +163,87 @@ async function calculateAutomaticDiscounts(
       if (autoDiscount.applicableProducts && Array.isArray(autoDiscount.applicableProducts)) {
         productMatch = productIds.some(id => autoDiscount.applicableProducts.includes(id))
       }
+    } else if (autoDiscount.target === "SPECIFIC_CATEGORIES") {
+      // צריך לבדוק אם יש מוצרים בקטגוריות הספציפיות
+      if (autoDiscount.applicableCategories && Array.isArray(autoDiscount.applicableCategories) && autoDiscount.applicableCategories.length > 0) {
+        // נבדוק אם יש מוצרים בקטגוריות - נשתמש ב-productIds ונבדוק את הקטגוריות שלהם
+        const productIds = enrichedItems.map(item => item.productId)
+        const productsWithCategories = await prisma.product.findMany({
+          where: {
+            id: { in: productIds },
+            categories: {
+              some: {
+                categoryId: { in: autoDiscount.applicableCategories }
+              }
+            }
+          },
+          select: { id: true }
+        })
+        productMatch = productsWithCategories.length > 0
+      } else {
+        productMatch = false
+      }
+    } else if (autoDiscount.target === "SPECIFIC_COLLECTIONS") {
+      // צריך לבדוק אם יש מוצרים בקולקציות הספציפיות
+      if (autoDiscount.applicableCollections && Array.isArray(autoDiscount.applicableCollections) && autoDiscount.applicableCollections.length > 0) {
+        const productIds = enrichedItems.map(item => item.productId)
+        const productsWithCollections = await prisma.product.findMany({
+          where: {
+            id: { in: productIds },
+            collections: {
+              some: {
+                collectionId: { in: autoDiscount.applicableCollections }
+              }
+            }
+          },
+          select: { id: true }
+        })
+        productMatch = productsWithCollections.length > 0
+      } else {
+        productMatch = false
+      }
     } else if (autoDiscount.target === "EXCLUDE_PRODUCTS") {
       const productIds = enrichedItems.map(item => item.productId)
       if (autoDiscount.excludedProducts && Array.isArray(autoDiscount.excludedProducts)) {
         productMatch = !productIds.some(id => autoDiscount.excludedProducts.includes(id))
+      } else {
+        productMatch = true
+      }
+    } else if (autoDiscount.target === "EXCLUDE_CATEGORIES") {
+      // צריך לבדוק שאין מוצרים בקטגוריות המבודדות
+      if (autoDiscount.excludedCategories && Array.isArray(autoDiscount.excludedCategories) && autoDiscount.excludedCategories.length > 0) {
+        const productIds = enrichedItems.map(item => item.productId)
+        const productsInExcludedCategories = await prisma.product.findMany({
+          where: {
+            id: { in: productIds },
+            categories: {
+              some: {
+                categoryId: { in: autoDiscount.excludedCategories }
+              }
+            }
+          },
+          select: { id: true }
+        })
+        productMatch = productsInExcludedCategories.length === 0
+      } else {
+        productMatch = true
+      }
+    } else if (autoDiscount.target === "EXCLUDE_COLLECTIONS") {
+      // צריך לבדוק שאין מוצרים בקולקציות המבודדות
+      if (autoDiscount.excludedCollections && Array.isArray(autoDiscount.excludedCollections) && autoDiscount.excludedCollections.length > 0) {
+        const productIds = enrichedItems.map(item => item.productId)
+        const productsInExcludedCollections = await prisma.product.findMany({
+          where: {
+            id: { in: productIds },
+            collections: {
+              some: {
+                collectionId: { in: autoDiscount.excludedCollections }
+              }
+            }
+          },
+          select: { id: true }
+        })
+        productMatch = productsInExcludedCollections.length === 0
       } else {
         productMatch = true
       }
@@ -270,6 +347,38 @@ async function calculateCouponDiscount(
   }
   if (coupon.endDate && coupon.endDate < now) {
     return 0
+  }
+
+  // בדיקת minOrder
+  if (coupon.minOrder && subtotal < coupon.minOrder) {
+    return 0
+  }
+
+  // בדיקת מוצרים/קטגוריות ספציפיים
+  if (coupon.applicableProducts && Array.isArray(coupon.applicableProducts) && coupon.applicableProducts.length > 0) {
+    const productIds = enrichedItems.map(item => item.productId)
+    const hasApplicableProduct = productIds.some(id => coupon.applicableProducts.includes(id))
+    if (!hasApplicableProduct) {
+      return 0
+    }
+  }
+
+  if (coupon.applicableCategories && Array.isArray(coupon.applicableCategories) && coupon.applicableCategories.length > 0) {
+    const productIds = enrichedItems.map(item => item.productId)
+    const productsWithCategories = await prisma.product.findMany({
+      where: {
+        id: { in: productIds },
+        categories: {
+          some: {
+            categoryId: { in: coupon.applicableCategories }
+          }
+        }
+      },
+      select: { id: true }
+    })
+    if (productsWithCategories.length === 0) {
+      return 0
+    }
   }
 
   // חישוב הנחה לפי סוג

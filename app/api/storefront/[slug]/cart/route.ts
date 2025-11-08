@@ -408,7 +408,7 @@ export async function PUT(
         if (coupon.minOrder) {
           // חישוב subtotal מהיר
           const cartItems = items as any[]
-          const productIds = [...new Set(cartItems.map((item: any) => item.productId))]
+          const productIds = Array.from(new Set(cartItems.map((item: any) => item.productId)))
           const variantIds = cartItems
             .map((item: any) => item.variantId)
             .filter((id: string | null) => id !== null && id !== undefined)

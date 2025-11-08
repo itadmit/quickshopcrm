@@ -13,24 +13,45 @@ interface SheetProps {
 }
 
 const Sheet = ({ open, onOpenChange, children, side = "right", className }: SheetProps) => {
+  const [isMounted, setIsMounted] = React.useState(false)
+  const timeoutRef = React.useRef<NodeJS.Timeout | null>(null)
+
   React.useEffect(() => {
     if (open) {
+      // Clear any pending timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+      setIsMounted(true)
       document.body.style.overflow = "hidden"
     } else {
       document.body.style.overflow = ""
+      // Delay unmounting to allow animation to complete
+      timeoutRef.current = setTimeout(() => {
+        setIsMounted(false)
+        timeoutRef.current = null
+      }, 300)
     }
     return () => {
       document.body.style.overflow = ""
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
     }
   }, [open])
 
-  if (!open) return null
+  if (!open && !isMounted) return null
 
   return (
     <>
       {/* Overlay */}
       <div
-        className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm animate-in fade-in-0"
+        className={cn(
+          "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity duration-300",
+          open ? "opacity-100" : "opacity-0"
+        )}
         onClick={() => onOpenChange(false)}
       />
       {/* Sheet */}

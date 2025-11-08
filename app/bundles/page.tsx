@@ -31,7 +31,7 @@ interface Bundle {
 export default function BundlesPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, loading: shopLoading } = useShop()
   const [bundles, setBundles] = useState<Bundle[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -67,6 +67,19 @@ export default function BundlesPage() {
   const filteredBundles = bundles.filter((bundle) =>
     bundle.name.toLowerCase().includes(search.toLowerCase())
   )
+
+  // הצגת מסך טעינה בזמן שהנתונים נטענים מהשרת
+  if (shopLoading) {
+    return (
+      <AppLayout title="חבילות מוצרים">
+        <div className="text-center py-12">
+          <Boxes className="w-16 h-16 mx-auto text-gray-400 mb-4 animate-pulse" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">טוען נתונים...</h3>
+          <p className="text-gray-600">אנא המתן</p>
+        </div>
+      </AppLayout>
+    )
+  }
 
   if (!selectedShop) {
     return (

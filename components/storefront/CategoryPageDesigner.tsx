@@ -5,7 +5,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetBo
 import { Button } from "@/components/ui/button"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
-import { Monitor, Smartphone, Layout, Grid3x3, List } from "lucide-react"
+import { Monitor, Smartphone, Layout, Grid3x3, List, Save } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 type CategoryLayout = "grid" | "list" | "compact-grid" | "large-grid"
@@ -14,7 +14,9 @@ interface CategoryPageDesignerProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onLayoutChange?: (layout: CategoryLayout) => void
+  onSave?: () => void
   currentLayout?: CategoryLayout
+  hasUnsavedChanges?: boolean
 }
 
 // מוצרים דמה לתצוגה מקדימה
@@ -63,7 +65,9 @@ export function CategoryPageDesigner({
   open,
   onOpenChange,
   onLayoutChange,
+  onSave,
   currentLayout = "grid",
+  hasUnsavedChanges = false,
 }: CategoryPageDesignerProps) {
   const [layout, setLayout] = useState<CategoryLayout>(currentLayout)
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop")
@@ -341,6 +345,12 @@ export function CategoryPageDesigner({
         </SheetBody>
 
         <SheetFooter>
+          {hasUnsavedChanges && onSave && (
+            <Button onClick={onSave} className="ml-2">
+              <Save className="w-4 h-4 ml-2" />
+              שמור שינויים
+            </Button>
+          )}
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             סגור
           </Button>
