@@ -80,7 +80,7 @@ export default function EditBlogPostPage() {
           title: "הצלחה",
           description: "הפוסט עודכן בהצלחה",
         })
-        fetchPost()
+        router.refresh()
       } else {
         const error = await response.json()
         toast({

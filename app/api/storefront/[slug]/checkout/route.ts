@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { cookies } from "next/headers"
-import { calculateCustomerDiscount } from "@/lib/discounts"
+import { calculateCart } from "@/lib/cart-calculations"
 
 const checkoutSchema = z.object({
   customerId: z.string().optional(),
@@ -66,70 +66,31 @@ export async function POST(
 
     const items = cart.items as any[]
 
-    // חישוב סכומים
-    let subtotal = 0
-    let customerDiscountTotal = 0
-    const orderItems = []
+    // ⚠️ SERVER-SIDE VALIDATION - כמו בשופיפיי
+    // אנחנו לא סומכים על מה שהלקוח שלח - מחשבים מחדש מהשרת!
+    // שימוש בקופון מהעגלה או מהבקשה (אם נשלח)
+    const couponCodeToUse = data.couponCode || cart.couponCode
 
-    for (const item of items) {
-      const product = await prisma.product.findUnique({
-        where: { id: item.productId },
-        select: {
-          id: true,
-          name: true,
-          price: true,
-          sku: true,
-        },
-      })
+    // חישוב מחדש של כל הסכומים מהשרת - זה ה-server-side validation!
+    const calculation = await calculateCart(
+      shop.id,
+      items,
+      couponCodeToUse,
+      data.customerId || null,
+      shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
+      null // shipping - נחשב למטה
+    )
 
-      if (!product) continue
-
-      let itemPrice = product.price
-      
-      // חישוב הנחת לקוח רשום
-      if (data.customerId) {
-        const customerDiscount = await calculateCustomerDiscount(
-          shop.id,
-          data.customerId,
-          product.id,
-          product.price
-        )
-        itemPrice = product.price - customerDiscount
-        customerDiscountTotal += customerDiscount * item.quantity
-      }
-
-      const itemTotal = itemPrice * item.quantity
-      subtotal += itemTotal
-
-      orderItems.push({
-        productId: product.id,
-        name: product.name,
-        sku: product.sku,
-        quantity: item.quantity,
-        price: itemPrice,
-        total: itemTotal,
-      })
-    }
-
-    // חישוב הנחה מקופון
-    let discount = 0
-    if (data.couponCode) {
-      const coupon = await prisma.coupon.findUnique({
-        where: { code: data.couponCode },
-      })
-
-      if (coupon && coupon.isActive && coupon.shopId === shop.id) {
-        if (coupon.type === "PERCENTAGE") {
-          discount = (subtotal * coupon.value) / 100
-        } else {
-          discount = coupon.value
-        }
-
-        if (coupon.maxDiscount) {
-          discount = Math.min(discount, coupon.maxDiscount)
-        }
-      }
-    }
+    // בניית orderItems מהחישוב המרכזי
+    const orderItems = calculation.items.map(item => ({
+      productId: item.productId,
+      variantId: item.variantId || null,
+      name: item.product.name,
+      sku: item.product.sku || null,
+      quantity: item.quantity,
+      price: item.price,
+      total: item.total,
+    }))
 
     // חישוב הנחה מכרטיס מתנה
     let giftCardDiscount = 0
@@ -139,7 +100,8 @@ export async function POST(
       })
 
       if (giftCard && giftCard.isActive && giftCard.shopId === shop.id && giftCard.balance > 0) {
-        giftCardDiscount = Math.min(giftCard.balance, subtotal - discount)
+        const totalDiscount = calculation.automaticDiscount + calculation.couponDiscount
+        giftCardDiscount = Math.min(giftCard.balance, calculation.subtotal - totalDiscount)
       }
     }
 
@@ -159,7 +121,7 @@ export async function POST(
         
         if (shippingOptions.fixed && shippingOptions.fixedCost) {
           shipping = shippingOptions.fixedCost
-        } else if (shippingOptions.freeOver && shippingOptions.freeOverAmount && subtotal >= shippingOptions.freeOverAmount) {
+        } else if (shippingOptions.freeOver && shippingOptions.freeOverAmount && calculation.subtotal >= shippingOptions.freeOverAmount) {
           shipping = 0
         } else if (!shippingOptions.free) {
           shipping = shippingOptions.fixedCost || 0
@@ -167,13 +129,14 @@ export async function POST(
       }
     }
 
-    // חישוב מע"מ
-    const tax = shop.taxEnabled
-      ? ((subtotal - discount - giftCardDiscount) * shop.taxRate) / 100
+    // חישוב מע"מ מחדש עם shipping ו-giftCard
+    const totalDiscount = calculation.automaticDiscount + calculation.couponDiscount
+    const tax = shop.taxEnabled && shop.taxRate
+      ? ((calculation.subtotal - totalDiscount - giftCardDiscount) * shop.taxRate) / 100
       : 0
 
     // סכום כולל (הנחת לקוח כבר מחושבת ב-subtotal)
-    const total = subtotal - discount - giftCardDiscount + shipping + tax
+    const total = calculation.subtotal - totalDiscount - giftCardDiscount - calculation.customerDiscount + shipping + tax
 
     // יצירת מספר הזמנה
     const orderCount = await prisma.order.count({
@@ -192,11 +155,11 @@ export async function POST(
         customerPhone: data.customerPhone,
         shippingAddress: data.shippingAddress,
         billingAddress: data.billingAddress || data.shippingAddress,
-        subtotal,
+        subtotal: calculation.subtotal,
         shipping,
         tax,
-        discount: discount + giftCardDiscount + customerDiscountTotal,
-        total,
+        discount: totalDiscount + giftCardDiscount + calculation.customerDiscount,
+        total: Math.max(0, total),
         paymentMethod: data.paymentMethod,
         couponCode: data.couponCode,
         notes: data.notes,
@@ -238,9 +201,9 @@ export async function POST(
     }
 
     // עדכון ספירת שימושים בקופון
-    if (data.couponCode && discount > 0) {
+    if (couponCodeToUse && calculation.couponDiscount > 0) {
       await prisma.coupon.update({
-        where: { code: data.couponCode },
+        where: { code: couponCodeToUse },
         data: {
           usedCount: {
             increment: 1,
@@ -306,8 +269,13 @@ export async function POST(
     }
 
     console.error("Error creating order:", error)
+    // הדפסת שגיאה מפורטת לפיתוח
+    if (error instanceof Error) {
+      console.error("Error message:", error.message)
+      console.error("Error stack:", error.stack)
+    }
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "Internal server error", details: error instanceof Error ? error.message : String(error) },
       { status: 500 }
     )
   }

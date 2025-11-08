@@ -128,12 +128,12 @@ export async function POST(req: NextRequest) {
     
     await sendEmail({
       to: email,
-      subject: `הזמנה להצטרפות ל-QuickCRM`,
+      subject: `הזמנה להצטרפות ל-Quick Shop`,
       html: `
         <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #6f65e2;">הזמנה להצטרפות ל-QuickCRM</h2>
+          <h2 style="color: #6f65e2;">הזמנה להצטרפות ל-Quick Shop</h2>
           <p>שלום ${name || email},</p>
-          <p>${session.user.name} הזמין אותך להצטרף לצוות ב-QuickCRM.</p>
+          <p>${session.user.name} הזמין אותך להצטרף לצוות ב-Quick Shop.</p>
           <p>לחץ על הקישור הבא כדי לאשר את ההזמנה וליצור חשבון:</p>
           <p style="text-align: center; margin: 30px 0;">
             <a href="${acceptUrl}" style="background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">

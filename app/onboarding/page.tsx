@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useDebounce } from "use-debounce"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
 import { AppLayout } from "@/components/AppLayout"
@@ -26,7 +27,10 @@ import {
   ArrowRight,
   ArrowLeft,
   Upload,
-  X
+  X,
+  CheckCircle,
+  AlertCircle,
+  Loader2
 } from "lucide-react"
 
 interface ShopData {
@@ -105,6 +109,11 @@ export default function OnboardingPage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
+  const [slugAvailability, setSlugAvailability] = useState<{
+    checking: boolean
+    available: boolean | null
+    error: string | null
+  }>({ checking: false, available: null, error: null })
   const [shopData, setShopData] = useState<ShopData>({
     name: "",
     slug: "",
@@ -158,6 +167,51 @@ export default function OnboardingPage() {
     checkExistingShop()
   }, [router, session])
 
+  // בדיקת זמינות slug עם debounce
+  const [debouncedSlug] = useDebounce(shopData.slug, 500)
+  
+  useEffect(() => {
+    // אם ה-slug ריק או קצר מדי, לא נבדוק
+    if (!debouncedSlug || debouncedSlug.length < 2) {
+      setSlugAvailability({ checking: false, available: null, error: null })
+      return
+    }
+
+    // בדיקת זמינות
+    const checkSlugAvailability = async () => {
+      setSlugAvailability({ checking: true, available: null, error: null })
+      
+      try {
+        const response = await fetch(
+          `/api/shops/check-slug?slug=${encodeURIComponent(debouncedSlug)}`
+        )
+        const data = await response.json()
+        
+        if (response.ok) {
+          setSlugAvailability({
+            checking: false,
+            available: data.available,
+            error: data.error || null,
+          })
+        } else {
+          setSlugAvailability({
+            checking: false,
+            available: false,
+            error: data.error || "שגיאה בבדיקת זמינות",
+          })
+        }
+      } catch (error) {
+        setSlugAvailability({
+          checking: false,
+          available: null,
+          error: "שגיאה בבדיקת זמינות",
+        })
+      }
+    }
+
+    checkSlugAvailability()
+  }, [debouncedSlug])
+
   const updateShopData = (field: keyof ShopData, value: any) => {
     setShopData((prev) => ({ ...prev, [field]: value }))
   }
@@ -170,6 +224,40 @@ export default function OnboardingPage() {
           title: "שגיאה",
           description: "אנא מלא את כל השדות החובה",
           variant: "destructive",
+        })
+        return
+      }
+      // בדיקת slug חובה
+      if (!shopData.slug || shopData.slug.length < 2) {
+        toast({
+          title: "שגיאה",
+          description: "אנא הזן כתובת URL (Slug) תקינה",
+          variant: "destructive",
+        })
+        return
+      }
+      // בדיקה שה-slug פנוי
+      if (slugAvailability.checking) {
+        toast({
+          title: "אנא המתן",
+          description: "בודקים את זמינות ה-slug...",
+          variant: "default",
+        })
+        return
+      }
+      if (slugAvailability.available === false) {
+        toast({
+          title: "שגיאה",
+          description: slugAvailability.error || "ה-slug תפוס, אנא בחר אחר",
+          variant: "destructive",
+        })
+        return
+      }
+      if (slugAvailability.available !== true && shopData.slug.length >= 2) {
+        toast({
+          title: "אנא המתן",
+          description: "בודקים את זמינות ה-slug...",
+          variant: "default",
         })
         return
       }
@@ -207,20 +295,28 @@ export default function OnboardingPage() {
   const handleFinish = async () => {
     setLoading(true)
     try {
-      // יצירת slug - אם המשתמש מילא, נשתמש בו, אחרת נצור אוטומטי
-      let slug = shopData.slug.trim()
-      if (!slug) {
-        // אם לא מילא, נצור מ-name
-        slug = shopData.name
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, "-")
-          .replace(/^-+|-+$/g, "")
+      // ולידציה של slug לפני יצירת החנות
+      if (!shopData.slug || shopData.slug.length < 2) {
+        toast({
+          title: "שגיאה",
+          description: "אנא הזן כתובת URL (Slug) תקינה",
+          variant: "destructive",
+        })
+        setLoading(false)
+        return
       }
       
-      // אם עדיין אין slug, נשתמש ב-timestamp
-      if (!slug) {
-        slug = `shop-${Date.now()}`
+      if (slugAvailability.checking || slugAvailability.available !== true) {
+        toast({
+          title: "שגיאה",
+          description: slugAvailability.error || "אנא המתן לבדיקת זמינות ה-slug או בחר slug אחר",
+          variant: "destructive",
+        })
+        setLoading(false)
+        return
       }
+
+      const slug = shopData.slug.trim()
 
       // יצירת החנות
       const response = await fetch("/api/shops", {
@@ -421,27 +517,55 @@ export default function OnboardingPage() {
 
                   <div className="space-y-2">
                     <Label htmlFor="slug" className="text-sm font-semibold text-gray-700">
-                      כתובת URL (Slug) <span className="text-gray-400 font-normal">(אופציונלי)</span>
+                      כתובת URL (Slug) <span className="text-red-500">*</span>
                     </Label>
-                    <Input
-                      id="slug"
-                      value={shopData.slug}
-                      onChange={(e) => {
-                        // רק אותיות קטנות, מספרים ומקפים
-                        const cleaned = e.target.value
-                          .toLowerCase()
-                          .replace(/[^a-z0-9-]/g, "")
-                          .replace(/-+/g, "-")
-                          .replace(/^-+|-+$/g, "")
-                        updateShopData("slug", cleaned)
-                        setSlugManuallyEdited(true) // סימן שהמשתמש ערך את ה-slug ידנית
-                      }}
-                      placeholder="my-shop"
-                      className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                    />
-                    <p className="text-xs text-gray-500">
-                      כתובת החנות תהיה: /shop/{shopData.slug || "auto-generated"}
-                    </p>
+                    <div className="relative">
+                      <Input
+                        id="slug"
+                        value={shopData.slug}
+                        onChange={(e) => {
+                          // רק אותיות קטנות, מספרים ומקפים
+                          const cleaned = e.target.value
+                            .toLowerCase()
+                            .replace(/[^a-z0-9-]/g, "")
+                            .replace(/-+/g, "-")
+                            .replace(/^-+|-+$/g, "")
+                          updateShopData("slug", cleaned)
+                          setSlugManuallyEdited(true) // סימן שהמשתמש ערך את ה-slug ידנית
+                        }}
+                        placeholder="my-shop"
+                        className={`h-10 text-sm pr-10 border-gray-300 focus:border-purple-500 focus:ring-purple-500 ${
+                          slugAvailability.available === false ? "border-red-500" : 
+                          slugAvailability.available === true ? "border-green-500" : ""
+                        }`}
+                      />
+                      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex-shrink-0">
+                        {slugAvailability.checking ? (
+                          <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                        ) : slugAvailability.available === true ? (
+                          <CheckCircle className="w-5 h-5 text-green-500" />
+                        ) : slugAvailability.available === false ? (
+                          <AlertCircle className="w-5 h-5 text-red-500" />
+                        ) : null}
+                      </div>
+                    </div>
+                    {shopData.slug && (
+                      <p className="text-xs text-gray-500">
+                        כתובת החנות תהיה: <span className="font-mono">/shop/{shopData.slug}</span>
+                      </p>
+                    )}
+                    {slugAvailability.error && (
+                      <p className="text-xs text-red-500 flex items-center gap-1">
+                        <AlertCircle className="w-3 h-3" />
+                        {slugAvailability.error}
+                      </p>
+                    )}
+                    {slugAvailability.available === true && (
+                      <p className="text-xs text-green-600 flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" />
+                        ה-slug זמין לשימוש
+                      </p>
+                    )}
                   </div>
 
                   <div className="space-y-2">
@@ -897,8 +1021,7 @@ export default function OnboardingPage() {
                     <Button
                       variant="outline"
                       onClick={() => {
-                        const slug = shopData.slug || shopData.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || `shop-${Date.now()}`
-                        window.open(`/shop/${slug}`, "_blank")
+                        window.open(`/shop/${shopData.slug}`, "_blank")
                       }}
                       className="h-12 px-6 border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 transition-all"
                     >
@@ -1095,28 +1218,56 @@ export default function OnboardingPage() {
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="slug" className="text-sm font-semibold text-gray-700">
-                          כתובת URL (Slug) <span className="text-gray-400 font-normal">(אופציונלי)</span>
+                        <Label htmlFor="slug-desktop" className="text-sm font-semibold text-gray-700">
+                          כתובת URL (Slug) <span className="text-red-500">*</span>
                         </Label>
-                        <Input
-                          id="slug"
-                          value={shopData.slug}
-                          onChange={(e) => {
-                            // רק אותיות קטנות, מספרים ומקפים
-                            const cleaned = e.target.value
-                              .toLowerCase()
-                              .replace(/[^a-z0-9-]/g, "")
-                              .replace(/-+/g, "-")
-                              .replace(/^-+|-+$/g, "")
-                            updateShopData("slug", cleaned)
-                            setSlugManuallyEdited(true) // סימן שהמשתמש ערך את ה-slug ידנית
-                          }}
-                          placeholder="my-shop"
-                          className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                        />
-                        <p className="text-xs text-gray-500">
-                          כתובת החנות תהיה: /shop/{shopData.slug || "auto-generated"}
-                        </p>
+                        <div className="relative">
+                          <Input
+                            id="slug-desktop"
+                            value={shopData.slug}
+                            onChange={(e) => {
+                              // רק אותיות קטנות, מספרים ומקפים
+                              const cleaned = e.target.value
+                                .toLowerCase()
+                                .replace(/[^a-z0-9-]/g, "")
+                                .replace(/-+/g, "-")
+                                .replace(/^-+|-+$/g, "")
+                              updateShopData("slug", cleaned)
+                              setSlugManuallyEdited(true) // סימן שהמשתמש ערך את ה-slug ידנית
+                            }}
+                            placeholder="my-shop"
+                            className={`h-10 text-sm pr-10 border-gray-300 focus:border-purple-500 focus:ring-purple-500 ${
+                              slugAvailability.available === false ? "border-red-500" : 
+                              slugAvailability.available === true ? "border-green-500" : ""
+                            }`}
+                          />
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 flex-shrink-0">
+                            {slugAvailability.checking ? (
+                              <Loader2 className="w-5 h-5 text-gray-400 animate-spin" />
+                            ) : slugAvailability.available === true ? (
+                              <CheckCircle className="w-5 h-5 text-green-500" />
+                            ) : slugAvailability.available === false ? (
+                              <AlertCircle className="w-5 h-5 text-red-500" />
+                            ) : null}
+                          </div>
+                        </div>
+                        {shopData.slug && (
+                          <p className="text-xs text-gray-500">
+                            כתובת החנות תהיה: <span className="font-mono">/shop/{shopData.slug}</span>
+                          </p>
+                        )}
+                        {slugAvailability.error && (
+                          <p className="text-xs text-red-500 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            {slugAvailability.error}
+                          </p>
+                        )}
+                        {slugAvailability.available === true && (
+                          <p className="text-xs text-green-600 flex items-center gap-1">
+                            <CheckCircle className="w-3 h-3" />
+                            ה-slug זמין לשימוש
+                          </p>
+                        )}
                       </div>
 
                       <div className="space-y-2">
@@ -1572,8 +1723,7 @@ export default function OnboardingPage() {
                         <Button
                           variant="outline"
                           onClick={() => {
-                            const slug = shopData.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "")
-                            window.open(`/shop/${slug}`, "_blank")
+                            window.open(`/shop/${shopData.slug}`, "_blank")
                           }}
                           className="h-12 px-6 border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 transition-all"
                         >

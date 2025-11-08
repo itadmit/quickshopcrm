@@ -123,7 +123,7 @@ export default function SettingsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: session?.user?.email,
-          subject: 'בדיקת מערכת האימיילים - QuickCRM',
+          subject: 'בדיקת מערכת האימיילים - Quick Shop',
           message: 'זה אימייל בדיקה. אם קיבלת אותו, המערכת עובדת כראוי! ✅',
         }),
       })
@@ -626,7 +626,7 @@ export default function SettingsPage() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm font-medium">משתמש</span>
-                      <span className="text-sm text-gray-600">quickcrmil@gmail.com</span>
+                      <span className="text-sm text-gray-600">quickshopil@gmail.com</span>
                     </div>
                     {emailStatus && (
                       <div className="flex items-center gap-2 mt-2">

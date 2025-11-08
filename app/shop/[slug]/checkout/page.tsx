@@ -1,6 +1,7 @@
 import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
+import { calculateCart } from "@/lib/cart-calculations"
 import { CheckoutForm } from "./CheckoutForm"
 
 async function getCart(slug: string, customerId: string | null) {
@@ -13,6 +14,7 @@ async function getCart(slug: string, customerId: string | null) {
       select: {
         id: true,
         name: true,
+        description: true,
         logo: true,
         taxEnabled: true,
         taxRate: true,
@@ -59,138 +61,16 @@ async function getCart(slug: string, customerId: string | null) {
     }
 
     const cartItems = cart.items as any[]
-    const productIdsSet = new Set<string>(cartItems.map((item: any) => item.productId))
-    const productIds = Array.from(productIdsSet)
-    const variantIds = cartItems
-      .map((item: any) => item.variantId)
-      .filter((id: string | null) => id !== null && id !== undefined)
 
-    const [products, variants] = await Promise.all([
-      prisma.product.findMany({
-        where: {
-          id: { in: productIds },
-          shopId: shop.id,
-        },
-        select: {
-          id: true,
-          name: true,
-          price: true,
-          comparePrice: true,
-          images: true,
-          sku: true,
-        },
-      }),
-      variantIds.length > 0
-        ? prisma.productVariant.findMany({
-            where: { id: { in: variantIds } },
-            select: {
-              id: true,
-              name: true,
-              price: true,
-              sku: true,
-              inventoryQty: true,
-            },
-          })
-        : [],
-    ])
-
-    const productsMap = new Map(products.map((p: any) => [p.id, p]))
-    const variantsMap = new Map(variants.map((v: any) => [v.id, v]))
-
-    let customerDiscountSettings = null
-    let customer = null
-    if (customerId) {
-      const [shopWithSettings, customerData] = await Promise.all([
-        prisma.shop.findUnique({
-          where: { id: shop.id },
-          select: { customerDiscountSettings: true },
-        }),
-        prisma.customer.findUnique({
-          where: { id: customerId },
-          select: {
-            totalSpent: true,
-            orderCount: true,
-            tier: true,
-          },
-        }),
-      ])
-      customerDiscountSettings = shopWithSettings?.customerDiscountSettings
-      customer = customerData
-    }
-
-    const enrichedItems = []
-    let subtotal = 0
-    let customerDiscountTotal = 0
-
-    for (const item of cartItems) {
-      const product = productsMap.get(item.productId)
-      if (!product) continue
-
-      const variant = item.variantId ? variantsMap.get(item.variantId) : null
-      const basePrice = variant?.price || product.price
-      let itemPrice = basePrice
-
-      if (customerId && customer && customerDiscountSettings) {
-        const discount = calculateCustomerDiscountSync(
-          customerDiscountSettings as any,
-          customer,
-          basePrice
-        )
-        itemPrice = basePrice - discount
-        customerDiscountTotal += discount * item.quantity
-      }
-
-      const itemTotal = itemPrice * item.quantity
-      subtotal += itemTotal
-
-      enrichedItems.push({
-        productId: item.productId,
-        variantId: item.variantId,
-        quantity: item.quantity,
-        product: {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          comparePrice: product.comparePrice,
-          images: product.images || [],
-          sku: product.sku,
-        },
-        variant: variant
-          ? {
-              id: variant.id,
-              name: variant.name,
-              price: variant.price,
-              sku: variant.sku,
-              inventoryQty: variant.inventoryQty,
-            }
-          : null,
-        price: itemPrice,
-        total: itemTotal,
-      })
-    }
-
-    let discount = 0
-    if (cart.couponCode) {
-      const coupon = await prisma.coupon.findUnique({
-        where: { code: cart.couponCode },
-      })
-
-      if (coupon && coupon.isActive && coupon.shopId === shop.id) {
-        if (coupon.type === "PERCENTAGE") {
-          discount = (subtotal * coupon.value) / 100
-        } else if (coupon.type === "FIXED") {
-          discount = coupon.value
-        }
-
-        if (coupon.maxDiscount) {
-          discount = Math.min(discount, coupon.maxDiscount)
-        }
-      }
-    }
-
-    const tax = shop.taxEnabled && shop.taxRate
-      ? (subtotal - discount) * (shop.taxRate / 100)
-      : 0
+    // שימוש בפונקציה המרכזית לחישוב עגלה
+    const calculation = await calculateCart(
+      shop.id,
+      cartItems,
+      cart.couponCode,
+      customerId,
+      shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
+      null // shipping - לא מחושב כאן, יוחלף בצ'ק אאוט
+    )
 
     // חישוב משלוח לפי הגדרות החנות (ברירת מחדל - יוחלף בצ'ק אאוט)
     const settings = shop.settings as any
@@ -204,14 +84,15 @@ async function getCart(slug: string, customerId: string | null) {
       
       if (shippingOptions.fixed && shippingOptions.fixedCost) {
         shipping = shippingOptions.fixedCost
-      } else if (shippingOptions.freeOver && shippingOptions.freeOverAmount && subtotal >= shippingOptions.freeOverAmount) {
+      } else if (shippingOptions.freeOver && shippingOptions.freeOverAmount && calculation.subtotal >= shippingOptions.freeOverAmount) {
         shipping = 0
       } else if (!shippingOptions.free) {
         shipping = shippingOptions.fixedCost || 0
       }
     }
 
-    const total = subtotal - discount - customerDiscountTotal + tax + shipping
+    // חישוב מחדש של total עם shipping
+    const totalWithShipping = calculation.total - calculation.shipping + shipping
 
     return {
       shop: {
@@ -221,14 +102,15 @@ async function getCart(slug: string, customerId: string | null) {
       },
       cart: {
         id: cart.id,
-        items: enrichedItems,
-        subtotal,
-        tax,
+        items: calculation.items,
+        subtotal: calculation.subtotal,
+        tax: calculation.tax,
         shipping,
-        discount: discount + customerDiscountTotal,
-        customerDiscount: customerDiscountTotal > 0 ? customerDiscountTotal : undefined,
-        couponDiscount: discount > 0 ? discount : undefined,
-        total: Math.max(0, total),
+        discount: calculation.automaticDiscount + calculation.couponDiscount + calculation.customerDiscount,
+        customerDiscount: calculation.customerDiscount > 0 ? calculation.customerDiscount : undefined,
+        couponDiscount: calculation.couponDiscount > 0 ? calculation.couponDiscount : undefined,
+        automaticDiscount: calculation.automaticDiscount > 0 ? calculation.automaticDiscount : undefined,
+        total: Math.max(0, totalWithShipping),
         couponCode: cart.couponCode,
         expiresAt: cart.expiresAt,
       },
@@ -239,55 +121,6 @@ async function getCart(slug: string, customerId: string | null) {
   }
 }
 
-function calculateCustomerDiscountSync(
-  settings: any,
-  customer: { totalSpent: number; orderCount: number; tier: string | null },
-  basePrice: number
-): number {
-  if (!settings || !settings.enabled) {
-    return 0
-  }
-
-  let discount = 0
-
-  if (settings.tiers && settings.tiers.length > 0) {
-    for (const tier of settings.tiers) {
-      if (
-        customer.totalSpent >= tier.minSpent &&
-        customer.orderCount >= tier.minOrders
-      ) {
-        if (tier.discount.type === "PERCENTAGE") {
-          discount = (basePrice * tier.discount.value) / 100
-        } else {
-          discount = tier.discount.value
-        }
-        break
-      }
-    }
-  }
-
-  if (discount === 0 && settings.baseDiscount) {
-    let applicable = false
-
-    if (settings.baseDiscount.applicableTo === "ALL_PRODUCTS") {
-      applicable = true
-    } else if (settings.baseDiscount.applicableTo === "PRODUCTS") {
-      applicable = true
-    } else if (settings.baseDiscount.applicableTo === "CATEGORIES") {
-      applicable = true
-    }
-
-    if (applicable) {
-      if (settings.baseDiscount.type === "PERCENTAGE") {
-        discount = (basePrice * settings.baseDiscount.value) / 100
-      } else {
-        discount = settings.baseDiscount.value
-      }
-    }
-  }
-
-  return Math.min(discount, basePrice)
-}
 
 export default async function CheckoutPage({
   params,

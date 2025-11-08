@@ -111,7 +111,7 @@ export async function POST(req: NextRequest) {
         data: {
           balance: existingCredit.balance + data.amount,
           expiresAt: data.expiresAt ? new Date(data.expiresAt) : existingCredit.expiresAt,
-          notes: data.notes || existingCredit.notes,
+          reason: data.notes || existingCredit.reason,
         },
       })
     } else {
@@ -120,9 +120,10 @@ export async function POST(req: NextRequest) {
         data: {
           shopId: data.shopId,
           customerId: data.customerId,
+          amount: data.amount,
           balance: data.amount,
           expiresAt: data.expiresAt ? new Date(data.expiresAt) : null,
-          notes: data.notes,
+          reason: data.notes || null,
         },
       })
     }

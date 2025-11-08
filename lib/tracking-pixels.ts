@@ -71,9 +71,10 @@ export function sendGTMEvent(containerId: string, event: TrackingEvent) {
   if (typeof window === "undefined") return
 
   if ((window as any).dataLayer) {
-    (window as any).dataLayer.push({
-      event: event.event,
-      ...event,
+    const { event: eventName, ...rest } = event as { event: string; [key: string]: any }
+    ;(window as any).dataLayer.push({
+      event: eventName,
+      ...rest,
     })
   } else {
     // טעינת GTM אם לא נטען

@@ -563,7 +563,7 @@ export async function POST(req: NextRequest) {
           customerName: `${customers[0].firstName} ${customers[0].lastName}`,
           customerEmail: customers[0].email,
           customerPhone: customers[0].phone,
-          shippingAddress: customers[0].addresses?.[0] || {
+          shippingAddress: (Array.isArray(customers[0].addresses) && customers[0].addresses[0]) || {
             street: 'רחוב הרצל 10',
             city: 'תל אביב',
             zip: '12345',
@@ -599,7 +599,7 @@ export async function POST(req: NextRequest) {
           customerName: `${customers[1].firstName} ${customers[1].lastName}`,
           customerEmail: customers[1].email,
           customerPhone: customers[1].phone,
-          shippingAddress: customers[1].addresses?.[0] || {
+          shippingAddress: (Array.isArray(customers[1].addresses) && customers[1].addresses[0]) || {
             street: 'דרך המלך 50',
             city: 'חיפה',
             zip: '54321',
@@ -637,7 +637,7 @@ export async function POST(req: NextRequest) {
           customerName: `${customers[0].firstName} ${customers[0].lastName}`,
           customerEmail: customers[0].email,
           customerPhone: customers[0].phone,
-          shippingAddress: customers[0].addresses?.[0] || {
+          shippingAddress: (Array.isArray(customers[0].addresses) && customers[0].addresses[0]) || {
             street: 'רחוב הרצל 10',
             city: 'תל אביב',
             zip: '12345',

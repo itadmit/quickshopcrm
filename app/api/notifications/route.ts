@@ -35,78 +35,52 @@ export async function GET(req: NextRequest) {
           try {
             switch (notification.entityType) {
               case 'lead':
-                const lead = await prisma.lead.findUnique({
-                  where: { id: notification.entityId },
-                  select: {
-                    id: true,
-                    name: true,
-                    email: true,
-                    phone: true,
-                    source: true,
-                    status: true,
-                  },
-                })
-                if (lead) {
-                  enriched.entityDetails = lead
-                }
+                // הערה: מודל lead לא קיים ב-schema הנוכחי
+                // TODO: להוסיף מודל lead ל-schema
                 break
               case 'quote':
-                const quote = await prisma.quote.findUnique({
-                  where: { id: notification.entityId },
-                  select: {
-                    id: true,
-                    quoteNumber: true,
-                    title: true,
-                    total: true,
-                    status: true,
-                  },
-                })
-                if (quote) {
-                  enriched.entityDetails = quote
-                }
+                // הערה: מודל quote לא קיים ב-schema הנוכחי
+                // TODO: להוסיף מודל quote ל-schema
                 break
               case 'payment':
-                const payment = await prisma.payment.findUnique({
-                  where: { id: notification.entityId },
-                  select: {
-                    id: true,
-                    amount: true,
-                    status: true,
-                    transactionId: true,
-                  },
-                })
-                if (payment) {
-                  enriched.entityDetails = payment
-                }
+                // הערה: מודל payment לא קיים ב-schema הנוכחי
+                // TODO: להוסיף מודל payment ל-schema
                 break
               case 'client':
-                const client = await prisma.client.findUnique({
+              case 'customer':
+                // הערה: מודל client לא קיים - יש customer במקום
+                const client = await prisma.customer.findUnique({
                   where: { id: notification.entityId },
                   select: {
                     id: true,
-                    name: true,
+                    firstName: true,
+                    lastName: true,
                     email: true,
                     phone: true,
                   },
                 })
                 if (client) {
-                  enriched.entityDetails = client
+                  enriched.entityDetails = {
+                    ...client,
+                    name: `${client.firstName || ''} ${client.lastName || ''}`.trim(),
+                  }
                 }
                 break
               case 'project':
-                const project = await prisma.project.findUnique({
-                where: { id: notification.entityId },
-                select: {
-                  id: true,
-                  name: true,
-                  status: true,
-                  budget: true,
-                },
-              })
-              if (project) {
-                enriched.entityDetails = project
-              }
-              break
+                // הערה: מודל project לא קיים ב-schema הנוכחי
+                // TODO: להוסיף מודל project ל-schema
+                // const project = await prisma.project.findUnique({
+                //   where: { id: notification.entityId },
+                //   select: {
+                //     id: true,
+                //     name: true,
+                //     budget: true,
+                //   },
+                // })
+                // if (project) {
+                //   enriched.entityDetails = project
+                // }
+                break
             }
           } catch (error) {
             console.error(`Error fetching entity details for ${notification.entityType}:`, error)

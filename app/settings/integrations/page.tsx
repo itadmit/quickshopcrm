@@ -13,7 +13,7 @@ export default function IntegrationsPage() {
   const { toast } = useToast()
   const [activeTab, setActiveTab] = useState<"api" | "integrations" | "logs">("integrations")
   const [showApiKey, setShowApiKey] = useState(false)
-  const [apiKey] = useState("crm_live_1234567890abcdefghijklmnop")
+  const [apiKey] = useState("quickshop_live_1234567890abcdefghijklmnop")
   
   // Invoice4U Documents Integration State
   const [invoice4uEmail, setInvoice4uEmail] = useState("")

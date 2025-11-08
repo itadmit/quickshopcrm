@@ -225,13 +225,13 @@ export function Sidebar() {
               return (
                 <Link
                   key={item.href}
-                  href={item.disabled ? "#" : item.href}
+                  href={(item as any).disabled ? "#" : item.href}
                   className={cn(
                     "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                     isActive
                       ? "bg-purple-100 text-purple-700"
                       : "text-gray-700 hover:bg-gray-200",
-                    item.disabled && "opacity-50 cursor-not-allowed"
+                    (item as any).disabled && "opacity-50 cursor-not-allowed"
                   )}
                 >
                   <Icon className="w-5 h-5 flex-shrink-0" />

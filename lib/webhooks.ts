@@ -78,7 +78,7 @@ export async function sendWebhook(
           data: {
             webhookId: webhook.id,
             eventType: event,
-            payload,
+            payload: payload as any,
             responseCode: response.status,
             responseBody,
             durationMs,
@@ -100,7 +100,7 @@ export async function sendWebhook(
           data: {
             webhookId: webhook.id,
             eventType: event,
-            payload,
+            payload: payload as any,
             error: error.message || "Unknown error",
             durationMs: 0,
           },

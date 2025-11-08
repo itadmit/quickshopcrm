@@ -57,6 +57,7 @@ interface Product {
   description: string | null
   price: number
   comparePrice: number | null
+  sku?: string | null
   images: string[]
   availability: string
   inventoryQty: number
@@ -66,6 +67,7 @@ interface Product {
     id: string
     name: string
     price: number | null
+    sku?: string | null
     inventoryQty: number
   }>
   options?: Array<{

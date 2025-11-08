@@ -29,16 +29,16 @@ export async function POST(req: NextRequest) {
 
     // Send test email
     await sendEmail({
-      to: to || session.user.email || 'quickcrmil@gmail.com',
-      subject: subject || 'בדיקת מערכת האימיילים - QuickCRM',
+      to: to || session.user.email || 'quickshopil@gmail.com',
+      subject: subject || 'בדיקת מערכת האימיילים - Quick Shop',
       html: getEmailTemplate({
         title: 'בדיקת מערכת האימיילים',
         content: `
           <h2>שלום ${session.user.name}! 👋</h2>
-          <p>${message || 'זה אימייל בדיקה ממערכת QuickCRM.'}</p>
+          <p>${message || 'זה אימייל בדיקה ממערכת Quick Shop.'}</p>
           <p>אם קיבלת אימייל זה, המערכת עובדת כראוי! ✅</p>
         `,
-        footer: `אימייל זה נשלח מ-QuickCRM ב-${new Date().toLocaleString('he-IL')}`,
+        footer: `אימייל זה נשלח מ-Quick Shop ב-${new Date().toLocaleString('he-IL')}`,
       }),
     })
 

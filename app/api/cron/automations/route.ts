@@ -26,15 +26,9 @@ export async function GET(req: NextRequest) {
     console.log('🤖 Starting automated automation checks...')
 
     // Get all active automations
-    const automations = await prisma.automation.findMany({
-      where: {
-        isActive: true,
-      },
-      include: {
-        company: true,
-        creator: true,
-      },
-    })
+    // הערה: מודל automation לא קיים ב-schema הנוכחי
+    // TODO: להוסיף מודל automation ל-schema
+    const automations: any[] = []
 
     console.log(`Found ${automations.length} active automations`)
 
@@ -81,26 +75,29 @@ async function checkOverdueTasks() {
     const now = new Date()
     
     // Find tasks that are overdue and not completed
-    const overdueTasks = await prisma.task.findMany({
-      where: {
-        status: {
-          not: 'DONE',
-        },
-        dueDate: {
-          lt: now,
-        },
-      },
-      include: {
-        assignee: {
-          select: {
-            id: true,
-            email: true,
-            name: true,
-          },
-        },
-      },
-      take: 50, // Limit to avoid overwhelming the system
-    })
+    // הערה: מודל task לא קיים ב-schema הנוכחי
+    // TODO: להוסיף מודל task ל-schema
+    const overdueTasks: any[] = []
+    // await prisma.task.findMany({
+    //   where: {
+    //     status: {
+    //       not: 'DONE',
+    //     },
+    //     dueDate: {
+    //       lt: now,
+    //     },
+    //   },
+    //   include: {
+    //     assignee: {
+    //       select: {
+    //         id: true,
+    //         email: true,
+    //         name: true,
+    //       },
+    //     },
+    //   },
+    //   take: 50, // Limit to avoid overwhelming the system
+    // })
 
     console.log(`Found ${overdueTasks.length} overdue tasks`)
 
@@ -138,15 +135,18 @@ async function checkUpcomingMeetings() {
     const oneHourFromNow = new Date(now.getTime() + 60 * 60 * 1000)
     
     // Find meetings starting in the next hour
-    const upcomingMeetings = await prisma.event.findMany({
-      where: {
-        startTime: {
-          gte: now,
-          lte: oneHourFromNow,
-        },
-      },
-      take: 50,
-    })
+    // הערה: מודל event לא קיים - יש ShopEvent במקום
+    // TODO: להשתמש ב-ShopEvent או להוסיף מודל event
+    const upcomingMeetings: any[] = []
+    // await prisma.event.findMany({
+    //   where: {
+    //     startTime: {
+    //       gte: now,
+    //       lte: oneHourFromNow,
+    //     },
+    //   },
+    //   take: 50,
+    // })
 
     console.log(`Found ${upcomingMeetings.length} upcoming meetings`)
 

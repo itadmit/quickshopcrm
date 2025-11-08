@@ -183,10 +183,27 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json(customer, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: error.errors[0].message },
+        { status: 400 }
+      )
+    }
+
+    // טיפול בשגיאות Prisma
+    if (error?.code === 'P2002') {
+      // Unique constraint violation
+      return NextResponse.json(
+        { error: "Customer with this email already exists in this shop" },
+        { status: 400 }
+      )
+    }
+
+    if (error?.code === 'P2003') {
+      // Foreign key constraint violation
+      return NextResponse.json(
+        { error: "Invalid shop ID or shop does not exist" },
         { status: 400 }
       )
     }

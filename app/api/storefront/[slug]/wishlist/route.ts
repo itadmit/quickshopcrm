@@ -213,14 +213,20 @@ export async function DELETE(
       })
     } else {
       // מחיקה לפי productId + variantId
-      await prisma.wishlistItem.delete({
-        where: {
-          customerId_productId_variantId: {
-            customerId,
-            productId: productId!,
-            variantId: variantId || null,
-          },
+      // הערה: Prisma דורש null במקום undefined עבור שדות אופציונליים ב-unique constraint
+      const deleteWhere: any = {
+        customerId_productId_variantId: {
+          customerId,
+          productId: productId!,
         },
+      }
+      if (variantId) {
+        deleteWhere.customerId_productId_variantId.variantId = variantId
+      } else {
+        deleteWhere.customerId_productId_variantId.variantId = null
+      }
+      await prisma.wishlistItem.delete({
+        where: deleteWhere,
       })
     }
 

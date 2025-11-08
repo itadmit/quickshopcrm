@@ -74,7 +74,7 @@ async function sendEmailNotification(data: NotificationData): Promise<void> {
       content: `
         <p>${data.message}</p>
       `,
-      footer: `התראה זו נשלחה מ-QuickCRM ב-${new Date().toLocaleString('he-IL')}`,
+      footer: `התראה זו נשלחה מ-Quick Shop ב-${new Date().toLocaleString('he-IL')}`,
     })
 
     await sendEmailViaGmail({

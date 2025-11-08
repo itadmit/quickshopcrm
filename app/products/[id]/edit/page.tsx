@@ -1555,7 +1555,7 @@ export default function EditProductPage() {
                       onClick={() => {
                         const productIdentifier = formData.slug || product.id
                         const url = getShopProductUrl(
-                          { slug: product.shop.slug, domain: product.shop.domain },
+                          { slug: product.shop?.slug || '', domain: product.shop?.domain || '' },
                           productIdentifier
                         )
                         window.open(url, "_blank")

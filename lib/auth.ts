@@ -118,10 +118,10 @@ export const authOptions: NextAuthOptions = {
       try {
         if (user) {
           token.id = user.id
-          token.name = user.name
+          token.name = user.name || ''
           token.role = user.role
           token.companyId = user.companyId
-          token.companyName = user.companyName
+          token.companyName = user.companyName || ''
         }
         
         // אם זה Google OAuth, עדכון המידע מה-DB

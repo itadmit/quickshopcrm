@@ -1,6 +1,6 @@
-# Quick crm - מערכת CRM מתקדמת בעברית
+# Quick Shop - פלטפורמה לניהול חנויות אונליין
 
-מערכת CRM מלאה ומתקדמת עם תמיכה מלאה ב-RTL ובעברית, בעיצוב Prodify, מבוססת על Next.js 14, TypeScript, Prisma ו-PostgreSQL.
+פלטפורמה מלאה לניהול חנויות אונליין עם תמיכה מלאה ב-RTL ובעברית, בעיצוב Prodify, מבוססת על Next.js 14, TypeScript, Prisma ו-PostgreSQL.
 
 ## ✨ תכונות עיקריות
 
@@ -45,7 +45,7 @@
 - Onboarding לקוח חדש
 - פרויקט בניית אתר
 - קמפיין שיווקי
-- יישום מערכת CRM
+- הקמת חנות אונליין
 - אפשרות להוסיף משימות ידנית
 
 ### 🔐 אבטחה והרשאות
@@ -82,7 +82,7 @@
 1. שכפל את הפרויקט:
 \`\`\`bash
 git clone <repository-url>
-cd quickcrmnextjs
+cd quickshop
 \`\`\`
 
 2. התקן תלויות:
@@ -97,7 +97,7 @@ cp .env.example .env
 
 4. ערוך את `.env` עם הפרטים שלך:
 \`\`\`env
-DATABASE_URL="postgresql://crm_user:crm_pass@localhost:5432/crm_db?schema=public"
+DATABASE_URL="postgresql://quickshop_user:quickshop_pass@localhost:5433/quickshop_db?schema=public"
 NEXTAUTH_SECRET="your-secret-key-here"
 NEXTAUTH_URL="http://localhost:3000"
 SUPER_ADMIN_EMAIL="itadmit@gmail.com"
@@ -140,7 +140,7 @@ npm run dev
 - **רקע:** `#f7f9fe` (כחול בהיר)
 - **גרדיאנט אלכסוני:** `#6f65e2` → `#b965e2` (סגול)
 - **גרדיאנט אופקי:** `#93f0e1` → `#6374c5` (טורקיז-כחול)
-- **לוגו:** פונט Pacifico - "Quick crm"
+- **לוגו:** פונט Pacifico - "Quick Shop"
 - **תוכן:** ממורכז עם max-width של 1280px
 - **פונט:** Noto Sans Hebrew לעברית
 
@@ -158,7 +158,7 @@ npm run dev
 ## מבנה הפרויקט
 
 \`\`\`
-quickcrmnextjs/
+quickshop/
 ├── app/                      # Next.js App Router
 │   ├── api/                  # API Routes
 │   │   ├── auth/            # Authentication endpoints

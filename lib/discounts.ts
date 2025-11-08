@@ -38,7 +38,7 @@ export async function calculateCustomerDiscount(
       return 0
     }
 
-    const settings = shop.customerDiscountSettings as DiscountSettings
+    const settings = (shop.customerDiscountSettings as unknown) as DiscountSettings
 
     if (!settings.enabled) {
       return 0
@@ -122,7 +122,7 @@ export async function updateCustomerTier(shopId: string, customerId: string) {
       return
     }
 
-    const settings = shop.customerDiscountSettings as DiscountSettings
+    const settings = (shop.customerDiscountSettings as unknown) as DiscountSettings
 
     if (!settings.enabled || !settings.tiers) {
       return

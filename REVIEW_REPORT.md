@@ -1,7 +1,7 @@
 # דוח סקירת מערכת Quick Shop - מה קיים ומה חסר
 
 **תאריך:** ${new Date().toLocaleDateString('he-IL')}  
-**מערכת:** Quick Shop CRM
+**מערכת:** Quick Shop
 
 ---
 

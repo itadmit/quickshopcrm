@@ -35,18 +35,19 @@ export async function GET(
           id: fileId,
           companyId: session.user.companyId,
         },
-        include: {
-          lead: {
-            select: {
-              id: true,
-            },
-          },
-          client: {
-            select: {
-              id: true,
-            },
-          },
-        },
+        // הערה: מודל File לא כולל קשרים ל-lead או client
+        // include: {
+        //   lead: {
+        //     select: {
+        //       id: true,
+        //     },
+        //   },
+        //   client: {
+        //     select: {
+        //       id: true,
+        //     },
+        //   },
+        // },
       })
     } else {
       // אם אין session, נבדוק אם הקובץ קשור להצעה (quote)
@@ -56,18 +57,19 @@ export async function GET(
           id: fileId,
           entityType: "quote",
         },
-        include: {
-          lead: {
-            select: {
-              id: true,
-            },
-          },
-          client: {
-            select: {
-              id: true,
-            },
-          },
-        },
+        // הערה: מודל File לא כולל קשרים ל-lead או client
+        // include: {
+        //   lead: {
+        //     select: {
+        //       id: true,
+        //     },
+        //   },
+        //   client: {
+        //     select: {
+        //       id: true,
+        //     },
+        //   },
+        // },
       })
     }
 

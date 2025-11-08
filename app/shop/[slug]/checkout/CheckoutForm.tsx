@@ -57,6 +57,7 @@ interface Cart {
 interface Shop {
   id: string
   name: string
+  description: string | null
   logo: string | null
   shippingSettings?: {
     enabled: boolean
@@ -113,7 +114,13 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
       return 0
     }
 
-    const options = shop.shippingSettings.options || {}
+    const options = (shop.shippingSettings?.options || {}) as { 
+      freeOver?: boolean; 
+      freeOverAmount?: number; 
+      free?: boolean;
+      fixed?: boolean;
+      fixedCost?: number;
+    }
     
     if (options.freeOver && options.freeOverAmount && cart.subtotal >= options.freeOverAmount) {
       return 0

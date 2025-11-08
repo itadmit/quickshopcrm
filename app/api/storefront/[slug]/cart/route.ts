@@ -2,60 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { cookies } from "next/headers"
-import { calculateCustomerDiscount } from "@/lib/discounts"
-
-// פונקציה סינכרונית לחישוב הנחה (ללא queries)
-function calculateCustomerDiscountSync(
-  settings: any,
-  customer: { totalSpent: number; orderCount: number; tier: string | null },
-  basePrice: number
-): number {
-  if (!settings || !settings.enabled) {
-    return 0
-  }
-
-  let discount = 0
-
-  // בדיקת tier
-  if (settings.tiers && settings.tiers.length > 0) {
-    for (const tier of settings.tiers) {
-      if (
-        customer.totalSpent >= tier.minSpent &&
-        customer.orderCount >= tier.minOrders
-      ) {
-        if (tier.discount.type === "PERCENTAGE") {
-          discount = (basePrice * tier.discount.value) / 100
-        } else {
-          discount = tier.discount.value
-        }
-        break
-      }
-    }
-  }
-
-  // אם אין tier מתאים, בדיקת baseDiscount
-  if (discount === 0 && settings.baseDiscount) {
-    let applicable = false
-
-    if (settings.baseDiscount.applicableTo === "ALL_PRODUCTS") {
-      applicable = true
-    } else if (settings.baseDiscount.applicableTo === "PRODUCTS") {
-      applicable = true // פשוט
-    } else if (settings.baseDiscount.applicableTo === "CATEGORIES") {
-      applicable = true // פשוט
-    }
-
-    if (applicable) {
-      if (settings.baseDiscount.type === "PERCENTAGE") {
-        discount = (basePrice * settings.baseDiscount.value) / 100
-      } else {
-        discount = settings.baseDiscount.value
-      }
-    }
-  }
-
-  return Math.min(discount, basePrice)
-}
+import { calculateCart } from "@/lib/cart-calculations"
 
 const addToCartSchema = z.object({
   productId: z.string(),
@@ -144,10 +91,10 @@ export async function GET(
       })
     }
 
-    // בניית פריטי עגלה עם פרטי מוצרים - אופטימיזציה עם batch queries
+    // בניית פריטי עגלה
     const cartItems = cart.items as any[]
     
-    // אם העגלה ריקה, החזר מיד (אופטימיזציה)
+    // אם העגלה ריקה, החזר מיד
     if (!cartItems || cartItems.length === 0) {
       return NextResponse.json({
         id: cart.id,
@@ -158,169 +105,34 @@ export async function GET(
         discount: 0,
         customerDiscount: undefined,
         couponDiscount: undefined,
+        automaticDiscount: undefined,
         total: 0,
         couponCode: cart.couponCode,
         expiresAt: cart.expiresAt,
       })
     }
-    
-    // איסוף כל ה-IDs
-    const productIdsSet = new Set(cartItems.map((item: any) => item.productId))
-    const productIds = Array.from(productIdsSet)
-    const variantIds = cartItems
-      .map((item: any) => item.variantId)
-      .filter((id: string | null) => id !== null && id !== undefined)
 
-    // Batch queries - כל המוצרים ב-query אחד
-    const products = await prisma.product.findMany({
-      where: {
-        id: { in: productIds },
-        shopId: shop.id,
-      },
-      select: {
-        id: true,
-        name: true,
-        price: true,
-        comparePrice: true,
-        images: true,
-        sku: true,
-      },
-    })
-
-    // Batch queries - כל ה-variants ב-query אחד
-    const variants = variantIds.length > 0
-      ? await prisma.productVariant.findMany({
-          where: { id: { in: variantIds } },
-          select: {
-            id: true,
-            name: true,
-            price: true,
-            sku: true,
-            inventoryQty: true,
-          },
-        })
-      : []
-
-    // יצירת maps לזיהוי מהיר
-    const productsMap = new Map(products.map((p: any) => [p.id, p]))
-    const variantsMap = new Map(variants.map((v: any) => [v.id, v]))
-
-    // טעינת הגדרות הנחות פעם אחת (אם יש customerId)
-    let customerDiscountSettings = null
-    let customer = null
-    if (customerId) {
-      const [shopWithSettings, customerData] = await Promise.all([
-        prisma.shop.findUnique({
-          where: { id: shop.id },
-          select: { customerDiscountSettings: true },
-        }),
-        prisma.customer.findUnique({
-          where: { id: customerId },
-          select: {
-            totalSpent: true,
-            orderCount: true,
-            tier: true,
-          },
-        }),
-      ])
-      customerDiscountSettings = shopWithSettings?.customerDiscountSettings
-      customer = customerData
-    }
-
-    const enrichedItems = []
-    let subtotal = 0
-    let customerDiscountTotal = 0
-
-    for (const item of cartItems) {
-      const product = productsMap.get(item.productId)
-      if (!product) continue
-
-      const variant = item.variantId ? variantsMap.get(item.variantId) : null
-
-      const basePrice = variant?.price || product.price
-      let itemPrice = basePrice
-
-      // חישוב הנחת לקוח רשום (ללא queries נוספים)
-      if (customerId && customer && customerDiscountSettings) {
-        const discount = calculateCustomerDiscountSync(
-          customerDiscountSettings as any,
-          customer,
-          basePrice
-        )
-        itemPrice = basePrice - discount
-        customerDiscountTotal += discount * item.quantity
-      }
-
-      const itemTotal = itemPrice * item.quantity
-      subtotal += itemTotal
-
-      enrichedItems.push({
-        productId: item.productId,
-        variantId: item.variantId,
-        quantity: item.quantity,
-        product: {
-          id: product.id,
-          name: product.name,
-          price: product.price,
-          comparePrice: product.comparePrice,
-          images: product.images || [],
-          sku: product.sku,
-        },
-        variant: variant
-          ? {
-              id: variant.id,
-              name: variant.name,
-              price: variant.price,
-              sku: variant.sku,
-              inventoryQty: variant.inventoryQty,
-            }
-          : null,
-        price: itemPrice,
-        total: itemTotal,
-      })
-    }
-
-    // חישוב הנחה מקופון
-    let discount = 0
-    if (cart.couponCode) {
-      const coupon = await prisma.coupon.findUnique({
-        where: { code: cart.couponCode },
-      })
-
-      if (coupon && coupon.isActive && coupon.shopId === shop.id) {
-        if (coupon.type === "PERCENTAGE") {
-          discount = (subtotal * coupon.value) / 100
-        } else if (coupon.type === "FIXED") {
-          discount = coupon.value
-        }
-
-        if (coupon.maxDiscount) {
-          discount = Math.min(discount, coupon.maxDiscount)
-        }
-      }
-    }
-
-    // חישוב מע"מ
-    const tax = shop.taxEnabled && shop.taxRate
-      ? (subtotal - discount) * (shop.taxRate / 100)
-      : 0
-
-    // חישוב משלוח (פשוט - ניתן לשפר)
-    const shipping = 0
-
-    // סה"כ
-    const total = subtotal - discount - customerDiscountTotal + tax + shipping
+    // שימוש בפונקציה המרכזית לחישוב עגלה
+    const calculation = await calculateCart(
+      shop.id,
+      cartItems,
+      cart.couponCode,
+      customerId,
+      shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
+      null // shipping - לא מחושב כאן
+    )
 
     return NextResponse.json({
       id: cart.id,
-      items: enrichedItems,
-      subtotal,
-      tax,
-      shipping,
-      discount: discount + customerDiscountTotal,
-      customerDiscount: customerDiscountTotal > 0 ? customerDiscountTotal : undefined,
-      couponDiscount: discount > 0 ? discount : undefined,
-      total: Math.max(0, total),
+      items: calculation.items,
+      subtotal: calculation.subtotal,
+      tax: calculation.tax,
+      shipping: calculation.shipping,
+      discount: calculation.automaticDiscount + calculation.couponDiscount + calculation.customerDiscount,
+      customerDiscount: calculation.customerDiscount > 0 ? calculation.customerDiscount : undefined,
+      couponDiscount: calculation.couponDiscount > 0 ? calculation.couponDiscount : undefined,
+      automaticDiscount: calculation.automaticDiscount > 0 ? calculation.automaticDiscount : undefined,
+      total: calculation.total,
       couponCode: cart.couponCode,
       expiresAt: cart.expiresAt,
     })
@@ -582,6 +394,56 @@ export async function PUT(
             { error: "Coupon expired" },
             { status: 400 }
           )
+        }
+
+        // בדיקת maxUses
+        if (coupon.maxUses && coupon.usedCount !== null && coupon.usedCount >= coupon.maxUses) {
+          return NextResponse.json(
+            { error: "Coupon usage limit reached" },
+            { status: 400 }
+          )
+        }
+
+        // בדיקת minOrder - צריך לחשב את ה-subtotal של העגלה
+        if (coupon.minOrder) {
+          // חישוב subtotal מהיר
+          const cartItems = items as any[]
+          const productIds = [...new Set(cartItems.map((item: any) => item.productId))]
+          const variantIds = cartItems
+            .map((item: any) => item.variantId)
+            .filter((id: string | null) => id !== null && id !== undefined)
+
+          const [products, variants] = await Promise.all([
+            prisma.product.findMany({
+              where: { id: { in: productIds }, shopId: shop.id },
+              select: { id: true, price: true },
+            }),
+            variantIds.length > 0
+              ? prisma.productVariant.findMany({
+                  where: { id: { in: variantIds } },
+                  select: { id: true, price: true },
+                })
+              : [],
+          ])
+
+          const productsMap = new Map(products.map((p: any) => [p.id, p]))
+          const variantsMap = new Map(variants.map((v: any) => [v.id, v]))
+
+          let subtotal = 0
+          for (const item of cartItems) {
+            const product = productsMap.get(item.productId)
+            if (!product) continue
+            const variant = item.variantId ? variantsMap.get(item.variantId) : null
+            const basePrice = variant?.price || product.price
+            subtotal += basePrice * item.quantity
+          }
+
+          if (subtotal < coupon.minOrder) {
+            return NextResponse.json(
+              { error: `Minimum order amount of ${coupon.minOrder} required` },
+              { status: 400 }
+            )
+          }
         }
 
         // עדכון קופון

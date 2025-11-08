@@ -40,7 +40,7 @@ export function ShopProvider({ children }: { children: ReactNode }) {
 
     // אם המשתמש מחובר, טען חנויות
     if (status === "authenticated" && session?.user) {
-      async function loadShops() {
+      const loadShops = async () => {
         try {
           const response = await fetch("/api/shops")
           if (response.ok) {

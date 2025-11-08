@@ -35,7 +35,7 @@ export async function GET(
     if (user.role === "ADMIN" || user.role === "SUPER_ADMIN") {
       return NextResponse.json({
         permissions: {
-          // Quick CRM הרשאות
+          // Quick Shop הרשאות
           dashboard: true,
           tasks: true,
           calendar: true,

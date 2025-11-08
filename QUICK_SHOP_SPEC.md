@@ -2323,7 +2323,7 @@ model BlogComment {
 **הגדרות:**
 - גופן ראשי: Noto Sans Hebrew
 - גופנים חלופיים: Assistant, Heebo, Open Sans Hebrew
-- גופן לוגו: Pacifico (כמו ב-CRM)
+- גופן לוגו: Pacifico
 
 ### תבניות עיצוב (Themes)
 - **Default**: תבנית נקייה ומינימליסטית

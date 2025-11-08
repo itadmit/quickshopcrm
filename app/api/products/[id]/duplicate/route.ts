@@ -57,7 +57,7 @@ export async function POST(
         inventoryQty: 0, // מלאי 0 במוצר משוכפל
         lowStockAlert: originalProduct.lowStockAlert,
         weight: originalProduct.weight,
-        dimensions: originalProduct.dimensions,
+        dimensions: originalProduct.dimensions as any,
         status: "DRAFT", // מוצר משוכפל מתחיל כ-DRAFT
         images: originalProduct.images,
         video: originalProduct.video,
@@ -67,7 +67,7 @@ export async function POST(
         availableDate: originalProduct.availableDate,
         seoTitle: originalProduct.seoTitle,
         seoDescription: originalProduct.seoDescription,
-        customFields: originalProduct.customFields,
+        customFields: originalProduct.customFields as any,
       },
     })
 
@@ -99,7 +99,7 @@ export async function POST(
             productId: duplicatedProduct.id,
             name: option.name,
             type: option.type || "button",
-            values: option.values, // הערכים נשמרים ב-JSON
+            values: option.values as any, // הערכים נשמרים ב-JSON
             position: option.position,
           },
         })

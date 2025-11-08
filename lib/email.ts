@@ -4,7 +4,7 @@ import nodemailer from 'nodemailer'
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.GMAIL_USER || 'quickcrmil@gmail.com',
+    user: process.env.GMAIL_USER || 'quickshopil@gmail.com',
     pass: process.env.GMAIL_APP_PASSWORD || 'umqm cbum rdmp xsmm',
   },
 })
@@ -17,7 +17,7 @@ export async function sendEmail({
   subject,
   html,
   text,
-  from = 'QuickCRM <quickcrmil@gmail.com>',
+  from = 'Quick Shop <quickshopil@gmail.com>',
   attachments,
 }: {
   to: string | string[]
@@ -73,7 +73,7 @@ export function parseEmailTemplate(
 export function getEmailTemplate({
   title,
   content,
-  footer = 'הודעה זו נשלחה אוטומטית מ-QuickCRM',
+  footer = 'הודעה זו נשלחה אוטומטית מ-Quick Shop',
 }: {
   title: string
   content: string
@@ -167,7 +167,7 @@ export function getEmailTemplate({
     </div>
     <div class="footer">
       <p>${footer}</p>
-      <p>QuickCRM © ${new Date().getFullYear()}</p>
+      <p>Quick Shop © ${new Date().getFullYear()}</p>
     </div>
   </div>
 </body>
@@ -180,15 +180,15 @@ export function getEmailTemplate({
  */
 export const emailTemplates = {
   welcome: (name: string) => ({
-    subject: 'ברוך הבא ל-QuickCRM! 🎉',
+    subject: 'ברוך הבא ל-Quick Shop! 🎉',
     html: getEmailTemplate({
       title: 'ברוך הבא!',
       content: `
         <p>שלום ${name},</p>
-        <p>תודה שנרשמת ל-QuickCRM! אנחנו שמחים שהצטרפת אלינו.</p>
-        <p>המערכת שלנו תעזור לך לנהל את הלידים והלקוחות שלך בצורה יעילה ופשוטה.</p>
+        <p>תודה שנרשמת ל-Quick Shop! אנחנו שמחים שהצטרפת אלינו.</p>
+        <p>המערכת שלנו תעזור לך לנהל את החנות שלך בצורה יעילה ופשוטה.</p>
         <p>אם יש לך שאלות, אנחנו כאן כדי לעזור!</p>
-        <p><strong>בהצלחה,<br>צוות QuickCRM</strong></p>
+        <p><strong>בהצלחה,<br>צוות Quick Shop</strong></p>
       `,
     }),
   }),
