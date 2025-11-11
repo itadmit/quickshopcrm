@@ -46,7 +46,10 @@ export async function GET(
     // בדיקה שהמוצר שייך לחברה
     const product = await prisma.product.findFirst({
       where: {
-        id: params.id,
+        OR: [
+          { id: params.id },
+          { slug: params.id }
+        ],
         shop: {
           companyId: session.user.companyId,
         },
@@ -59,7 +62,7 @@ export async function GET(
 
     const options = await prisma.productOption.findMany({
       where: {
-        productId: params.id,
+        productId: product.id,
       },
       orderBy: {
         position: "asc",
@@ -90,7 +93,10 @@ export async function POST(
     // בדיקה שהמוצר שייך לחברה
     const product = await prisma.product.findFirst({
       where: {
-        id: params.id,
+        OR: [
+          { id: params.id },
+          { slug: params.id }
+        ],
         shop: {
           companyId: session.user.companyId,
         },
@@ -106,7 +112,7 @@ export async function POST(
 
     const option = await prisma.productOption.create({
       data: {
-        productId: params.id,
+        productId: product.id,
         name: data.name,
         type: data.type,
         values: data.values as any,
@@ -120,9 +126,9 @@ export async function POST(
         shopId: product.shopId,
         type: "product.option.created",
         entityType: "product",
-        entityId: params.id,
+        entityId: product.id,
         payload: {
-          productId: params.id,
+          productId: product.id,
           optionId: option.id,
           name: option.name,
         },

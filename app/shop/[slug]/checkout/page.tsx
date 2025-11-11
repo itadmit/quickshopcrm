@@ -2,6 +2,7 @@ import { cookies, headers } from "next/headers"
 import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { calculateCart } from "@/lib/cart-calculations"
+import { findCart, hasValidCart } from "@/lib/cart-server"
 import { CheckoutForm } from "./CheckoutForm"
 
 async function getCart(slug: string, customerId: string | null) {
@@ -30,43 +31,21 @@ async function getCart(slug: string, customerId: string | null) {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("cart_session")?.value
 
-    if (!sessionId) {
+    // שימוש בפונקציה המרכזית למציאת עגלה
+    const cart = await findCart(shop.id, sessionId, customerId)
+
+    if (!hasValidCart(cart)) {
       return { shop, cart: null }
     }
 
-    let cart = await prisma.cart.findFirst({
-      where: {
-        shopId: shop.id,
-        sessionId,
-        expiresAt: {
-          gt: new Date(),
-        },
-      },
-    })
-
-    if (customerId && !cart) {
-      cart = await prisma.cart.findFirst({
-        where: {
-          shopId: shop.id,
-          customerId,
-          expiresAt: {
-            gt: new Date(),
-          },
-        },
-      })
-    }
-
-    if (!cart || !cart.items || (cart.items as any[]).length === 0) {
-      return { shop, cart: null }
-    }
-
-    const cartItems = cart.items as any[]
+    // TypeScript: cart לא יכול להיות null כאן בגלל הבדיקה למעלה
+    const cartItems = cart!.items as any[]
 
     // שימוש בפונקציה המרכזית לחישוב עגלה
     const calculation = await calculateCart(
       shop.id,
       cartItems,
-      cart.couponCode,
+      cart!.couponCode,
       customerId,
       shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
       null // shipping - לא מחושב כאן, יוחלף בצ'ק אאוט
@@ -94,15 +73,45 @@ async function getCart(slug: string, customerId: string | null) {
     // חישוב מחדש של total עם shipping
     const totalWithShipping = calculation.total - calculation.shipping + shipping
 
+    const checkoutSettings = settings?.checkoutPage || {}
+    
     return {
       shop: {
         ...shop,
         shippingSettings: shippingSettings,
         pickupSettings: pickupSettings,
+        checkoutSettings: {
+          primaryColor: checkoutSettings.primaryColor || "#9333ea",
+          backgroundColor: checkoutSettings.backgroundColor || "#ffffff",
+          textColor: checkoutSettings.textColor || "#111827",
+          sectionBgColor: checkoutSettings.sectionBgColor || "#f9fafb",
+          borderColor: checkoutSettings.borderColor || "#e5e7eb",
+          showNewsletterCheckbox: checkoutSettings.showNewsletterCheckbox !== undefined ? checkoutSettings.showNewsletterCheckbox : true,
+          newsletterDefaultChecked: checkoutSettings.newsletterDefaultChecked !== undefined ? checkoutSettings.newsletterDefaultChecked : true,
+          footerLinks: checkoutSettings.footerLinks || [],
+          customFields: checkoutSettings.customFields || [],
+        },
       },
       cart: {
-        id: cart.id,
-        items: calculation.items,
+        id: cart!.id,
+        items: calculation.items.map(item => ({
+          productId: item.productId,
+          variantId: item.variantId ?? null,
+          quantity: item.quantity,
+          price: item.price,
+          total: item.total,
+          product: {
+            id: item.product.id,
+            name: item.product.name,
+            images: Array.isArray(item.product.images) 
+              ? item.product.images 
+              : (item.product.images ? [item.product.images] : []),
+          },
+          variant: item.variant ? {
+            id: item.variant.id,
+            name: item.variant.name,
+          } : null,
+        })),
         subtotal: calculation.subtotal,
         tax: calculation.tax,
         shipping,
@@ -111,8 +120,8 @@ async function getCart(slug: string, customerId: string | null) {
         couponDiscount: calculation.couponDiscount > 0 ? calculation.couponDiscount : undefined,
         automaticDiscount: calculation.automaticDiscount > 0 ? calculation.automaticDiscount : undefined,
         total: Math.max(0, totalWithShipping),
-        couponCode: cart.couponCode,
-        expiresAt: cart.expiresAt,
+        couponCode: cart!.couponCode,
+        expiresAt: cart!.expiresAt,
       },
       }
     } catch (error) {

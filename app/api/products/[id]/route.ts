@@ -43,7 +43,10 @@ export async function GET(
 
     const product = await prisma.product.findFirst({
       where: {
-        id: params.id,
+        OR: [
+          { id: params.id },
+          { slug: params.id }
+        ],
         shop: {
           companyId: session.user.companyId,
         },
@@ -105,7 +108,10 @@ export async function PUT(
     // בדיקה שהמוצר שייך לחברה
     const existingProduct = await prisma.product.findFirst({
       where: {
-        id: params.id,
+        OR: [
+          { id: params.id },
+          { slug: params.id }
+        ],
         shop: {
           companyId: session.user.companyId,
         },
@@ -125,6 +131,9 @@ export async function PUT(
         where: {
           shopId: existingProduct.shopId,
           slug: data.slug,
+          NOT: {
+            id: existingProduct.id
+          }
         },
       })
 
@@ -144,7 +153,7 @@ export async function PUT(
 
     // עדכון המוצר
     const product = await prisma.product.update({
-      where: { id: params.id },
+      where: { id: existingProduct.id },
       data: updateData,
       include: {
         shop: {
@@ -204,7 +213,10 @@ export async function DELETE(
     // בדיקה שהמוצר שייך לחברה
     const product = await prisma.product.findFirst({
       where: {
-        id: params.id,
+        OR: [
+          { id: params.id },
+          { slug: params.id }
+        ],
         shop: {
           companyId: session.user.companyId,
         },
@@ -217,7 +229,7 @@ export async function DELETE(
 
     // מחיקת המוצר (עם כל הקשרים - cascade)
     await prisma.product.delete({
-      where: { id: params.id },
+      where: { id: product.id },
     })
 
     // יצירת אירוע
@@ -226,9 +238,9 @@ export async function DELETE(
         shopId: product.shopId,
         type: "product.deleted",
         entityType: "product",
-        entityId: params.id,
+        entityId: product.id,
         payload: {
-          productId: params.id,
+          productId: product.id,
         },
         userId: session.user.id,
       },

@@ -1134,15 +1134,20 @@ export default function SettingsPage() {
 // Subscription Tab Component
 function SubscriptionTab() {
   const { toast } = useToast()
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const [subscription, setSubscription] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [selectingPlan, setSelectingPlan] = useState(false)
   const [cancelling, setCancelling] = useState(false)
 
   useEffect(() => {
-    fetchSubscription()
-  }, [])
+    // נחכה שה-session יטען לפני שנבצע fetch
+    if (status === 'authenticated') {
+      fetchSubscription()
+    } else if (status === 'unauthenticated') {
+      setLoading(false)
+    }
+  }, [status])
 
   const fetchSubscription = async () => {
     try {
@@ -1151,10 +1156,10 @@ function SubscriptionTab() {
         const data = await response.json()
         setSubscription(data.subscription)
       } else {
-        // אם אין מנוי, זה לא שגיאה - פשוט נשאיר subscription כ-null
+        // אם אין מנוי או אין הרשאה, זה לא שגיאה - פשוט נשאיר subscription כ-null
         const errorData = await response.json().catch(() => ({}))
-        // רק אם זו שגיאה אמיתית (לא 404 או מצב תקין), נציג הודעת שגיאה
-        if (response.status !== 404 && response.status >= 500) {
+        // רק אם זו שגיאה אמיתית (לא 401, 404 או מצב תקין), נציג הודעת שגיאה
+        if (response.status !== 401 && response.status !== 404 && response.status >= 500) {
           toast({
             title: "שגיאה",
             description: errorData.error || "לא ניתן לטעון את פרטי המנוי",
@@ -1164,13 +1169,8 @@ function SubscriptionTab() {
         setSubscription(null)
       }
     } catch (error) {
+      // שגיאת רשת או שגיאה לא צפויה - לא נציג הודעת שגיאה
       console.error('Error fetching subscription:', error)
-      // רק אם זו שגיאה אמיתית, נציג הודעת שגיאה
-      toast({
-        title: "שגיאה",
-        description: "אירעה שגיאה בטעינת פרטי המנוי",
-        variant: "destructive",
-      })
       setSubscription(null)
     } finally {
       setLoading(false)
@@ -1180,27 +1180,12 @@ function SubscriptionTab() {
   const handleSelectPlan = async (plan: "BRANDING" | "QUICK_SHOP") => {
     setSelectingPlan(true)
     try {
-      // בדיקה אם יש אינטגרציה עם PayPlus
-      const integrationRes = await fetch('/api/integrations')
-      const integrations = await integrationRes.json()
-      const payplusIntegration = integrations.find((i: any) => i.type === 'PAYPLUS' && i.isActive)
-      
-      if (!payplusIntegration) {
-        toast({
-          title: "נדרש חיבור ל-PayPlus",
-          description: "אנא חבר את PayPlus בהגדרות > אינטגרציות לפני רכישת מנוי",
-          variant: "destructive",
-        })
-        setSelectingPlan(false)
-        return
-      }
-
       // חישוב מחיר
       const basePrice = plan === "BRANDING" ? 299 : 399
       const tax = basePrice * 0.18
       const total = basePrice + tax
 
-      // יצירת תשלום דרך PayPlus
+      // יצירת תשלום דרך PayPlus (באמצעות ההגדרות הגלובליות)
       const paymentRes = await fetch('/api/subscriptions/pay', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1212,12 +1197,12 @@ function SubscriptionTab() {
 
       if (paymentRes.ok) {
         const paymentData = await paymentRes.json()
-        // PayPlus מחזיר URL לתשלום או transaction ID
+        // PayPlus מחזיר URL לתשלום
         if (paymentData.paymentUrl) {
           // מעבר לדף תשלום PayPlus
           window.location.href = paymentData.paymentUrl
         } else if (paymentData.transactionId) {
-          // אם התשלום הושלם מיד
+          // אם התשלום הושלם מיד (לא אמור לקרות במנויים)
           toast({
             title: "הצלחה!",
             description: "המנוי הופעל בהצלחה",

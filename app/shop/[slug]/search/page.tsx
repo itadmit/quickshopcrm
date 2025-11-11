@@ -17,6 +17,7 @@ import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton"
 import { StorefrontHeader } from "@/components/storefront/StorefrontHeader"
 import { useTracking } from "@/components/storefront/TrackingPixelProvider"
 import { trackPageView, trackSearch } from "@/lib/tracking-events"
+import { AdminBar } from "@/components/storefront/AdminBar"
 
 interface Shop {
   id: string
@@ -381,6 +382,9 @@ export default function SearchPage() {
           </div>
         </div>
       </footer>
+
+      {/* Admin Bar - רק למנהלים */}
+      <AdminBar slug={slug} pageType="other" />
     </div>
   )
 }

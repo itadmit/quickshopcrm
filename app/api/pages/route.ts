@@ -9,6 +9,11 @@ const createPageSchema = z.object({
   title: z.string().min(2, "כותרת חייבת להכיל לפחות 2 תווים"),
   slug: z.string().min(2).regex(/^[a-z0-9-]+$/).optional(),
   content: z.string().optional(),
+  template: z.enum(["STANDARD", "CHOICES_OF"]).optional(),
+  displayType: z.enum(["GRID", "LIST"]).optional(), // סוג תצוגה לטמפלט "הבחירות של"
+  selectedProducts: z.array(z.string()).optional(), // רשימת ID של מוצרים נבחרים
+  featuredImage: z.string().optional(), // תמונה ראשית לעמוד
+  couponCode: z.string().optional(), // קוד קופון להפעלה אוטומטית
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
   isPublished: z.boolean().default(false),
@@ -114,6 +119,11 @@ export async function POST(req: NextRequest) {
         title: data.title,
         slug,
         content: data.content,
+        template: data.template || "STANDARD",
+        displayType: data.displayType || (data.template === "CHOICES_OF" ? "GRID" : null),
+        selectedProducts: data.selectedProducts || undefined,
+        featuredImage: data.featuredImage || null,
+        couponCode: data.couponCode || null,
         seoTitle: data.seoTitle,
         seoDescription: data.seoDescription,
         isPublished: data.isPublished,
@@ -121,6 +131,47 @@ export async function POST(req: NextRequest) {
         menuPosition: data.menuPosition,
       },
     })
+
+    // טיפול ב-showInMenu - הוספה לתפריט אם מסומן
+    if (data.showInMenu) {
+      // חיפוש תפריט HEADER לחנות
+      let headerNavigation = await prisma.navigation.findFirst({
+        where: {
+          shopId: page.shopId,
+          location: "HEADER",
+        },
+      })
+
+      // אם אין תפריט HEADER, ניצור אחד
+      if (!headerNavigation) {
+        headerNavigation = await prisma.navigation.create({
+          data: {
+            shopId: page.shopId,
+            name: "תפריט ראשי",
+            location: "HEADER",
+            items: [],
+          },
+        })
+      }
+
+      const items = (headerNavigation.items as any[]) || []
+
+      // הוספת הדף לתפריט
+      const newItem = {
+        id: `page-${page.id}`,
+        label: page.title,
+        type: "PAGE",
+        url: `/pages/${page.slug}`,
+        position: items.length,
+        parentId: null,
+      }
+      items.push(newItem)
+
+      await prisma.navigation.update({
+        where: { id: headerNavigation.id },
+        data: { items },
+      })
+    }
 
     // יצירת אירוע
     await prisma.shopEvent.create({

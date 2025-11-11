@@ -39,6 +39,12 @@ export interface CartCalculationResult {
   tax: number
   shipping: number
   total: number
+  couponStatus?: {
+    code: string
+    isValid: boolean
+    reason?: string
+    minOrderRequired?: number
+  }
 }
 
 /**
@@ -327,9 +333,9 @@ async function calculateCouponDiscount(
   couponCode: string | null,
   enrichedItems: EnrichedCartItem[],
   subtotal: number
-): Promise<number> {
+): Promise<{ discount: number; status?: { isValid: boolean; reason?: string; minOrderRequired?: number } }> {
   if (!couponCode) {
-    return 0
+    return { discount: 0 }
   }
 
   const coupon = await prisma.coupon.findUnique({
@@ -337,21 +343,37 @@ async function calculateCouponDiscount(
   })
 
   if (!coupon || !coupon.isActive || coupon.shopId !== shopId) {
-    return 0
+    return { 
+      discount: 0,
+      status: { isValid: false, reason: 'קוד קופון לא תקין' }
+    }
   }
 
   // בדיקת תאריכים
   const now = new Date()
   if (coupon.startDate && coupon.startDate > now) {
-    return 0
+    return { 
+      discount: 0,
+      status: { isValid: false, reason: 'הקופון עדיין לא תקף' }
+    }
   }
   if (coupon.endDate && coupon.endDate < now) {
-    return 0
+    return { 
+      discount: 0,
+      status: { isValid: false, reason: 'הקופון פג תוקף' }
+    }
   }
 
   // בדיקת minOrder
   if (coupon.minOrder && subtotal < coupon.minOrder) {
-    return 0
+    return { 
+      discount: 0,
+      status: { 
+        isValid: false, 
+        reason: `נדרש מינימום הזמנה של ₪${coupon.minOrder}`,
+        minOrderRequired: coupon.minOrder
+      }
+    }
   }
 
   // בדיקת מוצרים/קטגוריות ספציפיים
@@ -359,7 +381,10 @@ async function calculateCouponDiscount(
     const productIds = enrichedItems.map(item => item.productId)
     const hasApplicableProduct = productIds.some(id => coupon.applicableProducts.includes(id))
     if (!hasApplicableProduct) {
-      return 0
+      return { 
+        discount: 0,
+        status: { isValid: false, reason: 'הקופון לא תקף למוצרים בעגלה' }
+      }
     }
   }
 
@@ -377,7 +402,10 @@ async function calculateCouponDiscount(
       select: { id: true }
     })
     if (productsWithCategories.length === 0) {
-      return 0
+      return { 
+        discount: 0,
+        status: { isValid: false, reason: 'הקופון לא תקף לקטגוריות בעגלה' }
+      }
     }
   }
 
@@ -436,7 +464,10 @@ async function calculateCouponDiscount(
     discount = Math.min(discount, coupon.maxDiscount)
   }
 
-  return discount
+  return { 
+    discount,
+    status: { isValid: true }
+  }
 }
 
 /**
@@ -463,6 +494,13 @@ export async function calculateCart(
     .map(item => item.variantId)
     .filter((id): id is string => id !== null && id !== undefined)
 
+  console.log('🛒 calculateCart - Looking for variants:', variantIds)
+  console.log('🛒 calculateCart - Cart items:', cartItems.map(item => ({
+    productId: item.productId,
+    variantId: item.variantId,
+    quantity: item.quantity
+  })))
+
   const [products, variants, shop] = await Promise.all([
     prisma.product.findMany({
       where: { id: { in: productIds }, shopId },
@@ -484,6 +522,7 @@ export async function calculateCart(
             price: true,
             sku: true,
             inventoryQty: true,
+            productId: true,
           },
         })
       : [],
@@ -496,6 +535,13 @@ export async function calculateCart(
       },
     }),
   ])
+
+  console.log('🛒 calculateCart - Found variants in DB:', variants.map((v: any) => ({
+    id: v.id,
+    name: v.name,
+    productId: v.productId
+  })))
+  console.log('🛒 calculateCart - Missing variants:', variantIds.filter(id => !variants.find((v: any) => v.id === id)))
 
   const productsMap = new Map(products.map(p => [p.id, p]))
   const variantsMap = new Map(variants.map(v => [v.id, v]))
@@ -529,9 +575,22 @@ export async function calculateCart(
 
   for (const item of cartItems) {
     const product = productsMap.get(item.productId)
-    if (!product) continue
+    
+    if (!product) {
+      continue
+    }
 
     const variant = item.variantId ? variantsMap.get(item.variantId) : null
+    
+    if (item.variantId && !variant) {
+      console.warn('⚠️ calculateCart - Variant not found in DB:', {
+        variantId: item.variantId,
+        productId: item.productId,
+        productName: product.name,
+        availableVariantIds: Array.from(variantsMap.keys())
+      })
+    }
+    
     const basePrice = variant?.price || product.price
     let itemPrice = basePrice
 
@@ -585,35 +644,49 @@ export async function calculateCart(
   )
 
   // חישוב הנחה מקופון
-  const couponDiscount = await calculateCouponDiscount(
+  const couponResult = await calculateCouponDiscount(
     shopId,
     couponCode,
     enrichedItems,
     subtotal
   )
 
-  // חישוב מע"מ
+  // חישוב מע"מ - המחירים כבר כוללים מע"ם, אז רק מפרידים אותו לתצוגה
   const finalTaxRate = taxRate !== null ? taxRate : (shop?.taxEnabled && shop.taxRate ? shop.taxRate : 0)
-  const totalDiscount = automaticDiscount + couponDiscount
+  const totalDiscount = automaticDiscount + couponResult.discount
+  
+  // אם יש מע"ם, מחשבים כמה מתוך המחיר הוא מע"ם (לא מוסיפים!)
+  // דוגמה: אם המחיר 117 והמע"מ 17%, אז המחיר לפני מע"ם הוא 100 והמע"ם הוא 17
+  const finalPrice = subtotal - totalDiscount - customerDiscountTotal
   const tax = finalTaxRate > 0
-    ? (subtotal - totalDiscount) * (finalTaxRate / 100)
+    ? finalPrice - (finalPrice / (1 + finalTaxRate / 100))
     : 0
 
   // חישוב משלוח
   const shipping = shippingCost !== null ? shippingCost : 0
 
-  // סה"כ
-  const total = subtotal - totalDiscount - customerDiscountTotal + tax + shipping
+  // סה"כ - המחירים כבר כוללים מע"ם, אז לא מוסיפים אותו
+  const total = finalPrice + shipping
 
-  return {
+  const result: CartCalculationResult = {
     items: enrichedItems,
     subtotal,
     customerDiscount: customerDiscountTotal,
     automaticDiscount,
-    couponDiscount,
+    couponDiscount: couponResult.discount,
     tax,
     shipping,
     total: Math.max(0, total),
   }
+
+  // הוספת סטטוס קופון אם יש קוד קופון
+  if (couponCode && couponResult.status) {
+    result.couponStatus = {
+      code: couponCode,
+      ...couponResult.status,
+    }
+  }
+
+  return result
 }
 

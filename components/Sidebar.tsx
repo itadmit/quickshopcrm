@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useSession } from "next-auth/react"
 import { cn } from "@/lib/utils"
 import {
   Home,
@@ -29,6 +30,9 @@ import {
   Warehouse,
   ScanLine,
   Palette,
+  Shield,
+  DollarSign,
+  Workflow,
 } from "lucide-react"
 
 const menuItems = [
@@ -55,7 +59,8 @@ const contentItems = [
   { icon: FileText, label: "דפים", href: "/pages", permission: "pages" },
   { icon: Menu, label: "תפריט ניווט", href: "/navigation", permission: "navigation" },
   { icon: BookOpen, label: "בלוג", href: "/blog", permission: "blog" },
-  { icon: Palette, label: "התאמה אישית", href: "/customize", permission: "settings" },
+  { icon: Palette, label: "מראה ועיצוב", href: "/appearance", permission: "settings" },
+  { icon: Sparkles, label: "התאמה אישית", href: "/customize", permission: "settings" },
 ]
 
 const customerServiceItems = [
@@ -70,6 +75,7 @@ const productItems = [
 
 const systemItems = [
   { icon: TrendingUp, label: "אנליטיקה", href: "/analytics", permission: "analytics" },
+  { icon: Workflow, label: "אוטומציות", href: "/automations", permission: "automations" },
   { icon: Webhook, label: "Webhooks", href: "/webhooks", permission: "webhooks" },
   { icon: ScanLine, label: "פיקסלים וקודי מעקב", href: "/tracking-pixels", permission: "tracking_pixels" },
 ]
@@ -79,24 +85,38 @@ const settingsItems = [
   { icon: Plug, label: "אינטגרציות", href: "/settings/integrations", permission: "integrations" },
 ]
 
+const superAdminItems = [
+  { icon: Shield, label: "הגדרות PayPlus", href: "/admin", permission: "super_admin" },
+  { icon: DollarSign, label: "גביית עמלות", href: "/admin/commissions", permission: "super_admin" },
+]
+
 export function Sidebar() {
   const pathname = usePathname()
+  const { data: session, status } = useSession()
   const [unreadCount, setUnreadCount] = useState(0)
   const [permissions, setPermissions] = useState<Record<string, boolean>>({})
   const [loadingPermissions, setLoadingPermissions] = useState(true)
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null)
 
   useEffect(() => {
-    fetchPermissions()
-    fetchUnreadCount()
-    fetchSubscriptionInfo()
-    // רענון כל 30 שניות
+    // נחכה שה-session יטען לפני שנבצע fetch
+    if (status === 'authenticated') {
+      fetchPermissions()
+      fetchUnreadCount()
+      fetchSubscriptionInfo()
+    }
+  }, [status])
+
+  useEffect(() => {
+    // רענון כל 30 שניות - רק אם מחובר
+    if (status !== 'authenticated') return
+    
     const interval = setInterval(() => {
       fetchUnreadCount()
       fetchSubscriptionInfo()
     }, 30000)
     return () => clearInterval(interval)
-  }, [])
+  }, [status])
 
   const fetchSubscriptionInfo = async () => {
     try {
@@ -104,9 +124,13 @@ export function Sidebar() {
       if (response.ok) {
         const data = await response.json()
         setSubscriptionInfo(data)
+      } else if (response.status === 401) {
+        // אם המשתמש לא מאומת, לא ננסה שוב
+        return
       }
     } catch (error) {
-      console.error('Error fetching subscription info:', error)
+      // לא נדפיס שגיאות בקונסול - זה נורמלי כשאין מנוי או בעיות אימות
+      // console.error('Error fetching subscription info:', error)
     }
   }
 
@@ -470,6 +494,36 @@ export function Sidebar() {
               })}
           </nav>
         </div>
+
+        {/* Super Admin Section - Only for SUPER_ADMIN */}
+        {(session as any)?.user?.role === "SUPER_ADMIN" && (
+          <div className="mt-6">
+            <h3 className="px-3 text-xs font-semibold text-red-600 uppercase tracking-wider mb-2">
+              Super Admin
+            </h3>
+            <nav className="space-y-1">
+              {superAdminItems.map((item) => {
+                const Icon = item.icon
+                const isActive = pathname === item.href
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors",
+                      isActive
+                        ? "bg-red-100 text-red-900"
+                        : "text-red-700 hover:bg-red-50"
+                    )}
+                  >
+                    <Icon className="w-5 h-5 flex-shrink-0" />
+                    <span>{item.label}</span>
+                  </Link>
+                )
+              })}
+            </nav>
+          </div>
+        )}
       </div>
 
       {/* Bottom Section - Trial Period */}

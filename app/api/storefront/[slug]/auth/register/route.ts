@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import bcrypt from "bcryptjs"
+import { SignJWT } from "jose"
 
 const registerSchema = z.object({
   email: z.string().email("אימייל לא תקין"),
@@ -84,7 +85,27 @@ export async function POST(
       },
     })
 
-    return NextResponse.json(customer, { status: 201 })
+    // יצירת JWT token (התחברות אוטומטית אחרי הרשמה)
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
+    const token = await new SignJWT({
+      customerId: customer.id,
+      shopId: shop.id,
+      email: customer.email,
+    })
+      .setProtectedHeader({ alg: "HS256" })
+      .setExpirationTime("30d")
+      .sign(secret)
+
+    return NextResponse.json({
+      token,
+      customer: {
+        id: customer.id,
+        email: customer.email,
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        phone: customer.phone,
+      },
+    }, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

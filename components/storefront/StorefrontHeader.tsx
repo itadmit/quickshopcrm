@@ -31,6 +31,7 @@ interface NavigationItem {
   label: string
   url?: string
   pageId?: string
+  pageSlug?: string
   categoryId?: string
   collectionId?: string
   children?: NavigationItem[]
@@ -43,6 +44,15 @@ interface Navigation {
   items: NavigationItem[]
 }
 
+interface ThemeSettings {
+  primaryColor: string
+  secondaryColor: string
+  logoWidthMobile: number
+  logoWidthDesktop: number
+  logoPaddingMobile: number
+  logoPaddingDesktop: number
+}
+
 interface StorefrontHeaderProps {
   slug: string
   shop: Shop | null
@@ -50,21 +60,42 @@ interface StorefrontHeaderProps {
   onCartUpdate?: () => void
   onOpenCart?: (callback: () => void) => void
   cartRefreshKey?: number
+  theme?: ThemeSettings
 }
 
-export function StorefrontHeader({ slug, shop, cartItemCount: propCartItemCount, onCartUpdate, onOpenCart, cartRefreshKey }: StorefrontHeaderProps) {
+const DEFAULT_THEME: ThemeSettings = {
+  primaryColor: "#000000",
+  secondaryColor: "#333333",
+  logoWidthMobile: 85,
+  logoWidthDesktop: 135,
+  logoPaddingMobile: 0,
+  logoPaddingDesktop: 0,
+}
+
+export function StorefrontHeader({ slug, shop, cartItemCount: propCartItemCount, onCartUpdate, onOpenCart, cartRefreshKey, theme: themeProp }: StorefrontHeaderProps) {
   const router = useRouter()
   const [navigation, setNavigation] = useState<Navigation | null>(null)
+  const [navigationLoading, setNavigationLoading] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [customerId, setCustomerId] = useState<string | null>(null)
   const [cartOpen, setCartOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
-  const { theme } = useShopTheme(slug)
+  const [mounted, setMounted] = useState(false)
+  
+  // שימוש בטמפלה מה-props או fallback ל-hook אם לא סופק
+  const themeFromHook = useShopTheme(slug)
+  // אם יש theme prop, נשתמש בו. אחרת נשתמש ב-hook או ב-default
+  const theme = themeProp || (themeFromHook.theme && Object.keys(themeFromHook.theme).length > 0 ? themeFromHook.theme : DEFAULT_THEME)
   
   // שימוש ב-useCart לקבלת מספר פריטים בעגלה
   const { cart } = useCart(slug, customerId)
-  const cartItemCount = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || propCartItemCount || 0
+  const clientCartItemCount = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0
+  const cartItemCount = mounted ? (clientCartItemCount || propCartItemCount || 0) : (propCartItemCount || 0)
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // חשיפת פונקציה לפתיחת עגלה
   useEffect(() => {
@@ -77,7 +108,12 @@ export function StorefrontHeader({ slug, shop, cartItemCount: propCartItemCount,
   }, []) // ריצה פעם אחת בלבד בעת mount
 
   useEffect(() => {
-    fetchNavigation()
+    if (mounted) {
+      fetchNavigation()
+    }
+  }, [slug, mounted])
+  
+  useEffect(() => {
     const customerData = localStorage.getItem(`storefront_customer_${slug}`)
     if (customerData) {
       try {
@@ -91,6 +127,7 @@ export function StorefrontHeader({ slug, shop, cartItemCount: propCartItemCount,
 
   const fetchNavigation = async () => {
     try {
+      setNavigationLoading(true)
       const response = await fetch(`/api/storefront/${slug}/navigation?location=HEADER`)
       if (response.ok) {
         const data = await response.json()
@@ -100,6 +137,8 @@ export function StorefrontHeader({ slug, shop, cartItemCount: propCartItemCount,
       }
     } catch (error) {
       console.error("Error fetching navigation:", error)
+    } finally {
+      setNavigationLoading(false)
     }
   }
 
@@ -124,10 +163,12 @@ export function StorefrontHeader({ slug, shop, cartItemCount: propCartItemCount,
           </Link>
         )
       } else if (item.type === "page") {
+        // שימוש ב-pageSlug אם קיים, אחרת ב-pageId (תאימות לאחור)
+        const pageIdentifier = item.pageSlug || item.pageId
         return (
           <Link
             key={index}
-            href={`/shop/${slug}/pages/${item.pageId}`}
+            href={`/shop/${slug}/pages/${pageIdentifier}`}
             className="text-gray-700 hover:text-gray-900 transition-colors text-sm font-medium"
           >
             {item.label}
@@ -165,11 +206,70 @@ export function StorefrontHeader({ slug, shop, cartItemCount: propCartItemCount,
           {/* Logo & Shop Name */}
           <Link href={`/shop/${slug}`} className="flex items-center gap-3 group">
             {shop?.logo ? (
-              <img
-                src={shop.logo}
-                alt={shop?.name || "Shop"}
-                className="h-8 w-auto"
-              />
+              <>
+                {/* Logo for Mobile - עם placeholder למניעת layout shift */}
+                <div 
+                  className="md:hidden flex items-center justify-center"
+                  style={{
+                    height: `${theme.logoWidthMobile + (theme.logoPaddingMobile * 2)}px`,
+                    minWidth: `${theme.logoWidthMobile * 2}px`,
+                    padding: `${theme.logoPaddingMobile}px`,
+                  }}
+                >
+                  <img
+                    src={shop.logo}
+                    alt={shop?.name || "Shop"}
+                    className="w-auto max-w-full h-full object-contain"
+                    style={{
+                      height: `${theme.logoWidthMobile}px`,
+                    }}
+                    loading="eager"
+                    onLoad={(e) => {
+                      // וידוא שהתמונה נטענה בגודל הנכון
+                      const img = e.currentTarget
+                      if (img.naturalHeight > 0) {
+                        img.style.opacity = "1"
+                      }
+                    }}
+                    onError={(e) => {
+                      // במקרה של שגיאה, הצג טקסט
+                      const target = e.currentTarget as HTMLImageElement
+                      target.style.display = "none"
+                    }}
+                  />
+                </div>
+                {/* Logo for Desktop - עם placeholder למניעת layout shift */}
+                <div 
+                  className="hidden md:flex items-center justify-center"
+                  style={{
+                    height: `${theme.logoWidthDesktop + (theme.logoPaddingDesktop * 2)}px`,
+                    minWidth: `${theme.logoWidthDesktop * 2}px`,
+                    padding: `${theme.logoPaddingDesktop}px`,
+                  }}
+                >
+                  <img
+                    src={shop.logo}
+                    alt={shop?.name || "Shop"}
+                    className="w-auto max-w-full h-full object-contain"
+                    style={{
+                      height: `${theme.logoWidthDesktop}px`,
+                    }}
+                    loading="eager"
+                    onLoad={(e) => {
+                      // וידוא שהתמונה נטענה בגודל הנכון
+                      const img = e.currentTarget
+                      if (img.naturalHeight > 0) {
+                        img.style.opacity = "1"
+                      }
+                    }}
+                    onError={(e) => {
+                      // במקרה של שגיאה, הצג טקסט
+                      const target = e.currentTarget as HTMLImageElement
+                      target.style.display = "none"
+                    }}
+                  />
+                </div>
+              </>
             ) : (
               <h1 className="text-xl font-bold text-gray-900 group-hover:text-gray-700 transition-colors">
                 {shop?.name || "חנות"}
@@ -178,9 +278,24 @@ export function StorefrontHeader({ slug, shop, cartItemCount: propCartItemCount,
           </Link>
 
           {/* Navigation - Desktop */}
-          {navigation && navigation.items && Array.isArray(navigation.items) && (
+          {mounted && (
             <nav className="hidden md:flex items-center gap-6 flex-1 justify-center">
-              {navigation.items.map((item, index) => renderNavigationItem(item, index))}
+              {navigationLoading ? (
+                // Skeleton loader לתפריט
+                <>
+                  {[60, 80, 70, 90].map((width, index) => (
+                    <div
+                      key={index}
+                      className="h-4 bg-gray-200 rounded animate-pulse"
+                      style={{
+                        width: `${width}px`,
+                      }}
+                    />
+                  ))}
+                </>
+              ) : navigation && navigation.items && Array.isArray(navigation.items) ? (
+                navigation.items.map((item, index) => renderNavigationItem(item, index))
+              ) : null}
             </nav>
           )}
 
@@ -197,11 +312,17 @@ export function StorefrontHeader({ slug, shop, cartItemCount: propCartItemCount,
             </Button>
 
             {/* Account */}
-            <Link href={customerId ? `/shop/${slug}/account` : `/shop/${slug}/login`}>
+            {mounted ? (
+              <Link href={customerId ? `/shop/${slug}/account` : `/shop/${slug}/login`}>
+                <Button variant="ghost" size="sm" className="p-2">
+                  <User className="w-5 h-5 text-gray-700" />
+                </Button>
+              </Link>
+            ) : (
               <Button variant="ghost" size="sm" className="p-2">
                 <User className="w-5 h-5 text-gray-700" />
               </Button>
-            </Link>
+            )}
 
             {/* Cart */}
             <Button
@@ -213,6 +334,7 @@ export function StorefrontHeader({ slug, shop, cartItemCount: propCartItemCount,
               <ShoppingCart className="w-5 h-5 text-gray-700" />
               {cartItemCount > 0 && (
                 <span
+                  suppressHydrationWarning
                   className="absolute -top-1 -right-1 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium"
                   style={{ backgroundColor: theme.primaryColor }}
                 >
@@ -256,67 +378,85 @@ export function StorefrontHeader({ slug, shop, cartItemCount: propCartItemCount,
             </form>
 
             {/* Mobile Navigation */}
-            {navigation && navigation.items && Array.isArray(navigation.items) && (
+            {mounted && (
               <nav className="space-y-1">
-                {navigation.items.map((item, index) => (
-                  <div key={index}>
-                    {renderNavigationItem(item, index)}
-                  </div>
-                ))}
+                {navigationLoading ? (
+                  // Skeleton loader לתפריט מובייל
+                  <>
+                    {Array.from({ length: 5 }).map((_, index) => (
+                      <div
+                        key={index}
+                        className="h-10 bg-gray-200 rounded animate-pulse mb-2"
+                      />
+                    ))}
+                  </>
+                ) : navigation && navigation.items && Array.isArray(navigation.items) ? (
+                  navigation.items.map((item, index) => (
+                    <div key={index}>
+                      {renderNavigationItem(item, index)}
+                    </div>
+                  ))
+                ) : null}
               </nav>
             )}
 
             {/* Mobile Account Links */}
-            <div className="pt-4 border-t border-gray-100 space-y-2">
-              {customerId ? (
-                <Link
-                  href={`/shop/${slug}/account`}
-                  className="block px-3 py-2 text-gray-700 hover:text-purple-600 transition-colors"
-                >
-                  חשבון שלי
-                </Link>
-              ) : (
-                <>
+            {mounted && (
+              <div className="pt-4 border-t border-gray-100 space-y-2">
+                {customerId ? (
                   <Link
-                    href={`/shop/${slug}/login`}
+                    href={`/shop/${slug}/account`}
                     className="block px-3 py-2 text-gray-700 hover:text-purple-600 transition-colors"
                   >
-                    התחברות
+                    חשבון שלי
                   </Link>
-                  <Link
-                    href={`/shop/${slug}/register`}
-                    className="block px-3 py-2 text-gray-700 hover:text-purple-600 transition-colors"
-                  >
-                    הרשמה
-                  </Link>
-                </>
-              )}
-            </div>
+                ) : (
+                  <>
+                    <Link
+                      href={`/shop/${slug}/login`}
+                      className="block px-3 py-2 text-gray-700 hover:text-purple-600 transition-colors"
+                    >
+                      התחברות
+                    </Link>
+                    <Link
+                      href={`/shop/${slug}/register`}
+                      className="block px-3 py-2 text-gray-700 hover:text-purple-600 transition-colors"
+                    >
+                      הרשמה
+                    </Link>
+                  </>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
 
       {/* Slide-out Cart */}
-      <SlideOutCart
-        slug={slug}
-        isOpen={cartOpen}
-        onClose={() => {
-          setCartOpen(false)
-          if (onCartUpdate) {
-            onCartUpdate()
-          }
-        }}
-        customerId={customerId}
-        onCartUpdate={onCartUpdate}
-        refreshKey={cartRefreshKey}
-      />
+      {mounted && (
+        <SlideOutCart
+          slug={slug}
+          isOpen={cartOpen}
+          onClose={() => {
+            setCartOpen(false)
+            if (onCartUpdate) {
+              onCartUpdate()
+            }
+          }}
+          customerId={customerId}
+          onCartUpdate={onCartUpdate}
+          refreshKey={cartRefreshKey}
+        />
+      )}
 
       {/* Search Dialog */}
-      <SearchDialog
-        slug={slug}
-        isOpen={searchOpen}
-        onClose={() => setSearchOpen(false)}
-      />
+      {mounted && (
+        <SearchDialog
+          slug={slug}
+          isOpen={searchOpen}
+          onClose={() => setSearchOpen(false)}
+        />
+      )}
     </header>
   )
 }

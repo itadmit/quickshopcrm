@@ -27,7 +27,7 @@ interface Stats {
 
 export default function DashboardPage() {
   const router = useRouter()
-  const { data: session } = useSession()
+  const { data: session, status } = useSession()
   const { selectedShop } = useShop()
   const [stats, setStats] = useState<Stats>({
     shops: { total: 0, active: 0 },
@@ -40,6 +40,12 @@ export default function DashboardPage() {
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null)
 
   useEffect(() => {
+    // נחכה שה-session יטען לפני שנבצע fetch
+    if (status !== 'authenticated') {
+      setLoading(false)
+      return
+    }
+
     async function fetchStats() {
       try {
         const response = await fetch('/api/dashboard/stats')
@@ -62,15 +68,19 @@ export default function DashboardPage() {
         if (response.ok) {
           const data = await response.json()
           setSubscriptionInfo(data)
+        } else if (response.status === 401) {
+          // אם המשתמש לא מאומת, לא ננסה שוב
+          return
         }
       } catch (error) {
-        console.error('Error fetching subscription:', error)
+        // לא נדפיס שגיאות בקונסול - זה נורמלי כשאין מנוי או בעיות אימות
+        // console.error('Error fetching subscription:', error)
       }
     }
     
     fetchStats()
     fetchSubscription()
-  }, [])
+  }, [status])
 
   if (loading) {
     return (

@@ -50,6 +50,9 @@ interface Cart {
   total: number
   couponCode: string | null
   discount: number
+  customerDiscount?: number
+  couponDiscount?: number
+  automaticDiscount?: number
 }
 
 export default function CartPage() {
@@ -89,6 +92,7 @@ export default function CartPage() {
 
       const response = await fetch(`/api/storefront/${slug}/cart`, {
         headers,
+        credentials: 'include', // חשוב! שולח cookies עם הבקשה
       })
       if (response.ok) {
         const data = await response.json()
@@ -127,6 +131,7 @@ export default function CartPage() {
       const response = await fetch(`/api/storefront/${slug}/cart`, {
         method: "PUT",
         headers,
+        credentials: 'include', // חשוב! שולח cookies עם הבקשה
         body: JSON.stringify({
           productId,
           variantId,
@@ -162,6 +167,7 @@ export default function CartPage() {
       const response = await fetch(`/api/storefront/${slug}/cart?${params}`, {
         method: "DELETE",
         headers,
+        credentials: 'include', // חשוב! שולח cookies עם הבקשה
       })
 
       if (response.ok) {
@@ -189,6 +195,7 @@ export default function CartPage() {
       const response = await fetch(`/api/storefront/${slug}/cart`, {
         method: "PUT",
         headers,
+        credentials: 'include', // חשוב! שולח cookies עם הבקשה
         body: JSON.stringify({
           couponCode,
         }),
@@ -359,10 +366,22 @@ export default function CartPage() {
                     <span>סכום ביניים</span>
                     <span>₪{cart.subtotal.toFixed(2)}</span>
                   </div>
-                  {cart.discount > 0 && (
+                  {cart.customerDiscount && cart.customerDiscount > 0 && (
                     <div className="flex justify-between text-green-600">
-                      <span>הנחה</span>
-                      <span>-₪{cart.discount.toFixed(2)}</span>
+                      <span>הנחת לקוח</span>
+                      <span>-₪{cart.customerDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {cart.couponDiscount && cart.couponDiscount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>קופון</span>
+                      <span>-₪{cart.couponDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {cart.automaticDiscount && cart.automaticDiscount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>הנחה אוטומטית</span>
+                      <span>-₪{cart.automaticDiscount.toFixed(2)}</span>
                     </div>
                   )}
                   {cart.shipping > 0 && (

@@ -20,6 +20,7 @@ import { ProductCard } from "@/components/storefront/ProductCard"
 import { useShopTheme, getThemeStyles } from "@/hooks/useShopTheme"
 import { useTracking } from "@/components/storefront/TrackingPixelProvider"
 import { trackPageView } from "@/lib/tracking-events"
+import { AdminBar } from "@/components/storefront/AdminBar"
 
 interface Category {
   id: string
@@ -379,15 +380,94 @@ export default function CategoryPage() {
             <p className="text-gray-600">נסה לשנות את הסינון או לחזור לקטגוריות אחרות</p>
           </div>
         ) : viewMode === "grid" ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {products.map((product) => (
-              <ProductCard
-                key={product.id}
-                product={product}
-                slug={slug}
-              />
-            ))}
+          <>
+            <style dangerouslySetInnerHTML={{__html: `
+              .category-products-grid {
+                display: grid;
+                gap: 1.5rem;
+                grid-template-columns: repeat(${theme?.categoryProductsPerRowMobile || 2}, minmax(0, 1fr));
+              }
+              @media (min-width: 768px) {
+                .category-products-grid {
+                  grid-template-columns: repeat(${theme?.categoryProductsPerRowTablet || 3}, minmax(0, 1fr));
+                }
+              }
+              @media (min-width: 1024px) {
+                .category-products-grid {
+                  grid-template-columns: repeat(${theme?.categoryProductsPerRowDesktop || 4}, minmax(0, 1fr));
+                }
+              }
+            `}} />
+          <div className="category-products-grid">
+            {products.map((product, index) => {
+              const shouldShowBanner = 
+                theme?.categoryEnableBanners && 
+                theme?.categoryBanners && 
+                theme.categoryBanners.length > 0 &&
+                (index + 1) % (theme.categoryBannerFrequency || 6) === 0
+              
+              const activeBanners = theme?.categoryBanners?.filter((b: any) => b.enabled) || []
+              const bannerIndex = shouldShowBanner && activeBanners.length > 0
+                ? Math.floor((index + 1) / (theme.categoryBannerFrequency || 6) - 1) % activeBanners.length
+                : -1
+              
+              const banner = bannerIndex >= 0 ? activeBanners[bannerIndex] : null
+
+              return (
+                <>
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    slug={slug}
+                    theme={theme}
+                  />
+                  {banner && (
+                    <div 
+                      key={`banner-${index}`}
+                      className="rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
+                      style={{
+                        gridColumn: '1 / -1',
+                        backgroundColor: banner.bgColor || '#f3f4f6',
+                        color: banner.textColor || '#000000',
+                      }}
+                    >
+                      <Link href={banner.link || '#'} className="block">
+                        <div className="flex flex-col md:flex-row items-center gap-4 p-6">
+                          {banner.image && (
+                            <div className="w-full md:w-1/3">
+                              <img 
+                                src={banner.image} 
+                                alt={banner.title}
+                                className="w-full h-48 object-cover rounded-lg"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1 text-center md:text-right">
+                            <h3 className="text-2xl font-bold mb-2">{banner.title}</h3>
+                            {banner.description && (
+                              <p className="text-lg mb-4">{banner.description}</p>
+                            )}
+                            {banner.buttonText && (
+                              <Button 
+                                className="mt-2"
+                                style={{
+                                  backgroundColor: banner.textColor || '#000000',
+                                  color: banner.bgColor || '#ffffff',
+                                }}
+                              >
+                                {banner.buttonText}
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </Link>
+                    </div>
+                  )}
+                </>
+              )
+            })}
           </div>
+          </>
         ) : viewMode === "compact-grid" ? (
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
             {products.map((product) => (
@@ -512,6 +592,9 @@ export default function CategoryPage() {
           </div>
         )}
       </main>
+
+      {/* Admin Bar - רק למנהלים */}
+      <AdminBar slug={slug} pageType="collection" collectionId={categoryId} />
     </div>
   )
 }

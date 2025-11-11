@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getToken } from "next-auth/jwt"
 import { prisma } from "@/lib/prisma"
 import {
   getCurrentSubscription,
@@ -15,27 +14,43 @@ import { z } from "zod"
 // GET - קבלת מנוי נוכחי
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    console.log("GET /api/subscriptions called")
+    const token = await getToken({ 
+      req, 
+      secret: process.env.NEXTAUTH_SECRET 
+    })
+    console.log("Token:", token ? "exists" : "null")
 
-    if (!session?.user?.companyId) {
+    if (!token?.companyId) {
       return NextResponse.json(
         { error: "לא מאומת" },
         { status: 401 }
       )
     }
 
-    const companyId = session.user.companyId
+    const companyId = token.companyId as string
 
     // בדיקה ועדכון סטטוס אם צריך
     await checkAndUpdateSubscriptionStatus(companyId)
 
-    const subscription = await getCurrentSubscription(companyId)
+    let subscription = await getCurrentSubscription(companyId)
 
+    // אם אין מנוי, ניצור מנוי נסיון אוטומטית
     if (!subscription) {
-      return NextResponse.json(
-        { error: "מנוי לא נמצא" },
-        { status: 404 }
-      )
+      console.log("No subscription found, creating trial subscription")
+      const trialEndDate = new Date()
+      trialEndDate.setDate(trialEndDate.getDate() + 7)
+
+      subscription = await prisma.subscription.create({
+        data: {
+          companyId: companyId,
+          plan: "TRIAL",
+          status: "TRIAL",
+          trialStartDate: new Date(),
+          trialEndDate: trialEndDate,
+        },
+      })
+      console.log("Trial subscription created:", subscription.id)
     }
 
     // חישוב ימים נותרים
@@ -83,16 +98,19 @@ const activateSubscriptionSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const token = await getToken({ 
+      req, 
+      secret: process.env.NEXTAUTH_SECRET 
+    })
 
-    if (!session?.user?.companyId) {
+    if (!token?.companyId) {
       return NextResponse.json(
         { error: "לא מאומת" },
         { status: 401 }
       )
     }
 
-    const companyId = session.user.companyId
+    const companyId = token.companyId as string
     const body = await req.json()
     const { plan, paymentMethod, paymentDetails } = activateSubscriptionSchema.parse(body)
 

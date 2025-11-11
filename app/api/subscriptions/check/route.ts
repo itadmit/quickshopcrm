@@ -1,27 +1,35 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getToken } from "next-auth/jwt"
 import { getSubscriptionInfo } from "@/lib/subscription-middleware"
 
 // GET - בדיקת סטטוס מנוי (לשימוש בדפים)
 export async function GET(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const token = await getToken({ 
+      req, 
+      secret: process.env.NEXTAUTH_SECRET 
+    })
 
-    if (!session?.user?.companyId) {
+    if (!token?.companyId) {
       return NextResponse.json(
         { error: "לא מאומת" },
         { status: 401 }
       )
     }
 
-    const info = await getSubscriptionInfo(session.user.companyId)
+    const info = await getSubscriptionInfo(token.companyId as string)
 
+    // אם אין מנוי, נחזיר תשובה עם מנוי ברירת מחדל (TRIAL)
     if (!info) {
-      return NextResponse.json(
-        { error: "מנוי לא נמצא" },
-        { status: 404 }
-      )
+      return NextResponse.json({
+        subscription: null,
+        isActive: false,
+        hasCommerce: false,
+        hasBranding: false,
+        daysRemaining: 0,
+        isTrial: false,
+        isExpiringSoon: false,
+      })
     }
 
     return NextResponse.json(info)

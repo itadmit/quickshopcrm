@@ -21,7 +21,10 @@ export async function GET(
 
     const collection = await prisma.collection.findFirst({
       where: {
-        id: params.id,
+        OR: [
+          { id: params.id },
+          { slug: params.id }
+        ],
         shopId: shop.id,
       },
       select: {
@@ -37,6 +40,26 @@ export async function GET(
         _count: {
           select: {
             products: true,
+          },
+        },
+        products: {
+          select: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                slug: true,
+                price: true,
+                comparePrice: true,
+                images: true,
+                availability: true,
+                status: true,
+              }
+            },
+            position: true,
+          },
+          orderBy: {
+            position: "asc",
           },
         },
       },

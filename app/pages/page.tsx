@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
-import { Plus, Search, Edit, Trash2, FileText } from "lucide-react"
+import { Plus, Search, Edit, Trash2, FileText, ExternalLink } from "lucide-react"
 import { PagesSkeleton } from "@/components/skeletons/PagesSkeleton"
 import {
   DropdownMenu,
@@ -30,7 +30,7 @@ interface Page {
 export default function PagesPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, loading: shopsLoading } = useShop()
   const [pages, setPages] = useState<Page[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -87,6 +87,16 @@ export default function PagesPage() {
     page.title.toLowerCase().includes(search.toLowerCase())
   )
 
+  // טעינה - בזמן שהחנויות נטענות
+  if (shopsLoading) {
+    return (
+      <AppLayout title="דפים">
+        <PagesSkeleton />
+      </AppLayout>
+    )
+  }
+
+  // אם אין חנות נבחרת אחרי שהכל נטען
   if (!selectedShop) {
     return (
       <AppLayout title="דפים">
@@ -181,7 +191,12 @@ export default function PagesPage() {
                           <div className="font-medium">{page.title}</div>
                         </td>
                         <td className="p-4">
-                          <code className="text-sm text-gray-600">{page.slug}</code>
+                          <button
+                            onClick={() => router.push(`/pages/${page.slug}/edit`)}
+                            className="text-sm text-purple-600 hover:text-purple-800 hover:underline cursor-pointer font-mono"
+                          >
+                            {page.slug}
+                          </button>
                         </td>
                         <td className="p-4">
                           <Badge
@@ -207,9 +222,21 @@ export default function PagesPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="start" className="min-w-[160px]">
+                              {page.isPublished && (
+                                <DropdownMenuItem
+                                  onClick={() => {
+                                    const url = `/shop/${selectedShop.slug}/pages/${page.slug}`
+                                    window.open(url, "_blank")
+                                  }}
+                                  className="flex flex-row-reverse items-center gap-2 cursor-pointer"
+                                >
+                                  <ExternalLink className="w-4 h-4 flex-shrink-0" />
+                                  צפה בחנות
+                                </DropdownMenuItem>
+                              )}
                               <DropdownMenuItem
                                 onClick={() =>
-                                  router.push(`/pages/${page.id}/edit`)
+                                  router.push(`/pages/${page.slug}/edit`)
                                 }
                                 className="flex flex-row-reverse items-center gap-2 cursor-pointer"
                               >

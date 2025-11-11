@@ -76,11 +76,13 @@ interface Order {
   deliveredAt: string | null
   notes: string | null
   couponCode: string | null
+  customFields: any | null
   createdAt: string
   updatedAt: string
   shop: {
     id: string
     name: string
+    settings: any | null
   }
   customer: {
     id: string
@@ -434,6 +436,45 @@ export default function OrderDetailPage() {
                 )}
               </CardContent>
             </Card>
+
+            {/* Custom Fields */}
+            {order.customFields && typeof order.customFields === 'object' && Object.keys(order.customFields).length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Package className="w-5 h-5" />
+                    פרטים נוספים
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {Object.entries(order.customFields).map(([key, value]) => {
+                    // נסה למצוא את התווית של השדה מה-shop settings
+                    let fieldLabel = key
+                    const shopSettings = order.shop?.settings as any
+                    const checkoutSettings = shopSettings?.checkoutPage
+                    const customFieldsConfig = checkoutSettings?.customFields || []
+                    const fieldConfig = customFieldsConfig.find((f: any) => f.id === key)
+                    
+                    if (fieldConfig && fieldConfig.label) {
+                      fieldLabel = fieldConfig.label
+                    }
+                    
+                    const displayValue = value === true ? "כן" : value === false ? "לא" : String(value || "")
+                    
+                    if (!displayValue || displayValue === "false" || displayValue === "") {
+                      return null
+                    }
+                    
+                    return (
+                      <div key={key}>
+                        <p className="text-sm text-gray-600">{fieldLabel}</p>
+                        <p className="font-medium">{displayValue}</p>
+                      </div>
+                    )
+                  })}
+                </CardContent>
+              </Card>
+            )}
 
             {/* Order Status (Editable) */}
             {editing && (

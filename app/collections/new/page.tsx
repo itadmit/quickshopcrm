@@ -120,7 +120,7 @@ export default function NewCollectionPage() {
           title: "הצלחה",
           description: "הקולקציה נוצרה בהצלחה",
         })
-        router.push(`/collections/${collection.id}/edit`)
+        router.push(`/collections/${collection.slug}`)
       } else {
         const error = await response.json()
         toast({

@@ -68,6 +68,7 @@ export async function GET(
           bundles: true,
           analytics: true,
           webhooks: true,
+          tracking_pixels: true,
         },
       })
     }

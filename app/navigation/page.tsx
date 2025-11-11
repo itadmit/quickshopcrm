@@ -48,11 +48,17 @@ export default function NavigationPage() {
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/navigation?shopId=${selectedShop.id}`)
+      // נחפש תפריט HEADER ספציפי
+      const response = await fetch(`/api/navigation?shopId=${selectedShop.id}&location=HEADER`)
       if (response.ok) {
         const data = await response.json()
         if (data.length > 0) {
-          setNavigation(data[0])
+          // המרת location ל-type עבור הממשק
+          const nav = data[0]
+          setNavigation({
+            ...nav,
+            type: nav.location || "HEADER",
+          })
         } else {
           // יצירת navigation ברירת מחדל
           setNavigation({
@@ -91,7 +97,7 @@ export default function NavigationPage() {
         body: JSON.stringify({
           shopId: selectedShop.id,
           name: navigation.name,
-          type: navigation.type,
+          location: navigation.type, // type הוא HEADER/FOOTER/SIDEBAR שזה בעצם location
           items: navigation.items,
         }),
       })

@@ -74,7 +74,7 @@ export default function EditProductPage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
-  const productId = params.id as string
+  const productSlug = params.slug as string
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -144,10 +144,10 @@ export default function EditProductPage() {
   })
 
   useEffect(() => {
-    if (productId) {
+    if (productSlug) {
       fetchProduct()
     }
-  }, [productId])
+  }, [productSlug])
 
   // Load company settings for after save behavior
   useEffect(() => {
@@ -183,7 +183,7 @@ export default function EditProductPage() {
   const fetchProduct = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`/api/products/${productId}`)
+      const response = await fetch(`/api/products/${productSlug}`)
       if (response.ok) {
         const data = await response.json()
         setProduct(data)
@@ -243,8 +243,8 @@ export default function EditProductPage() {
 
         // Fetch options and variants
         const [optionsRes, variantsRes] = await Promise.all([
-          fetch(`/api/products/${productId}/options`),
-          fetch(`/api/products/${productId}/variants`),
+          fetch(`/api/products/${productSlug}/options`),
+          fetch(`/api/products/${productSlug}/variants`),
         ])
 
         let initialOptions: any[] = []
@@ -501,7 +501,7 @@ export default function EditProductPage() {
         },
       }
 
-      const response = await fetch(`/api/products/${productId}`, {
+      const response = await fetch(`/api/products/${productSlug}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -511,13 +511,13 @@ export default function EditProductPage() {
         // Update options and variants if they exist
         if (hasVariants && options.length > 0) {
           // Get existing options
-          const existingOptionsRes = await fetch(`/api/products/${productId}/options`)
+          const existingOptionsRes = await fetch(`/api/products/${productSlug}/options`)
           const existingOptions = existingOptionsRes.ok ? await existingOptionsRes.json() : []
 
           // Delete old options that are not in new options
           for (const existing of existingOptions) {
             if (!options.find(opt => opt.id === existing.id)) {
-              await fetch(`/api/products/${productId}/options/${existing.id}`, {
+              await fetch(`/api/products/${productSlug}/options/${existing.id}`, {
                 method: "DELETE",
               })
             }
@@ -550,7 +550,7 @@ export default function EditProductPage() {
             const existing = existingOptions.find((e: any) => e.id === option.id)
             if (existing) {
               // Update existing option
-              await fetch(`/api/products/${productId}/options/${option.id}`, {
+              await fetch(`/api/products/${productSlug}/options/${option.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -561,7 +561,7 @@ export default function EditProductPage() {
               })
             } else {
               // Create new option
-              await fetch(`/api/products/${productId}/options`, {
+              await fetch(`/api/products/${productSlug}/options`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -574,17 +574,17 @@ export default function EditProductPage() {
           }
 
           // Get updated options
-          const updatedOptionsRes = await fetch(`/api/products/${productId}/options`)
+          const updatedOptionsRes = await fetch(`/api/products/${productSlug}/options`)
           const updatedOptions = updatedOptionsRes.ok ? await updatedOptionsRes.json() : []
 
           // Get existing variants
-          const existingVariantsRes = await fetch(`/api/products/${productId}/variants`)
+          const existingVariantsRes = await fetch(`/api/products/${productSlug}/variants`)
           const existingVariants = existingVariantsRes.ok ? await existingVariantsRes.json() : []
 
           // Delete old variants that are not in new variants
           for (const existing of existingVariants) {
             if (!variants.find(v => v.id === existing.id)) {
-              await fetch(`/api/products/${productId}/variants/${existing.id}`, {
+              await fetch(`/api/products/${productSlug}/variants/${existing.id}`, {
                 method: "DELETE",
               })
             }
@@ -628,14 +628,14 @@ export default function EditProductPage() {
 
             if (existing) {
               // Update existing variant
-              await fetch(`/api/products/${productId}/variants/${variant.id}`, {
+              await fetch(`/api/products/${productSlug}/variants/${variant.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(variantPayload),
               })
             } else {
               // Create new variant
-              await fetch(`/api/products/${productId}/variants`, {
+              await fetch(`/api/products/${productSlug}/variants`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(variantPayload),
@@ -645,14 +645,14 @@ export default function EditProductPage() {
         } else {
           // Delete all options and variants if hasVariants is false
           const [existingOptionsRes, existingVariantsRes] = await Promise.all([
-            fetch(`/api/products/${productId}/options`),
-            fetch(`/api/products/${productId}/variants`),
+            fetch(`/api/products/${productSlug}/options`),
+            fetch(`/api/products/${productSlug}/variants`),
           ])
 
           if (existingOptionsRes.ok) {
             const existingOptions = await existingOptionsRes.json()
             for (const option of existingOptions) {
-              await fetch(`/api/products/${productId}/options/${option.id}`, {
+              await fetch(`/api/products/${productSlug}/options/${option.id}`, {
                 method: "DELETE",
               })
             }
@@ -661,13 +661,15 @@ export default function EditProductPage() {
           if (existingVariantsRes.ok) {
             const existingVariants = await existingVariantsRes.json()
             for (const variant of existingVariants) {
-              await fetch(`/api/products/${productId}/variants/${variant.id}`, {
+              await fetch(`/api/products/${productSlug}/variants/${variant.id}`, {
                 method: "DELETE",
               })
             }
           }
         }
 
+        const updatedProduct = await response.json()
+        
         toast({
           title: "הצלחה",
           description: "המוצר עודכן בהצלחה",
@@ -675,11 +677,20 @@ export default function EditProductPage() {
         
         // איפוס השינויים אחרי שמירה מוצלחת
         setHasChanges(false)
-        fetchProduct()
         
-        // Check setting for after save behavior
+        // Check setting for after save behavior - עושים את זה קודם
         if (afterProductSave === "return") {
+          // אם צריך לחזור לרשימה, עושים redirect ישירות
           router.push("/products")
+          return
+        }
+        
+        // אם לא חוזרים לרשימה, אז מטפלים בשינוי slug או רענון
+        // אם ה-slug השתנה, עשה redirect ל-URL החדש
+        if (updatedProduct.slug && updatedProduct.slug !== productSlug) {
+          router.replace(`/products/${updatedProduct.slug}/edit`)
+        } else {
+          fetchProduct()
         }
       } else {
         const error = await response.json()
@@ -864,7 +875,7 @@ export default function EditProductPage() {
                   selectedFiles={formData.images}
                   shopId={product?.shopId}
                   entityType="products"
-                  entityId={productId}
+                  entityId={formData.slug || productSlug}
                   multiple={true}
                   title="בחר תמונות למוצר"
                 />
@@ -1553,10 +1564,10 @@ export default function EditProductPage() {
                       variant="outline"
                       className="w-full"
                       onClick={() => {
-                        const productIdentifier = formData.slug || product.id
+                        const productSlugentifier = formData.slug || product.id
                         const url = getShopProductUrl(
                           { slug: product.shop?.slug || '', domain: product.shop?.domain || '' },
-                          productIdentifier
+                          productSlugentifier
                         )
                         window.open(url, "_blank")
                       }}

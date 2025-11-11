@@ -35,13 +35,13 @@ model User {
   email           String           @unique
   name            String
   password        String
-  phone           String?
   role            UserRole         @default(USER)
   companyId       String
   avatar          String?
   settings        Json?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
+  phone           String?
   auditLogs       AuditLog[]
   blogPosts       BlogPost[]
   sentInvitations Invitation[]     @relation("Inviter")
@@ -251,6 +251,7 @@ model Shop {
   trackingPixels           TrackingPixel[]
   webhooks                 Webhook[]
   wishlistItems            WishlistItem[]
+  automations              Automation[]
 
   @@index([companyId])
   @@index([slug])
@@ -481,6 +482,8 @@ model Order {
   couponCode              String?
   createdAt               DateTime                 @default(now())
   updatedAt               DateTime                 @updatedAt
+  customFields            Json?
+  paymentLink             String?
   giftCardTransactions    GiftCardTransaction[]
   items                   OrderItem[]
   customer                Customer?                @relation(fields: [customerId], references: [id])
@@ -764,19 +767,24 @@ model BundleProduct {
 }
 
 model Page {
-  id             String   @id @default(cuid())
-  shopId         String
-  title          String
-  slug           String
-  content        String?
-  seoTitle       String?
-  seoDescription String?
-  isPublished    Boolean  @default(false)
-  showInMenu     Boolean  @default(false)
-  menuPosition   Int?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-  shop           Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  id               String   @id @default(cuid())
+  shopId           String
+  title            String
+  slug             String
+  content          String?
+  seoTitle         String?
+  seoDescription   String?
+  isPublished      Boolean  @default(false)
+  showInMenu       Boolean  @default(false)
+  menuPosition     Int?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  selectedProducts Json?
+  template         String?  @default("STANDARD")
+  displayType      String?  @default("GRID")
+  couponCode       String?
+  featuredImage    String?
+  shop             Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   @@unique([shopId, slug])
   @@index([shopId])
@@ -919,14 +927,14 @@ model Webhook {
 
 model WebhookLog {
   id           String   @id @default(cuid())
-  webhookId    String
-  eventType    String
   payload      Json
-  responseCode Int?
-  responseBody Json?
-  error        String?
   durationMs   Int?
   createdAt    DateTime @default(now())
+  error        String?
+  eventType    String
+  responseBody Json?
+  responseCode Int?
+  webhookId    String
   webhook      Webhook  @relation(fields: [webhookId], references: [id], onDelete: Cascade)
 
   @@index([webhookId])
@@ -1018,6 +1026,44 @@ model TrackingPixel {
   @@map("tracking_pixels")
 }
 
+model Automation {
+  id          String            @id @default(cuid())
+  shopId      String
+  name        String
+  description String?
+  isActive    Boolean           @default(true)
+  trigger     Json              // Trigger configuration
+  conditions  Json?             // Conditions array
+  actions     Json              // Actions array
+  createdBy   String?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  shop        Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  logs        AutomationLog[]
+
+  @@index([shopId])
+  @@index([isActive])
+  @@map("automations")
+}
+
+model AutomationLog {
+  id           String     @id @default(cuid())
+  automationId String
+  status       String     // "success" | "failed" | "skipped"
+  eventType    String
+  eventPayload Json
+  actionResults Json?     // Results of each action
+  error        String?
+  durationMs   Int?
+  createdAt    DateTime   @default(now())
+  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+
+  @@index([automationId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("automation_logs")
+}
+
 enum UserRole {
   SUPER_ADMIN
   ADMIN
@@ -1033,12 +1079,13 @@ enum InvitationStatus {
 }
 
 enum IntegrationType {
+  INVOICE4U
   STRIPE
-  PAYPAL
-  PAYPLUS
   ZAPIER
   WHATSAPP
   GOOGLE_CALENDAR
+  PAYPLUS
+  PAYPAL
 }
 
 enum SubscriptionPlan {
@@ -1080,9 +1127,11 @@ enum OrderStatus {
 
 enum PaymentStatus {
   PENDING
-  PAID
+  PROCESSING
+  COMPLETED
   FAILED
   REFUNDED
+  PAID
 }
 
 enum FulfillmentStatus {

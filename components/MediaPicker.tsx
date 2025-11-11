@@ -52,6 +52,8 @@ export function MediaPicker({
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+  const [uploadProgress, setUploadProgress] = useState<Record<string, number>>({})
+  const [uploadingFiles, setUploadingFiles] = useState<string[]>([])
 
   // עדכון selected כשהמודאל נפתח
   useEffect(() => {
@@ -74,13 +76,14 @@ export function MediaPicker({
         limit: "50",
       })
 
-      if (entityType) {
-        params.append("entityType", entityType)
-      }
-
-      if (entityId && entityId !== "new") {
-        params.append("entityId", entityId)
-      }
+      // לא מסננים לפי entityType או entityId - מציגים את כל התמונות של החנות
+      // if (entityType) {
+      //   params.append("entityType", entityType)
+      // }
+      //
+      // if (entityId && entityId !== "new") {
+      //   params.append("entityId", entityId)
+      // }
 
       if (searchQuery) {
         params.append("search", searchQuery)
@@ -120,34 +123,76 @@ export function MediaPicker({
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
-    if (!files || files.length === 0 || !shopId) return
+    if (!files || files.length === 0) return
+
+    if (!shopId) {
+      toast({
+        title: "שגיאה",
+        description: "לא נמצא חנות. אנא בחר חנות תחילה",
+        variant: "destructive",
+      })
+      return
+    }
 
     setUploading(true)
     const uploadedFiles: string[] = []
+    const errors: string[] = []
+    const fileArray = Array.from(files)
+    
+    // הוספת קבצים להעלאה למצב
+    const tempFileIds = fileArray.map((f) => `temp-${Date.now()}-${Math.random()}`)
+    setUploadingFiles(tempFileIds)
 
     try {
-      for (const file of Array.from(files)) {
+      for (let i = 0; i < fileArray.length; i++) {
+        const file = fileArray[i]
+        const tempId = tempFileIds[i]
+        
+        // סימולציה של פרוגרס
+        setUploadProgress((prev) => ({ ...prev, [tempId]: 0 }))
+        
         const formData = new FormData()
         formData.append("file", file)
         formData.append("entityType", entityType || "products")
         formData.append("entityId", entityId || "new")
         formData.append("shopId", shopId)
 
+        // סימולציה של פרוגרס (אמיתי יותר)
+        const progressInterval = setInterval(() => {
+          setUploadProgress((prev) => {
+            const current = prev[tempId] || 0
+            if (current < 90) {
+              return { ...prev, [tempId]: current + 10 }
+            }
+            return prev
+          })
+        }, 100)
+
         const response = await fetch("/api/files/upload", {
           method: "POST",
           body: formData,
         })
 
+        clearInterval(progressInterval)
+        setUploadProgress((prev) => ({ ...prev, [tempId]: 100 }))
+
         if (response.ok) {
           const data = await response.json()
           uploadedFiles.push(data.file.path)
+        } else {
+          const errorData = await response.json()
+          console.error("Upload error:", errorData)
+          errors.push(`${file.name}: ${errorData.error || "שגיאה לא ידועה"}`)
         }
+        
+        // המתנה קצרה כדי להראות את 100%
+        await new Promise((resolve) => setTimeout(resolve, 300))
       }
 
       if (uploadedFiles.length > 0) {
         toast({
           title: "הצלחה",
-          description: `${uploadedFiles.length} תמונות הועלו בהצלחה`,
+          description: `${uploadedFiles.length} תמונות הועלו בהצלחה${errors.length > 0 ? `, ${errors.length} נכשלו` : ""}`,
         })
         // הוספת התמונות החדשות לרשימה
         setFiles((prev) => [
@@ -168,6 +213,14 @@ export function MediaPicker({
         uploadedFiles.forEach((path) => newSelected.add(path))
         setSelected(newSelected)
       }
+
+      if (errors.length > 0 && uploadedFiles.length === 0) {
+        toast({
+          title: "שגיאה",
+          description: errors[0] || "אירעה שגיאה בהעלאת התמונות",
+          variant: "destructive",
+        })
+      }
     } catch (error) {
       console.error("Error uploading files:", error)
       toast({
@@ -177,6 +230,8 @@ export function MediaPicker({
       })
     } finally {
       setUploading(false)
+      setUploadingFiles([])
+      setUploadProgress({})
       if (fileInputRef.current) {
         fileInputRef.current.value = ""
       }
@@ -223,6 +278,65 @@ export function MediaPicker({
     }
   }
 
+  // מחיקה קבוצתית
+  const handleBulkDelete = async () => {
+    const selectedArray = Array.from(selected)
+    if (selectedArray.length === 0) {
+      toast({
+        title: "שים לב",
+        description: "לא נבחרו תמונות למחיקה",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!confirm(`האם אתה בטוח שברצונך למחוק ${selectedArray.length} תמונות?`)) return
+
+    // סימון כל התמונות שנמחקות
+    setDeleting(new Set(selectedArray))
+
+    try {
+      // מחיקה אסינכרונית של כל התמונות
+      const deletePromises = selectedArray.map((filePath) =>
+        fetch(`/api/files/delete?path=${encodeURIComponent(filePath)}`, {
+          method: "DELETE",
+        })
+      )
+
+      const results = await Promise.allSettled(deletePromises)
+      
+      // ספירת הצלחות וכישלונות
+      const successful = results.filter((r) => r.status === "fulfilled").length
+      const failed = results.length - successful
+
+      if (successful > 0) {
+        toast({
+          title: "הצלחה",
+          description: `${successful} תמונות נמחקו בהצלחה${failed > 0 ? `, ${failed} נכשלו` : ""}`,
+        })
+        
+        // הסרת התמונות שנמחקו מהרשימה
+        setFiles((prev) => prev.filter((f) => !selectedArray.includes(f.path)))
+        setSelected(new Set())
+      } else {
+        toast({
+          title: "שגיאה",
+          description: "לא ניתן למחוק את התמונות",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error bulk deleting files:", error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה במחיקת התמונות",
+        variant: "destructive",
+      })
+    } finally {
+      setDeleting(new Set())
+    }
+  }
+
   const handleToggleSelect = (filePath: string) => {
     const newSelected = new Set(selected)
     if (newSelected.has(filePath)) {
@@ -261,6 +375,20 @@ export function MediaPicker({
                   className="pr-10"
                 />
               </div>
+              
+              {/* כפתור מחיקה קבוצתית - מופיע רק כשיש תמונות מסומנות */}
+              {selected.size > 0 && (
+                <Button
+                  onClick={handleBulkDelete}
+                  disabled={deleting.size > 0}
+                  variant="destructive"
+                  className="gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  מחק ({selected.size})
+                </Button>
+              )}
+              
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
@@ -291,7 +419,7 @@ export function MediaPicker({
               <div className="flex items-center justify-center h-64">
                 <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
               </div>
-            ) : files.length === 0 ? (
+            ) : files.length === 0 && uploadingFiles.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-64 text-center">
                 <ImageIcon className="w-16 h-16 text-gray-300 mb-4" />
                 <p className="text-gray-500 mb-2">אין תמונות</p>
@@ -307,6 +435,40 @@ export function MediaPicker({
               </div>
             ) : (
               <div className="grid grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+                {/* קבצים בהעלאה - Skeleton עם פרוגרס */}
+                {uploadingFiles.map((tempId, index) => {
+                  const progress = uploadProgress[tempId] || 0
+                  return (
+                    <div
+                      key={tempId}
+                      className="relative rounded-lg border-2 border-purple-300 overflow-hidden"
+                    >
+                      {/* Skeleton */}
+                      <div className="aspect-square relative bg-gray-100 animate-pulse">
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+                        </div>
+                        
+                        {/* Progress Bar */}
+                        <div className="absolute bottom-0 left-0 right-0 h-2 bg-gray-200">
+                          <div
+                            className="h-full bg-purple-500 transition-all duration-300"
+                            style={{ width: `${progress}%` }}
+                          />
+                        </div>
+                      </div>
+                      
+                      {/* Progress Text */}
+                      <div className="p-2 bg-white">
+                        <p className="text-xs text-gray-600 text-center font-medium">
+                          {progress}%
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
+
+                {/* קבצים קיימים */}
                 {files.map((file) => {
                   const isSelected = selected.has(file.path)
                   const isDeleting = deleting.has(file.path)

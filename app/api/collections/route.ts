@@ -53,6 +53,11 @@ export async function GET(req: NextRequest) {
     const collections = await prisma.collection.findMany({
       where,
       include: {
+        _count: {
+          select: {
+            products: true,
+          },
+        },
         products: {
           include: {
             product: {
@@ -68,6 +73,7 @@ export async function GET(req: NextRequest) {
           orderBy: {
             position: "asc",
           },
+          take: 5, // מוגבל ל-5 מוצרים לתצוגה מהירה
         },
       },
       orderBy: {

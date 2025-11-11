@@ -49,6 +49,7 @@ export async function GET(req: NextRequest) {
           bundles: true,
           analytics: true,
           webhooks: true,
+          tracking_pixels: true,
         },
       })
     }

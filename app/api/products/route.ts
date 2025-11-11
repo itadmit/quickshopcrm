@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
     const shopId = searchParams.get("shopId")
     const status = searchParams.get("status")
     const search = searchParams.get("search")
+    const ids = searchParams.get("ids")
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "20")
 
@@ -59,6 +60,11 @@ export async function GET(req: NextRequest) {
 
     if (status) {
       where.status = status
+    }
+
+    if (ids) {
+      const idsArray = ids.split(",").filter(Boolean)
+      where.id = { in: idsArray }
     }
 
     if (search) {

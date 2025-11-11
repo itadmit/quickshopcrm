@@ -51,6 +51,13 @@ interface Cart {
   discount: number
   customerDiscount?: number
   couponDiscount?: number
+  automaticDiscount?: number
+  couponStatus?: {
+    code: string
+    isValid: boolean
+    reason?: string
+    minOrderRequired?: number
+  }
 }
 
 interface SlideOutCartProps {
@@ -69,15 +76,22 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
   const [showDiscount, setShowDiscount] = useState(false)
   const [showCoupon, setShowCoupon] = useState(false)
   const [updatingItem, setUpdatingItem] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   // שימוש ב-useCart hook החדש
   const { 
     cart, 
     isLoading, 
-    updateQuantity: updateQuantityMutation, 
+    updateItem: updateItemMutation, 
     removeItem: removeItemMutation, 
     applyCoupon: applyCouponMutation,
-    isUpdating,
+    removeCoupon: removeCouponMutation,
+    isUpdatingItem,
+    isApplyingCoupon,
     refetch
   } = useCart(slug, customerId)
 
@@ -88,7 +102,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
         removeItemMutation({ productId, variantId })
         return
       }
-      updateQuantityMutation({ productId, variantId, quantity })
+      updateItemMutation({ productId, variantId, quantity })
       if (onCartUpdate) {
         onCartUpdate()
       }
@@ -114,11 +128,23 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
     debouncedUpdateQuantity(productId, variantId, quantity)
   }
 
-  const handleRemoveItem = (productId: string, variantId: string | null) => {
+  const handleRemoveItem = async (productId: string, variantId: string | null) => {
+    console.log('🗑️ handleRemoveItem called:', { productId, variantId })
     setUpdatingItem(`${productId}-${variantId}`)
-    removeItemMutation({ productId, variantId })
-    if (onCartUpdate) {
-      onCartUpdate()
+    
+    try {
+      console.log('🚀 Calling removeItemMutation...')
+      const result = await removeItemMutation({ productId, variantId })
+      console.log('✅ Remove successful:', result)
+      
+      // המחיקה הצליחה, עכשיו נעדכן את המונה
+      if (onCartUpdate) {
+        onCartUpdate()
+      }
+      setUpdatingItem(null)
+    } catch (error) {
+      console.error('❌ Remove failed:', error)
+      setUpdatingItem(null)
     }
   }
 
@@ -126,6 +152,13 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
     if (!couponCode.trim()) return
     applyCouponMutation(couponCode)
     setCouponCode("")
+    if (onCartUpdate) {
+      onCartUpdate()
+    }
+  }
+
+  const handleCouponRemove = () => {
+    removeCouponMutation()
     if (onCartUpdate) {
       onCartUpdate()
     }
@@ -146,7 +179,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
             <div className="flex items-center gap-3">
               <h2 className="text-2xl font-bold text-gray-900">עגלה</h2>
-              {cart && cart.items && cart.items.length > 0 && (
+              {mounted && cart && cart.items && cart.items.length > 0 && (
                 <Badge className="bg-gray-200 text-gray-700 shadow-sm">
                   {cart.items.reduce((sum, item) => sum + item.quantity, 0)}
                 </Badge>
@@ -243,7 +276,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                             variant="ghost"
                             size="sm"
                             onClick={() => handleRemoveItem(item.productId, item.variantId)}
-                            disabled={updatingItem === `${item.productId}-${item.variantId}` || isUpdating}
+                            disabled={updatingItem === `${item.productId}-${item.variantId}` || isUpdatingItem}
                             className="p-1 h-7 w-7 text-gray-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0"
                           >
                             <Trash2 className="w-3.5 h-3.5" />
@@ -264,7 +297,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                                   item.quantity - 1
                                 )
                               }
-                              disabled={updatingItem === `${item.productId}-${item.variantId}` || isUpdating}
+                              disabled={updatingItem === `${item.productId}-${item.variantId}` || isUpdatingItem}
                               className="p-1 h-7 w-7 rounded-none hover:bg-gray-50 transition-colors"
                             >
                               <Minus className="w-3 h-3 text-gray-600" />
@@ -279,9 +312,13 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                                   parseInt(e.target.value) || 1
                                 )
                               }
+                              onWheel={(e) => {
+                                // מונע שינוי ערך בגלילת עכבר
+                                e.currentTarget.blur()
+                              }}
                               className="w-8 h-7 text-center border-0 focus:outline-none focus:ring-0 text-xs font-medium bg-white"
                               min="1"
-                              disabled={updatingItem === `${item.productId}-${item.variantId}` || isUpdating}
+                              disabled={updatingItem === `${item.productId}-${item.variantId}` || isUpdatingItem}
                               style={{
                                 WebkitAppearance: "none",
                                 MozAppearance: "textfield",
@@ -297,7 +334,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                                   item.quantity + 1
                                 )
                               }
-                              disabled={updatingItem === `${item.productId}-${item.variantId}` || isUpdating}
+                              disabled={updatingItem === `${item.productId}-${item.variantId}` || isUpdatingItem}
                               className="p-1 h-7 w-7 rounded-none hover:bg-gray-50 transition-colors"
                             >
                               <Plus className="w-3 h-3 text-gray-600" />
@@ -328,41 +365,101 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
             <div className="border-t border-gray-200 p-6 bg-white">
               {/* Coupon Code Section - Expandable */}
               <div className="mb-4">
-                <button
-                  onClick={() => setShowCoupon(!showCoupon)}
-                  className="w-full flex items-center justify-between text-gray-900 hover:text-gray-700 transition-colors mb-2"
-                >
-                  <span className="font-medium">קוד קופון</span>
-                  {showCoupon ? (
-                    <ChevronDown className="w-4 h-4" />
-                  ) : (
-                    <ChevronUp className="w-4 h-4" />
-                  )}
-                </button>
-                
-                {showCoupon && (
-                  <div className="mt-3">
-                    <div className="flex gap-2">
-                      <Input
-                        placeholder="קוד קופון"
-                        value={couponCode}
-                        onChange={(e) => setCouponCode(e.target.value)}
-                        className="flex-1"
-                      />
-                      <Button
-                        onClick={handleApplyCoupon}
-                        variant="outline"
-                        size="sm"
-                        className="px-4"
-                        disabled={isUpdating}
-                      >
-                        <Tag className="w-4 h-4" />
-                      </Button>
+                {/* אם יש קופון, תמיד להציג אותו */}
+                {mounted && cart.couponCode ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-gray-900">קוד קופון</span>
                     </div>
-                    {cart.couponCode && (
-                      <Badge className="mt-2 bg-green-100 text-green-800">
-                        קופון: {cart.couponCode}
-                      </Badge>
+                    {mounted && cart.couponCode && (
+                      <div className="mt-3 p-3 rounded-lg border" style={{
+                        backgroundColor: cart.couponStatus?.isValid ? '#f0fdf4' : '#fefce8',
+                        borderColor: cart.couponStatus?.isValid ? '#86efac' : '#fde047'
+                      }}>
+                        <div className="flex items-start gap-3">
+                          {cart.couponStatus?.isValid ? (
+                            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-green-700 flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </div>
+                          ) : (
+                            <div className="flex-shrink-0 w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center">
+                              <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                              </svg>
+                            </div>
+                          )}
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className={`font-semibold text-sm ${cart.couponStatus?.isValid ? 'text-green-800' : 'text-yellow-800'}`}>
+                                קופון: {cart.couponCode}
+                              </span>
+                              {cart.couponStatus?.isValid && cart.couponDiscount && cart.couponDiscount > 0 && (
+                                <span className="text-xs font-bold text-green-600">
+                                  -₪{cart.couponDiscount.toFixed(2)}
+                                </span>
+                              )}
+                            </div>
+                            {cart.couponStatus?.isValid ? (
+                              <p className="text-xs text-green-700 font-medium">
+                                הקופון הוחל בהצלחה!
+                              </p>
+                            ) : (
+                              <div className="text-xs text-yellow-700">
+                                <p className="font-medium mb-1">{cart.couponStatus?.reason}</p>
+                                {cart.couponStatus?.minOrderRequired && (
+                                  <p className="font-semibold">
+                                    הוסיפו עוד ₪{(cart.couponStatus.minOrderRequired - cart.subtotal).toFixed(2)} לקבלת ההנחה
+                                  </p>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          <button
+                            onClick={() => handleCouponRemove()}
+                            className="flex-shrink-0 text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div>
+                    <button
+                      onClick={() => setShowCoupon(!showCoupon)}
+                      className="w-full flex items-center justify-between text-gray-900 hover:text-gray-700 transition-colors mb-2"
+                    >
+                      <span className="font-medium">קוד קופון</span>
+                      {showCoupon ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronUp className="w-4 h-4" />
+                      )}
+                    </button>
+                    
+                    {showCoupon && (
+                      <div className="mt-3">
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="קוד קופון"
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value)}
+                            className="flex-1"
+                          />
+                          <Button
+                            onClick={handleApplyCoupon}
+                            variant="outline"
+                            size="sm"
+                            className="px-4"
+                            disabled={isApplyingCoupon}
+                          >
+                            <Tag className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
                     )}
                   </div>
                 )}
@@ -370,7 +467,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
 
 
               {/* Discount - Only show if there's a discount */}
-              {((cart.discount > 0) || (cart.customerDiscount && cart.customerDiscount > 0) || (cart.couponDiscount && cart.couponDiscount > 0)) && (
+              {((cart.customerDiscount && cart.customerDiscount > 0) || (cart.couponDiscount && cart.couponDiscount > 0) || (cart.automaticDiscount && cart.automaticDiscount > 0)) && (
                 <div className="mb-4 pb-4 border-b border-gray-200">
                   <button
                     onClick={() => setShowDiscount(!showDiscount)}
@@ -382,7 +479,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                         -₪{(
                           (cart.customerDiscount || 0) + 
                           (cart.couponDiscount || 0) + 
-                          (cart.discount > 0 && !cart.customerDiscount && !cart.couponDiscount ? cart.discount : 0)
+                          (cart.automaticDiscount || 0)
                         ).toFixed(2)}
                       </span>
                       {showDiscount ? (
@@ -406,10 +503,10 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                           <span>-₪{cart.couponDiscount.toFixed(2)}</span>
                         </div>
                       )}
-                      {cart.discount > 0 && !cart.customerDiscount && !cart.couponDiscount && (
+                      {cart.automaticDiscount && cart.automaticDiscount > 0 && (
                         <div className="flex justify-between text-sm text-green-600">
-                          <span>הנחה</span>
-                          <span>-₪{cart.discount.toFixed(2)}</span>
+                          <span>הנחה אוטומטית</span>
+                          <span>-₪{cart.automaticDiscount.toFixed(2)}</span>
                         </div>
                       )}
                     </div>
@@ -426,7 +523,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 text-center">
-                  דמי משלוח יחושבו בקופה בהתאם למדיניות החברה
+                  דמי משלוח יחושבו בקופה
                 </p>
               </div>
 
@@ -434,8 +531,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
               <button
                 onClick={() => {
                   onClose()
-                  // מעבר מיידי ללא delay
-                  window.location.href = `/shop/${slug}/checkout`
+                  router.push(`/shop/${slug}/checkout`)
                 }}
                 className="w-full text-white rounded-lg h-11 px-8 font-medium transition-opacity hover:opacity-90"
                 style={{

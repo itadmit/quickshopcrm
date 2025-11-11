@@ -48,7 +48,7 @@ export default function NewTrackingPixelPage() {
     pixelId: "",
     accessToken: "",
     isActive: true,
-    events: [] as string[],
+    events: [...ALL_EVENTS] as string[],
   })
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -281,13 +281,13 @@ export default function NewTrackingPixelPage() {
               <div>
                 <Label>אירועים למעקב</Label>
                 <p className="text-sm text-gray-500 mb-3">
-                  בחר אירועים למעקב (אם לא נבחרו, כל האירועים יישלחו)
+                  בחר אירועים למעקב (כל האירועים מסומנים כברירת מחדל)
                 </p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2" dir="ltr">
                   {ALL_EVENTS.map((event) => (
                     <label
                       key={event}
-                      className="flex items-center space-x-2 p-2 border rounded cursor-pointer hover:bg-gray-50"
+                      className="flex items-center flex-row-reverse gap-2 p-2 border rounded cursor-pointer hover:bg-gray-50 text-left"
                     >
                       <input
                         type="checkbox"
@@ -295,7 +295,7 @@ export default function NewTrackingPixelPage() {
                         onChange={() => toggleEvent(event)}
                         className="rounded"
                       />
-                      <span className="text-sm">{event}</span>
+                      <span className="text-sm text-left flex-1">{event}</span>
                     </label>
                   ))}
                 </div>

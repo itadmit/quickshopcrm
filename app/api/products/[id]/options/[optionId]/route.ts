@@ -26,7 +26,10 @@ export async function GET(
       where: {
         id: params.optionId,
         product: {
-          id: params.id,
+          OR: [
+            { id: params.id },
+            { slug: params.id }
+          ],
           shop: {
             companyId: session.user.companyId,
           },
@@ -64,7 +67,10 @@ export async function PUT(
       where: {
         id: params.optionId,
         product: {
-          id: params.id,
+          OR: [
+            { id: params.id },
+            { slug: params.id }
+          ],
           shop: {
             companyId: session.user.companyId,
           },
@@ -136,7 +142,10 @@ export async function DELETE(
       where: {
         id: params.optionId,
         product: {
-          id: params.id,
+          OR: [
+            { id: params.id },
+            { slug: params.id }
+          ],
           shop: {
             companyId: session.user.companyId,
           },

@@ -28,12 +28,32 @@ export async function POST(req: NextRequest) {
     const shopId = formData.get("shopId") as string | null // עבור entity חדש
     const fileType = formData.get("fileType") as string | null // logo, favicon, builders וכו'
 
+    console.log("Upload request received:", {
+      hasFile: !!file,
+      fileName: file?.name,
+      entityType,
+      entityId,
+      shopId,
+      fileType,
+    })
+
     if (!file) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
     if (!entityType || !entityId) {
-      return NextResponse.json({ error: "Missing entityType or entityId" }, { status: 400 })
+      return NextResponse.json({ 
+        error: "Missing entityType or entityId",
+        received: { entityType, entityId }
+      }, { status: 400 })
+    }
+
+    // עבור entity חדש, shopId הוא חובה
+    if (entityId === "new" && !shopId) {
+      return NextResponse.json({ 
+        error: "shopId is required for new entities",
+        received: { entityType, entityId, shopId }
+      }, { status: 400 })
     }
 
     // המרת הקובץ ל-buffer
@@ -78,23 +98,45 @@ export async function POST(req: NextRequest) {
           finalIdentifier = null
         }
       } else {
-        // עבור products, collections וכו' - צריך למצוא את ה-shopId
+        // עבור products, collections, pages וכו' - צריך למצוא את ה-shopId
         let targetShopId: string | null = null
         
         if (entityId !== 'new') {
-          // מוצר/קולקציה קיים - נמצא את ה-shopId
+          // מוצר/קולקציה/דף קיים - נמצא את ה-shopId
           if (entityType === 'products') {
-            const product = await prisma.product.findUnique({
-              where: { id: entityId },
+            const product = await prisma.product.findFirst({
+              where: {
+                OR: [
+                  { id: entityId },
+                  { slug: entityId }
+                ]
+              },
               select: { shopId: true },
             })
             targetShopId = product?.shopId || null
           } else if (entityType === 'collections') {
-            const collection = await prisma.collection.findUnique({
-              where: { id: entityId },
+            const collection = await prisma.collection.findFirst({
+              where: {
+                OR: [
+                  { id: entityId },
+                  { slug: entityId }
+                ]
+              },
               select: { shopId: true },
             })
             targetShopId = collection?.shopId || null
+          } else if (entityType === 'pages') {
+            // חיפוש דף לפי slug או ID
+            const page = await prisma.page.findFirst({
+              where: {
+                OR: [
+                  { id: entityId },
+                  { slug: entityId }
+                ]
+              },
+              select: { shopId: true },
+            })
+            targetShopId = page?.shopId || null
           }
         } else {
           // entity חדש - נשתמש ב-shopId שנשלח

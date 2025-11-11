@@ -1,5 +1,6 @@
 import { prisma } from "./prisma"
 import { sendWebhook } from "./webhooks"
+import { runAutomationsForEvent } from "./automations"
 
 /**
  * יצירת אירוע
@@ -27,6 +28,11 @@ export async function createEvent(
 
     // שליחת Webhook
     await sendWebhook(shopId, type, payload, entityType, entityId)
+
+    // הרצת אוטומציות (לא blocking - רץ ברקע)
+    runAutomationsForEvent(shopId, type, payload).catch((error) => {
+      console.error("Error running automations:", error)
+    })
 
     return event
   } catch (error) {

@@ -87,12 +87,28 @@ export async function getSubscriptionInfo(companyId: string) {
     hasBrandingAccess, 
     checkAndUpdateSubscriptionStatus 
   } = await import("@/lib/subscription")
+  const { prisma } = await import("@/lib/prisma")
   
   await checkAndUpdateSubscriptionStatus(companyId)
   
-  const subscription = await getCurrentSubscription(companyId)
+  let subscription = await getCurrentSubscription(companyId)
+  
+  // אם אין מנוי, ניצור מנוי נסיון אוטומטית
   if (!subscription) {
-    return null
+    console.log("No subscription found in getSubscriptionInfo, creating trial subscription")
+    const trialEndDate = new Date()
+    trialEndDate.setDate(trialEndDate.getDate() + 7)
+
+    subscription = await prisma.subscription.create({
+      data: {
+        companyId: companyId,
+        plan: "TRIAL",
+        status: "TRIAL",
+        trialStartDate: new Date(),
+        trialEndDate: trialEndDate,
+      },
+    })
+    console.log("Trial subscription created:", subscription.id)
   }
 
   const isActive = await isSubscriptionActive(companyId)

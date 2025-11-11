@@ -29,7 +29,10 @@ export async function GET(
 
     const collection = await prisma.collection.findFirst({
       where: {
-        id: params.id,
+        OR: [
+          { id: params.id },
+          { slug: params.id }
+        ],
         shop: {
           companyId: session.user.companyId,
         },
@@ -41,11 +44,13 @@ export async function GET(
               select: {
                 id: true,
                 name: true,
+                slug: true,
                 price: true,
                 comparePrice: true,
                 images: true,
                 status: true,
                 availability: true,
+                sku: true,
               },
             },
           },
@@ -84,7 +89,10 @@ export async function PUT(
     // בדיקה שהאוסף שייך לחברה
     const existingCollection = await prisma.collection.findFirst({
       where: {
-        id: params.id,
+        OR: [
+          { id: params.id },
+          { slug: params.id }
+        ],
         shop: {
           companyId: session.user.companyId,
         },
@@ -104,6 +112,9 @@ export async function PUT(
         where: {
           shopId: existingCollection.shopId,
           slug: data.slug,
+          NOT: {
+            id: existingCollection.id
+          }
         },
       })
 
@@ -117,7 +128,7 @@ export async function PUT(
 
     // עדכון האוסף
     const collection = await prisma.collection.update({
-      where: { id: params.id },
+      where: { id: existingCollection.id },
       data: {
         name: data.name,
         slug: data.slug,
@@ -134,7 +145,7 @@ export async function PUT(
     if (data.productIds !== undefined) {
       // מחיקת כל הקשרים הקיימים
       await prisma.productCollection.deleteMany({
-        where: { collectionId: params.id },
+        where: { collectionId: existingCollection.id },
       })
 
       // יצירת קשרים חדשים
@@ -144,7 +155,7 @@ export async function PUT(
             prisma.productCollection.create({
               data: {
                 productId,
-                collectionId: params.id,
+                collectionId: existingCollection.id,
                 position: index,
               },
             })
@@ -218,7 +229,10 @@ export async function DELETE(
     // בדיקה שהאוסף שייך לחברה
     const collection = await prisma.collection.findFirst({
       where: {
-        id: params.id,
+        OR: [
+          { id: params.id },
+          { slug: params.id }
+        ],
         shop: {
           companyId: session.user.companyId,
         },
@@ -231,7 +245,7 @@ export async function DELETE(
 
     // מחיקת האוסף (עם כל הקשרים - cascade)
     await prisma.collection.delete({
-      where: { id: params.id },
+      where: { id: collection.id },
     })
 
     // יצירת אירוע

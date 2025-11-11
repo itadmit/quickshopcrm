@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { cookies } from "next/headers"
+import { findCart } from "@/lib/cart-server"
 
 // GET - קבלת מספר פריטים בעגלה
 export async function GET(
@@ -34,19 +35,8 @@ export async function GET(
     const sessionId = cookieStore.get("cart_session")?.value
     const customerId = req.headers.get("x-customer-id") || null
 
-    if (!sessionId && !customerId) {
-      return NextResponse.json({ count: 0 })
-    }
-
-    let cart = await prisma.cart.findFirst({
-      where: {
-        shopId: shop.id,
-        ...(customerId ? { customerId } : { sessionId }),
-        expiresAt: {
-          gt: new Date(),
-        },
-      },
-    })
+    // שימוש בפונקציה המרכזית למציאת עגלה
+    const cart = await findCart(shop.id, sessionId, customerId)
 
     if (!cart) {
       return NextResponse.json({ count: 0 })

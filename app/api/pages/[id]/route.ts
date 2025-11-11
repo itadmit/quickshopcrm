@@ -8,6 +8,11 @@ const updatePageSchema = z.object({
   title: z.string().min(2).optional(),
   slug: z.string().min(2).regex(/^[a-z0-9-]+$/).optional(),
   content: z.string().optional(),
+  template: z.enum(["STANDARD", "CHOICES_OF"]).optional(),
+  displayType: z.enum(["GRID", "LIST"]).optional(), // סוג תצוגה לטמפלט "הבחירות של"
+  selectedProducts: z.array(z.string()).optional(),
+  featuredImage: z.string().optional(), // תמונה ראשית לעמוד
+  couponCode: z.string().optional(), // קוד קופון להפעלה אוטומטית
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
   isPublished: z.boolean().optional(),
@@ -15,7 +20,7 @@ const updatePageSchema = z.object({
   menuPosition: z.number().int().optional(),
 })
 
-// GET - קבלת פרטי דף
+// GET - קבלת פרטי דף (תומך ב-ID או slug)
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -26,9 +31,13 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // ניסיון למצוא לפי ID או slug
     const page = await prisma.page.findFirst({
       where: {
-        id: params.id,
+        OR: [
+          { id: params.id },
+          { slug: params.id }
+        ],
         shop: {
           companyId: session.user.companyId,
         },
@@ -49,7 +58,7 @@ export async function GET(
   }
 }
 
-// PUT - עדכון דף
+// PUT - עדכון דף (תומך ב-ID או slug)
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -60,10 +69,13 @@ export async function PUT(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // בדיקה שהדף שייך לחברה
+    // בדיקה שהדף שייך לחברה (תומך ב-ID או slug)
     const existingPage = await prisma.page.findFirst({
       where: {
-        id: params.id,
+        OR: [
+          { id: params.id },
+          { slug: params.id }
+        ],
         shop: {
           companyId: session.user.companyId,
         },
@@ -94,11 +106,86 @@ export async function PUT(
       }
     }
 
-    // עדכון הדף
+    // עדכון הדף (נשתמש ב-ID האמיתי)
     const page = await prisma.page.update({
-      where: { id: params.id },
+      where: { id: existingPage.id },
       data,
     })
+
+    // טיפול ב-showInMenu - הוספה/הסרה מהתפריט
+    if (data.showInMenu !== undefined) {
+      // חיפוש תפריט HEADER לחנות
+      let headerNavigation = await prisma.navigation.findFirst({
+        where: {
+          shopId: page.shopId,
+          location: "HEADER",
+        },
+      })
+
+      // אם אין תפריט HEADER, ניצור אחד
+      if (!headerNavigation) {
+        headerNavigation = await prisma.navigation.create({
+          data: {
+            shopId: page.shopId,
+            name: "תפריט ראשי",
+            location: "HEADER",
+            items: [],
+          },
+        })
+      }
+
+      const items = (headerNavigation.items as any[]) || []
+
+      if (data.showInMenu) {
+        // הוספת הדף לתפריט אם הוא לא קיים שם
+        const existingItemIndex = items.findIndex(
+          (item: any) => item.type === "PAGE" && item.url === `/pages/${page.slug}`
+        )
+
+        if (existingItemIndex === -1) {
+          // הוספת פריט חדש
+          const newItem = {
+            id: `page-${page.id}`,
+            label: page.title,
+            type: "PAGE",
+            url: `/pages/${page.slug}`,
+            position: items.length,
+            parentId: null,
+          }
+          items.push(newItem)
+
+          await prisma.navigation.update({
+            where: { id: headerNavigation.id },
+            data: { items },
+          })
+        } else {
+          // עדכון פריט קיים (למשל אם שונה השם)
+          items[existingItemIndex].label = page.title
+          items[existingItemIndex].url = `/pages/${page.slug}`
+
+          await prisma.navigation.update({
+            where: { id: headerNavigation.id },
+            data: { items },
+          })
+        }
+      } else {
+        // הסרת הדף מהתפריט
+        const filteredItems = items.filter(
+          (item: any) => !(item.type === "PAGE" && item.url === `/pages/${page.slug}`)
+        )
+
+        // עדכון המיקומים
+        const updatedItems = filteredItems.map((item: any, index: number) => ({
+          ...item,
+          position: index,
+        }))
+
+        await prisma.navigation.update({
+          where: { id: headerNavigation.id },
+          data: { items: updatedItems },
+        })
+      }
+    }
 
     // יצירת אירוע
     await prisma.shopEvent.create({
@@ -132,7 +219,7 @@ export async function PUT(
   }
 }
 
-// DELETE - מחיקת דף
+// DELETE - מחיקת דף (תומך ב-ID או slug)
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -143,10 +230,13 @@ export async function DELETE(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
-    // בדיקה שהדף שייך לחברה
+    // בדיקה שהדף שייך לחברה (תומך ב-ID או slug)
     const page = await prisma.page.findFirst({
       where: {
-        id: params.id,
+        OR: [
+          { id: params.id },
+          { slug: params.id }
+        ],
         shop: {
           companyId: session.user.companyId,
         },
@@ -157,9 +247,9 @@ export async function DELETE(
       return NextResponse.json({ error: "Page not found" }, { status: 404 })
     }
 
-    // מחיקת הדף
+    // מחיקת הדף (נשתמש ב-ID האמיתי)
     await prisma.page.delete({
-      where: { id: params.id },
+      where: { id: page.id },
     })
 
     // יצירת אירוע

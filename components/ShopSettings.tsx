@@ -82,6 +82,12 @@ interface ShopData {
   secondaryColor: string
   autoOpenCartAfterAdd: boolean
   
+  // הגדרות לוגו
+  logoWidthMobile: number
+  logoWidthDesktop: number
+  logoPaddingMobile: number
+  logoPaddingDesktop: number
+  
   // תחזוקה
   maintenanceMessage: string
 }
@@ -150,6 +156,10 @@ export function ShopSettings() {
     primaryColor: "#000000",
     secondaryColor: "#333333",
     autoOpenCartAfterAdd: true,
+    logoWidthMobile: 85,
+    logoWidthDesktop: 135,
+    logoPaddingMobile: 0,
+    logoPaddingDesktop: 0,
     maintenanceMessage: "אנו עובדים על שיפורים בחנות. אנא חזור מאוחר יותר.",
   })
 
@@ -253,6 +263,10 @@ export function ShopSettings() {
           primaryColor: shop.themeSettings?.primaryColor || "#000000",
           secondaryColor: shop.themeSettings?.secondaryColor || "#333333",
           autoOpenCartAfterAdd: shop.settings?.autoOpenCartAfterAdd !== undefined ? shop.settings.autoOpenCartAfterAdd : true,
+          logoWidthMobile: shop.themeSettings?.logoWidthMobile || 85,
+          logoWidthDesktop: shop.themeSettings?.logoWidthDesktop || 135,
+          logoPaddingMobile: shop.themeSettings?.logoPaddingMobile || 0,
+          logoPaddingDesktop: shop.themeSettings?.logoPaddingDesktop || 0,
           maintenanceMessage: shop.settings?.maintenanceMessage || "אנו עובדים על שיפורים בחנות. אנא חזור מאוחר יותר.",
         })
       }
@@ -361,6 +375,10 @@ export function ShopSettings() {
           themeSettings: {
             primaryColor: shopData.primaryColor,
             secondaryColor: shopData.secondaryColor,
+            logoWidthMobile: shopData.logoWidthMobile,
+            logoWidthDesktop: shopData.logoWidthDesktop,
+            logoPaddingMobile: shopData.logoPaddingMobile,
+            logoPaddingDesktop: shopData.logoPaddingDesktop,
           },
           settings: {
             paymentMethods: shopData.paymentMethods,
@@ -498,6 +516,81 @@ export function ShopSettings() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
+              {/* פרסם חנות - למעלה מעל הכל */}
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-1 flex-1">
+                    <div className="flex items-center gap-2">
+                      <Label htmlFor="isPublished" className="text-base font-bold text-gray-900">
+                        פרסם חנות
+                      </Label>
+                      {!shopData.isPublished && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                          החנות סגורה
+                        </span>
+                      )}
+                      {shopData.isPublished && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          החנות פעילה
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-gray-700 font-medium">
+                      {shopData.isPublished 
+                        ? "החנות פעילה וזמינה ללקוחות" 
+                        : "החנות במצב תחזוקה ולא זמינה ללקוחות"}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    {!shopData.isPublished && (
+                      <Dialog>
+                        <DialogTrigger asChild>
+                          <Button variant="outline" size="sm" className="border-purple-300">
+                            <Edit className="w-4 h-4 ml-2" />
+                            ערוך הודעת תחזוקה
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="sm:max-w-[500px]">
+                          <DialogHeader>
+                            <DialogTitle>ערוך הודעת תחזוקה</DialogTitle>
+                            <DialogDescription>
+                              הודעה זו תוצג ללקוחות כאשר החנות במצב תחזוקה
+                            </DialogDescription>
+                          </DialogHeader>
+                          <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                              <Label htmlFor="maintenanceMessage">הודעת תחזוקה</Label>
+                              <Textarea
+                                id="maintenanceMessage"
+                                value={shopData.maintenanceMessage}
+                                onChange={(e) => updateShopData("maintenanceMessage", e.target.value)}
+                                placeholder="אנו עובדים על שיפורים בחנות. אנא חזור מאוחר יותר."
+                                rows={4}
+                                className="text-sm"
+                              />
+                            </div>
+                          </div>
+                          <DialogFooter>
+                            <DialogTrigger asChild>
+                              <Button variant="outline">ביטול</Button>
+                            </DialogTrigger>
+                            <DialogTrigger asChild>
+                              <Button>שמור</Button>
+                            </DialogTrigger>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                    )}
+                    <Switch
+                      id="isPublished"
+                      checked={shopData.isPublished}
+                      onCheckedChange={(checked) => updateShopData("isPublished", checked)}
+                      className="data-[state=checked]:bg-green-600"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm font-semibold text-gray-700">
                   שם החנות <span className="text-red-500">*</span>
@@ -578,67 +671,6 @@ export function ShopSettings() {
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5 flex-1">
-                    <Label htmlFor="isPublished" className="text-sm font-semibold text-gray-700">
-                      פרסם חנות
-                    </Label>
-                    <p className="text-xs text-gray-500">
-                      {shopData.isPublished 
-                        ? "החנות פעילה וזמינה ללקוחות" 
-                        : "החנות במצב תחזוקה ולא זמינה ללקוחות"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {!shopData.isPublished && (
-                      <Dialog>
-                        <DialogTrigger asChild>
-                          <Button variant="outline" size="sm">
-                            <Edit className="w-4 h-4 ml-2" />
-                            ערוך הודעת תחזוקה
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="sm:max-w-[500px]">
-                          <DialogHeader>
-                            <DialogTitle>ערוך הודעת תחזוקה</DialogTitle>
-                            <DialogDescription>
-                              הודעה זו תוצג ללקוחות כאשר החנות במצב תחזוקה
-                            </DialogDescription>
-                          </DialogHeader>
-                          <div className="space-y-4 py-4">
-                            <div className="space-y-2">
-                              <Label htmlFor="maintenanceMessage">הודעת תחזוקה</Label>
-                              <Textarea
-                                id="maintenanceMessage"
-                                value={shopData.maintenanceMessage}
-                                onChange={(e) => updateShopData("maintenanceMessage", e.target.value)}
-                                placeholder="אנו עובדים על שיפורים בחנות. אנא חזור מאוחר יותר."
-                                rows={4}
-                                className="text-sm"
-                              />
-                            </div>
-                          </div>
-                          <DialogFooter>
-                            <DialogTrigger asChild>
-                              <Button variant="outline">ביטול</Button>
-                            </DialogTrigger>
-                            <DialogTrigger asChild>
-                              <Button>שמור</Button>
-                            </DialogTrigger>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                    )}
-                    <Switch
-                      id="isPublished"
-                      checked={shopData.isPublished}
-                      onCheckedChange={(checked) => updateShopData("isPublished", checked)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2">
                 <Label htmlFor="category" className="text-sm font-semibold text-gray-700">
                   קטגוריה ראשית <span className="text-red-500">*</span>
                 </Label>
@@ -656,103 +688,238 @@ export function ShopSettings() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold text-gray-700">
-                  לוגו החנות <span className="text-gray-400 font-normal">(אופציונלי)</span>
-                </Label>
-                <div className="mt-2 flex items-center gap-4">
-                  {shopData.logo ? (
-                    <div className="relative group">
-                      <img 
-                        src={shopData.logo} 
-                        alt="Logo" 
-                        className="w-28 h-28 object-cover rounded-xl shadow-md ring-2 ring-purple-100 transition-transform group-hover:scale-105" 
-                      />
-                      <button
-                        onClick={async () => {
-                          // מחיקת הקובץ מהשרת (S3) אם זה URL של S3
-                          if (shopData.logo && shopData.logo.startsWith('https://') && shopData.logo.includes('.s3.')) {
-                            try {
-                              const response = await fetch(`/api/files/delete?path=${encodeURIComponent(shopData.logo)}`, {
-                                method: 'DELETE',
-                              })
-                              if (response.ok) {
-                                toast({
-                                  title: "הצלחה",
-                                  description: "הלוגו נמחק מהשרת",
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-gray-700">
+                    לוגו החנות <span className="text-gray-400 font-normal">(אופציונלי)</span>
+                  </Label>
+                  <div className="mt-2 flex items-center gap-4">
+                    {shopData.logo ? (
+                      <div className="relative group">
+                        <img 
+                          src={shopData.logo} 
+                          alt="Logo" 
+                          className="w-28 h-28 object-cover rounded-xl shadow-md ring-2 ring-purple-100 transition-transform group-hover:scale-105" 
+                        />
+                        <button
+                          onClick={async () => {
+                            // מחיקת הקובץ מהשרת (S3) אם זה URL של S3
+                            if (shopData.logo && shopData.logo.startsWith('https://') && shopData.logo.includes('.s3.')) {
+                              try {
+                                const response = await fetch(`/api/files/delete?path=${encodeURIComponent(shopData.logo)}`, {
+                                  method: 'DELETE',
                                 })
-                              } else {
+                                if (response.ok) {
+                                  toast({
+                                    title: "הצלחה",
+                                    description: "הלוגו נמחק מהשרת",
+                                  })
+                                } else {
+                                  toast({
+                                    title: "אזהרה",
+                                    description: "הלוגו הוסר מהתצוגה, אך לא נמחק מהשרת",
+                                    variant: "destructive",
+                                  })
+                                }
+                              } catch (error) {
+                                console.error('Error deleting file:', error)
                                 toast({
                                   title: "אזהרה",
                                   description: "הלוגו הוסר מהתצוגה, אך לא נמחק מהשרת",
                                   variant: "destructive",
                                 })
                               }
-                            } catch (error) {
-                              console.error('Error deleting file:', error)
-                              toast({
-                                title: "אזהרה",
-                                description: "הלוגו הוסר מהתצוגה, אך לא נמחק מהשרת",
-                                variant: "destructive",
-                              })
                             }
-                          }
-                          updateShopData("logo", null)
-                        }}
-                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-all hover:scale-110"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-purple-500 hover:bg-purple-50/50 transition-all duration-200 group">
-                      <Upload className="w-8 h-8 text-gray-400 group-hover:text-purple-500 transition-colors mb-2" />
-                      <span className="text-sm font-medium text-gray-600 group-hover:text-purple-600">העלה לוגו</span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0]
-                          if (file) {
-                            try {
-                              const formData = new FormData()
-                              formData.append("file", file)
-                              formData.append("entityType", "shops")
-                              formData.append("entityId", selectedShop?.id || "new")
-                              formData.append("fileType", "logo")
-                              if (selectedShop?.id) {
-                                formData.append("shopId", selectedShop.id)
-                              }
+                            updateShopData("logo", null)
+                          }}
+                          className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-all hover:scale-110"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-purple-500 hover:bg-purple-50/50 transition-all duration-200 group">
+                        <Upload className="w-8 h-8 text-gray-400 group-hover:text-purple-500 transition-colors mb-2" />
+                        <span className="text-sm font-medium text-gray-600 group-hover:text-purple-600">העלה לוגו</span>
+                        <input
+                          type="file"
+                          className="hidden"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0]
+                            if (file) {
+                              try {
+                                const formData = new FormData()
+                                formData.append("file", file)
+                                formData.append("entityType", "shops")
+                                formData.append("entityId", selectedShop?.id || "new")
+                                formData.append("fileType", "logo")
+                                if (selectedShop?.id) {
+                                  formData.append("shopId", selectedShop.id)
+                                }
 
-                              const response = await fetch("/api/files/upload", {
-                                method: "POST",
-                                body: formData,
-                              })
-
-                              if (response.ok) {
-                                const data = await response.json()
-                                updateShopData("logo", data.file.path)
-                                toast({
-                                  title: "הצלחה",
-                                  description: "הלוגו הועלה בהצלחה",
+                                const response = await fetch("/api/files/upload", {
+                                  method: "POST",
+                                  body: formData,
                                 })
-                              } else {
-                                throw new Error("Failed to upload")
+
+                                if (response.ok) {
+                                  const data = await response.json()
+                                  updateShopData("logo", data.file.path)
+                                  toast({
+                                    title: "הצלחה",
+                                    description: "הלוגו הועלה בהצלחה",
+                                  })
+                                } else {
+                                  throw new Error("Failed to upload")
+                                }
+                              } catch (error) {
+                                toast({
+                                  title: "שגיאה",
+                                  description: "אירעה שגיאה בהעלאת הלוגו",
+                                  variant: "destructive",
+                                })
                               }
-                            } catch (error) {
-                              toast({
-                                title: "שגיאה",
-                                description: "אירעה שגיאה בהעלאת הלוגו",
-                                variant: "destructive",
-                              })
                             }
-                          }
-                        }}
-                      />
-                    </label>
-                  )}
+                          }}
+                        />
+                      </label>
+                    )}
+                  </div>
                 </div>
+
+                {/* הגדרות גודל ופדינג לוגו */}
+                {shopData.logo && (
+                  <div className="space-y-4 pt-4 border-t border-gray-200">
+                    <h4 className="text-sm font-semibold text-gray-900">הגדרות תצוגת לוגו</h4>
+                    
+                    <div className="grid grid-cols-2 gap-4">
+                      {/* רוחב לוגו מובייל */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="logoWidthMobile" className="text-sm font-medium text-gray-700">
+                            רוחב לוגו - מובייל
+                          </Label>
+                          <span className="text-sm text-gray-600">{shopData.logoWidthMobile}px</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            id="logoWidthMobile"
+                            type="range"
+                            value={shopData.logoWidthMobile}
+                            onChange={(e) => updateShopData("logoWidthMobile", parseFloat(e.target.value))}
+                            min="20"
+                            max="300"
+                            step="5"
+                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                          />
+                          <Input
+                            type="number"
+                            value={shopData.logoWidthMobile}
+                            onChange={(e) => updateShopData("logoWidthMobile", parseFloat(e.target.value) || 85)}
+                            min="20"
+                            max="300"
+                            className="w-16 h-8 text-xs text-center"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">ברירת מחדל: 85px</p>
+                      </div>
+
+                      {/* רוחב לוגו מחשב */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="logoWidthDesktop" className="text-sm font-medium text-gray-700">
+                            רוחב לוגו - מחשב
+                          </Label>
+                          <span className="text-sm text-gray-600">{shopData.logoWidthDesktop}px</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            id="logoWidthDesktop"
+                            type="range"
+                            value={shopData.logoWidthDesktop}
+                            onChange={(e) => updateShopData("logoWidthDesktop", parseFloat(e.target.value))}
+                            min="30"
+                            max="500"
+                            step="5"
+                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                          />
+                          <Input
+                            type="number"
+                            value={shopData.logoWidthDesktop}
+                            onChange={(e) => updateShopData("logoWidthDesktop", parseFloat(e.target.value) || 135)}
+                            min="30"
+                            max="500"
+                            className="w-16 h-8 text-xs text-center"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">ברירת מחדל: 135px</p>
+                      </div>
+
+                      {/* פדינג לוגו מובייל */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="logoPaddingMobile" className="text-sm font-medium text-gray-700">
+                            פדינג לוגו - מובייל
+                          </Label>
+                          <span className="text-sm text-gray-600">{shopData.logoPaddingMobile}px</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            id="logoPaddingMobile"
+                            type="range"
+                            value={shopData.logoPaddingMobile}
+                            onChange={(e) => updateShopData("logoPaddingMobile", parseFloat(e.target.value))}
+                            min="0"
+                            max="100"
+                            step="2"
+                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                          />
+                          <Input
+                            type="number"
+                            value={shopData.logoPaddingMobile}
+                            onChange={(e) => updateShopData("logoPaddingMobile", parseFloat(e.target.value) || 0)}
+                            min="0"
+                            max="100"
+                            className="w-16 h-8 text-xs text-center"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">ברירת מחדל: 0px</p>
+                      </div>
+
+                      {/* פדינג לוגו מחשב */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="logoPaddingDesktop" className="text-sm font-medium text-gray-700">
+                            פדינג לוגו - מחשב
+                          </Label>
+                          <span className="text-sm text-gray-600">{shopData.logoPaddingDesktop}px</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            id="logoPaddingDesktop"
+                            type="range"
+                            value={shopData.logoPaddingDesktop}
+                            onChange={(e) => updateShopData("logoPaddingDesktop", parseFloat(e.target.value))}
+                            min="0"
+                            max="100"
+                            step="2"
+                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                          />
+                          <Input
+                            type="number"
+                            value={shopData.logoPaddingDesktop}
+                            onChange={(e) => updateShopData("logoPaddingDesktop", parseFloat(e.target.value) || 0)}
+                            min="0"
+                            max="100"
+                            className="w-16 h-8 text-xs text-center"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">ברירת מחדל: 0px</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="space-y-2">

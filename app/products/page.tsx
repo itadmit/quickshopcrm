@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/components/ui/use-toast"
+import { Checkbox } from "@/components/ui/checkbox"
 import { ProductsSkeleton } from "@/components/skeletons/ProductsSkeleton"
 import {
   Dialog,
@@ -41,6 +42,7 @@ import {
   XCircle,
   Loader2,
   AlertCircle,
+  Edit3,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -98,6 +100,7 @@ export default function ProductsPage() {
   const [sortBy, setSortBy] = useState<string>("createdAt")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [viewMode, setViewMode] = useState<"table" | "grid">("table")
+  const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
 
   // Import dialog state
   const [importDialogOpen, setImportDialogOpen] = useState(false)
@@ -363,6 +366,19 @@ export default function ProductsPage() {
           <p className="text-gray-600 mt-1">נהל את כל המוצרים שלך</p>
         </div>
         <div className="flex gap-2">
+          {selectedProducts.size > 0 && (
+            <Button
+              onClick={() => {
+                const ids = Array.from(selectedProducts).join(",")
+                router.push(`/products/bulk-edit?ids=${ids}`)
+              }}
+              variant="default"
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              <Edit3 className="w-4 h-4 ml-2" />
+              עריכה קבוצתית ({selectedProducts.size})
+            </Button>
+          )}
           <Button 
             variant="outline" 
             onClick={() => {
@@ -516,6 +532,18 @@ export default function ProductsPage() {
               <table className="w-full">
                 <thead className="bg-gray-50 border-b">
                   <tr>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-12">
+                      <Checkbox
+                        checked={selectedProducts.size === products.length && products.length > 0}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setSelectedProducts(new Set(products.map((p) => p.id)))
+                          } else {
+                            setSelectedProducts(new Set())
+                          }
+                        }}
+                      />
+                    </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">תמונה</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">שם מוצר</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">SKU</th>
@@ -528,8 +556,31 @@ export default function ProductsPage() {
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
                   {products.map((product) => (
-                    <tr key={product.id} className="hover:bg-gray-50 cursor-pointer" onClick={() => router.push(`/products/${product.id}/edit`)}>
-                      <td className="px-6 py-4 whitespace-nowrap">
+                    <tr 
+                      key={product.id} 
+                      className={`hover:bg-gray-50 ${selectedProducts.has(product.id) ? "bg-blue-50" : ""}`}
+                    >
+                      <td 
+                        className="px-6 py-4 whitespace-nowrap"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Checkbox
+                          checked={selectedProducts.has(product.id)}
+                          onCheckedChange={(checked) => {
+                            const newSelected = new Set(selectedProducts)
+                            if (checked) {
+                              newSelected.add(product.id)
+                            } else {
+                              newSelected.delete(product.id)
+                            }
+                            setSelectedProducts(newSelected)
+                          }}
+                        />
+                      </td>
+                      <td 
+                        className="px-6 py-4 whitespace-nowrap cursor-pointer"
+                        onClick={() => router.push(`/products/${product.slug}/edit`)}
+                      >
                         {product.images && product.images.length > 0 ? (
                           <img
                             src={product.images[0]}
@@ -578,7 +629,7 @@ export default function ProductsPage() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="start" className="min-w-[160px]">
-                            <DropdownMenuItem onClick={() => router.push(`/products/${product.id}/edit`)} className="flex flex-row-reverse items-center gap-2 cursor-pointer">
+                            <DropdownMenuItem onClick={() => router.push(`/products/${product.slug}/edit`)} className="flex flex-row-reverse items-center gap-2 cursor-pointer">
                               <Edit className="w-4 h-4 flex-shrink-0" />
                               ערוך
                             </DropdownMenuItem>
@@ -619,7 +670,7 @@ export default function ProductsPage() {
             <Card
               key={product.id}
               className="hover:shadow-lg transition-shadow cursor-pointer"
-              onClick={() => router.push(`/products/${product.id}/edit`)}
+              onClick={() => router.push(`/products/${product.slug}/edit`)}
             >
               <CardContent className="p-0">
                 <div className="relative">

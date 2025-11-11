@@ -40,7 +40,112 @@ export async function GET(
       },
     })
 
-    return NextResponse.json(navigations)
+    // המרת פריטי התפריט לפורמט שהפרונט מצפה לו
+    const transformedNavigations = await Promise.all(
+      navigations.map(async (nav) => {
+        const items = (nav.items as any[]) || []
+        const transformedItems = await Promise.all(
+          items.map(async (item: any) => {
+            // המרת type מ-uppercase ל-lowercase
+            const type = item.type?.toLowerCase() || "link"
+            
+            // אם זה דף, נחלץ את ה-pageId מה-url או מה-id
+            if (type === "page" || item.type === "PAGE") {
+              let pageId = item.pageId
+              
+              // אם אין pageId אבל יש id שמתחיל ב-page-, נחלץ את ה-id
+              if (!pageId && item.id?.startsWith("page-")) {
+                pageId = item.id.replace("page-", "")
+              }
+              
+              // אם עדיין אין pageId אבל יש url, נחפש את הדף לפי slug
+              if (!pageId && item.url) {
+                const urlMatch = item.url.match(/\/pages\/(.+)/)
+                if (urlMatch) {
+                  const pageSlug = urlMatch[1]
+                  // נחפש את הדף לפי slug (ללא בדיקת isPublished כי הדף בתפריט)
+                  const page = await prisma.page.findFirst({
+                    where: {
+                      shopId: shop.id,
+                      slug: pageSlug,
+                    },
+                    select: {
+                      id: true,
+                    },
+                  })
+                  if (page) {
+                    pageId = page.id
+                  }
+                }
+              }
+              
+              // נחפש את ה-slug של הדף
+              let pageSlug = item.url?.replace("/pages/", "") || null
+              if (pageId && !pageSlug) {
+                const pageData = await prisma.page.findFirst({
+                  where: {
+                    id: pageId,
+                    shopId: shop.id,
+                  },
+                  select: {
+                    slug: true,
+                  },
+                })
+                if (pageData) {
+                  pageSlug = pageData.slug
+                }
+              }
+              
+              return {
+                type: "page",
+                label: item.label,
+                pageSlug: pageSlug || null,
+              }
+            }
+            
+            // אם זה קטגוריה
+            if (type === "category" || item.type === "CATEGORY") {
+              let categoryId = item.categoryId
+              if (!categoryId && item.id?.startsWith("category-")) {
+                categoryId = item.id.replace("category-", "")
+              }
+              return {
+                type: "category",
+                label: item.label,
+                categoryId: categoryId || null,
+              }
+            }
+            
+            // אם זה collection
+            if (type === "collection" || item.type === "COLLECTION") {
+              let collectionId = item.collectionId
+              if (!collectionId && item.id?.startsWith("collection-")) {
+                collectionId = item.id.replace("collection-", "")
+              }
+              return {
+                type: "collection",
+                label: item.label,
+                collectionId: collectionId || null,
+              }
+            }
+            
+            // אם זה קישור חיצוני או כל דבר אחר
+            return {
+              type: "link",
+              label: item.label,
+              url: item.url || "#",
+            }
+          })
+        )
+        
+        return {
+          ...nav,
+          items: transformedItems,
+        }
+      })
+    )
+
+    return NextResponse.json(transformedNavigations)
   } catch (error) {
     console.error("Error fetching navigation:", error)
     return NextResponse.json(

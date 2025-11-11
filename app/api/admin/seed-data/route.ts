@@ -578,6 +578,7 @@ export async function POST(req: NextRequest) {
           paymentStatus: 'PAID',
           fulfillmentStatus: 'UNFULFILLED',
           paymentMethod: 'Credit Card',
+          paidAt: new Date(), // שולם היום
           items: {
             create: {
               productId: nikeShoes.id,
@@ -615,6 +616,7 @@ export async function POST(req: NextRequest) {
           fulfillmentStatus: 'FULFILLED',
           paymentMethod: 'Credit Card',
           trackingNumber: 'TRACK123456',
+          paidAt: new Date(), // שולם היום
           shippedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
           items: {
             create: {
@@ -653,6 +655,7 @@ export async function POST(req: NextRequest) {
           fulfillmentStatus: 'FULFILLED',
           paymentMethod: 'Credit Card',
           couponCode: 'SUMMER50',
+          paidAt: new Date(), // שולם היום
           deliveredAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
           items: {
             create: [

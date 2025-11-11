@@ -43,8 +43,13 @@ export async function sendEmail({
 
     console.log('✅ Email sent successfully:', info.messageId)
     console.log('📧 Preview URL:', nodemailer.getTestMessageUrl(info))
-  } catch (error) {
-    console.error('❌ Error sending email:', error)
+  } catch (error: any) {
+    // אם זו שגיאת אימות, נדפיס הודעה קצרה יותר
+    if (error?.code === 'EAUTH') {
+      console.warn('⚠️ Email authentication failed. Check GMAIL_USER and GMAIL_APP_PASSWORD environment variables.')
+    } else {
+      console.error('❌ Error sending email:', error?.message || error)
+    }
     throw error
   }
 }

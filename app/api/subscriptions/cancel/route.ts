@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getServerSession } from "next-auth"
-import { authOptions } from "@/lib/auth"
+import { getToken } from "next-auth/jwt"
 import { cancelSubscription, getCurrentSubscription } from "@/lib/subscription"
 import { z } from "zod"
 
@@ -10,16 +9,19 @@ const cancelSchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const session = await getServerSession(authOptions)
+    const token = await getToken({ 
+      req, 
+      secret: process.env.NEXTAUTH_SECRET 
+    })
 
-    if (!session?.user?.companyId) {
+    if (!token?.companyId) {
       return NextResponse.json(
         { error: "לא מאומת" },
         { status: 401 }
       )
     }
 
-    const companyId = session.user.companyId
+    const companyId = token.companyId as string
     const body = await req.json()
     const { reason } = cancelSchema.parse(body)
 

@@ -3,12 +3,15 @@ import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { cookies } from "next/headers"
 import { calculateCart } from "@/lib/cart-calculations"
+import { findCart, isCartEmpty } from "@/lib/cart-server"
 
 const addToCartSchema = z.object({
   productId: z.string(),
   variantId: z.string().nullable().optional(),
   quantity: z.number().int().min(1),
 })
+
+// הפונקציה findCart הוסרה - משתמשים ב-findCart מ-lib/cart-server.ts
 
 // GET - קבלת עגלת קניות
 export async function GET(
@@ -42,41 +45,8 @@ export async function GET(
     const sessionId = cookieStore.get("cart_session")?.value
     const customerId = req.headers.get("x-customer-id") || null
 
-    if (!sessionId) {
-      return NextResponse.json({
-        id: null,
-        items: [],
-        subtotal: 0,
-        tax: 0,
-        shipping: 0,
-        discount: 0,
-        total: 0,
-        couponCode: null,
-      })
-    }
-
-    let cart = await prisma.cart.findFirst({
-      where: {
-        shopId: shop.id,
-        sessionId,
-        expiresAt: {
-          gt: new Date(),
-        },
-      },
-    })
-
-    // אם יש customerId, ננסה למצוא עגלה של הלקוח
-    if (customerId && !cart) {
-      cart = await prisma.cart.findFirst({
-        where: {
-          shopId: shop.id,
-          customerId,
-          expiresAt: {
-            gt: new Date(),
-          },
-        },
-      })
-    }
+    // שימוש בפונקציה המרכזית למציאת עגלה
+    const cart = await findCart(shop.id, sessionId, customerId)
 
     if (!cart) {
       return NextResponse.json({
@@ -96,6 +66,34 @@ export async function GET(
     
     // אם העגלה ריקה, החזר מיד
     if (!cartItems || cartItems.length === 0) {
+      // גם עגלה ריקה יכולה להכיל קופון - צריך להחזיר את הסטטוס שלו
+      let couponStatus = undefined
+      if (cart.couponCode) {
+        const coupon = await prisma.coupon.findUnique({
+          where: { code: cart.couponCode },
+        })
+        
+        if (coupon && coupon.isActive && coupon.shopId === shop.id) {
+          const now = new Date()
+          if (coupon.startDate && coupon.startDate > now) {
+            couponStatus = { code: cart.couponCode, isValid: false, reason: 'הקופון עדיין לא תקף' }
+          } else if (coupon.endDate && coupon.endDate < now) {
+            couponStatus = { code: cart.couponCode, isValid: false, reason: 'הקופון פג תוקף' }
+          } else if (coupon.minOrder && coupon.minOrder > 0) {
+            couponStatus = { 
+              code: cart.couponCode, 
+              isValid: false, 
+              reason: `נדרש מינימום הזמנה של ₪${coupon.minOrder}`,
+              minOrderRequired: coupon.minOrder 
+            }
+          } else {
+            couponStatus = { code: cart.couponCode, isValid: false, reason: 'הוסיפו מוצרים לעגלה' }
+          }
+        } else {
+          couponStatus = { code: cart.couponCode, isValid: false, reason: 'קוד קופון לא תקין' }
+        }
+      }
+      
       return NextResponse.json({
         id: cart.id,
         items: [],
@@ -108,6 +106,7 @@ export async function GET(
         automaticDiscount: undefined,
         total: 0,
         couponCode: cart.couponCode,
+        couponStatus,
         expiresAt: cart.expiresAt,
       })
     }
@@ -134,6 +133,7 @@ export async function GET(
       automaticDiscount: calculation.automaticDiscount > 0 ? calculation.automaticDiscount : undefined,
       total: calculation.total,
       couponCode: cart.couponCode,
+      couponStatus: calculation.couponStatus,
       expiresAt: cart.expiresAt,
     })
   } catch (error) {
@@ -151,6 +151,8 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
+    console.log('🛒 POST - Add to cart started:', { slug: params.slug })
+    
     // נסה למצוא את החנות לפי slug או ID
     let shop = await prisma.shop.findFirst({
       where: {
@@ -158,6 +160,8 @@ export async function POST(
         isPublished: true,
       },
     })
+    
+    console.log('🏪 Shop found:', shop ? shop.id : 'NOT FOUND')
 
     // אם לא נמצא לפי slug, ננסה לחפש לפי ID (למקרה שה-slug השתנה)
     if (!shop) {
@@ -174,8 +178,12 @@ export async function POST(
     }
 
     const body = await req.json()
+    console.log('📦 Request body:', body)
+    
     const data = addToCartSchema.parse(body)
     const customerId = req.headers.get("x-customer-id") || null
+    
+    console.log('👤 Customer ID:', customerId)
 
     // בדיקת מוצר
     const product = await prisma.product.findFirst({
@@ -195,13 +203,13 @@ export async function POST(
       const variant = await prisma.productVariant.findUnique({
         where: { id: data.variantId },
       })
-      if (variant && variant.inventoryQty < data.quantity) {
+      if (variant && variant.inventoryQty !== null && variant.inventoryQty < data.quantity) {
         return NextResponse.json(
           { error: "Insufficient inventory" },
           { status: 400 }
         )
       }
-    } else if (product.inventoryQty < data.quantity) {
+    } else if (product.inventoryQty !== null && product.inventoryQty < data.quantity) {
       return NextResponse.json(
         { error: "Insufficient inventory" },
         { status: 400 }
@@ -220,38 +228,60 @@ export async function POST(
       })
     }
 
-    // מציאת או יצירת עגלה
-    let cart = await prisma.cart.findFirst({
-      where: {
-        shopId: shop.id,
-        ...(customerId ? { customerId } : { sessionId }),
-        expiresAt: {
-          gt: new Date(),
-        },
-      },
-    })
+    // מציאת או יצירת עגלה - שימוש בפונקציה שמבטיחה עגלה אחת
+    let cart = await findCart(shop.id, sessionId, customerId)
+    
+    console.log('🛒 Cart found:', cart ? cart.id : 'NOT FOUND')
 
     const items = cart ? (cart.items as any[]) : []
+    console.log('📋 Current items in cart:', items.length)
+    console.log('🔍 Current items details:', JSON.stringify(items, null, 2))
+    
     const existingItemIndex = items.findIndex(
       (item) =>
         item.productId === data.productId &&
         (item.variantId === data.variantId || (!item.variantId && !data.variantId))
     )
 
+    console.log('🔎 Looking for existing item:', {
+      productId: data.productId,
+      variantId: data.variantId,
+      existingItemIndex,
+      found: existingItemIndex >= 0
+    })
+
     if (existingItemIndex >= 0) {
+      console.log('✏️ Updating existing item quantity:', {
+        oldQuantity: items[existingItemIndex].quantity,
+        addQuantity: data.quantity,
+        newQuantity: items[existingItemIndex].quantity + data.quantity
+      })
       items[existingItemIndex].quantity += data.quantity
     } else {
+      console.log('➕ Adding new item to cart:', {
+        productId: data.productId,
+        variantId: data.variantId || null,
+        quantity: data.quantity,
+      })
       items.push({
         productId: data.productId,
         variantId: data.variantId || null,
         quantity: data.quantity,
       })
     }
+    
+    console.log('📋 Items after update:', items.length)
+    console.log('📦 Updated items details:', JSON.stringify(items, null, 2))
 
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 30) // 30 days
 
     if (cart) {
+      console.log('🔄 Updating existing cart:', {
+        cartId: cart.id,
+        itemsCount: items.length,
+        hasCustomerId: !!customerId
+      })
       cart = await prisma.cart.update({
         where: { id: cart.id },
         data: {
@@ -260,7 +290,18 @@ export async function POST(
           ...(customerId && !cart.customerId ? { customerId } : {}),
         },
       })
+      console.log('✅ Cart updated successfully:', {
+        cartId: cart.id,
+        savedItemsCount: (cart.items as any[]).length
+      })
+      console.log('💾 Saved cart items:', JSON.stringify(cart.items, null, 2))
     } else {
+      console.log('🆕 Creating new cart:', {
+        shopId: shop.id,
+        sessionId: customerId ? null : sessionId,
+        customerId: customerId || null,
+        itemsCount: items.length
+      })
       cart = await prisma.cart.create({
         data: {
           shopId: shop.id,
@@ -270,24 +311,62 @@ export async function POST(
           expiresAt,
         },
       })
+      console.log('✅ New cart created:', {
+        cartId: cart.id,
+        savedItemsCount: (cart.items as any[]).length
+      })
+      console.log('💾 Saved cart items:', JSON.stringify(cart.items, null, 2))
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Product added to cart",
-      cartId: cart.id,
+    // חישוב העגלה המעודכנת
+    console.log('🧮 Calculating cart totals with items:', JSON.stringify(items, null, 2))
+    const calculation = await calculateCart(
+      shop.id,
+      items as any[],
+      cart.couponCode,
+      customerId,
+      shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
+      null
+    )
+    
+    console.log('✅ Cart calculation complete:', {
+      items: calculation.items.length,
+      subtotal: calculation.subtotal,
+      total: calculation.total
     })
+    console.log('📊 Calculated items:', JSON.stringify(calculation.items, null, 2))
+
+    const responseData = {
+      id: cart.id,
+      items: calculation.items,
+      subtotal: calculation.subtotal,
+      tax: calculation.tax,
+      shipping: calculation.shipping,
+      discount: calculation.automaticDiscount + calculation.couponDiscount + calculation.customerDiscount,
+      customerDiscount: calculation.customerDiscount > 0 ? calculation.customerDiscount : undefined,
+      couponDiscount: calculation.couponDiscount > 0 ? calculation.couponDiscount : undefined,
+      automaticDiscount: calculation.automaticDiscount > 0 ? calculation.automaticDiscount : undefined,
+      total: calculation.total,
+      couponCode: cart.couponCode,
+      couponStatus: calculation.couponStatus,
+      expiresAt: cart.expiresAt,
+    }
+    
+    console.log('📤 Sending response with items:', responseData.items.length)
+    return NextResponse.json(responseData)
   } catch (error) {
     if (error instanceof z.ZodError) {
+      console.error("❌ Validation error:", error.errors)
       return NextResponse.json(
         { error: error.errors[0].message },
         { status: 400 }
       )
     }
 
-    console.error("Error adding to cart:", error)
+    console.error("❌ Error adding to cart:", error)
+    console.error("❌ Error stack:", error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }
     )
   }
@@ -331,15 +410,8 @@ export async function PUT(
       return NextResponse.json({ error: "Cart not found" }, { status: 404 })
     }
 
-    let cart = await prisma.cart.findFirst({
-      where: {
-        shopId: shop.id,
-        ...(customerId ? { customerId } : { sessionId }),
-        expiresAt: {
-          gt: new Date(),
-        },
-      },
-    })
+    // שימוש בפונקציה שמבטיחה עגלה אחת בלבד
+    let cart = await findCart(shop.id, sessionId, customerId)
 
     if (!cart) {
       return NextResponse.json({ error: "Cart not found" }, { status: 404 })
@@ -369,7 +441,7 @@ export async function PUT(
     // יישום קופון
     if (body.couponCode !== undefined) {
       if (body.couponCode) {
-        // בדיקת קופון
+        // בדיקת קופון בסיסית
         const coupon = await prisma.coupon.findUnique({
           where: { code: body.couponCode },
         })
@@ -404,55 +476,16 @@ export async function PUT(
           )
         }
 
-        // בדיקת minOrder - צריך לחשב את ה-subtotal של העגלה
-        if (coupon.minOrder) {
-          // חישוב subtotal מהיר
-          const cartItems = items as any[]
-          const productIds = Array.from(new Set(cartItems.map((item: any) => item.productId)))
-          const variantIds = cartItems
-            .map((item: any) => item.variantId)
-            .filter((id: string | null) => id !== null && id !== undefined)
-
-          const [products, variants] = await Promise.all([
-            prisma.product.findMany({
-              where: { id: { in: productIds }, shopId: shop.id },
-              select: { id: true, price: true },
-            }),
-            variantIds.length > 0
-              ? prisma.productVariant.findMany({
-                  where: { id: { in: variantIds } },
-                  select: { id: true, price: true },
-                })
-              : [],
-          ])
-
-          const productsMap = new Map(products.map((p: any) => [p.id, p]))
-          const variantsMap = new Map(variants.map((v: any) => [v.id, v]))
-
-          let subtotal = 0
-          for (const item of cartItems) {
-            const product = productsMap.get(item.productId)
-            if (!product) continue
-            const variant = item.variantId ? variantsMap.get(item.variantId) : null
-            const basePrice = variant?.price || product.price
-            subtotal += basePrice * item.quantity
-          }
-
-          if (subtotal < coupon.minOrder) {
-            return NextResponse.json(
-              { error: `Minimum order amount of ${coupon.minOrder} required` },
-              { status: 400 }
-            )
-          }
-        }
-
-        // עדכון קופון
+        // עדכון קופון - לא בודקים minOrder כאן!
+        // ההנחה תחול רק אם עומדים במינימום, אבל הקוד נשמר בעגלה תמיד
         cart.couponCode = body.couponCode
       } else {
         // הסרת קופון
         cart.couponCode = null
       }
     }
+    // הקופון נשמר בעגלה תמיד, גם אם לא עומדים בתנאים
+    // ההנחה תחושב ב-calculateCart לפי התנאים בפועל
 
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 30) // 30 days
@@ -466,10 +499,30 @@ export async function PUT(
       },
     })
 
+    // חישוב העגלה עם כל הפרטים
+    const calculation = await calculateCart(
+      shop.id,
+      items as any[],
+      cart.couponCode,
+      customerId,
+      shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
+      null // shipping - לא מחושב כאן
+    )
+
     return NextResponse.json({
-      success: true,
-      message: "Cart updated",
-      cartId: cart.id,
+      id: cart.id,
+      items: calculation.items,
+      subtotal: calculation.subtotal,
+      tax: calculation.tax,
+      shipping: calculation.shipping,
+      discount: calculation.automaticDiscount + calculation.couponDiscount + calculation.customerDiscount,
+      customerDiscount: calculation.customerDiscount > 0 ? calculation.customerDiscount : undefined,
+      couponDiscount: calculation.couponDiscount > 0 ? calculation.couponDiscount : undefined,
+      automaticDiscount: calculation.automaticDiscount > 0 ? calculation.automaticDiscount : undefined,
+      total: calculation.total,
+      couponCode: cart.couponCode,
+      couponStatus: calculation.couponStatus,
+      expiresAt: cart.expiresAt,
     })
   } catch (error) {
     console.error("Error updating cart:", error)
@@ -527,28 +580,124 @@ export async function DELETE(
       return NextResponse.json({ error: "Cart not found" }, { status: 404 })
     }
 
-    const cart = await prisma.cart.findFirst({
-      where: {
-        shopId: shop.id,
-        ...(customerId ? { customerId } : { sessionId }),
-      },
-    })
+    // שימוש בפונקציה שמבטיחה עגלה אחת בלבד
+    let cart = await findCart(shop.id, sessionId, customerId)
 
     if (!cart) {
       return NextResponse.json({ error: "Cart not found" }, { status: 404 })
     }
 
-    const items = (cart.items as any[]).filter(
-      (item) =>
-        !(item.productId === productId && item.variantId === variantId)
-    )
+    const cartItems = (cart.items as any[]) || []
+    console.log('🗑️ DELETE - Before filter:', {
+      cartItems: cartItems.length,
+      productIdToDelete: productId,
+      variantIdToDelete: variantId,
+      items: JSON.stringify(cartItems)
+    })
 
-    await prisma.cart.update({
+    const items = cartItems.filter((item) => {
+      // השוואה מדויקת - גם null וגם undefined וגם "null" נחשבים כאותו דבר
+      const itemVariantId = item.variantId === "null" ? null : item.variantId
+      const queryVariantId = variantId === "null" ? null : variantId
+      
+      const shouldRemove = (
+        item.productId === productId && 
+        (itemVariantId === queryVariantId || (!itemVariantId && !queryVariantId))
+      )
+      
+      console.log('🔍 Item check:', {
+        productId: item.productId,
+        variantId: item.variantId,
+        itemVariantId,
+        queryVariantId,
+        shouldRemove,
+        willKeep: !shouldRemove
+      })
+      
+      return !shouldRemove
+    })
+
+    console.log('🗑️ DELETE - After filter:', {
+      itemsRemaining: items.length,
+      itemsRemoved: cartItems.length - items.length
+    })
+
+    const updatedCart = await prisma.cart.update({
       where: { id: cart.id },
       data: { items },
     })
 
-    return NextResponse.json({ message: "Item removed from cart" })
+    // אם אין פריטים, החזר עגלה ריקה עם couponStatus
+    if (!items || items.length === 0) {
+      let couponStatus = undefined
+      if (updatedCart.couponCode) {
+        const coupon = await prisma.coupon.findUnique({
+          where: { code: updatedCart.couponCode },
+        })
+        
+        if (coupon && coupon.isActive && coupon.shopId === shop.id) {
+          const now = new Date()
+          if (coupon.startDate && coupon.startDate > now) {
+            couponStatus = { code: updatedCart.couponCode, isValid: false, reason: 'הקופון עדיין לא תקף' }
+          } else if (coupon.endDate && coupon.endDate < now) {
+            couponStatus = { code: updatedCart.couponCode, isValid: false, reason: 'הקופון פג תוקף' }
+          } else if (coupon.minOrder && coupon.minOrder > 0) {
+            couponStatus = { 
+              code: updatedCart.couponCode, 
+              isValid: false, 
+              reason: `נדרש מינימום הזמנה של ₪${coupon.minOrder}`,
+              minOrderRequired: coupon.minOrder 
+            }
+          } else {
+            couponStatus = { code: updatedCart.couponCode, isValid: false, reason: 'הוסיפו מוצרים לעגלה' }
+          }
+        } else {
+          couponStatus = { code: updatedCart.couponCode, isValid: false, reason: 'קוד קופון לא תקין' }
+        }
+      }
+      
+      return NextResponse.json({
+        id: updatedCart.id,
+        items: [],
+        subtotal: 0,
+        tax: 0,
+        shipping: 0,
+        discount: 0,
+        customerDiscount: undefined,
+        couponDiscount: undefined,
+        automaticDiscount: undefined,
+        total: 0,
+        couponCode: updatedCart.couponCode,
+        couponStatus,
+        expiresAt: updatedCart.expiresAt,
+      })
+    }
+
+    // חישוב העגלה המעודכנת
+    const calculation = await calculateCart(
+      shop.id,
+      items as any[],
+      updatedCart.couponCode,
+      customerId,
+      shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
+      null
+    )
+
+    return NextResponse.json({
+      id: updatedCart.id,
+      items: calculation.items,
+      subtotal: calculation.subtotal,
+      tax: calculation.tax,
+      shipping: calculation.shipping,
+      discount: calculation.automaticDiscount + calculation.couponDiscount + calculation.customerDiscount,
+      customerDiscount: calculation.customerDiscount > 0 ? calculation.customerDiscount : undefined,
+      couponDiscount: calculation.couponDiscount > 0 ? calculation.couponDiscount : undefined,
+      automaticDiscount: calculation.automaticDiscount > 0 ? calculation.automaticDiscount : undefined,
+      total: calculation.total,
+      couponCode: updatedCart.couponCode,
+      couponStatus: calculation.couponStatus,
+      expiresAt: updatedCart.expiresAt,
+    })
   } catch (error) {
     console.error("Error removing from cart:", error)
     return NextResponse.json(

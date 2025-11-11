@@ -3,20 +3,26 @@ import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { cookies } from "next/headers"
 import { calculateCart } from "@/lib/cart-calculations"
+import { findCart, isCartEmpty } from "@/lib/cart-server"
+import { sendEmail, getEmailTemplate } from "@/lib/email"
 
 const checkoutSchema = z.object({
   customerId: z.string().optional(),
   customerName: z.string().min(1, "שם הלקוח הוא חובה"),
   customerEmail: z.string().email("אימייל לא תקין"),
-  customerPhone: z.string().optional(),
-  shippingAddress: z.any().optional(),
-  billingAddress: z.any().optional(),
+  customerPhone: z.string().nullable().optional(),
+  companyName: z.string().nullable().optional(),
+  orderNotes: z.string().nullable().optional(),
+  newsletter: z.boolean().optional(),
+  shippingAddress: z.any().nullable().optional(),
+  billingAddress: z.any().nullable().optional(),
   paymentMethod: z.string().optional(),
   deliveryMethod: z.enum(["shipping", "pickup"]).optional(),
   shippingCost: z.number().optional(),
-  couponCode: z.string().optional(),
-  giftCardCode: z.string().optional(),
-  notes: z.string().optional(),
+  couponCode: z.string().nullable().optional(),
+  giftCardCode: z.string().nullable().optional(),
+  notes: z.string().nullable().optional(),
+  customFields: z.record(z.any()).optional(),
 })
 
 // POST - יצירת הזמנה
@@ -41,23 +47,12 @@ export async function POST(
 
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("cart_session")?.value
+    const customerId = data.customerId || req.headers.get("x-customer-id") || null
 
-    if (!sessionId) {
-      return NextResponse.json(
-        { error: "עגלת קניות לא נמצאה" },
-        { status: 400 }
-      )
-    }
+    // שימוש בפונקציה המרכזית למציאת עגלה
+    const cart = await findCart(shop.id, sessionId, customerId)
 
-    // קבלת עגלת קניות
-    const cart = await prisma.cart.findFirst({
-      where: {
-        shopId: shop.id,
-        sessionId,
-      },
-    })
-
-    if (!cart || !cart.items || (cart.items as any[]).length === 0) {
+    if (isCartEmpty(cart)) {
       return NextResponse.json(
         { error: "עגלת קניות ריקה" },
         { status: 400 }
@@ -82,15 +77,60 @@ export async function POST(
     )
 
     // בניית orderItems מהחישוב המרכזי
-    const orderItems = calculation.items.map(item => ({
+    // אנחנו חייבים לאמת שה-variantId קיים בדאטאבייס לפני שאנחנו מוסיפים אותו
+    const variantIds = calculation.items
+      .map(item => item.variantId)
+      .filter((id): id is string => Boolean(id && typeof id === 'string' && id.trim() !== ''))
+    
+    console.log('🔍 Looking for variants:', variantIds)
+    console.log('📋 Calculation items:', calculation.items.map(item => ({
       productId: item.productId,
-      variantId: item.variantId || null,
-      name: item.product.name,
-      sku: item.product.sku || null,
-      quantity: item.quantity,
-      price: item.price,
-      total: item.total,
-    }))
+      variantId: item.variantId,
+      productName: item.product.name
+    })))
+    
+    // בדיקה מהירה - אילו variants קיימים בדאטאבייס
+    const existingVariants = variantIds.length > 0 
+      ? await prisma.productVariant.findMany({
+          where: { id: { in: variantIds } },
+          select: { id: true, name: true, productId: true }
+        })
+      : []
+    
+    console.log('✅ Found variants in DB:', existingVariants.map((v: any) => ({ id: v.id, name: v.name, productId: v.productId })))
+    console.log('❌ Missing variants:', variantIds.filter(id => !existingVariants.find((v: any) => v.id === id)))
+    
+    const existingVariantIds = new Set(existingVariants.map((v: { id: string }) => v.id))
+    
+    const orderItems = calculation.items.map(item => {
+      const orderItem: any = {
+        productId: item.productId,
+        name: item.product.name,
+        sku: item.product.sku || null,
+        quantity: item.quantity,
+        price: item.price,
+        total: item.total,
+      }
+      
+      // הוסף variantId רק אם הוא קיים בדאטאבייס
+      if (item.variantId && existingVariantIds.has(item.variantId)) {
+        orderItem.variantId = item.variantId
+        console.log('✅ Added variantId to order item:', item.variantId)
+      } else if (item.variantId) {
+        // Variant לא נמצא בדאטאבייס - זה בסדר, נמשיך בלי variantId
+        console.warn('⚠️ Variant not found in DB, skipping:', {
+          variantId: item.variantId,
+          productId: item.productId,
+          productName: item.product.name
+        })
+        
+        // נבדוק אם יש וריאציות אחרות למוצר הזה
+        console.log('🔍 Checking if product has other variants...')
+      }
+      
+      console.log('📦 Order item:', JSON.stringify(orderItem, null, 2))
+      return orderItem
+    })
 
     // חישוב הנחה מכרטיס מתנה
     let giftCardDiscount = 0
@@ -155,14 +195,15 @@ export async function POST(
         customerPhone: data.customerPhone,
         shippingAddress: data.shippingAddress,
         billingAddress: data.billingAddress || data.shippingAddress,
-        subtotal: calculation.subtotal,
-        shipping,
-        tax,
-        discount: totalDiscount + giftCardDiscount + calculation.customerDiscount,
-        total: Math.max(0, total),
+        subtotal: Math.round(calculation.subtotal * 100) / 100,
+        shipping: Math.round(shipping * 100) / 100,
+        tax: Math.round(tax * 100) / 100,
+        discount: Math.round((totalDiscount + giftCardDiscount + calculation.customerDiscount) * 100) / 100,
+        total: Math.round(Math.max(0, total) * 100) / 100, // עיגול ל-2 ספרות אחרי הנקודה
         paymentMethod: data.paymentMethod,
         couponCode: data.couponCode,
         notes: data.notes,
+        customFields: data.customFields || {},
         status: "PENDING",
         paymentStatus: "PENDING",
         fulfillmentStatus: "UNFULFILLED",
@@ -233,11 +274,139 @@ export async function POST(
       },
     })
 
-    // אם זה תשלום בכרטיס אשראי, יצירת payment URL
+    // שליחת מייל אישור הזמנה ללקוח
+    try {
+      const shopSettings = shop.settings as any
+      const checkoutSettings = shopSettings?.checkoutPage || {}
+      const customFieldsConfig = checkoutSettings.customFields || []
+      
+      // בניית רשימת פריטים
+      const itemsList = orderItems.map(item => 
+        `<tr>
+          <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: left;">₪${item.total.toFixed(2)}</td>
+        </tr>`
+      ).join('')
+
+      // בניית רשימת קסטום פילדס
+      let customFieldsHtml = ''
+      if (order.customFields && typeof order.customFields === 'object') {
+        const customFieldsList = Object.entries(order.customFields)
+          .map(([key, value]) => {
+            const fieldConfig = customFieldsConfig.find((f: any) => f.id === key)
+            const fieldLabel = fieldConfig?.label || key
+            const displayValue = value === true ? "כן" : value === false ? "לא" : String(value || "")
+            
+            if (!displayValue || displayValue === "false" || displayValue === "") {
+              return null
+            }
+            
+            return `<p><strong>${fieldLabel}:</strong> ${displayValue}</p>`
+          })
+          .filter(Boolean)
+          .join('')
+        
+        if (customFieldsList) {
+          customFieldsHtml = `
+            <div style="margin-top: 20px; padding: 15px; background-color: #f9fafb; border-radius: 8px;">
+              <h3 style="margin-top: 0; margin-bottom: 10px;">פרטים נוספים</h3>
+              ${customFieldsList}
+            </div>
+          `
+        }
+      }
+
+      const emailContent = `
+        <h2>תודה על ההזמנה שלך! 🎉</h2>
+        <p>שלום ${data.customerName},</p>
+        <p>הזמנתך התקבלה בהצלחה. מספר ההזמנה שלך הוא: <strong>${order.orderNumber}</strong></p>
+        
+        <h3>פרטי ההזמנה:</h3>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+          <thead>
+            <tr style="background-color: #f9fafb;">
+              <th style="padding: 10px; text-align: right; border-bottom: 2px solid #ddd;">מוצר</th>
+              <th style="padding: 10px; text-align: center; border-bottom: 2px solid #ddd;">כמות</th>
+              <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">מחיר</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${itemsList}
+          </tbody>
+        </table>
+
+        <div style="margin-top: 20px; padding: 15px; background-color: #f0f9ff; border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span>סכום ביניים:</span>
+            <strong>₪${order.subtotal.toFixed(2)}</strong>
+          </div>
+          ${order.discount > 0 ? `
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #059669;">
+            <span>הנחה:</span>
+            <strong>-₪${order.discount.toFixed(2)}</strong>
+          </div>
+          ` : ''}
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span>משלוח:</span>
+            <strong>₪${order.shipping.toFixed(2)}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+            <span>מע"מ:</span>
+            <strong>₪${order.tax.toFixed(2)}</strong>
+          </div>
+          <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 2px solid #ddd; font-size: 18px;">
+            <strong>סה"כ:</strong>
+            <strong>₪${order.total.toFixed(2)}</strong>
+          </div>
+        </div>
+
+        ${customFieldsHtml}
+
+        ${order.notes ? `
+        <div style="margin-top: 20px; padding: 15px; background-color: #fff7ed; border-radius: 8px;">
+          <h3 style="margin-top: 0; margin-bottom: 10px;">הערות:</h3>
+          <p>${order.notes}</p>
+        </div>
+        ` : ''}
+
+        <p style="margin-top: 30px;">נשלח אליך עדכון נוסף כשההזמנה תישלח.</p>
+        <p>תודה שקנית אצלנו!</p>
+      `
+
+      // ניסיון לשלוח אימייל אישור הזמנה
+      try {
+        await sendEmail({
+          to: data.customerEmail,
+          subject: `אישור הזמנה #${order.orderNumber} - ${shop.name}`,
+          html: getEmailTemplate({
+            title: `אישור הזמנה #${order.orderNumber}`,
+            content: emailContent,
+            footer: `הודעה זו נשלחה מ-${shop.name}`,
+          }),
+        })
+        console.log(`✅ Order confirmation email sent to ${data.customerEmail}`)
+      } catch (emailError: any) {
+        // אם יש בעיה עם הגדרות אימייל, רק נרשום לוג ולא נזרוק שגיאה
+        if (emailError?.code === 'EAUTH') {
+          console.warn(`⚠️ Email not configured properly. Order created but email not sent to ${data.customerEmail}`)
+        } else {
+          console.warn(`⚠️ Failed to send order confirmation email to ${data.customerEmail}:`, emailError?.message || 'Unknown error')
+        }
+        // לא נזרוק שגיאה - לא רוצים שהזמנה תיכשל בגלל בעיית מייל
+      }
+    } catch (emailError) {
+      // שגיאה כללית ביצירת תוכן האימייל - לא קריטי
+      console.warn("⚠️ Error preparing order confirmation email:", emailError)
+    }
+
+    // אם זה תשלום בכרטיס אשראי, יצירת payment URL דרך PayPlus או PayPal
     let paymentUrl = null
     if (data.paymentMethod === "credit_card") {
-      // בדיקה אם יש אינטגרציה עם PayPlus או payment gateway אחר
-      const integration = await prisma.integration.findFirst({
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+
+      // בדיקה אם יש אינטגרציה עם PayPlus
+      const payplusIntegration = await prisma.integration.findFirst({
         where: {
           companyId: shop.companyId,
           type: "PAYPLUS",
@@ -245,11 +414,150 @@ export async function POST(
         },
       })
 
-      if (integration) {
-        // TODO: יצירת תשלום דרך PayPlus API
-        // paymentUrl = await createPayPlusPayment(order.id, order.total)
-        // לעת עתה, נשתמש ב-placeholder
-        paymentUrl = `/api/storefront/${params.slug}/payment/${order.id}`
+      // בדיקה אם יש אינטגרציה עם PayPal
+      const paypalIntegration = await prisma.integration.findFirst({
+        where: {
+          companyId: shop.companyId,
+          type: "PAYPAL",
+          isActive: true,
+        },
+      })
+
+      // עדיפות ל-PayPlus אם קיים, אחרת PayPal
+      if (payplusIntegration && payplusIntegration.apiKey && payplusIntegration.apiSecret) {
+        // יצירת payment link דרך PayPlus
+        try {
+          const { generatePaymentLink } = await import("@/lib/payplus")
+          const config = payplusIntegration.config as any
+
+          const paymentResult = await generatePaymentLink(
+            {
+              apiKey: payplusIntegration.apiKey,
+              secretKey: payplusIntegration.apiSecret,
+              paymentPageUid: config.paymentPageUid,
+              useProduction: config.useProduction || false,
+              terminalUid: "",
+            },
+            {
+              amount: Math.round(order.total * 100) / 100, // עיגול ל-2 ספרות אחרי הנקודה
+              currencyCode: "ILS",
+              chargeMethod: 1, // Charge (J4)
+              refUrlSuccess: `${baseUrl}/payment/success?orderId=${order.id}`,
+              refUrlFailure: `${baseUrl}/payment/failure?orderId=${order.id}`,
+              refUrlCallback: `${baseUrl}/api/integrations/payplus/callback`,
+              sendFailureCallback: true,
+              customerName: data.customerName,
+              customerEmail: data.customerEmail,
+              customerPhone: data.customerPhone || undefined,
+              moreInfo: `Order ID: ${order.id}`,
+            }
+          )
+
+          if (paymentResult.success && paymentResult.data?.payment_page_link) {
+            paymentUrl = paymentResult.data.payment_page_link
+            
+            // עדכון ההזמנה עם payment link
+            await prisma.order.update({
+              where: { id: order.id },
+              data: {
+                paymentLink: paymentUrl,
+              },
+            })
+          } else {
+            console.error("Failed to generate PayPlus payment link:", paymentResult.error)
+            // אם נכשל, ננסה PayPal
+            throw new Error("PayPlus failed")
+          }
+        } catch (error) {
+          console.error("Error generating PayPlus payment link:", error)
+          // אם PayPlus נכשל, ננסה PayPal
+          if (paypalIntegration && paypalIntegration.apiKey && paypalIntegration.apiSecret) {
+            try {
+              const { createPayPalOrder } = await import("@/lib/paypal")
+              const config = paypalIntegration.config as any
+
+              const paypalResult = await createPayPalOrder(
+                {
+                  clientId: paypalIntegration.apiKey,
+                  clientSecret: paypalIntegration.apiSecret,
+                  useProduction: config.useProduction || false,
+                },
+                {
+                  amount: Math.round(order.total * 100) / 100, // עיגול ל-2 ספרות אחרי הנקודה
+                  currencyCode: "ILS",
+                  orderId: order.id,
+                  customerName: data.customerName,
+                  customerEmail: data.customerEmail,
+                  returnUrl: `${baseUrl}/api/integrations/paypal/callback?orderId=${order.id}`,
+                  cancelUrl: `${baseUrl}/payment/failure?orderId=${order.id}`,
+                }
+              )
+
+              if (paypalResult.success && paypalResult.data?.approvalUrl) {
+                paymentUrl = paypalResult.data.approvalUrl
+                
+                // עדכון ההזמנה עם PayPal order ID ו-approval URL
+                await prisma.order.update({
+                  where: { id: order.id },
+                  data: {
+                    paymentLink: paymentUrl,
+                    transactionId: paypalResult.data.orderId,
+                  },
+                })
+              } else {
+                console.error("Failed to create PayPal order:", paypalResult.error)
+                paymentUrl = `/shop/${params.slug}/payment/${order.id}`
+              }
+            } catch (paypalError) {
+              console.error("Error creating PayPal order:", paypalError)
+              paymentUrl = `/shop/${params.slug}/payment/${order.id}`
+            }
+          } else {
+            paymentUrl = `/shop/${params.slug}/payment/${order.id}`
+          }
+        }
+      } else if (paypalIntegration && paypalIntegration.apiKey && paypalIntegration.apiSecret) {
+        // יצירת הזמנה דרך PayPal
+        try {
+          const { createPayPalOrder } = await import("@/lib/paypal")
+          const config = paypalIntegration.config as any
+
+          const paypalResult = await createPayPalOrder(
+            {
+              clientId: paypalIntegration.apiKey,
+              clientSecret: paypalIntegration.apiSecret,
+              useProduction: config.useProduction || false,
+            },
+            {
+              amount: Math.round(order.total * 100) / 100, // עיגול ל-2 ספרות אחרי הנקודה
+              currencyCode: "ILS",
+              orderId: order.id,
+              customerName: data.customerName,
+              customerEmail: data.customerEmail,
+              returnUrl: `${baseUrl}/api/integrations/paypal/callback?orderId=${order.id}&token=`,
+              cancelUrl: `${baseUrl}/payment/failure?orderId=${order.id}`,
+            }
+          )
+
+          if (paypalResult.success && paypalResult.data?.approvalUrl) {
+            paymentUrl = paypalResult.data.approvalUrl
+            
+            // עדכון ההזמנה עם PayPal order ID ו-approval URL
+            await prisma.order.update({
+              where: { id: order.id },
+              data: {
+                paymentLink: paymentUrl,
+                transactionId: paypalResult.data.orderId,
+              },
+            })
+          } else {
+            console.error("Failed to create PayPal order:", paypalResult.error)
+            paymentUrl = `/shop/${params.slug}/payment/${order.id}`
+          }
+        } catch (error) {
+          console.error("Error creating PayPal order:", error)
+          paymentUrl = `/shop/${params.slug}/payment/${order.id}`
+        }
       } else {
         // אם אין אינטגרציה, נחזיר URL לדף תשלום פנימי
         paymentUrl = `/shop/${params.slug}/payment/${order.id}`

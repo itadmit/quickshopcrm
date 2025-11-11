@@ -50,10 +50,24 @@ export const authOptions: NextAuthOptions = {
         }
       }
     }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID || "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
-    })
+    // הוספת GoogleProvider רק אם יש משתני סביבה תקינים
+    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET ? [
+      GoogleProvider({
+        clientId: process.env.GOOGLE_CLIENT_ID,
+        clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+        authorization: {
+          params: {
+            prompt: "consent",
+            access_type: "offline",
+            response_type: "code"
+          }
+        },
+        // מניעת שימוש ב-device flow שלא נתמך ב-edge runtime
+        checks: ["pkce", "state"],
+        // הגדרות נוספות למניעת בעיות ב-edge runtime
+        wellKnown: "https://accounts.google.com/.well-known/openid-configuration",
+      })
+    ] : [])
   ],
   callbacks: {
     async signIn({ user, account, profile }) {
@@ -212,12 +226,16 @@ export const authOptions: NextAuthOptions = {
         
         return session
       } catch (error: any) {
-        // טיפול בשגיאות פענוח JWT
-        if (error?.message?.includes('decryption') || error?.name === 'JWEDecryptionFailed') {
-          console.warn('⚠️  שגיאת פענוח JWT ב-session - כנראה יש cookies ישנים.')
+        // טיפול בשגיאות פענוח JWT - נחזיר null במקום לזרוק שגיאה
+        if (error?.message?.includes('decryption') || 
+            error?.name === 'JWEDecryptionFailed' ||
+            error?.stack?.includes('decrypt')) {
+          console.warn('⚠️  שגיאת פענוח JWT ב-session - כנראה יש cookies ישנים. נא למחוק cookies ולנסות שוב.')
           return null as any
         }
-        throw error
+        // לכל שגיאה אחרת, נחזיר null במקום לזרוק
+        console.error('Error in session callback:', error)
+        return null as any
       }
     }
   },
@@ -237,7 +255,19 @@ export const authOptions: NextAuthOptions = {
       console.log("👋 התנתקות:", session?.user?.email || token?.email)
     },
   },
-  debug: process.env.NODE_ENV === "development",
+  debug: false, // כיבוי debug mode כדי למנוע שגיאות מיותרות
+  logger: {
+    error(code, metadata) {
+      // טיפול בשגיאות decryption - לא נדפיס אותן כשגיאה קריטית
+      if (code === 'JWT_SESSION_ERROR' && 
+          (metadata?.error?.message?.includes('decryption') || 
+           metadata?.error?.name === 'JWEDecryptionFailed')) {
+        console.warn('⚠️  שגיאת פענוח JWT - cookies ישנים. המשתמש יתבקש להתחבר מחדש.')
+        return
+      }
+      console.error('NextAuth Error:', code, metadata)
+    },
+  },
 }
 
 

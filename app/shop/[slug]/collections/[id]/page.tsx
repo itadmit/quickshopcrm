@@ -12,6 +12,7 @@ import Link from "next/link"
 import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton"
 import { useTracking } from "@/components/storefront/TrackingPixelProvider"
 import { trackPageView } from "@/lib/tracking-events"
+import { AdminBar } from "@/components/storefront/AdminBar"
 
 interface Collection {
   id: string
@@ -202,6 +203,9 @@ export default function CollectionPage() {
           </div>
         )}
       </main>
+
+      {/* Admin Bar - רק למנהלים */}
+      <AdminBar slug={slug} pageType="collection" collectionId={collectionId} />
     </div>
   )
 }

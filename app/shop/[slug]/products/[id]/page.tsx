@@ -37,6 +37,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useShopTheme, getThemeStyles } from "@/hooks/useShopTheme"
+import { useAddToCart } from "@/hooks/useAddToCart"
 import { useTracking } from "@/components/storefront/TrackingPixelProvider"
 import {
   trackPageView,
@@ -50,6 +51,7 @@ import { ProductPageDesigner } from "@/components/storefront/ProductPageDesigner
 import { ProductPageElement, ProductPageElementType } from "@/components/storefront/ProductPageLayoutDesigner"
 import { EditableProductElement } from "@/components/storefront/EditableProductElement"
 import { cn } from "@/lib/utils"
+import { AdminBar } from "@/components/storefront/AdminBar"
 
 type GalleryLayout = "standard" | "right-side" | "left-side" | "masonry" | "fixed"
 
@@ -117,6 +119,17 @@ export default function ProductPage() {
   const [productPageLayout, setProductPageLayout] = useState<{ elements: ProductPageElement[] } | null>(null)
   const [isEditingLayout, setIsEditingLayout] = useState(false)
   const { trackEvent } = useTracking()
+  
+  // 🎯 המערכת המרכזית היחידה להוספה לעגלה
+  const { addToCart, isAddingToCart } = useAddToCart({
+    slug,
+    customerId,
+    autoOpenCart,
+    onSuccess: () => {
+      fetchCartCount()
+      setCartRefreshKey(prev => prev + 1)
+    }
+  })
 
   // בדיקה אם אנחנו במצב עריכה דרך query params
   useEffect(() => {
@@ -359,42 +372,76 @@ export default function ProductPage() {
   useEffect(() => {
     // עדכון selectedVariant לפי selectedOptionValues
     if (product && product.variants && product.options && product.variants.length > 0) {
-      // מציאת הווריאציה המתאימה לפי ה-options שנבחרו
-      const matchingVariant = product.variants.find((variant: any) => {
-        // בדיקה אם הווריאציה מתאימה לכל ה-options שנבחרו
-        return product.options?.every((option: any) => {
-          const selectedValueId = selectedOptionValues[option.id]
-          
-          // אם לא נבחר ערך עבור option זה, דלג עליו
-          if (selectedValueId === undefined) {
-            return true
-          }
-          
+      // איסוף כל ה-labels שנבחרו
+      const selectedLabels: string[] = []
+      
+      product.options?.forEach((option: any) => {
+        const selectedValueId = selectedOptionValues[option.id]
+        if (selectedValueId !== undefined) {
           // מציאת ה-label של הערך שנבחר
-          let selectedLabel: string | null = null
           if (option.values && Array.isArray(option.values)) {
             const valueObj = option.values.find((v: any) => {
               if (typeof v === 'string') return v === selectedValueId
               return v.id === selectedValueId || v.label === selectedValueId
             })
             if (valueObj) {
-              selectedLabel = typeof valueObj === 'string' ? valueObj : (valueObj.label || valueObj.id)
+              const label = typeof valueObj === 'string' ? valueObj : (valueObj.label || valueObj.id)
+              if (label) selectedLabels.push(label)
             }
           }
-          
-          if (!selectedLabel) return false
-          
-          // בדיקה אם הווריאציה מכילה את הערך הזה ב-option1, option2 או option3
-          const optionName = option.name
-          return (
-            (variant.option1 === optionName && variant.option1Value === selectedLabel) ||
-            (variant.option2 === optionName && variant.option2Value === selectedLabel) ||
-            (variant.option3 === optionName && variant.option3Value === selectedLabel)
-          )
-        })
+        }
       })
       
+      console.log('🔍 Looking for variant with labels:', selectedLabels)
+      console.log('📋 Available variants:', product.variants.map((v: any) => ({ id: v.id, name: v.name, option1Value: v.option1Value, option2Value: v.option2Value })))
+      
+      // מציאת הווריאציה המתאימה - התאמה מדויקת של כל ה-labels
+      const matchingVariant = product.variants.find((variant: any) => {
+        // איסוף כל הערכים של הווריאציה
+        const variantValues = [
+          variant.option1Value,
+          variant.option2Value,
+          variant.option3Value,
+        ].filter(Boolean).map(v => v?.toString().trim())
+        
+        // בדיקה אם כל ה-labels שנבחרו נמצאים בערכי הווריאציה
+        if (selectedLabels.length === 0) return false
+        
+        // פונקציה לבדיקת התאמה - מדויקת או חלקית (אבל לא מספרים)
+        const isMatch = (label: string, value: string): boolean => {
+          const labelLower = label.toLowerCase().trim()
+          const valueLower = value.toLowerCase().trim()
+          
+          // התאמה מדויקת - תמיד נכון
+          if (labelLower === valueLower) return true
+          
+          // אם זה מספר - רק התאמה מדויקת!
+          const isNumeric = /^\d+$/.test(label.trim()) || /^\d+$/.test(value.trim())
+          if (isNumeric) {
+            return label.trim() === value.trim()
+          }
+          
+          // אם זה לא מספר - אפשר התאמה חלקית
+          return valueLower.includes(labelLower) || labelLower.includes(valueLower)
+        }
+        
+        // נדרוש שכל ה-labels שנבחרו יימצאו בערכי הווריאציה
+        const allLabelsMatch = selectedLabels.every(label => {
+          return variantValues.some(v => isMatch(label, v))
+        })
+        
+        // גם נדרוש שכל הערכים של הווריאציה יימצאו ב-labels שנבחרו
+        const allVariantValuesMatch = variantValues.every(v => {
+          return selectedLabels.some(label => isMatch(label, v))
+        })
+        
+        return allLabelsMatch && allVariantValuesMatch && variantValues.length === selectedLabels.length
+      })
+      
+      console.log('✅ Matching variant:', matchingVariant ? { id: matchingVariant.id, name: matchingVariant.name } : 'NOT FOUND')
+      
       if (matchingVariant && matchingVariant.id !== selectedVariant) {
+        console.log('🔄 Updating selectedVariant to:', matchingVariant.id)
         setSelectedVariant(matchingVariant.id)
         
         // SelectVariant event
@@ -407,8 +454,12 @@ export default function ProductPage() {
             sku: matchingVariant.sku || null,
           })
         }
-      } else if (!matchingVariant && product.variants.length > 0) {
-        // אם לא נמצאה התאמה, נבחר את הווריאציה הראשונה
+      } else if (!matchingVariant && selectedLabels.length > 0) {
+        // אם לא נמצאה התאמה אבל יש בחירות, לא נבחר variant (או נבחר את הראשון רק אם אין בחירות)
+        console.warn('⚠️ No matching variant found for labels:', selectedLabels)
+        // לא נבחר variant אוטומטית - נשאיר את המשתמש לבחור
+      } else if (!matchingVariant && product.variants.length > 0 && Object.keys(selectedOptionValues).length === 0) {
+        // רק אם אין בחירות בכלל, נבחר את הראשונה
         setSelectedVariant(product.variants[0].id)
       }
     }
@@ -644,121 +695,49 @@ export default function ProductPage() {
     }
   }
 
+  // 🎯 שימוש במערכת המרכזית - פשוט וקל!
   const handleAddToCart = async (showToast = true) => {
     if (!product) return false
 
-    // בדיקת מלאי לפני הוספה לעגלה
-    let availableQty = product.inventoryQty
-    
-    // אם יש variant נבחר, בדוק את המלאי שלו
-    if (selectedVariant && product.variants) {
-      const variant = product.variants.find((v) => v.id === selectedVariant)
-      if (variant) {
-        availableQty = variant.inventoryQty
-      }
-    }
+    // חישוב מחיר נוכחי ל-tracking
+    const currentPrice = selectedVariant && product.variants
+      ? product.variants.find((v) => v.id === selectedVariant)?.price || product.price
+      : product.price
 
-    // בדיקה אם המוצר אזל מהמלאי או שהכמות המבוקשת גדולה מהמלאי הזמין
-    if (product.availability === "OUT_OF_STOCK" || availableQty === 0) {
-      if (showToast) {
-        toast({
-          title: "שגיאה",
-          description: "המוצר אזל מהמלאי",
-          variant: "destructive",
-        })
+    // קריאה למערכת המרכזית - היא עושה הכל!
+    const success = await addToCart({
+      productId: product.id,
+      variantId: selectedVariant,
+      quantity,
+      productName: product.name,
+      productData: {
+        availability: product.availability,
+        inventoryQty: product.inventoryQty,
+        variants: product.variants?.map(v => ({
+          id: v.id,
+          inventoryQty: v.inventoryQty
+        }))
       }
-      return false
-    }
+    })
 
-    // בדיקה אם הכמות המבוקשת גדולה מהמלאי הזמין
-    if (quantity > availableQty) {
-      if (showToast) {
-        toast({
-          title: "שגיאה",
-          description: `המלאי הזמין הוא ${availableQty} יחידות בלבד`,
-          variant: "destructive",
-        })
-      }
-      return false
-    }
-
-    try {
-      const headers: HeadersInit = { "Content-Type": "application/json" }
-      if (customerId) {
-        headers["x-customer-id"] = customerId
-      }
-
-      const body: any = {
-        productId: product.id,
-        quantity,
-      }
+    if (success) {
+      // Tracking event
+      trackAddToCart(trackEvent, {
+        id: product.id,
+        name: product.name,
+        price: currentPrice,
+        sku: product.sku || null,
+      }, quantity, selectedVariant || undefined)
       
-      // רק אם יש variantId, נוסיף אותו
-      if (selectedVariant) {
-        body.variantId = selectedVariant
+      // פתיחת עגלה אם ההגדרה מאפשרת
+      if (autoOpenCart && cartOpenCallback) {
+        setTimeout(() => {
+          cartOpenCallback()
+        }, 300)
       }
-
-      const response = await fetch(`/api/storefront/${slug}/cart`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        if (showToast) {
-          toast({
-            title: "הצלחה",
-            description: "המוצר נוסף לעגלה בהצלחה",
-          })
-        }
-        fetchCartCount()
-        
-        // AddToCart event
-        const currentPrice = selectedVariant && product.variants
-          ? product.variants.find((v) => v.id === selectedVariant)?.price || product.price
-          : product.price
-        
-        trackAddToCart(trackEvent, {
-          id: product.id,
-          name: product.name,
-          price: currentPrice,
-          sku: product.sku || null,
-        }, quantity, selectedVariant || undefined)
-        
-        // עדכון מפתח רענון לעגלה
-        setCartRefreshKey(prev => prev + 1)
-        
-        // פתיחת עגלה אם ההגדרה מאפשרת
-        if (autoOpenCart && cartOpenCallback) {
-          setTimeout(() => {
-            cartOpenCallback()
-          }, 300) // קצת delay כדי שהטוסט יופיע
-        }
-        
-        return true
-      } else {
-        const error = await response.json()
-        if (showToast) {
-          toast({
-            title: "שגיאה",
-            description: error.error || "לא ניתן להוסיף את המוצר לעגלה",
-            variant: "destructive",
-          })
-        }
-        return false
-      }
-    } catch (error) {
-      console.error("Error adding to cart:", error)
-      if (showToast) {
-        toast({
-          title: "שגיאה",
-          description: "אירעה שגיאה בהוספת המוצר לעגלה",
-          variant: "destructive",
-        })
-      }
-      return false
     }
+
+    return success
   }
 
   const handleEdit = () => {
@@ -1986,6 +1965,9 @@ export default function ProductPage() {
           </div>
         </div>
       </footer>
+
+      {/* Admin Bar - רק למנהלים */}
+      <AdminBar slug={slug} pageType="product" productSlug={productId} />
     </div>
   )
 }

@@ -206,7 +206,7 @@ export default function CollectionsPage() {
                         <DropdownMenuContent align="start" className="min-w-[160px]">
                           <DropdownMenuItem
                             onClick={() =>
-                              router.push(`/collections/${collection.id}/edit`)
+                              router.push(`/collections/${collection.slug}`)
                             }
                             className="flex flex-row-reverse items-center gap-2 cursor-pointer"
                           >
@@ -214,7 +214,7 @@ export default function CollectionsPage() {
                             ערוך
                           </DropdownMenuItem>
                           <DropdownMenuItem
-                            onClick={() => handleDelete(collection.id)}
+                            onClick={() => handleDelete(collection.slug)}
                             className="text-red-600 flex flex-row-reverse items-center gap-2 cursor-pointer"
                           >
                             <Trash2 className="w-4 h-4 flex-shrink-0" />
