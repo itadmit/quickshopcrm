@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { capturePayPalOrder, getPayPalOrder } from "@/lib/paypal"
+import { sendOrderConfirmationEmail } from "@/lib/order-email"
 
 // POST - Webhook callback מ-PayPal
 export async function POST(req: NextRequest) {
@@ -196,6 +197,9 @@ export async function POST(req: NextRequest) {
               }
             }
           }
+          
+          // שליחת מייל אישור תשלום ללקוח
+          await sendOrderConfirmationEmail(order.id)
         }
       }
     }
@@ -471,6 +475,9 @@ export async function GET(req: NextRequest) {
       })
 
       console.log("✅ Created order.paid event for order:", order.orderNumber)
+      
+      // שליחת מייל אישור תשלום ללקוח
+      await sendOrderConfirmationEmail(order.id)
     }
 
     // Redirect לדף תודה

@@ -178,11 +178,11 @@ export async function POST(
     // סכום כולל (הנחת לקוח כבר מחושבת ב-subtotal)
     const total = calculation.subtotal - totalDiscount - giftCardDiscount - calculation.customerDiscount + shipping + tax
 
-    // יצירת מספר הזמנה
+    // יצירת מספר הזמנה (מתחיל מ-1000 לכל חנות)
     const orderCount = await prisma.order.count({
       where: { shopId: shop.id },
     })
-    const orderNumber = `ORD-${String(orderCount + 1).padStart(6, "0")}`
+    const orderNumber = `ORD-${String(orderCount + 1000).padStart(6, "0")}`
 
     // יצירת הזמנה
     const order = await prisma.order.create({
@@ -315,132 +315,8 @@ export async function POST(
       },
     })
 
-    // שליחת מייל אישור הזמנה ללקוח
-    try {
-      const shopSettings = shop.settings as any
-      const checkoutSettings = shopSettings?.checkoutPage || {}
-      const customFieldsConfig = checkoutSettings.customFields || []
-      
-      // בניית רשימת פריטים
-      const itemsList = orderItems.map(item => 
-        `<tr>
-          <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
-          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: left;">₪${item.total.toFixed(2)}</td>
-        </tr>`
-      ).join('')
-
-      // בניית רשימת קסטום פילדס
-      let customFieldsHtml = ''
-      if (order.customFields && typeof order.customFields === 'object') {
-        const customFieldsList = Object.entries(order.customFields)
-          .map(([key, value]) => {
-            const fieldConfig = customFieldsConfig.find((f: any) => f.id === key)
-            const fieldLabel = fieldConfig?.label || key
-            const displayValue = value === true ? "כן" : value === false ? "לא" : String(value || "")
-            
-            if (!displayValue || displayValue === "false" || displayValue === "") {
-              return null
-            }
-            
-            return `<p><strong>${fieldLabel}:</strong> ${displayValue}</p>`
-          })
-          .filter(Boolean)
-          .join('')
-        
-        if (customFieldsList) {
-          customFieldsHtml = `
-            <div style="margin-top: 20px; padding: 15px; background-color: #f9fafb; border-radius: 8px;">
-              <h3 style="margin-top: 0; margin-bottom: 10px;">פרטים נוספים</h3>
-              ${customFieldsList}
-            </div>
-          `
-        }
-      }
-
-      const emailContent = `
-        <h2>תודה על ההזמנה שלך! 🎉</h2>
-        <p>שלום ${data.customerName},</p>
-        <p>הזמנתך התקבלה בהצלחה. מספר ההזמנה שלך הוא: <strong>${order.orderNumber}</strong></p>
-        
-        <h3>פרטי ההזמנה:</h3>
-        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
-          <thead>
-            <tr style="background-color: #f9fafb;">
-              <th style="padding: 10px; text-align: right; border-bottom: 2px solid #ddd;">מוצר</th>
-              <th style="padding: 10px; text-align: center; border-bottom: 2px solid #ddd;">כמות</th>
-              <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">מחיר</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${itemsList}
-          </tbody>
-        </table>
-
-        <div style="margin-top: 20px; padding: 15px; background-color: #f0f9ff; border-radius: 8px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-            <span>סכום ביניים:</span>
-            <strong>₪${order.subtotal.toFixed(2)}</strong>
-          </div>
-          ${order.discount > 0 ? `
-          <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #059669;">
-            <span>הנחה:</span>
-            <strong>-₪${order.discount.toFixed(2)}</strong>
-          </div>
-          ` : ''}
-          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-            <span>משלוח:</span>
-            <strong>₪${order.shipping.toFixed(2)}</strong>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-            <span>מע"מ:</span>
-            <strong>₪${order.tax.toFixed(2)}</strong>
-          </div>
-          <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 2px solid #ddd; font-size: 18px;">
-            <strong>סה"כ:</strong>
-            <strong>₪${order.total.toFixed(2)}</strong>
-          </div>
-        </div>
-
-        ${customFieldsHtml}
-
-        ${order.notes ? `
-        <div style="margin-top: 20px; padding: 15px; background-color: #fff7ed; border-radius: 8px;">
-          <h3 style="margin-top: 0; margin-bottom: 10px;">הערות:</h3>
-          <p>${order.notes}</p>
-        </div>
-        ` : ''}
-
-        <p style="margin-top: 30px;">נשלח אליך עדכון נוסף כשההזמנה תישלח.</p>
-        <p>תודה שקנית אצלנו!</p>
-      `
-
-      // ניסיון לשלוח אימייל אישור הזמנה
-      try {
-        await sendEmail({
-          to: data.customerEmail,
-          subject: `אישור הזמנה #${order.orderNumber} - ${shop.name}`,
-          html: getEmailTemplate({
-            title: `אישור הזמנה #${order.orderNumber}`,
-            content: emailContent,
-            footer: `הודעה זו נשלחה מ-${shop.name}`,
-          }),
-        })
-        console.log(`✅ Order confirmation email sent to ${data.customerEmail}`)
-      } catch (emailError: any) {
-        // אם יש בעיה עם הגדרות אימייל, רק נרשום לוג ולא נזרוק שגיאה
-        const errorMessage = emailError?.message || 'Unknown error'
-        if (errorMessage.includes('not configured') || errorMessage.includes('לא מוגדר')) {
-          console.warn(`⚠️ SendGrid not configured. Order created but email not sent to ${data.customerEmail}. Please configure SendGrid in Super Admin settings.`)
-        } else {
-          console.warn(`⚠️ Failed to send order confirmation email to ${data.customerEmail}:`, errorMessage)
-        }
-        // לא נזרוק שגיאה - לא רוצים שהזמנה תיכשל בגלל בעיית מייל
-      }
-    } catch (emailError) {
-      // שגיאה כללית ביצירת תוכן האימייל - לא קריטי
-      console.warn("⚠️ Error preparing order confirmation email:", emailError)
-    }
+    // הערה: מייל אישור ההזמנה נשלח אחרי תשלום מוצלח ב-callback של PayPlus/PayPal
+    // כדי לא לשלוח מייל לפני שהלקוח באמת שילם
 
     // אם זה תשלום בכרטיס אשראי, יצירת payment URL דרך PayPlus או PayPal
     let paymentUrl = null

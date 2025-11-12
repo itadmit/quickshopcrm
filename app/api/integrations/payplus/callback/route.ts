@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getPayPlusIPNFull } from "@/lib/payplus"
+import { sendOrderConfirmationEmail } from "@/lib/order-email"
 import crypto from "crypto"
 
 // POST - Webhook callback מ-PayPlus
@@ -36,7 +37,7 @@ export async function POST(req: NextRequest) {
       where: { id: orderId },
       include: {
         shop: {
-          select: { id: true },
+          select: { id: true, name: true, settings: true },
         },
         items: true,
       },
@@ -253,6 +254,9 @@ export async function POST(req: NextRequest) {
       })
 
       console.log("✅ Created order.paid event for order:", order.orderNumber)
+      
+      // שליחת מייל אישור תשלום ללקוח
+      await sendOrderConfirmationEmail(order.id)
     }
 
     return NextResponse.json({ success: true })
