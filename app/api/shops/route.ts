@@ -125,6 +125,27 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // יצירת תפריטים ברירת מחדל
+    const defaultNavigations = [
+      { name: "תפריט למחשב", location: "DESKTOP" },
+      { name: "תפריט למובייל", location: "MOBILE" },
+      { name: "תפריט לפוטר", location: "FOOTER" },
+      { name: "תפריט לצ'ק אאוט", location: "CHECKOUT" },
+    ]
+
+    await Promise.all(
+      defaultNavigations.map((nav) =>
+        prisma.navigation.create({
+          data: {
+            shopId: shop.id,
+            name: nav.name,
+            location: nav.location,
+            items: [],
+          },
+        })
+      )
+    )
+
     // יצירת אירוע
     await prisma.shopEvent.create({
       data: {

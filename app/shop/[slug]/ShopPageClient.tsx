@@ -40,6 +40,28 @@ interface ThemeSettings {
   logoWidthDesktop: number
   logoPaddingMobile: number
   logoPaddingDesktop: number
+  headerLayout?: "logo-left" | "logo-right" | "logo-center-menu-below"
+  stickyHeader?: boolean
+  transparentHeader?: boolean
+  logoColorOnScroll?: "none" | "white" | "black"
+}
+
+interface NavigationItem {
+  type: "link" | "page" | "category" | "collection"
+  label: string
+  url?: string
+  pageId?: string
+  pageSlug?: string
+  categoryId?: string
+  collectionId?: string
+  children?: NavigationItem[]
+}
+
+interface Navigation {
+  id: string
+  name: string
+  location: string
+  items: NavigationItem[]
 }
 
 interface ShopPageClientProps {
@@ -47,9 +69,10 @@ interface ShopPageClientProps {
   products: Product[]
   slug: string
   theme: ThemeSettings
+  navigation: Navigation | null
 }
 
-export function ShopPageClient({ shop, products: initialProducts, slug, theme }: ShopPageClientProps) {
+export function ShopPageClient({ shop, products: initialProducts, slug, theme, navigation }: ShopPageClientProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts)
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>(initialProducts.slice(0, 4))
   const [loading, setLoading] = useState(false)
@@ -121,11 +144,18 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme }:
   }
 
   return (
-    <div className="min-h-screen bg-white" dir="rtl" style={getThemeStyles(theme)}>
+    <div className="min-h-screen bg-white" dir="rtl" style={getThemeStyles({
+      ...theme,
+      headerLayout: theme.headerLayout || "logo-left",
+      stickyHeader: theme.stickyHeader !== undefined ? theme.stickyHeader : true,
+      transparentHeader: theme.transparentHeader !== undefined ? theme.transparentHeader : false,
+      logoColorOnScroll: theme.logoColorOnScroll || "none",
+    } as any)}>
       {/* Header */}
       <StorefrontHeader
         slug={slug}
         shop={shop}
+        navigation={navigation}
         cartItemCount={cartItemCount}
         onCartUpdate={fetchCartCount}
         theme={theme}
@@ -158,7 +188,7 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme }:
                     פריטים חדשים
                   </h1>
                   <Link
-                    href={`/shop/${slug}/products/${featuredProducts[0].id}`}
+                    href={`/shop/${slug}/products/${featuredProducts[0].slug || featuredProducts[0].id}`}
                     className="inline-block px-8 py-3 bg-white text-gray-900 font-semibold rounded-sm hover:bg-gray-100 transition-colors"
                   >
                     קנה עכשיו

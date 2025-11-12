@@ -105,7 +105,12 @@ export async function GET(
       seoDescription: product.seoDescription || product.description || null,
     }
 
-    return NextResponse.json(productResponse)
+    // הוספת cache headers ל-Next.js
+    return NextResponse.json(productResponse, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      },
+    })
   } catch (error) {
     console.error("Error fetching product:", error)
     return NextResponse.json(

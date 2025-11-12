@@ -201,7 +201,7 @@ export default function NewPagePage() {
         seoTitle: formData.seoTitle || undefined,
         seoDescription: formData.seoDescription || undefined,
         isPublished: formData.isPublished,
-        showInMenu: formData.showInMenu,
+        showInMenu: false, // כבר לא משתמשים בזה
       }
 
       const response = await fetch("/api/pages", {
@@ -624,17 +624,10 @@ export default function NewPagePage() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="showInMenu" className="cursor-pointer">
-                    הצג בתפריט
-                  </Label>
-                  <Switch
-                    id="showInMenu"
-                    checked={formData.showInMenu}
-                    onCheckedChange={(checked) =>
-                      setFormData((prev) => ({ ...prev, showInMenu: checked as boolean }))
-                    }
-                  />
+                <div className="p-4 bg-gray-50 rounded-lg">
+                  <p className="text-sm text-gray-600">
+                    כדי להוסיף את הדף לתפריט, שמור את הדף תחילה ואז ערוך אותו.
+                  </p>
                 </div>
               </CardContent>
             </Card>

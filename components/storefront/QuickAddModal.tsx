@@ -251,7 +251,7 @@ export function QuickAddModal({
 
             {/* לינק למוצר המלא */}
             <Link
-              href={`/shop/${slug}/products/${product.id}`}
+              href={`/shop/${slug}/products/${product.slug || product.id}`}
               className="block mt-3 text-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
               onClick={onClose}
             >

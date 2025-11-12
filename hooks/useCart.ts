@@ -74,9 +74,10 @@ export function useCart(slug: string, customerId?: string | null) {
       
       return response.json() as Promise<Cart>
     },
-    staleTime: 0, // תמיד לבדוק אם יש עדכון
-    refetchOnWindowFocus: true, // לרענן כשחוזרים לחלון
-    refetchOnMount: true, // לרענן כשהקומפוננטה עולה
+    staleTime: 2000, // 2 שניות - מפחית קריאות מיותרות
+    gcTime: 5 * 60 * 1000, // 5 דקות ב-cache
+    refetchOnWindowFocus: false, // לא לרענן כל פעם שחוזרים לחלון
+    refetchOnMount: false, // לא לרענן כל פעם שהקומפוננטה עולה
   })
   
   // Add to cart mutation

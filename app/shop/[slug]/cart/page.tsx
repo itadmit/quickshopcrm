@@ -13,6 +13,7 @@ import {
   Minus,
   ChevronRight,
   Tag,
+  Loader2,
 } from "lucide-react"
 import Link from "next/link"
 import { CartSkeleton } from "@/components/skeletons/CartSkeleton"
@@ -23,6 +24,7 @@ import {
   trackRemoveFromCart,
   trackInitiateCheckout,
 } from "@/lib/tracking-events"
+import { LoadingOverlay } from "@/components/storefront/LoadingOverlay"
 
 interface CartItem {
   productId: string
@@ -65,6 +67,7 @@ export default function CartPage() {
   const [couponCode, setCouponCode] = useState("")
   const [customerId, setCustomerId] = useState<string | null>(null)
   const { trackEvent } = useTracking()
+  const [isProcessingCheckout, setIsProcessingCheckout] = useState(false)
 
   useEffect(() => {
     const customerData = localStorage.getItem(`storefront_customer_${slug}`)
@@ -250,6 +253,11 @@ export default function CartPage() {
 
   return (
     <div className="min-h-screen bg-gray-50" dir="rtl">
+      <LoadingOverlay 
+        isLoading={isProcessingCheckout} 
+        message="מעביר לתשלום..."
+      />
+      
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <Link href={`/shop/${slug}`} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
@@ -404,6 +412,7 @@ export default function CartPage() {
 
                 <Button
                   onClick={() => {
+                    setIsProcessingCheckout(true)
                     // InitiateCheckout event
                     const items = cart.items.map((item) => ({
                       id: item.productId,
@@ -414,10 +423,18 @@ export default function CartPage() {
                     trackInitiateCheckout(trackEvent, items, cart.total)
                     router.push(`/shop/${slug}/checkout`)
                   }}
+                  disabled={isProcessingCheckout}
                   className="w-full prodify-gradient text-white"
                   size="lg"
                 >
-                  המשך לתשלום
+                  {isProcessingCheckout ? (
+                    <>
+                      <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                      מעביר לתשלום...
+                    </>
+                  ) : (
+                    "המשך לתשלום"
+                  )}
                 </Button>
               </CardContent>
             </Card>

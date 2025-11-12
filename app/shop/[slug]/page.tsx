@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { ShopPageClient } from "./ShopPageClient"
+import { getShopNavigation } from "@/lib/navigation-server"
 
 interface Shop {
   id: string
@@ -32,6 +33,10 @@ interface ThemeSettings {
   logoWidthDesktop: number
   logoPaddingMobile: number
   logoPaddingDesktop: number
+  headerLayout?: "logo-left" | "logo-right" | "logo-center-menu-below"
+  stickyHeader?: boolean
+  transparentHeader?: boolean
+  logoColorOnScroll?: "none" | "white" | "black"
 }
 
 const DEFAULT_THEME: ThemeSettings = {
@@ -41,6 +46,10 @@ const DEFAULT_THEME: ThemeSettings = {
   logoWidthDesktop: 135,
   logoPaddingMobile: 0,
   logoPaddingDesktop: 0,
+  headerLayout: "logo-left",
+  stickyHeader: true,
+  transparentHeader: false,
+  logoColorOnScroll: "none",
 }
 
 export default async function ShopPage({ params }: { params: { slug: string } }) {
@@ -172,8 +181,15 @@ export default async function ShopPage({ params }: { params: { slug: string } })
     logoWidthDesktop: themeSettings.logoWidthDesktop || DEFAULT_THEME.logoWidthDesktop,
     logoPaddingMobile: themeSettings.logoPaddingMobile || DEFAULT_THEME.logoPaddingMobile,
     logoPaddingDesktop: themeSettings.logoPaddingDesktop || DEFAULT_THEME.logoPaddingDesktop,
+    headerLayout: themeSettings.headerLayout || DEFAULT_THEME.headerLayout,
+    stickyHeader: themeSettings.stickyHeader !== undefined ? themeSettings.stickyHeader : DEFAULT_THEME.stickyHeader,
+    transparentHeader: themeSettings.transparentHeader !== undefined ? themeSettings.transparentHeader : DEFAULT_THEME.transparentHeader,
+    logoColorOnScroll: themeSettings.logoColorOnScroll || DEFAULT_THEME.logoColorOnScroll,
   } as ThemeSettings
 
-  return <ShopPageClient shop={shop} products={products} slug={slug} theme={theme} />
+  // טעינת ניווט מהשרת
+  const navigation = await getShopNavigation(slug, "HEADER")
+
+  return <ShopPageClient shop={shop} products={products} slug={slug} theme={theme} navigation={navigation} />
 }
 

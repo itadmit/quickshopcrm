@@ -2,9 +2,10 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { ShoppingCart } from "lucide-react"
+import { ShoppingCart, Loader2 } from "lucide-react"
 import { useAddToCart } from "@/hooks/useAddToCart"
 import { QuickAddModal } from "./QuickAddModal"
+import { LoadingOverlay } from "./LoadingOverlay"
 
 interface ProductVariant {
   id: string
@@ -92,7 +93,7 @@ export function AddToCartButton({
 
   const isCurrentlyAdding = addingToCart === productId
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = async (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     
@@ -103,7 +104,7 @@ export function AddToCartButton({
     }
     
     // אחרת, הוסף ישירות
-    addToCart({
+    await addToCart({
       productId,
       variantId,
       quantity,
@@ -113,6 +114,12 @@ export function AddToCartButton({
 
   return (
     <>
+      {/* לואדר מרכזי */}
+      <LoadingOverlay 
+        isLoading={isAddingToCart || isCurrentlyAdding} 
+        message="מוסיף לעגלה..."
+      />
+
       <Button
         onClick={handleClick}
         disabled={disabled || isAddingToCart || isCurrentlyAdding}
@@ -120,7 +127,11 @@ export function AddToCartButton({
         size={size}
         className={`${fullWidth ? 'w-full' : ''} ${className}`}
       >
-        {showIcon && <ShoppingCart className="w-4 h-4 ml-2" />}
+        {showIcon && (isCurrentlyAdding ? (
+          <Loader2 className="w-4 h-4 ml-2 animate-spin" />
+        ) : (
+          <ShoppingCart className="w-4 h-4 ml-2" />
+        ))}
         {isCurrentlyAdding ? "מוסיף..." : "הוספה מהירה"}
       </Button>
 

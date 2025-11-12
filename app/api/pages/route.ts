@@ -132,46 +132,7 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // טיפול ב-showInMenu - הוספה לתפריט אם מסומן
-    if (data.showInMenu) {
-      // חיפוש תפריט HEADER לחנות
-      let headerNavigation = await prisma.navigation.findFirst({
-        where: {
-          shopId: page.shopId,
-          location: "HEADER",
-        },
-      })
-
-      // אם אין תפריט HEADER, ניצור אחד
-      if (!headerNavigation) {
-        headerNavigation = await prisma.navigation.create({
-          data: {
-            shopId: page.shopId,
-            name: "תפריט ראשי",
-            location: "HEADER",
-            items: [],
-          },
-        })
-      }
-
-      const items = (headerNavigation.items as any[]) || []
-
-      // הוספת הדף לתפריט
-      const newItem = {
-        id: `page-${page.id}`,
-        label: page.title,
-        type: "PAGE",
-        url: `/pages/${page.slug}`,
-        position: items.length,
-        parentId: null,
-      }
-      items.push(newItem)
-
-      await prisma.navigation.update({
-        where: { id: headerNavigation.id },
-        data: { items },
-      })
-    }
+    // כבר לא מוסיפים אוטומטית לתפריט - המשתמש יוסיף ידנית דרך עמוד העריכה
 
     // יצירת אירוע
     await prisma.shopEvent.create({

@@ -473,7 +473,7 @@ export default function CategoryPage() {
             {products.map((product) => (
               <Link
                 key={product.id}
-                href={`/shop/${slug}/products/${product.id}`}
+                href={`/shop/${slug}/products/${product.slug || product.id}`}
                 className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
               >
                 <div className="aspect-square overflow-hidden bg-gray-100">
@@ -513,7 +513,7 @@ export default function CategoryPage() {
             {products.map((product) => (
               <Link
                 key={product.id}
-                href={`/shop/${slug}/products/${product.id}`}
+                href={`/shop/${slug}/products/${product.slug || product.id}`}
                 className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
               >
                 <div className="aspect-square overflow-hidden bg-gray-100">
@@ -553,7 +553,7 @@ export default function CategoryPage() {
             {products.map((product) => (
               <Link
                 key={product.id}
-                href={`/shop/${slug}/products/${product.id}`}
+                href={`/shop/${slug}/products/${product.slug || product.id}`}
                 className="flex gap-6 p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors group"
               >
                 <div className="w-32 h-32 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">

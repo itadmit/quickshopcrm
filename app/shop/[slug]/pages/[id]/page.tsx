@@ -284,7 +284,7 @@ export default function StaticPage() {
                   <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="flex flex-row gap-2 sm:gap-4">
                       <Link
-                        href={`/shop/${slug}/products/${product.id}`}
+                        href={`/shop/${slug}/products/${product.slug || product.id}`}
                         className="flex-shrink-0 w-32 sm:w-48 h-full relative overflow-hidden bg-gray-100"
                       >
                         {product.images && product.images.length > 0 ? (

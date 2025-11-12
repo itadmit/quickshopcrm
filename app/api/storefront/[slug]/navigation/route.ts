@@ -20,7 +20,13 @@ export async function GET(
     }
 
     const { searchParams } = new URL(req.url)
-    const location = searchParams.get("location") // HEADER, FOOTER, SIDEBAR
+    let location = searchParams.get("location") // HEADER, FOOTER, MOBILE, SIDEBAR
+
+    // המרת HEADER ל-DESKTOP (תאימות עם התפריטים הקיימים)
+    if (location === "HEADER") {
+      location = "DESKTOP"
+    }
+    // MOBILE נשאר כמו שהוא (כי יש תפריטים עם location="MOBILE")
 
     const where: any = {
       shopId: shop.id,
@@ -103,7 +109,7 @@ export async function GET(
               }
             }
             
-            // אם זה קטגוריה
+            // אם זה קטגוריה/קולקציה
             if (type === "category" || item.type === "CATEGORY") {
               let categoryId = item.categoryId
               if (!categoryId && item.id?.startsWith("category-")) {
@@ -116,7 +122,7 @@ export async function GET(
               }
             }
             
-            // אם זה collection
+            // אם זה קטגוריה/קולקציה
             if (type === "collection" || item.type === "COLLECTION") {
               let collectionId = item.collectionId
               if (!collectionId && item.id?.startsWith("collection-")) {

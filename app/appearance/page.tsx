@@ -61,6 +61,14 @@ interface AppearanceSettings {
   stickyHeader: boolean
   transparentHeader: boolean
   
+  // פדינג הדר במובייל
+  headerMobilePadding: number
+  
+  // תפריט צד במובייל
+  mobileSideMenuShowSearch: boolean
+  mobileSideMenuTitle: string
+  mobileSideMenuShowAuthLinks: boolean
+  
   // התנהגות סל
   cartBehavior: "open-cart" | "show-notification"
   
@@ -239,6 +247,10 @@ export default function AppearancePage() {
     logoColorOnScroll: "none",
     stickyHeader: true,
     transparentHeader: false,
+    headerMobilePadding: 16,
+    mobileSideMenuShowSearch: true,
+    mobileSideMenuTitle: "תפריט",
+    mobileSideMenuShowAuthLinks: true,
     cartBehavior: "open-cart",
     topBarEnabled: false,
     topBarBgColor: "#000000",
@@ -387,6 +399,10 @@ export default function AppearancePage() {
           logoColorOnScroll: themeSettings.logoColorOnScroll || "none",
           stickyHeader: themeSettings.stickyHeader !== undefined ? themeSettings.stickyHeader : true,
           transparentHeader: themeSettings.transparentHeader || false,
+          headerMobilePadding: themeSettings.headerMobilePadding || 16,
+          mobileSideMenuShowSearch: themeSettings.mobileSideMenuShowSearch !== undefined ? themeSettings.mobileSideMenuShowSearch : true,
+          mobileSideMenuTitle: themeSettings.mobileSideMenuTitle || "תפריט",
+          mobileSideMenuShowAuthLinks: themeSettings.mobileSideMenuShowAuthLinks !== undefined ? themeSettings.mobileSideMenuShowAuthLinks : true,
           cartBehavior: shopSettings.cartBehavior || "open-cart",
           topBarEnabled: themeSettings.topBarEnabled || false,
           topBarBgColor: themeSettings.topBarBgColor || "#000000",
@@ -499,6 +515,15 @@ export default function AppearancePage() {
     
     setSaving(true)
     try {
+      // מנקה שורות ריקות בסוף של ההודעות לפני שמירה
+      let cleanedMessages = [...settings.messages]
+      while (cleanedMessages.length > 0 && cleanedMessages[cleanedMessages.length - 1].trim() === '') {
+        cleanedMessages.pop()
+      }
+      if (cleanedMessages.length === 0) {
+        cleanedMessages = ['']
+      }
+      
       const response = await fetch(`/api/shops/${selectedShop.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -517,6 +542,10 @@ export default function AppearancePage() {
             logoColorOnScroll: settings.logoColorOnScroll,
             stickyHeader: settings.stickyHeader,
             transparentHeader: settings.transparentHeader,
+            headerMobilePadding: settings.headerMobilePadding,
+            mobileSideMenuShowSearch: settings.mobileSideMenuShowSearch,
+            mobileSideMenuTitle: settings.mobileSideMenuTitle,
+            mobileSideMenuShowAuthLinks: settings.mobileSideMenuShowAuthLinks,
             topBarEnabled: settings.topBarEnabled,
             topBarBgColor: settings.topBarBgColor,
             topBarTextColor: settings.topBarTextColor,
@@ -525,7 +554,7 @@ export default function AppearancePage() {
             countdownText: settings.countdownText,
             messagesEnabled: settings.messagesEnabled,
             messagesType: settings.messagesType,
-            messages: settings.messages,
+            messages: cleanedMessages,
             messagesSpeed: settings.messagesSpeed,
             messagesTextColor: settings.messagesTextColor,
             messagesFontSize: settings.messagesFontSize,
@@ -633,6 +662,9 @@ export default function AppearancePage() {
       if (!response.ok) {
         throw new Error("Failed to save")
       }
+
+      // מעדכן את ה-state עם ההודעות המנוקות כדי שהמשתמש יראה את הערך המנוקה
+      updateSettings("messages", cleanedMessages)
 
       toast({
         title: "הצלחה!",
@@ -789,6 +821,93 @@ export default function AppearancePage() {
                   checked={settings.transparentHeader}
                   onCheckedChange={(checked) => updateSettings("transparentHeader", checked)}
                 />
+              </div>
+
+              {/* פדינג הדר במובייל */}
+              <div className="pt-4 border-t">
+                <div className="space-y-2">
+                  <Label htmlFor="headerMobilePadding" className="font-semibold">
+                    רוחב פדינג מהצדדים במובייל (px)
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      id="headerMobilePadding"
+                      type="range"
+                      value={settings.headerMobilePadding}
+                      onChange={(e) => updateSettings("headerMobilePadding", parseInt(e.target.value) || 16)}
+                      min="0"
+                      max="50"
+                      step="1"
+                      className="w-1/2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                    />
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        value={settings.headerMobilePadding}
+                        onChange={(e) => updateSettings("headerMobilePadding", parseInt(e.target.value) || 16)}
+                        min="0"
+                        max="50"
+                        className="w-20 h-8 text-sm text-center font-medium"
+                      />
+                      <span className="text-sm text-gray-600 font-medium">px</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500">ברירת מחדל: 16px</p>
+                </div>
+              </div>
+
+              {/* הגדרות תפריט צד במובייל */}
+              <div className="pt-6 border-t mt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">תפריט צד במובייל</h3>
+                
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="mobileSideMenuShowSearch" className="font-semibold">
+                        הצג חיפוש
+                      </Label>
+                      <p className="text-sm text-gray-600">
+                        הצג שדה חיפוש בתפריט הצד במובייל
+                      </p>
+                    </div>
+                    <Switch
+                      id="mobileSideMenuShowSearch"
+                      checked={settings.mobileSideMenuShowSearch}
+                      onCheckedChange={(checked) => updateSettings("mobileSideMenuShowSearch", checked)}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="mobileSideMenuTitle" className="font-semibold">
+                      כותרת תפריט
+                    </Label>
+                    <Input
+                      id="mobileSideMenuTitle"
+                      value={settings.mobileSideMenuTitle}
+                      onChange={(e) => updateSettings("mobileSideMenuTitle", e.target.value)}
+                      placeholder="תפריט"
+                    />
+                    <p className="text-sm text-gray-600">
+                      כותרת ברירת מחדל של תפריט הצד במובייל
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-0.5">
+                      <Label htmlFor="mobileSideMenuShowAuthLinks" className="font-semibold">
+                        הצג קישורי התחברות והרשמה
+                      </Label>
+                      <p className="text-sm text-gray-600">
+                        הצג קישורי התחברות והרשמה בתחתית תפריט הצד
+                      </p>
+                    </div>
+                    <Switch
+                      id="mobileSideMenuShowAuthLinks"
+                      checked={settings.mobileSideMenuShowAuthLinks}
+                      onCheckedChange={(checked) => updateSettings("mobileSideMenuShowAuthLinks", checked)}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -2102,16 +2221,34 @@ export default function AppearancePage() {
 
                       <div>
                         <Label htmlFor="messages">הודעות</Label>
-                        <Textarea
+                        <textarea
                           id="messages"
                           value={settings.messages.join("\n")}
-                          onChange={(e) => updateSettings("messages", e.target.value.split("\n").filter(m => m.trim()))}
+                          onChange={(e) => {
+                            const value = e.target.value
+                            // שומר את כל התוכן בדיוק כמו שהמשתמש הקליד - כולל רווחים ושורות חדשות
+                            // מפריד לפי שורות חדשות בלבד
+                            const lines = value.split("\n")
+                            
+                            // שומר את כל השורות כמו שהן - כולל רווחים ושורות ריקות באמצע ובסוף
+                            // זה מאפשר למשתמש ליצור שורות חדשות עם Enter
+                            // הניקוי של שורות ריקות בסוף יקרה רק בעת שמירה
+                            let messages = [...lines]
+                            
+                            // אם אין הודעות, נשמור מערך ריק
+                            if (messages.length === 0) {
+                              messages = ['']
+                            }
+                            
+                            updateSettings("messages", messages)
+                          }}
                           placeholder="כל שורה היא הודעה נפרדת&#10;משלוח חינם ברכישה מעל 250 ש&quot;ח&#10;החל מ 08/25 , משלוח עד 3 ימי עסקים"
-                          rows={4}
-                          className="mt-2"
+                          rows={8}
+                          className="mt-2 flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                          style={{ whiteSpace: 'pre-wrap' }}
                         />
                         <p className="text-xs text-gray-500 mt-1">
-                          כל שורה היא הודעה נפרדת. ניתן להפריד גם עם נקודה פסיק (;) או ירידת שורה
+                          כל שורה היא הודעה נפרדת. לחץ Enter כדי לרדת שורה חדשה
                         </p>
                       </div>
 

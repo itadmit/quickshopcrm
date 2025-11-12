@@ -211,7 +211,7 @@ export default function WishlistPage() {
                   <CardContent className="p-6">
                     <div className="flex gap-6">
                       {/* Product Image */}
-                      <Link href={`/shop/${slug}/products/${product.id}`} className="flex-shrink-0">
+                      <Link href={`/shop/${slug}/products/${product.slug || product.id}`} className="flex-shrink-0">
                         {displayImage ? (
                           <img
                             src={displayImage}
@@ -227,7 +227,7 @@ export default function WishlistPage() {
 
                       {/* Product Info */}
                       <div className="flex-1">
-                        <Link href={`/shop/${slug}/products/${product.id}`}>
+                        <Link href={`/shop/${slug}/products/${product.slug || product.id}`}>
                           <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-purple-600">
                             {product.name}
                           </h3>

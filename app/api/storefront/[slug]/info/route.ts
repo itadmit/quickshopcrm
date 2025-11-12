@@ -76,7 +76,12 @@ export async function GET(
       return NextResponse.json({ error: "Shop not found" }, { status: 404 })
     }
 
-    return NextResponse.json(shop)
+    // הוספת cache headers ל-Next.js
+    return NextResponse.json(shop, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200',
+      },
+    })
   } catch (error) {
     console.error("Error fetching shop info:", error)
     return NextResponse.json(

@@ -69,13 +69,13 @@ const Sheet = ({ open, onOpenChange, children, side = "right", className }: Shee
       {/* Sheet */}
       <div
         className={cn(
-          "fixed z-40 w-full max-w-lg bg-white shadow-xl transition-all duration-300 ease-out",
+          "fixed z-40 w-full max-w-lg bg-white shadow-xl transform transition-transform duration-300 ease-in-out",
           side === "right" ? "right-0" : "left-0",
           open && isAnimating
-            ? "translate-x-0 opacity-100" 
+            ? "translate-x-0" 
             : side === "right" 
-              ? "translate-x-full opacity-0" 
-              : "-translate-x-full opacity-0",
+              ? "translate-x-full" 
+              : "-translate-x-full",
           className
         )}
         dir="rtl"

@@ -458,7 +458,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
         color: checkoutColors.textColor 
       }}
     >
-      <CheckoutHeader shopName={shop.name} shopLogo={shop.logo} />
+      <CheckoutHeader shopName={shop.name} shopLogo={shop.logo} shopSlug={slug} />
       
       <div>
         <form onSubmit={handleSubmit}>

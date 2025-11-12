@@ -8,6 +8,32 @@ interface ThemeSettings {
   logoPaddingMobile?: number
   logoPaddingDesktop?: number
   
+  // Header settings
+  headerLayout?: "logo-left" | "logo-right" | "logo-center-menu-below"
+  stickyHeader?: boolean
+  transparentHeader?: boolean
+  logoColorOnScroll?: "none" | "white" | "black"
+  headerMobilePadding?: number
+  
+  // Top bar settings
+  topBarEnabled?: boolean
+  topBarBgColor?: string
+  topBarTextColor?: string
+  countdownEnabled?: boolean
+  countdownEndDate?: string
+  countdownText?: string
+  messagesEnabled?: boolean
+  messagesType?: "rotating" | "static"
+  messages?: string[]
+  messagesSpeed?: number
+  messagesTextColor?: string
+  messagesFontSize?: number
+  
+  // Mobile side menu settings
+  mobileSideMenuShowSearch?: boolean
+  mobileSideMenuTitle?: string
+  mobileSideMenuShowAuthLinks?: boolean
+  
   // Category page settings
   categoryProductsPerRowMobile?: number
   categoryProductsPerRowTablet?: number
@@ -61,6 +87,10 @@ interface ShopTheme extends ThemeSettings {
   logoWidthDesktop: number
   logoPaddingMobile: number
   logoPaddingDesktop: number
+  headerLayout: "logo-left" | "logo-right" | "logo-center-menu-below"
+  stickyHeader: boolean
+  transparentHeader: boolean
+  logoColorOnScroll: "none" | "white" | "black"
 }
 
 const DEFAULT_THEME: ShopTheme = {
@@ -70,6 +100,10 @@ const DEFAULT_THEME: ShopTheme = {
   logoWidthDesktop: 135,
   logoPaddingMobile: 0,
   logoPaddingDesktop: 0,
+  headerLayout: "logo-left",
+  stickyHeader: true,
+  transparentHeader: false,
+  logoColorOnScroll: "none",
   categoryProductsPerRowMobile: 2,
   categoryProductsPerRowTablet: 3,
   categoryProductsPerRowDesktop: 4,
@@ -112,13 +146,39 @@ export function useShopTheme(slug: string) {
         const shop = await response.json()
         const themeSettings = (shop.themeSettings as ThemeSettings) || {}
         
-        setTheme({
+        const newTheme = {
           primaryColor: themeSettings.primaryColor || DEFAULT_THEME.primaryColor,
           secondaryColor: themeSettings.secondaryColor || DEFAULT_THEME.secondaryColor,
           logoWidthMobile: themeSettings.logoWidthMobile || DEFAULT_THEME.logoWidthMobile,
           logoWidthDesktop: themeSettings.logoWidthDesktop || DEFAULT_THEME.logoWidthDesktop,
           logoPaddingMobile: themeSettings.logoPaddingMobile || DEFAULT_THEME.logoPaddingMobile,
           logoPaddingDesktop: themeSettings.logoPaddingDesktop || DEFAULT_THEME.logoPaddingDesktop,
+          
+          // Header settings
+          headerLayout: themeSettings.headerLayout || DEFAULT_THEME.headerLayout,
+          stickyHeader: themeSettings.stickyHeader !== undefined ? themeSettings.stickyHeader : DEFAULT_THEME.stickyHeader,
+          transparentHeader: themeSettings.transparentHeader !== undefined ? themeSettings.transparentHeader : DEFAULT_THEME.transparentHeader,
+          logoColorOnScroll: themeSettings.logoColorOnScroll || DEFAULT_THEME.logoColorOnScroll,
+          headerMobilePadding: themeSettings.headerMobilePadding || 16,
+          
+          // Top bar settings
+          topBarEnabled: themeSettings.topBarEnabled ?? false,
+          topBarBgColor: themeSettings.topBarBgColor || "#000000",
+          topBarTextColor: themeSettings.topBarTextColor || "#ffffff",
+          countdownEnabled: themeSettings.countdownEnabled ?? false,
+          countdownEndDate: themeSettings.countdownEndDate || "",
+          countdownText: themeSettings.countdownText || "הצעה מוגבלת!",
+          messagesEnabled: themeSettings.messagesEnabled ?? false,
+          messagesType: themeSettings.messagesType || "rotating",
+          messages: themeSettings.messages || [],
+          messagesSpeed: themeSettings.messagesSpeed || 3000,
+          messagesTextColor: themeSettings.messagesTextColor || "",
+          messagesFontSize: themeSettings.messagesFontSize || 14,
+          
+          // Mobile side menu settings
+          mobileSideMenuShowSearch: themeSettings.mobileSideMenuShowSearch !== undefined ? themeSettings.mobileSideMenuShowSearch : true,
+          mobileSideMenuTitle: themeSettings.mobileSideMenuTitle || "תפריט",
+          mobileSideMenuShowAuthLinks: themeSettings.mobileSideMenuShowAuthLinks !== undefined ? themeSettings.mobileSideMenuShowAuthLinks : true,
           
           // Category settings
           categoryProductsPerRowMobile: themeSettings.categoryProductsPerRowMobile || DEFAULT_THEME.categoryProductsPerRowMobile,
@@ -150,7 +210,9 @@ export function useShopTheme(slug: string) {
           productCompleteLookTitle: themeSettings.productCompleteLookTitle || DEFAULT_THEME.productCompleteLookTitle,
           productContentDisplay: themeSettings.productContentDisplay || DEFAULT_THEME.productContentDisplay,
           productStrengths: themeSettings.productStrengths || DEFAULT_THEME.productStrengths,
-        })
+        }
+        
+        setTheme(newTheme)
       }
     } catch (error) {
       console.error("Error fetching theme:", error)

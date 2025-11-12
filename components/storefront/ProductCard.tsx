@@ -4,8 +4,10 @@ import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Package, Heart } from "lucide-react"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { AddToCartButton } from "./AddToCartButton"
+import { useRouter } from "next/navigation"
+import { cn } from "@/lib/utils"
 
 interface ProductVariant {
   id: string
@@ -55,9 +57,11 @@ export function ProductCard({
   autoOpenCart = false,
   onCartOpen,
 }: ProductCardProps) {
+  const router = useRouter()
   const [imageError, setImageError] = useState(false)
   const [isHovered, setIsHovered] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [isClicking, setIsClicking] = useState(false)
   
   const discountPercentage = product.comparePrice
     ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
@@ -109,14 +113,44 @@ export function ProductCard({
   const showBadges = theme?.categoryShowBadges !== false
   const autoSaleBadge = theme?.categoryAutoSaleBadge !== false
 
+  const productUrl = `/shop/${slug}/products/${product.slug || product.id}`
+
+  // Prefetching אגרסיבי כשמרחפים על המוצר
+  useEffect(() => {
+    if (isHovered) {
+      // טעינה מראש של העמוד כשמרחפים
+      router.prefetch(productUrl)
+    }
+  }, [isHovered, productUrl, router])
+
+  const handleProductClick = (e: React.MouseEvent) => {
+    setIsClicking(true)
+    // Link יטען את העמוד - אפקט עדין בלבד
+    // Next.js יראה את loading.tsx אוטומטית
+  }
+
   return (
     <div 
       className="group relative"
       onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      onMouseLeave={() => {
+        setIsHovered(false)
+        setIsClicking(false)
+      }}
     >
-      <Link href={`/shop/${slug}/products/${product.id}`}>
-        <Card className={`h-full transition-all duration-300 border-gray-200 overflow-hidden ${cardHoverEffect ? 'hover:shadow-lg hover:border-gray-300' : ''} ${removeMobilePadding ? 'md:border' : 'border'}`}>
+      <Link 
+        href={productUrl} 
+        onClick={handleProductClick}
+        prefetch={true}
+        scroll={true}
+        className="block"
+      >
+        <Card className={cn(
+          "h-full transition-all duration-200 border-gray-200 overflow-hidden",
+          cardHoverEffect && "hover:shadow-lg hover:border-gray-300",
+          removeMobilePadding ? "md:border" : "border",
+          isClicking && "opacity-90 scale-[0.98]"
+        )}>
           <CardContent className={removeMobilePadding ? 'p-0 md:p-0' : 'p-0'}>
             {/* Image Container */}
             <div 

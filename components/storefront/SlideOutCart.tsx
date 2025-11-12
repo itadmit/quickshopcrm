@@ -230,7 +230,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                     <div className="flex gap-3 items-stretch">
                       {/* Product Image - Square, full height */}
                       <Link
-                        href={`/shop/${slug}/products/${item.productId}`}
+                        href={`/shop/${slug}/products/${item.product?.slug || item.productId}`}
                         onClick={onClose}
                         className="flex-shrink-0 self-stretch"
                       >
@@ -255,7 +255,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <Link
-                              href={`/shop/${slug}/products/${item.productId}`}
+                              href={`/shop/${slug}/products/${item.product?.slug || item.productId}`}
                               onClick={onClose}
                               className="block"
                             >

@@ -1,14 +1,30 @@
+import Link from 'next/link'
+import { ArrowRight } from 'lucide-react'
+
 interface CheckoutHeaderProps {
   shopName: string
   shopLogo?: string | null
+  shopSlug: string
 }
 
-export function CheckoutHeader({ shopName, shopLogo }: CheckoutHeaderProps) {
+export function CheckoutHeader({ shopName, shopLogo, shopSlug }: CheckoutHeaderProps) {
   return (
     <div className="border-b bg-white">
-      <div className="container mx-auto px-4 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+        <div className="grid grid-cols-3 items-center gap-4">
+          {/* חזרה לחנות - ימין */}
+          <div className="flex justify-start">
+            <Link 
+              href={`/shop/${shopSlug}`}
+              className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <ArrowRight className="h-4 w-4" />
+              <span>חזרה לחנות</span>
+            </Link>
+          </div>
+          
+          {/* לוגו - אמצע */}
+          <div className="flex justify-center">
             {shopLogo && (
               <img
                 src={shopLogo}
@@ -16,9 +32,12 @@ export function CheckoutHeader({ shopName, shopLogo }: CheckoutHeaderProps) {
                 className="h-10 w-10 object-contain"
               />
             )}
-            <h1 className="text-xl font-bold">{shopName}</h1>
           </div>
-          <div className="text-sm text-gray-500">תשלום מאובטח</div>
+          
+          {/* שם החנות - שמאל */}
+          <div className="flex justify-end">
+            <h1 className="text-xl font-bold uppercase">{shopName}</h1>
+          </div>
         </div>
       </div>
     </div>

@@ -152,6 +152,14 @@ export async function DELETE(
       return NextResponse.json({ error: "Navigation not found" }, { status: 404 })
     }
 
+    // בדיקה אם התפריט מוגן (DESKTOP או MOBILE לא ניתנים למחיקה)
+    if (navigation.location === "DESKTOP" || navigation.location === "MOBILE") {
+      return NextResponse.json(
+        { error: "תפריט למחשב ותפריט למובייל לא ניתנים למחיקה" },
+        { status: 400 }
+      )
+    }
+
     // מחיקת התפריט
     await prisma.navigation.delete({
       where: { id: params.id },

@@ -325,7 +325,7 @@ export default function SearchPage() {
               {products.map((product) => (
                 <Link
                   key={product.id}
-                  href={`/shop/${slug}/products/${product.id}`}
+                  href={`/shop/${slug}/products/${product.slug || product.id}`}
                   className="group"
                 >
                   <Card className="h-full hover:shadow-lg transition-shadow">

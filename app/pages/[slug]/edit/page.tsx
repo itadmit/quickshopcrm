@@ -12,10 +12,11 @@ import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { useToast } from "@/components/ui/use-toast"
 import { FormSkeleton } from "@/components/skeletons/FormSkeleton"
-import { Save, FileText, Search, X, Package, ExternalLink, Image as ImageIcon, Upload } from "lucide-react"
+import { Save, FileText, Search, X, Package, ExternalLink, Image as ImageIcon, Upload, Plus, Menu, Trash2 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { MediaPicker } from "@/components/MediaPicker"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 
 interface Product {
   id: string
@@ -42,6 +43,12 @@ export default function EditPagePage() {
   const [checkingSlug, setCheckingSlug] = useState(false)
   const [slugAvailable, setSlugAvailable] = useState<boolean | null>(null)
   const [originalSlug, setOriginalSlug] = useState("")
+  const [addToMenuDialogOpen, setAddToMenuDialogOpen] = useState(false)
+  const [navigations, setNavigations] = useState<Array<{ id: string; name: string; location: string }>>([])
+  const [loadingNavigations, setLoadingNavigations] = useState(false)
+  const [selectedNavigationId, setSelectedNavigationId] = useState<string>("")
+  const [pageInMenus, setPageInMenus] = useState<Array<{ navigationId: string; navigationName: string; itemId: string }>>([])
+  const [pageId, setPageId] = useState<string>("")
   
   const [formData, setFormData] = useState({
     title: "",
@@ -64,6 +71,12 @@ export default function EditPagePage() {
     }
   }, [pageSlug])
 
+  useEffect(() => {
+    if (addToMenuDialogOpen && selectedShop) {
+      fetchNavigations()
+    }
+  }, [addToMenuDialogOpen, selectedShop])
+
   const fetchPage = async () => {
     try {
       setLoading(true)
@@ -72,6 +85,7 @@ export default function EditPagePage() {
         const page = await response.json()
         const selectedProductsIds = Array.isArray(page.selectedProducts) ? page.selectedProducts : []
         
+        setPageId(page.id || "")
         setFormData({
           title: page.title || "",
           slug: page.slug || "",
@@ -84,7 +98,7 @@ export default function EditPagePage() {
           seoTitle: page.seoTitle || "",
           seoDescription: page.seoDescription || "",
           isPublished: page.isPublished ?? false,
-          showInMenu: page.showInMenu ?? false,
+          showInMenu: false, // כבר לא משתמשים בזה
         })
         setOriginalSlug(page.slug || "")
 
@@ -94,6 +108,11 @@ export default function EditPagePage() {
           setTimeout(() => {
             fetchSelectedProducts(selectedProductsIds)
           }, 100)
+        }
+
+        // בדיקה באיזה תפריטים הדף נמצא
+        if (selectedShop) {
+          checkPageInMenus(page.id || "")
         }
       } else {
         toast({
@@ -113,6 +132,141 @@ export default function EditPagePage() {
       router.push("/pages")
     } finally {
       setLoading(false)
+    }
+  }
+
+  const checkPageInMenus = async (pageIdToCheck: string) => {
+    if (!selectedShop || !pageIdToCheck) return
+
+    try {
+      const response = await fetch(`/api/navigation?shopId=${selectedShop.id}`)
+      if (response.ok) {
+        const navs = await response.json()
+        const menusWithPage: Array<{ navigationId: string; navigationName: string; itemId: string }> = []
+        
+        navs.forEach((nav: any) => {
+          const items = (nav.items || []) as any[]
+          const item = items.find((item: any) => item.id === `page-${pageIdToCheck}`)
+          if (item) {
+            menusWithPage.push({
+              navigationId: nav.id,
+              navigationName: nav.name,
+              itemId: item.id,
+            })
+          }
+        })
+        
+        setPageInMenus(menusWithPage)
+      }
+    } catch (error) {
+      console.error("Error checking page in menus:", error)
+    }
+  }
+
+  const fetchNavigations = async () => {
+    if (!selectedShop) return
+
+    setLoadingNavigations(true)
+    try {
+      const response = await fetch(`/api/navigation?shopId=${selectedShop.id}`)
+      if (response.ok) {
+        const data = await response.json()
+        setNavigations(data || [])
+      }
+    } catch (error) {
+      console.error("Error fetching navigations:", error)
+      toast({
+        title: "שגיאה",
+        description: "לא הצלחנו לטעון את התפריטים",
+        variant: "destructive",
+      })
+    } finally {
+      setLoadingNavigations(false)
+    }
+  }
+
+  const handleAddToMenu = async () => {
+    if (!selectedNavigationId || !pageId || !formData.title) {
+      toast({
+        title: "שגיאה",
+        description: "יש לבחור תפריט",
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const response = await fetch("/api/navigation/add-item", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          navigationId: selectedNavigationId,
+          pageId: pageId,
+          label: formData.title,
+          type: "PAGE",
+          url: `/pages/${formData.slug}`,
+        }),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "הצלחה",
+          description: "הדף נוסף לתפריט בהצלחה",
+        })
+        setAddToMenuDialogOpen(false)
+        setSelectedNavigationId("")
+        // עדכון רשימת התפריטים שהדף נמצא בהם
+        if (pageId) {
+          checkPageInMenus(pageId)
+        }
+      } else {
+        const error = await response.json()
+        toast({
+          title: "שגיאה",
+          description: error.error || "לא הצלחנו להוסיף את הדף לתפריט",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error adding page to menu:", error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה בהוספת הדף לתפריט",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleRemoveFromMenu = async (navigationId: string, itemId: string) => {
+    try {
+      const response = await fetch(`/api/navigation/add-item?navigationId=${navigationId}&itemId=${itemId}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        toast({
+          title: "הצלחה",
+          description: "הדף הוסר מהתפריט בהצלחה",
+        })
+        // עדכון רשימת התפריטים שהדף נמצא בהם
+        if (pageId) {
+          checkPageInMenus(pageId)
+        }
+      } else {
+        const error = await response.json()
+        toast({
+          title: "שגיאה",
+          description: error.error || "לא הצלחנו להסיר את הדף מהתפריט",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error removing page from menu:", error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה בהסרת הדף מהתפריט",
+        variant: "destructive",
+      })
     }
   }
 
@@ -328,7 +482,7 @@ export default function EditPagePage() {
         seoTitle: formData.seoTitle || undefined,
         seoDescription: formData.seoDescription || undefined,
         isPublished: formData.isPublished,
-        showInMenu: formData.showInMenu,
+        showInMenu: false, // כבר לא משתמשים בזה
       }
 
       const response = await fetch(`/api/pages/${pageSlug}`, {
@@ -811,23 +965,135 @@ export default function EditPagePage() {
                   />
                 </div>
 
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="showInMenu" className="cursor-pointer">
-                    הצג בתפריט
-                  </Label>
-                  <Switch
-                    id="showInMenu"
-                    checked={formData.showInMenu}
-                    onCheckedChange={(checked) =>
-                      setFormData((prev) => ({ ...prev, showInMenu: checked as boolean }))
-                    }
-                  />
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <Label>הוסף לתפריט</Label>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAddToMenuDialogOpen(true)}
+                    >
+                      <Plus className="w-4 h-4 ml-2" />
+                      הוסף לתפריט
+                    </Button>
+                  </div>
+                  
+                  {pageInMenus.length > 0 && (
+                    <div className="space-y-2">
+                      <Label className="text-sm text-gray-600">הדף נמצא בתפריטים הבאים:</Label>
+                      <div className="space-y-2">
+                        {pageInMenus.map((menu) => (
+                          <div
+                            key={menu.navigationId}
+                            className="flex items-center justify-between p-2 bg-gray-50 rounded-lg"
+                          >
+                            <div className="flex items-center gap-2">
+                              <Menu className="w-4 h-4 text-gray-500" />
+                              <span className="text-sm">{menu.navigationName}</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveFromMenu(menu.navigationId, menu.itemId)}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-gray-500">
+                        כדי לשנות את הסדר, עבור לעמוד{" "}
+                        <button
+                          onClick={() => router.push("/navigation")}
+                          className="text-purple-600 hover:underline"
+                        >
+                          תפריטים
+                        </button>
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+
+      <Dialog open={addToMenuDialogOpen} onOpenChange={setAddToMenuDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>הוסף לתפריט</DialogTitle>
+            <DialogDescription>
+              בחר לאיזה תפריט להוסיף את הדף. הדף יתווסף בסוף התפריט.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            {loadingNavigations ? (
+              <p className="text-sm text-gray-500 text-center py-4">טוען תפריטים...</p>
+            ) : navigations.length === 0 ? (
+              <p className="text-sm text-gray-500 text-center py-4">
+                אין תפריטים זמינים.{" "}
+                <button
+                  onClick={() => {
+                    setAddToMenuDialogOpen(false)
+                    router.push("/navigation")
+                  }}
+                  className="text-purple-600 hover:underline"
+                >
+                  צור תפריט חדש
+                </button>
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <Label>בחר תפריט</Label>
+                <Select value={selectedNavigationId} onValueChange={setSelectedNavigationId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="בחר תפריט" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {navigations.map((nav) => {
+                      const locationLabels: Record<string, string> = {
+                        DESKTOP: "מחשב",
+                        MOBILE: "מובייל",
+                        FOOTER: "פוטר",
+                        CHECKOUT: "צ'ק אאוט",
+                        HEADER: "ראשי",
+                        SIDEBAR: "סיידבר",
+                      }
+                      return (
+                        <SelectItem key={nav.id} value={nav.id}>
+                          {nav.name} ({locationLabels[nav.location] || nav.location})
+                        </SelectItem>
+                      )
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setAddToMenuDialogOpen(false)
+                setSelectedNavigationId("")
+              }}
+            >
+              ביטול
+            </Button>
+            <Button
+              onClick={handleAddToMenu}
+              disabled={!selectedNavigationId || loadingNavigations}
+              className="prodify-gradient text-white"
+            >
+              הוסף לתפריט
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   )
 }
