@@ -97,3 +97,8 @@ Thumbs.db
 .cache
 
 
+
+# Database backups
+*.sql
+backup*.sql
+.env.production
