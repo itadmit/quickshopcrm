@@ -119,9 +119,9 @@ export async function POST(req: NextRequest) {
         name: data.name,
         description: data.description,
         isActive: data.isActive,
-        trigger: data.trigger,
-        conditions: data.conditions || null,
-        actions: data.actions,
+        trigger: data.trigger as any,
+        conditions: (data.conditions || null) as any,
+        actions: data.actions as any,
         createdBy: session.user.id,
       },
     })
