@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
         // חיפוש ההזמנה לפי PayPal order ID
         const order = await prisma.order.findFirst({
           where: {
-            paymentTransactionId: orderId,
+            transactionId: orderId,
           },
         })
 
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
               if (item.variantId) {
                 const variant = await prisma.productVariant.findUnique({
                   where: { id: item.variantId },
-                  include: { product: { select: { shopId: true } } },
+                  include: { product: { select: { shopId: true, lowStockAlert: true } } },
                 })
                 
                 if (variant) {
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
                         },
                       },
                     })
-                  } else if (variant.lowStockAlert !== null && newQty <= variant.lowStockAlert) {
+                  } else if (variant.product.lowStockAlert !== null && newQty <= variant.product.lowStockAlert) {
                     await prisma.shopEvent.create({
                       data: {
                         shopId: variant.product.shopId,
@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
                           productId: variant.productId,
                           variantId: variant.id,
                           currentQty: newQty,
-                          threshold: variant.lowStockAlert,
+                          threshold: variant.product.lowStockAlert,
                           orderId: order.id,
                         },
                       },
@@ -269,7 +269,7 @@ export async function GET(req: NextRequest) {
     const config = integration.config as any
 
     // שימוש ב-PayPal Order ID מה-URL או מההזמנה
-    const orderIdToCapture = paypalOrderId || order.paymentTransactionId
+    const orderIdToCapture = paypalOrderId || order.transactionId
 
     if (!orderIdToCapture) {
       return NextResponse.json(
@@ -320,7 +320,7 @@ export async function GET(req: NextRequest) {
         if (item.variantId) {
           const variant = await prisma.productVariant.findUnique({
             where: { id: item.variantId },
-            include: { product: { select: { shopId: true } } },
+            include: { product: { select: { shopId: true, lowStockAlert: true } } },
           })
           
           if (variant) {
@@ -366,7 +366,7 @@ export async function GET(req: NextRequest) {
                   },
                 },
               })
-            } else if (variant.lowStockAlert !== null && newQty <= variant.lowStockAlert) {
+            } else if (variant.product.lowStockAlert !== null && newQty <= variant.product.lowStockAlert) {
               await prisma.shopEvent.create({
                 data: {
                   shopId: variant.product.shopId,
@@ -377,7 +377,7 @@ export async function GET(req: NextRequest) {
                     productId: variant.productId,
                     variantId: variant.id,
                     currentQty: newQty,
-                    threshold: variant.lowStockAlert,
+                    threshold: variant.product.lowStockAlert,
                     orderId: order.id,
                   },
                 },

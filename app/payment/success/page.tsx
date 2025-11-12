@@ -13,6 +13,7 @@ async function getOrder(orderId: string) {
           select: {
             id: true,
             name: true,
+            slug: true,
             logo: true,
             settings: true,
           },

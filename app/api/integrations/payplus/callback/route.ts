@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
       where: { id: orderId },
       data: {
         paymentStatus: isSuccess ? "PAID" : "FAILED",
-        paymentTransactionId: body.transaction_uid || body.transactionUid,
+        transactionId: body.transaction_uid || body.transactionUid,
         paidAt: isSuccess ? new Date() : null,
       },
     })
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
         if (item.variantId) {
           const variant = await prisma.productVariant.findUnique({
             where: { id: item.variantId },
-            include: { product: { select: { shopId: true } } },
+              include: { product: { select: { shopId: true, lowStockAlert: true } } },
           })
           
           if (variant) {
@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
                   },
                 },
               })
-            } else if (variant.lowStockAlert !== null && newQty <= variant.lowStockAlert) {
+            } else if (variant.product.lowStockAlert !== null && newQty <= variant.product.lowStockAlert) {
               await prisma.shopEvent.create({
                 data: {
                   shopId: variant.product.shopId,
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
                     productId: variant.productId,
                     variantId: variant.id,
                     currentQty: newQty,
-                    threshold: variant.lowStockAlert,
+                    threshold: variant.product.lowStockAlert,
                     orderId: order.id,
                   },
                 },
@@ -244,7 +244,7 @@ export async function POST(req: NextRequest) {
             orderNumber: order.orderNumber,
             total: order.total,
             paymentMethod: "credit_card",
-            paymentTransactionId: body.transaction_uid || body.transactionUid,
+            transactionId: body.transaction_uid || body.transactionUid,
             amount: body.amount || order.total,
             currency: body.currency || "ILS",
           },

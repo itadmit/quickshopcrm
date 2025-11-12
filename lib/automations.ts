@@ -231,7 +231,7 @@ async function executeAddCustomerTag(
   
   const existingTags = customer.tags || []
   const newTags = Array.isArray(tags) ? tags : [tags]
-  const updatedTags = [...new Set([...existingTags, ...newTags])]
+  const updatedTags = Array.from(new Set([...existingTags, ...newTags]))
   
   await prisma.customer.update({
     where: { id: customer.id },
@@ -529,8 +529,8 @@ export async function runAutomationsForEvent(
     
     // סינון אוטומציות שהטריגר שלהן תואם לאירוע
     const matchingAutomations = automations.filter((automation) => {
-      const trigger = automation.trigger as AutomationTrigger
-      return trigger.type === eventType
+      const trigger = automation.trigger as unknown as AutomationTrigger
+      return trigger?.type === eventType
     })
     
     // הרצת כל אוטומציה תואמת
@@ -604,8 +604,8 @@ export async function runAutomationsForEvent(
         }
         
         // בדיקת תנאים והרצת ענפים
-        const conditions = automation.conditions as AutomationCondition[] | null
-        const actions = automation.actions as AutomationAction[]
+        const conditions = automation.conditions as unknown as AutomationCondition[] | null
+        const actions = automation.actions as unknown as AutomationAction[]
         let actionResults: any[] = []
         let accumulatedPayload = { ...eventPayload }
         
@@ -681,11 +681,11 @@ export async function runAutomationsForEvent(
             if (conditionMet && condition.thenActions) {
               // תנאי מתקיים - הרץ ענף "אז"
               const branchResults = await executeActions(condition.thenActions, accumulatedPayload)
-              actionResults.push(...branchResults)
+              actionResults.push(...branchResults.results)
             } else if (!conditionMet && condition.elseActions) {
               // תנאי לא מתקיים - הרץ ענף "אחרת"
               const branchResults = await executeActions(condition.elseActions, accumulatedPayload)
-              actionResults.push(...branchResults)
+              actionResults.push(...branchResults.results)
             } else {
               // אין אקשנים מתאימים - דילוג
               await prisma.automationLog.create({

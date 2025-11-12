@@ -489,7 +489,7 @@ export async function calculateCart(
   shippingCost: number | null = null
 ): Promise<CartCalculationResult> {
   // טעינת מוצרים ו-variants
-  const productIds = [...new Set(cartItems.map(item => item.productId))]
+  const productIds = Array.from(new Set(cartItems.map(item => item.productId)))
   const variantIds = cartItems
     .map(item => item.variantId)
     .filter((id): id is string => id !== null && id !== undefined)
@@ -624,7 +624,7 @@ export async function calculateCart(
         ? {
             id: variant.id,
             name: variant.name,
-            price: variant.price,
+            price: variant.price ?? 0,
             sku: variant.sku,
             inventoryQty: variant.inventoryQty,
           }

@@ -306,6 +306,10 @@ export async function getPayPalCredentials(
 ): Promise<PayPalCredentials | null> {
   const { prisma } = await import("@/lib/prisma")
 
+  if (!companyId) {
+    return null
+  }
+
   const integration = await prisma.integration.findFirst({
     where: {
       companyId,

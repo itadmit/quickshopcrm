@@ -43,7 +43,8 @@ export async function createCardToken(
   }
 ): Promise<PayPlusResponse> {
   try {
-    const response = await fetch(`${PAYPLUS_BASE_URL}/Token/Add`, {
+    const baseUrl = getPayPlusBaseUrl(credentials.useProduction || false)
+    const response = await fetch(`${baseUrl}/Token/Add`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -111,7 +112,8 @@ export async function createRecurringPayment(
   }
 ): Promise<PayPlusResponse> {
   try {
-    const response = await fetch(`${PAYPLUS_BASE_URL}/RecurringPayments/Add`, {
+    const baseUrl = getPayPlusBaseUrl(credentials.useProduction || false)
+    const response = await fetch(`${baseUrl}/RecurringPayments/Add`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -186,8 +188,9 @@ export async function chargeRecurringPayment(
   }
 ): Promise<PayPlusResponse> {
   try {
+    const baseUrl = getPayPlusBaseUrl(credentials.useProduction || false)
     const response = await fetch(
-      `${PAYPLUS_BASE_URL}/RecurringPayments/AddRecurringCharge/${params.recurringPaymentUid}`,
+      `${baseUrl}/RecurringPayments/AddRecurringCharge/${params.recurringPaymentUid}`,
       {
         method: "POST",
         headers: {
@@ -616,11 +619,11 @@ export async function getPayPlusCredentials(
     },
   })
 
-  if (!integration || !integration.credentials) {
+  if (!integration || !integration.config) {
     return null
   }
 
-  const creds = integration.credentials as any
+  const creds = integration.config as any
 
   return {
     apiKey: creds.apiKey,

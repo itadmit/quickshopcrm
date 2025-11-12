@@ -260,8 +260,14 @@ export const authOptions: NextAuthOptions = {
     error(code, metadata) {
       // טיפול בשגיאות decryption - לא נדפיס אותן כשגיאה קריטית
       if (code === 'JWT_SESSION_ERROR' && 
-          (metadata?.error?.message?.includes('decryption') || 
-           metadata?.error?.name === 'JWEDecryptionFailed')) {
+          metadata && 
+          typeof metadata === 'object' && 
+          'error' in metadata &&
+          metadata.error &&
+          typeof metadata.error === 'object' &&
+          ('message' in metadata.error || 'name' in metadata.error) &&
+          ((metadata.error as any).message?.includes('decryption') || 
+           (metadata.error as any).name === 'JWEDecryptionFailed')) {
         console.warn('⚠️  שגיאת פענוח JWT - cookies ישנים. המשתמש יתבקש להתחבר מחדש.')
         return
       }

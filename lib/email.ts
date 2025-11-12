@@ -118,7 +118,7 @@ export async function sendEmail({
           ? att.content 
           : Buffer.isBuffer(att.content)
           ? att.content.toString('base64')
-          : att.content.toString('base64'),
+          : String(att.content),
         filename: att.filename,
         type: att.contentType || 'application/octet-stream',
         disposition: 'attachment',

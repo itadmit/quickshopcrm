@@ -13,7 +13,14 @@ interface ProductVariant {
   comparePrice: number | null
   inventoryQty: number | null
   sku: string | null
-  options: Record<string, string>
+  option1?: string | null
+  option1Value?: string | null
+  option2?: string | null
+  option2Value?: string | null
+  option3?: string | null
+  option3Value?: string | null
+  image?: string | null
+  options?: Record<string, string>
 }
 
 interface Product {

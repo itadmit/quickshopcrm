@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AlignRight, AlignCenter, AlignLeft, ChevronRight, RotateCcw } from "lucide-react"
-import { ProductPageElementType, ElementStyleConfig } from "./ElementSettingsDialog"
+import { ProductPageElementType } from "./ProductPageLayoutDesigner"
+import { ElementStyleConfig } from "./ElementSettingsDialog"
 
 interface ElementSettingsContentProps {
   elementType: ProductPageElementType

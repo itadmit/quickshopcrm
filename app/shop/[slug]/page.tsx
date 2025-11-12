@@ -26,12 +26,12 @@ interface Product {
 }
 
 interface ThemeSettings {
-  primaryColor?: string
-  secondaryColor?: string
-  logoWidthMobile?: number
-  logoWidthDesktop?: number
-  logoPaddingMobile?: number
-  logoPaddingDesktop?: number
+  primaryColor: string
+  secondaryColor: string
+  logoWidthMobile: number
+  logoWidthDesktop: number
+  logoPaddingMobile: number
+  logoPaddingDesktop: number
 }
 
 const DEFAULT_THEME: ThemeSettings = {
@@ -51,7 +51,7 @@ export default async function ShopPage({ params }: { params: { slug: string } })
   
   let shop: Shop | null = null
   if (session?.user?.companyId) {
-    shop = await prisma.shop.findFirst({
+    shop = (await prisma.shop.findFirst({
       where: {
         slug: slug,
         companyId: session.user.companyId,
@@ -77,9 +77,9 @@ export default async function ShopPage({ params }: { params: { slug: string } })
         settings: true,
         isPublished: true,
       },
-    })
+    })) as Shop | null
   } else {
-    shop = await prisma.shop.findFirst({
+    shop = (await prisma.shop.findFirst({
       where: {
         slug: slug,
       },
@@ -104,7 +104,7 @@ export default async function ShopPage({ params }: { params: { slug: string } })
         settings: true,
         isPublished: true,
       },
-    })
+    })) as Shop | null
   }
 
   if (!shop) {
@@ -172,7 +172,7 @@ export default async function ShopPage({ params }: { params: { slug: string } })
     logoWidthDesktop: themeSettings.logoWidthDesktop || DEFAULT_THEME.logoWidthDesktop,
     logoPaddingMobile: themeSettings.logoPaddingMobile || DEFAULT_THEME.logoPaddingMobile,
     logoPaddingDesktop: themeSettings.logoPaddingDesktop || DEFAULT_THEME.logoPaddingDesktop,
-  }
+  } as ThemeSettings
 
   return <ShopPageClient shop={shop} products={products} slug={slug} theme={theme} />
 }

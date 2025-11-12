@@ -83,7 +83,7 @@ export function useAddToCart({ slug, customerId, onSuccess, autoOpenCart = true 
       }
       
       // בדיקה אם הכמות המבוקשת גדולה מהמלאי הזמין
-      if (availableQty !== null && quantity > availableQty) {
+      if (availableQty !== null && availableQty !== undefined && quantity > availableQty) {
         toast({
           title: "שגיאה",
           description: `המלאי הזמין הוא ${availableQty} יחידות בלבד`,

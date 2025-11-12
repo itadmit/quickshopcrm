@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       where: { id: orderId },
       data: {
         paymentLink: orderResult.data?.approvalUrl,
-        paymentTransactionId: orderResult.data?.orderId,
+        transactionId: orderResult.data?.orderId,
         paymentStatus: "PENDING",
       },
     })
