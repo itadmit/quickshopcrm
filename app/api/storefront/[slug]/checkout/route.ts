@@ -321,7 +321,9 @@ export async function POST(
     // אם זה תשלום בכרטיס אשראי, יצירת payment URL דרך PayPlus או PayPal
     let paymentUrl = null
     if (data.paymentMethod === "credit_card") {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+      // שימוש ב-Vercel URL אם קיים, אחרת NEXT_PUBLIC_APP_URL, אחרת localhost
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000")
 
       // בדיקה אם יש אינטגרציה עם PayPlus
       const payplusIntegration = await prisma.integration.findFirst({
