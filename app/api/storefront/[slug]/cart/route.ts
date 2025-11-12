@@ -276,6 +276,15 @@ export async function POST(
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 30) // 30 days
 
+    // בדיקה אם זה מוצר חדש שנוסף לעגלה
+    const previousItems = cart ? (cart.items as any[]) || [] : []
+    const previousItemIds = new Set(previousItems.map((item: any) => 
+      `${item.productId}-${item.variantId || 'null'}`
+    ))
+    const newItems = items.filter((item: any) => 
+      !previousItemIds.has(`${item.productId}-${item.variantId || 'null'}`)
+    )
+
     if (cart) {
       console.log('🔄 Updating existing cart:', {
         cartId: cart.id,
@@ -295,6 +304,26 @@ export async function POST(
         savedItemsCount: (cart.items as any[]).length
       })
       console.log('💾 Saved cart items:', JSON.stringify(cart.items, null, 2))
+      
+      // יצירת אירוע cart.item_added לכל מוצר חדש שנוסף
+      for (const newItem of newItems) {
+        await prisma.shopEvent.create({
+          data: {
+            shopId: shop.id,
+            type: "cart.item_added",
+            entityType: "cart",
+            entityId: cart.id,
+            payload: {
+              cartId: cart.id,
+              productId: newItem.productId,
+              variantId: newItem.variantId || null,
+              quantity: newItem.quantity,
+              shopId: shop.id,
+              customerId: customerId || null,
+            },
+          },
+        })
+      }
     } else {
       console.log('🆕 Creating new cart:', {
         shopId: shop.id,
@@ -316,6 +345,22 @@ export async function POST(
         savedItemsCount: (cart.items as any[]).length
       })
       console.log('💾 Saved cart items:', JSON.stringify(cart.items, null, 2))
+      
+      // יצירת אירוע cart.created
+      await prisma.shopEvent.create({
+        data: {
+          shopId: shop.id,
+          type: "cart.created",
+          entityType: "cart",
+          entityId: cart.id,
+          payload: {
+            cartId: cart.id,
+            shopId: shop.id,
+            customerId: customerId || null,
+            itemsCount: items.length,
+          },
+        },
+      })
     }
 
     // חישוב העגלה המעודכנת
@@ -418,6 +463,7 @@ export async function PUT(
     }
 
     const items = (cart.items as any[]) || []
+    const previousItems = [...items] // שמירת עותק לפני שינויים
 
     // עדכון כמות פריט
     if (body.productId && body.quantity !== undefined) {
@@ -428,12 +474,51 @@ export async function PUT(
       )
 
       if (itemIndex >= 0) {
+        const oldQuantity = items[itemIndex].quantity
+        
         if (body.quantity <= 0) {
           // הסרת פריט
+          const removedItem = items[itemIndex]
           items.splice(itemIndex, 1)
-        } else {
+          
+          // יצירת אירוע cart.item_removed
+          await prisma.shopEvent.create({
+            data: {
+              shopId: shop.id,
+              type: "cart.item_removed",
+              entityType: "cart",
+              entityId: cart.id,
+              payload: {
+                cartId: cart.id,
+                productId: removedItem.productId,
+                variantId: removedItem.variantId || null,
+                shopId: shop.id,
+                customerId: customerId || null,
+              },
+            },
+          })
+        } else if (body.quantity !== oldQuantity) {
           // עדכון כמות
           items[itemIndex].quantity = body.quantity
+          
+          // יצירת אירוע cart.item_updated
+          await prisma.shopEvent.create({
+            data: {
+              shopId: shop.id,
+              type: "cart.item_updated",
+              entityType: "cart",
+              entityId: cart.id,
+              payload: {
+                cartId: cart.id,
+                productId: body.productId,
+                variantId: body.variantId || null,
+                oldQuantity,
+                newQuantity: body.quantity,
+                shopId: shop.id,
+                customerId: customerId || null,
+              },
+            },
+          })
         }
       }
     }

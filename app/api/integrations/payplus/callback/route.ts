@@ -55,29 +55,180 @@ export async function POST(req: NextRequest) {
         paidAt: isSuccess ? new Date() : null,
       },
     })
+    
+    // יצירת אירוע payment.completed או payment.failed
+    if (isSuccess) {
+      await prisma.shopEvent.create({
+        data: {
+          shopId: order.shopId,
+          type: "payment.completed",
+          entityType: "order",
+          entityId: order.id,
+          payload: {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            amount: body.amount || order.total,
+            transactionId: body.transaction_uid || body.transactionUid,
+            paymentMethod: "credit_card",
+            shopId: order.shopId,
+          },
+          userId: order.customerId || undefined,
+        },
+      })
+    } else {
+      await prisma.shopEvent.create({
+        data: {
+          shopId: order.shopId,
+          type: "payment.failed",
+          entityType: "order",
+          entityId: order.id,
+          payload: {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            amount: body.amount || order.total,
+            reason: body.error_message || body.error || "תשלום נכשל",
+            paymentMethod: "credit_card",
+            shopId: order.shopId,
+          },
+          userId: order.customerId || undefined,
+        },
+      })
+    }
 
     // אם התשלום הצליח, נעדכן את המלאי וניצור event
     if (isSuccess) {
       // עדכון מלאי
       for (const item of order.items) {
         if (item.variantId) {
-          await prisma.productVariant.update({
+          const variant = await prisma.productVariant.findUnique({
             where: { id: item.variantId },
-            data: {
-              inventoryQty: {
-                decrement: item.quantity,
-              },
-            },
+            include: { product: { select: { shopId: true } } },
           })
+          
+          if (variant) {
+            const oldQty = variant.inventoryQty
+            const newQty = Math.max(0, oldQty - item.quantity)
+            
+            await prisma.productVariant.update({
+              where: { id: item.variantId },
+              data: {
+                inventoryQty: newQty,
+              },
+            })
+            
+            // יצירת אירוע inventory.updated
+            await prisma.shopEvent.create({
+              data: {
+                shopId: variant.product.shopId,
+                type: "inventory.updated",
+                entityType: "product_variant",
+                entityId: variant.id,
+                payload: {
+                  productId: variant.productId,
+                  variantId: variant.id,
+                  oldQty,
+                  newQty,
+                  orderId: order.id,
+                },
+              },
+            })
+            
+            // בדיקת מלאי נמוך או אזל
+            if (newQty === 0) {
+              await prisma.shopEvent.create({
+                data: {
+                  shopId: variant.product.shopId,
+                  type: "inventory.out_of_stock",
+                  entityType: "product_variant",
+                  entityId: variant.id,
+                  payload: {
+                    productId: variant.productId,
+                    variantId: variant.id,
+                    orderId: order.id,
+                  },
+                },
+              })
+            } else if (variant.lowStockAlert !== null && newQty <= variant.lowStockAlert) {
+              await prisma.shopEvent.create({
+                data: {
+                  shopId: variant.product.shopId,
+                  type: "inventory.low_stock",
+                  entityType: "product_variant",
+                  entityId: variant.id,
+                  payload: {
+                    productId: variant.productId,
+                    variantId: variant.id,
+                    currentQty: newQty,
+                    threshold: variant.lowStockAlert,
+                    orderId: order.id,
+                  },
+                },
+              })
+            }
+          }
         } else if (item.productId) {
-          await prisma.product.update({
+          const product = await prisma.product.findUnique({
             where: { id: item.productId },
-            data: {
-              inventoryQty: {
-                decrement: item.quantity,
-              },
-            },
           })
+          
+          if (product) {
+            const oldQty = product.inventoryQty
+            const newQty = Math.max(0, oldQty - item.quantity)
+            
+            await prisma.product.update({
+              where: { id: item.productId },
+              data: {
+                inventoryQty: newQty,
+              },
+            })
+            
+            // יצירת אירוע inventory.updated
+            await prisma.shopEvent.create({
+              data: {
+                shopId: product.shopId,
+                type: "inventory.updated",
+                entityType: "product",
+                entityId: product.id,
+                payload: {
+                  productId: product.id,
+                  oldQty,
+                  newQty,
+                  orderId: order.id,
+                },
+              },
+            })
+            
+            // בדיקת מלאי נמוך או אזל
+            if (newQty === 0) {
+              await prisma.shopEvent.create({
+                data: {
+                  shopId: product.shopId,
+                  type: "inventory.out_of_stock",
+                  entityType: "product",
+                  entityId: product.id,
+                  payload: {
+                    productId: product.id,
+                    orderId: order.id,
+                  },
+                },
+              })
+            } else if (product.lowStockAlert !== null && newQty <= product.lowStockAlert) {
+              await prisma.shopEvent.create({
+                data: {
+                  shopId: product.shopId,
+                  type: "inventory.low_stock",
+                  entityType: "product",
+                  entityId: product.id,
+                  payload: {
+                    productId: product.id,
+                    currentQty: newQty,
+                    threshold: product.lowStockAlert,
+                    orderId: order.id,
+                  },
+                },
+              })
+            }
+          }
         }
       }
 

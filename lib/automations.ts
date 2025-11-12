@@ -16,6 +16,8 @@ export interface AutomationCondition {
   operator: "equals" | "not_equals" | "greater_than" | "less_than" | "contains" | "not_contains" | "in" | "not_in"
   value: any
   logicalOperator?: "AND" | "OR" // For multiple conditions
+  thenActions?: AutomationAction[]  // Actions to execute if condition is true
+  elseActions?: AutomationAction[]  // Actions to execute if condition is false
 }
 
 export interface AutomationAction {
@@ -116,6 +118,16 @@ async function executeAction(
       case "webhook":
         return await executeWebhook(action, eventPayload, shopId)
       
+      case "delay":
+        return await executeDelay(action, eventPayload, shopId)
+      
+      case "create_coupon":
+        return await executeCreateCoupon(action, eventPayload, shopId)
+      
+      case "end":
+        // סיום אוטומציה - מחזיר signal להפסקת הרצה
+        return { success: true, end: true }
+      
       default:
         throw new Error(`Unknown action type: ${action.type}`)
     }
@@ -155,9 +167,12 @@ async function executeSendEmail(
   }
   
   // החלפת משתנים
+  // הוספת הקופון ל-variables אם קיים ב-eventPayload
   const mergedVariables = {
     ...eventPayload,
     ...variables,
+    // אם יש קופון ב-eventPayload, הוסף אותו גם ישירות
+    coupon: eventPayload.coupon || variables.coupon,
   }
   
   const parsedBody = parseEmailTemplate(emailBody, mergedVariables)
@@ -165,9 +180,23 @@ async function executeSendEmail(
   
   // קבלת כתובת אימייל מהאירוע
   let recipientEmail = to
-  if (to?.startsWith("{{")) {
+  
+  // טיפול ב-toType
+  if (action.config.toType === "customer") {
+    recipientEmail = getNestedValue(eventPayload, "customer.email") || getNestedValue(eventPayload, "customerEmail") || to
+  } else if (action.config.toType === "admin") {
+    const shop = await prisma.shop.findUnique({
+      where: { id: shopId },
+      select: { email: true, company: { select: { users: { select: { email: true }, take: 1 } } } }
+    })
+    recipientEmail = shop?.email || shop?.company?.users?.[0]?.email || to
+  } else if (to?.startsWith("{{")) {
     const fieldPath = to.replace(/[{}]/g, "")
-    recipientEmail = getNestedValue(eventPayload, fieldPath)
+    recipientEmail = getNestedValue(eventPayload, fieldPath) || to
+  }
+  
+  if (!recipientEmail) {
+    throw new Error("No recipient email address found")
   }
   
   await sendEmail({
@@ -300,6 +329,188 @@ async function executeWebhook(
 }
 
 /**
+ * המתנה (Delay) - Signal להפסיק ולתזמן המשך
+ * 
+ * פונקציה זו מחזירה signal מיוחד שאומר למערכת:
+ * "עצור כאן, תזמן את המשך האוטומציה ל-[זמן]"
+ * 
+ * Bull Queue יטפל בתזמון בפועל.
+ */
+async function executeDelay(
+  action: AutomationAction,
+  eventPayload: any,
+  shopId: string
+): Promise<any> {
+  const { amount, unit } = action.config
+  
+  // המרת זמן למילישניות
+  let delayMs = 0
+  switch (unit) {
+    case "seconds":
+      delayMs = amount * 1000
+      break
+    case "minutes":
+      delayMs = amount * 60 * 1000
+      break
+    case "hours":
+      delayMs = amount * 60 * 60 * 1000
+      break
+    case "days":
+      delayMs = amount * 24 * 60 * 60 * 1000
+      break
+    case "weeks":
+      delayMs = amount * 7 * 24 * 60 * 60 * 1000
+      break
+    default:
+      delayMs = amount * 1000 // ברירת מחדל - שניות
+  }
+  
+  console.log(`⏳ Scheduling delay: ${amount} ${unit} (${delayMs}ms)`)
+  
+  // מחזיר signal מיוחד שמפסיק את הביצוע הנוכחי
+  // ומתזמן את המשך האוטומציה
+  return {
+    success: true,
+    shouldSchedule: true, // Signal לתזמן את המשך
+    delayMs,
+    delayedFor: `${amount} ${unit}`,
+  }
+}
+
+/**
+ * יצירת קופון
+ */
+async function executeCreateCoupon(
+  action: AutomationAction,
+  eventPayload: any,
+  shopId: string
+): Promise<any> {
+  const {
+    code,
+    type,
+    value,
+    buyQuantity,
+    getQuantity,
+    getDiscount,
+    nthItem,
+    volumeRules,
+    minOrder,
+    maxDiscount,
+    maxUses,
+    usesPerCustomer,
+    startDate,
+    endDate,
+    isActive,
+    applicableProducts,
+    applicableCategories,
+    applicableCustomers,
+    canCombine,
+    // אפשרות ליצירת קופון ייחודי לכל לקוח
+    uniquePerCustomer = false,
+  } = action.config
+  
+  // קבלת companyId מהחנות
+  const shop = await prisma.shop.findUnique({
+    where: { id: shopId },
+    select: { companyId: true },
+  })
+  
+  if (!shop) {
+    throw new Error("Shop not found")
+  }
+  
+  // קבלת customerId מהאירוע
+  const customerId = getNestedValue(eventPayload, "customer.id") || 
+                     getNestedValue(eventPayload, "customerId") ||
+                     eventPayload.customerId
+  
+  // יצירת קוד אוטומטי אם לא סופק
+  let couponCode = code
+  if (!couponCode) {
+    // אם זה קופון ייחודי ללקוח, נוסיף מזהה לקוח לקוד
+    if (uniquePerCustomer && customerId) {
+      couponCode = `AUTO-${customerId.substring(0, 8).toUpperCase()}-${Date.now().toString(36).toUpperCase()}`
+    } else {
+      couponCode = `AUTO-${Date.now().toString(36).toUpperCase()}`
+    }
+  }
+  
+  // בדיקה אם קוד כבר קיים
+  const existingCoupon = await prisma.coupon.findUnique({
+    where: { code: couponCode },
+  })
+  
+  if (existingCoupon) {
+    // אם הקוד קיים, נוסיף מספר אקראי
+    couponCode = `${couponCode}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
+  }
+  
+  // אם זה קופון ייחודי ללקוח, נגדיר אותו רק ללקוח הזה
+  let finalApplicableCustomers = applicableCustomers || []
+  if (uniquePerCustomer && customerId) {
+    finalApplicableCustomers = [customerId]
+  }
+  
+  // אם לא הוגדר maxUses ו-usesPerCustomer, וזה קופון ייחודי, נגדיר אותם ל-1
+  let finalMaxUses = maxUses
+  let finalUsesPerCustomer = usesPerCustomer !== undefined ? usesPerCustomer : 1
+  if (uniquePerCustomer) {
+    finalMaxUses = 1
+    finalUsesPerCustomer = 1
+  }
+  
+  // יצירת הקופון
+  const coupon = await prisma.coupon.create({
+    data: {
+      shopId,
+      code: couponCode,
+      type: type || "PERCENTAGE",
+      value: value || 10,
+      buyQuantity: buyQuantity || null,
+      getQuantity: getQuantity || null,
+      getDiscount: getDiscount || null,
+      nthItem: nthItem || null,
+      volumeRules: volumeRules || null,
+      minOrder: minOrder || null,
+      maxDiscount: maxDiscount || null,
+      maxUses: finalMaxUses || null,
+      usesPerCustomer: finalUsesPerCustomer,
+      startDate: startDate ? new Date(startDate) : null,
+      endDate: endDate ? new Date(endDate) : null,
+      isActive: isActive !== false,
+      applicableProducts: applicableProducts || [],
+      applicableCategories: applicableCategories || [],
+      applicableCustomers: finalApplicableCustomers,
+      canCombine: canCombine || false,
+    },
+  })
+  
+  // יצירת אירוע
+  await prisma.shopEvent.create({
+    data: {
+      shopId,
+      type: "coupon.created",
+      entityType: "coupon",
+      entityId: coupon.id,
+      payload: {
+        couponId: coupon.id,
+        code: coupon.code,
+        type: coupon.type,
+        value: coupon.value,
+      },
+    },
+  })
+  
+  return {
+    success: true,
+    couponId: coupon.id,
+    code: coupon.code,
+    type: coupon.type,
+    value: coupon.value,
+  }
+}
+
+/**
  * הרצת אוטומציה לאירוע
  */
 export async function runAutomationsForEvent(
@@ -327,36 +538,182 @@ export async function runAutomationsForEvent(
       try {
         const startTime = Date.now()
         
-        // בדיקת תנאים
-        const conditions = automation.conditions as AutomationCondition[] | null
-        if (conditions && !evaluateConditions(conditions, eventPayload)) {
-          // תנאים לא מתקיימים - דילוג על האוטומציה
-          await prisma.automationLog.create({
-            data: {
-              automationId: automation.id,
-              status: "skipped",
-              eventType,
-              eventPayload,
-              durationMs: Date.now() - startTime,
-            },
-          })
-          continue
+        // פונקציה מקומית להרצת רשימת אקשנים
+        const executeActions = async (
+          actions: AutomationAction[], 
+          payload: any,
+          startFromIndex: number = 0
+        ): Promise<{ results: any[], shouldSchedule?: boolean, delayMs?: number, nextIndex?: number }> => {
+          const actionResults = []
+          let accumulatedPayload = { ...payload }
+          
+          for (let i = startFromIndex; i < actions.length; i++) {
+            const action = actions[i]
+            
+            try {
+              const result = await executeAction(action, accumulatedPayload, shopId)
+              actionResults.push({ action: action.type, success: true, result })
+              
+              // אם זו פעולת delay - עצור והחזר signal לתזמון
+              if (action.type === "delay" && result?.shouldSchedule) {
+                console.log(`🛑 Stopping at delay. Will resume at action ${i + 1}`)
+                return {
+                  results: actionResults,
+                  shouldSchedule: true,
+                  delayMs: result.delayMs,
+                  nextIndex: i + 1, // האינדקס של הפעולה הבאה
+                }
+              }
+              
+              // העברת תוצאות הפעולה לפעולות הבאות
+              if (result) {
+                // אם נוצר קופון, הוסף אותו ל-payload
+                if (result.couponId && result.code) {
+                  accumulatedPayload.coupon = {
+                    id: result.couponId,
+                    code: result.code,
+                    type: result.type,
+                    value: result.value,
+                  }
+                }
+                // העברת כל התוצאות האחרות
+                accumulatedPayload = {
+                  ...accumulatedPayload,
+                  ...result,
+                }
+              }
+              
+              // אם זו פעולת end, הפסק את ההרצה
+              if (result?.end === true) {
+                break
+              }
+            } catch (error: any) {
+              actionResults.push({
+                action: action.type,
+                success: false,
+                error: error.message,
+              })
+              // גם במקרה של שגיאה, אם זו פעולת end, הפסק
+              if (action.type === "end") {
+                break
+              }
+            }
+          }
+          
+          return { results: actionResults }
         }
         
-        // הרצת אקשנים
+        // בדיקת תנאים והרצת ענפים
+        const conditions = automation.conditions as AutomationCondition[] | null
         const actions = automation.actions as AutomationAction[]
-        const actionResults = []
+        let actionResults: any[] = []
+        let accumulatedPayload = { ...eventPayload }
         
-        for (const action of actions) {
-          try {
-            const result = await executeAction(action, eventPayload, shopId)
-            actionResults.push({ action: action.type, success: true, result })
-          } catch (error: any) {
-            actionResults.push({
-              action: action.type,
-              success: false,
-              error: error.message,
+        // הרץ את ה-actions הראשיים (לפני התנאים)
+        if (actions && actions.length > 0) {
+          const startIndex = (eventPayload._resumeFromIndex as number) || 0
+          const executionResult = await executeActions(actions, accumulatedPayload, startIndex)
+          actionResults.push(...executionResult.results)
+          
+          // אם צריך לתזמן המשך (נתקלנו ב-delay)
+          if (executionResult.shouldSchedule && executionResult.delayMs && executionResult.nextIndex !== undefined) {
+            console.log(`📅 Scheduling continuation in ${executionResult.delayMs}ms (${executionResult.delayMs / 1000}s)`)
+            
+            // תזמן את המשך האוטומציה
+            const { queueAutomation } = await import("./automation-queue")
+            await queueAutomation(
+              shopId,
+              eventType,
+              {
+                ...eventPayload,
+                _resumeFromIndex: executionResult.nextIndex, // שמור היכן להמשיך
+                _automationId: automation.id,
+              },
+              executionResult.delayMs / 1000 // המרה לשניות
+            )
+            
+            // שמור log חלקי
+            await prisma.automationLog.create({
+              data: {
+                automationId: automation.id,
+                status: "scheduled",
+                eventType,
+                eventPayload: {
+                  ...eventPayload,
+                  _note: `Paused at action ${executionResult.nextIndex - 1}, will resume in ${executionResult.delayMs}ms`,
+                },
+                actionResults: executionResult.results,
+                durationMs: Date.now() - startTime,
+              },
             })
+            
+            // סיים את הביצוע הנוכחי - ה-continuation יתבצע מאוחר יותר
+            continue
+          }
+          
+          // עדכן את ה-payload עם תוצאות ה-actions
+          for (const result of executionResult.results) {
+            if (result.result) {
+              if (result.result.couponId && result.result.code) {
+                accumulatedPayload.coupon = {
+                  id: result.result.couponId,
+                  code: result.result.code,
+                  type: result.result.type,
+                  value: result.result.value,
+                }
+              }
+              accumulatedPayload = {
+                ...accumulatedPayload,
+                ...result.result,
+              }
+            }
+          }
+        }
+        
+        // אם יש תנאים עם ענפים (מבנה חדש)
+        if (conditions && conditions.length > 0) {
+          const condition = conditions[0] // נתמוך בתנאי אחד כרגע
+          
+          if (condition.thenActions || condition.elseActions) {
+            // מבנה חדש עם ענפים
+            const conditionMet = evaluateCondition(condition, accumulatedPayload)
+            
+            if (conditionMet && condition.thenActions) {
+              // תנאי מתקיים - הרץ ענף "אז"
+              const branchResults = await executeActions(condition.thenActions, accumulatedPayload)
+              actionResults.push(...branchResults)
+            } else if (!conditionMet && condition.elseActions) {
+              // תנאי לא מתקיים - הרץ ענף "אחרת"
+              const branchResults = await executeActions(condition.elseActions, accumulatedPayload)
+              actionResults.push(...branchResults)
+            } else {
+              // אין אקשנים מתאימים - דילוג
+              await prisma.automationLog.create({
+                data: {
+                  automationId: automation.id,
+                  status: "skipped",
+                  eventType,
+                  eventPayload,
+                  durationMs: Date.now() - startTime,
+                },
+              })
+              continue
+            }
+          } else {
+            // מבנה ישן - תנאים ללא ענפים
+            if (!evaluateConditions(conditions, accumulatedPayload)) {
+              // תנאים לא מתקיימים - דילוג על האוטומציה
+              await prisma.automationLog.create({
+                data: {
+                  automationId: automation.id,
+                  status: "skipped",
+                  eventType,
+                  eventPayload,
+                  durationMs: Date.now() - startTime,
+                },
+              })
+              continue
+            }
           }
         }
         

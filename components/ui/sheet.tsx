@@ -14,6 +14,7 @@ interface SheetProps {
 
 const Sheet = ({ open, onOpenChange, children, side = "right", className }: SheetProps) => {
   const [isMounted, setIsMounted] = React.useState(false)
+  const [isAnimating, setIsAnimating] = React.useState(false)
   const timeoutRef = React.useRef<NodeJS.Timeout | null>(null)
 
   React.useEffect(() => {
@@ -24,8 +25,13 @@ const Sheet = ({ open, onOpenChange, children, side = "right", className }: Shee
         timeoutRef.current = null
       }
       setIsMounted(true)
+      // Start animation after mount
+      setTimeout(() => {
+        setIsAnimating(true)
+      }, 10)
       document.body.style.overflow = "hidden"
     } else {
+      setIsAnimating(false)
       document.body.style.overflow = ""
       // Delay unmounting to allow animation to complete
       timeoutRef.current = setTimeout(() => {
@@ -49,20 +55,34 @@ const Sheet = ({ open, onOpenChange, children, side = "right", className }: Shee
       {/* Overlay */}
       <div
         className={cn(
-          "fixed inset-0 z-50 bg-black/50 backdrop-blur-sm transition-opacity duration-300",
-          open ? "opacity-100" : "opacity-0"
+          "fixed z-40 bg-black/10 backdrop-blur-sm transition-opacity duration-300",
+          open && isAnimating ? "opacity-100" : "opacity-0"
         )}
         onClick={() => onOpenChange(false)}
+        style={{
+          top: '40px',
+          left: 0,
+          right: 0,
+          bottom: 0,
+        }}
       />
       {/* Sheet */}
       <div
         className={cn(
-          "fixed z-50 h-full w-full max-w-lg bg-white shadow-lg transition-transform duration-300 ease-in-out",
-          side === "right" ? "right-0 top-0" : "left-0 top-0",
-          open ? "translate-x-0" : side === "right" ? "translate-x-full" : "-translate-x-full",
+          "fixed z-40 w-full max-w-lg bg-white shadow-xl transition-all duration-300 ease-out",
+          side === "right" ? "right-0" : "left-0",
+          open && isAnimating
+            ? "translate-x-0 opacity-100" 
+            : side === "right" 
+              ? "translate-x-full opacity-0" 
+              : "-translate-x-full opacity-0",
           className
         )}
         dir="rtl"
+        style={{
+          top: '40px',
+          height: 'calc(100vh - 40px)',
+        }}
       >
         {children}
       </div>
@@ -146,7 +166,7 @@ const SheetFooter = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 p-6 border-t", className)}
+    className={cn("flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2 px-6 pt-6 pb-10 border-t", className)}
     {...props}
   />
 )

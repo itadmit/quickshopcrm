@@ -33,6 +33,7 @@ import {
   Shield,
   DollarSign,
   Workflow,
+  Mail,
 } from "lucide-react"
 
 const menuItems = [
@@ -87,6 +88,7 @@ const settingsItems = [
 
 const superAdminItems = [
   { icon: Shield, label: "הגדרות PayPlus", href: "/admin", permission: "super_admin" },
+  { icon: Mail, label: "הגדרות SendGrid", href: "/admin", permission: "super_admin" },
   { icon: DollarSign, label: "גביית עמלות", href: "/admin/commissions", permission: "super_admin" },
 ]
 
@@ -227,11 +229,11 @@ export function Sidebar() {
   return (
     <div className="w-64 h-screen bg-gradient-to-b from-gray-50 to-gray-100 border-l border-gray-200 flex flex-col">
       {/* Logo */}
-      <div className="p-6 border-b border-gray-200">
-        <Link href="/dashboard" className="flex items-center justify-center">
+      <div className="h-16 border-b border-gray-200 flex items-center justify-center px-4 py-2">
+        <Link href="/dashboard" className="flex items-center justify-center overflow-visible">
           <span 
-            className="text-3xl font-pacifico prodify-gradient-text" 
-            style={{ letterSpacing: '2px' }}
+            className="text-2xl font-pacifico prodify-gradient-text block" 
+            style={{ letterSpacing: '2px', lineHeight: '1.5', paddingBottom: '4px' }}
           >
             Quick Shop
           </span>

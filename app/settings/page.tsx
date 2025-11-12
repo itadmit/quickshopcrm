@@ -73,8 +73,6 @@ export default function SettingsPage() {
   const [isResetting, setIsResetting] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [isSeeding, setIsSeeding] = useState(false)
-  const [isTestingEmail, setIsTestingEmail] = useState(false)
-  const [emailStatus, setEmailStatus] = useState<{connected: boolean; tested: boolean} | null>(null)
   const [afterProductSave, setAfterProductSave] = useState<"stay" | "return">("stay")
   const [loadingSettings, setLoadingSettings] = useState(false)
 
@@ -115,47 +113,6 @@ export default function SettingsPage() {
     }
   }
 
-  const handleTestEmail = async () => {
-    setIsTestingEmail(true)
-    try {
-      const response = await fetch('/api/email/test', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: session?.user?.email,
-          subject: 'בדיקת מערכת האימיילים - Quick Shop',
-          message: 'זה אימייל בדיקה. אם קיבלת אותו, המערכת עובדת כראוי! ✅',
-        }),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        toast({
-          title: "אימייל נשלח בהצלחה! ✅",
-          description: `אימייל בדיקה נשלח ל-${data.sentTo}. בדוק את תיבת הדואר שלך.`,
-        })
-        setEmailStatus({ connected: true, tested: true })
-      } else {
-        const error = await response.json()
-        toast({
-          title: "שגיאה בשליחת אימייל",
-          description: error.details || "לא ניתן לשלוח אימייל",
-          variant: "destructive",
-        })
-        setEmailStatus({ connected: false, tested: true })
-      }
-    } catch (error) {
-      console.error('Error testing email:', error)
-      toast({
-        title: "שגיאה",
-        description: "אירעה שגיאה בבדיקת האימייל",
-        variant: "destructive",
-      })
-      setEmailStatus({ connected: false, tested: true })
-    } finally {
-      setIsTestingEmail(false)
-    }
-  }
 
   const handleSeedData = async () => {
     setIsSeeding(true)
@@ -601,60 +558,9 @@ export default function SettingsPage() {
           </div>
         )}
 
-        {/* Communication Tab - Email + Notifications */}
+        {/* Communication Tab - Notifications */}
         {activeTab === "communication" && (
           <div className="space-y-6">
-            {/* Email Configuration */}
-            <Card className="shadow-sm">
-              <CardHeader>
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Mail className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <CardTitle>הגדרות אימייל</CardTitle>
-                    <CardDescription>בדיקת חיבור ושליחת אימייל מבחן</CardDescription>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="bg-gray-50 p-4 rounded-lg space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">SMTP Server</span>
-                      <span className="text-sm text-gray-600">smtp.gmail.com</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">משתמש</span>
-                      <span className="text-sm text-gray-600">quickshopil@gmail.com</span>
-                    </div>
-                    {emailStatus && (
-                      <div className="flex items-center gap-2 mt-2">
-                        {emailStatus.connected ? (
-                          <>
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            <span className="text-sm text-green-600">החיבור תקין ✅</span>
-                          </>
-                        ) : (
-                          <>
-                            <AlertTriangle className="w-4 h-4 text-red-600" />
-                            <span className="text-sm text-red-600">בעיה בחיבור ❌</span>
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                  <Button 
-                    onClick={handleTestEmail}
-                    disabled={isTestingEmail}
-                    className="w-full prodify-gradient text-white"
-                  >
-                    {isTestingEmail ? "שולח אימייל..." : "שלח אימייל בדיקה"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
             {/* Notifications */}
             <Card className="shadow-sm">
               <CardHeader>

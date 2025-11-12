@@ -38,6 +38,12 @@ export async function identifyAbandonedCarts() {
         },
       })
 
+      // קבלת shop slug ליצירת לינק
+      const shop = await prisma.shop.findUnique({
+        where: { id: cart.shopId },
+        select: { slug: true },
+      })
+
       // יצירת אירוע
       await prisma.shopEvent.create({
         data: {
@@ -47,7 +53,14 @@ export async function identifyAbandonedCarts() {
           entityId: cart.id,
           payload: {
             cartId: cart.id,
+            shopId: cart.shopId,
+            shopSlug: shop?.slug || "",
+            customerId: cart.customerId || null,
             items: cart.items,
+            // לינק ישיר לצ'ק אאוט עם העגלה
+            checkoutUrl: shop?.slug 
+              ? `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/shop/${shop.slug}/checkout?cartId=${cart.id}`
+              : null,
           },
         },
       })

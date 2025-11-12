@@ -1,5 +1,5 @@
 import { prisma } from './prisma'
-import { sendEmail as sendEmailViaGmail, emailTemplates, getEmailTemplate } from './email'
+import { sendEmail, emailTemplates, getEmailTemplate } from './email'
 
 /**
  * Unified Notification Service
@@ -77,7 +77,7 @@ async function sendEmailNotification(data: NotificationData): Promise<void> {
       footer: `התראה זו נשלחה מ-Quick Shop ב-${new Date().toLocaleString('he-IL')}`,
     })
 
-    await sendEmailViaGmail({
+    await sendEmail({
       to: user.email,
       subject,
       html: htmlBody,
@@ -316,7 +316,7 @@ async function sendPaymentNotificationToManagers(params: {
     for (const manager of managers) {
       if (manager.email) {
         try {
-          await sendEmailViaGmail({
+          await sendEmail({
             to: manager.email,
             subject: `💰 תשלום חדש התקבל: ₪${params.amount.toLocaleString('he-IL')}`,
             html: emailTemplates.paymentReceived(params.amount, params.quoteNumber, params.clientName, params.transactionId).html,

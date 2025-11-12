@@ -243,11 +243,29 @@ export async function POST(
 
     // עדכון ספירת שימושים בקופון
     if (couponCodeToUse && calculation.couponDiscount > 0) {
-      await prisma.coupon.update({
+      const coupon = await prisma.coupon.update({
         where: { code: couponCodeToUse },
         data: {
           usedCount: {
             increment: 1,
+          },
+        },
+      })
+      
+      // יצירת אירוע coupon.used
+      await prisma.shopEvent.create({
+        data: {
+          shopId: shop.id,
+          type: "coupon.used",
+          entityType: "coupon",
+          entityId: coupon.id,
+          payload: {
+            couponId: coupon.id,
+            couponCode: coupon.code,
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            discount: calculation.couponDiscount,
+            shopId: shop.id,
           },
         },
       })
@@ -258,7 +276,7 @@ export async function POST(
       where: { id: cart.id },
     })
 
-    // יצירת אירוע
+    // יצירת אירוע order.created
     await prisma.shopEvent.create({
       data: {
         shopId: shop.id,
@@ -269,8 +287,31 @@ export async function POST(
           orderId: order.id,
           orderNumber: order.orderNumber,
           total: order.total,
+          customerEmail: data.customerEmail,
+          customerId: data.customerId || null,
+          shopId: shop.id,
+          paymentMethod: data.paymentMethod,
+          status: "PENDING",
         },
-        userId: data.customerId,
+        userId: data.customerId || undefined,
+      },
+    })
+    
+    // יצירת אירוע payment.initiated
+    await prisma.shopEvent.create({
+      data: {
+        shopId: shop.id,
+        type: "payment.initiated",
+        entityType: "order",
+        entityId: order.id,
+        payload: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          amount: order.total,
+          method: data.paymentMethod,
+          shopId: shop.id,
+        },
+        userId: data.customerId || undefined,
       },
     })
 
@@ -388,10 +429,11 @@ export async function POST(
         console.log(`✅ Order confirmation email sent to ${data.customerEmail}`)
       } catch (emailError: any) {
         // אם יש בעיה עם הגדרות אימייל, רק נרשום לוג ולא נזרוק שגיאה
-        if (emailError?.code === 'EAUTH') {
-          console.warn(`⚠️ Email not configured properly. Order created but email not sent to ${data.customerEmail}`)
+        const errorMessage = emailError?.message || 'Unknown error'
+        if (errorMessage.includes('not configured') || errorMessage.includes('לא מוגדר')) {
+          console.warn(`⚠️ SendGrid not configured. Order created but email not sent to ${data.customerEmail}. Please configure SendGrid in Super Admin settings.`)
         } else {
-          console.warn(`⚠️ Failed to send order confirmation email to ${data.customerEmail}:`, emailError?.message || 'Unknown error')
+          console.warn(`⚠️ Failed to send order confirmation email to ${data.customerEmail}:`, errorMessage)
         }
         // לא נזרוק שגיאה - לא רוצים שהזמנה תיכשל בגלל בעיית מייל
       }

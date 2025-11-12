@@ -60,9 +60,16 @@ export async function POST(
           </div>
         `,
       })
-    } catch (emailError) {
-      console.error("Error sending recovery email:", emailError)
-      // לא נכשל אם האימייל לא נשלח
+      console.log(`✅ Cart recovery email sent to ${cart.customer.email}`)
+    } catch (emailError: any) {
+      // אם יש בעיה עם הגדרות אימייל, נרשום לוג אבל נמשיך
+      const errorMessage = emailError?.message || 'Unknown error'
+      if (errorMessage.includes('not configured') || errorMessage.includes('לא מוגדר')) {
+        console.warn(`⚠️ SendGrid not configured. Cart recovered but email not sent to ${cart.customer.email}. Please configure SendGrid in Super Admin settings.`)
+      } else {
+        console.warn(`⚠️ Failed to send cart recovery email to ${cart.customer.email}:`, errorMessage)
+      }
+      // לא נזרוק שגיאה - העגלה שוחזרה, רק המייל לא נשלח
     }
 
     // יצירת אירוע

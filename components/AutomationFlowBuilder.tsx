@@ -23,13 +23,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetFooter,
+  SheetHeader,
+  SheetTitle,
+  SheetBody,
+} from "@/components/ui/sheet"
 import {
   Play,
   Plus,
@@ -42,8 +43,11 @@ import {
   CheckCircle2,
   X,
   Settings,
+  Clock,
+  Ticket,
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 
 interface AutomationFlowBuilderProps {
   trigger: { type: string; filters?: any } | null
@@ -55,60 +59,141 @@ interface AutomationFlowBuilderProps {
   eventTypes: { value: string; label: string }[]
 }
 
+// New interface for branches
+interface AutomationCondition {
+  field: string
+  operator: string
+  value: any
+  logicalOperator?: "AND" | "OR"
+  thenActions?: any[]  // Actions to execute if condition is true
+  elseActions?: any[]  // Actions to execute if condition is false
+}
+
 // Custom Node Components
 const TriggerNode = ({ data }: { data: any }) => {
   return (
-    <div className="px-4 py-3 bg-purple-50 border-2 border-purple-300 rounded-lg shadow-sm min-w-[200px] cursor-move">
-      <div className="flex items-center gap-2 mb-2">
-        <Play className="w-5 h-5 text-purple-600" />
-        <div className="font-semibold text-purple-900">התחל כאשר...</div>
+    <div className="px-5 py-4 bg-white border-2 border-purple-200 rounded-xl shadow-md hover:shadow-lg transition-shadow min-w-[220px] cursor-move group">
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className="p-1.5 bg-purple-50 rounded-lg">
+          <Play className="w-4 h-4 text-purple-600" />
+        </div>
+        <div className="font-semibold text-gray-900 text-sm">התחל כאשר...</div>
       </div>
-      <div className="text-sm text-purple-700 bg-white p-2 rounded border border-purple-200">
+      <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 font-medium">
         {data.label || "בחר אירוע"}
       </div>
-      <Handle type="source" position={Position.Bottom} className="!bg-purple-500 !w-3 !h-3" />
+      <Handle type="source" position={Position.Bottom} className="!bg-purple-500 !w-3.5 !h-3.5 !border-2 !border-white shadow-md" />
+      <div className="text-xs text-gray-400 text-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity">לחיצה כפולה לעריכה</div>
     </div>
   )
 }
 
 const ConditionNode = ({ data }: { data: any }) => {
   return (
-    <div className="px-4 py-3 bg-blue-50 border-2 border-blue-300 rounded-lg shadow-sm min-w-[200px] cursor-move">
-      <div className="flex items-center gap-2 mb-2">
-        <CheckCircle2 className="w-5 h-5 text-blue-600" />
-        <div className="font-semibold text-blue-900">בדוק אם...</div>
+    <div className="px-5 py-4 bg-white border-2 border-blue-200 rounded-xl shadow-md hover:shadow-lg transition-shadow min-w-[220px] cursor-move relative pb-20 group">
+      <div className="flex items-center gap-2 mb-3">
+        <div className="p-1.5 bg-blue-50 rounded-lg">
+          <CheckCircle2 className="w-4 h-4 text-blue-600" />
+        </div>
+        <div className="font-semibold text-gray-900 text-sm">בדוק אם...</div>
       </div>
-      <div className="text-sm text-blue-700 bg-white p-2 rounded border border-blue-200">
+      <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 mb-2 font-medium">
         {data.label || "תנאי"}
       </div>
-      <Handle type="target" position={Position.Top} className="!bg-blue-500 !w-3 !h-3" />
-      <div className="flex gap-2 mt-2 relative">
-        <Handle type="source" position={Position.Bottom} id="then" className="!bg-green-500 !w-3 !h-3 !right-4" />
-        <Handle type="source" position={Position.Bottom} id="otherwise" className="!bg-red-500 !w-3 !h-3 !left-4" />
+      <Handle type="target" position={Position.Top} className="!bg-blue-500 !w-3 !h-3 !border-2 !border-white" />
+      
+      {/* אז ואחרת עם נקודות */}
+      <div className="absolute bottom-4 left-0 right-0 flex justify-between items-end px-3">
+        <div className="flex flex-col items-center gap-1.5 relative" style={{ width: '50%' }}>
+          <span className="text-xs text-green-700 font-semibold mb-1">אז</span>
+          <Handle 
+            type="source" 
+            position={Position.Bottom} 
+            id="then" 
+            className="!bg-green-500 !w-3.5 !h-3.5 !border-2 !border-white shadow-md" 
+          />
+        </div>
+        <div className="flex flex-col items-center gap-1.5 relative" style={{ width: '50%' }}>
+          <span className="text-xs text-red-700 font-semibold mb-1">אחרת</span>
+          <Handle 
+            type="source" 
+            position={Position.Bottom} 
+            id="otherwise" 
+            className="!bg-red-500 !w-3.5 !h-3.5 !border-2 !border-white shadow-md" 
+          />
+        </div>
       </div>
-      <div className="flex justify-between text-xs mt-1">
-        <span className="text-green-600">אז</span>
-        <span className="text-red-600">אחרת</span>
-      </div>
-      <div className="text-xs text-gray-500 mt-2 text-center">לחיצה כפולה לעריכה</div>
+      
+      <div className="text-xs text-gray-400 text-center absolute bottom-2 left-0 right-0 opacity-0 group-hover:opacity-100 transition-opacity">לחיצה כפולה לעריכה</div>
     </div>
   )
 }
 
 const ActionNode = ({ data }: { data: any }) => {
   const Icon = data.icon || Package
-  return (
-    <div className="px-4 py-3 bg-green-50 border-2 border-green-300 rounded-lg shadow-sm min-w-[200px] cursor-move">
-      <div className="flex items-center gap-2 mb-2">
-        <Icon className="w-5 h-5 text-green-600" />
-        <div className="font-semibold text-green-900">בצע פעולה...</div>
+  const isDelay = data.action?.type === "delay"
+  const isEnd = data.action?.type === "end"
+  
+  if (isDelay) {
+    const { amount, unit } = data.action?.config || {}
+    const unitLabels: Record<string, string> = {
+      seconds: "שניות",
+      minutes: "דקות",
+      hours: "שעות",
+      days: "ימים",
+      weeks: "שבועות",
+    }
+    
+    return (
+      <div className="px-5 py-4 bg-white border-2 border-orange-200 rounded-xl shadow-md hover:shadow-lg transition-shadow min-w-[220px] cursor-move group">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="p-1.5 bg-orange-50 rounded-lg">
+            <Clock className="w-4 h-4 text-orange-600" />
+          </div>
+          <div className="font-semibold text-gray-900 text-sm">המתן...</div>
+        </div>
+        <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 font-medium">
+          {amount && unit ? `${amount} ${unitLabels[unit] || unit}` : "המתן"}
+        </div>
+        <Handle type="target" position={Position.Top} className="!bg-orange-500 !w-3.5 !h-3.5 !border-2 !border-white shadow-md" />
+        <Handle type="source" position={Position.Bottom} className="!bg-orange-500 !w-3.5 !h-3.5 !border-2 !border-white shadow-md" />
+        <div className="text-xs text-gray-400 text-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity">לחיצה כפולה לעריכה</div>
       </div>
-      <div className="text-sm text-green-700 bg-white p-2 rounded border border-green-200">
+    )
+  }
+  
+  if (isEnd) {
+    return (
+      <div className="px-5 py-4 bg-white border-2 border-gray-200 rounded-xl shadow-md hover:shadow-lg transition-shadow min-w-[220px] cursor-move group">
+        <div className="flex items-center gap-2.5 mb-3">
+          <div className="p-1.5 bg-gray-50 rounded-lg">
+            <X className="w-4 h-4 text-gray-600" />
+          </div>
+          <div className="font-semibold text-gray-900 text-sm">סיים אוטומציה</div>
+        </div>
+        <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 font-medium">
+          האוטומציה מסתיימת כאן
+        </div>
+        <Handle type="target" position={Position.Top} className="!bg-gray-500 !w-3.5 !h-3.5 !border-2 !border-white shadow-md" />
+        <div className="text-xs text-gray-400 text-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity">לחיצה כפולה לעריכה</div>
+      </div>
+    )
+  }
+  
+  return (
+    <div className="px-5 py-4 bg-white border-2 border-green-200 rounded-xl shadow-md hover:shadow-lg transition-shadow min-w-[220px] cursor-move group">
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className="p-1.5 bg-green-50 rounded-lg">
+          <Icon className="w-4 h-4 text-green-600" />
+        </div>
+        <div className="font-semibold text-gray-900 text-sm">בצע פעולה...</div>
+      </div>
+      <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 font-medium">
         {data.label || "פעולה"}
       </div>
-      <Handle type="target" position={Position.Top} className="!bg-green-500 !w-3 !h-3" />
-      <Handle type="source" position={Position.Bottom} className="!bg-green-500 !w-3 !h-3" />
-      <div className="text-xs text-gray-500 mt-2 text-center">לחיצה כפולה לעריכה</div>
+      <Handle type="target" position={Position.Top} className="!bg-green-500 !w-3.5 !h-3.5 !border-2 !border-white shadow-md" />
+      <Handle type="source" position={Position.Bottom} className="!bg-green-500 !w-3.5 !h-3.5 !border-2 !border-white shadow-md" />
+      <div className="text-xs text-gray-400 text-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity">לחיצה כפולה לעריכה</div>
     </div>
   )
 }
@@ -141,6 +226,7 @@ export default function AutomationFlowBuilder({
   // Action form state
   const [actionType, setActionType] = useState("send_email")
   const [actionConfig, setActionConfig] = useState<any>({})
+  const [emailTab, setEmailTab] = useState("edit")
 
   const actionTypes = [
     {
@@ -168,10 +254,28 @@ export default function AutomationFlowBuilder({
       description: "צור התראה במערכת",
     },
     {
+      value: "delay",
+      label: "המתן",
+      icon: Clock,
+      description: "המתן לפני ביצוע הפעולה הבאה",
+    },
+    {
+      value: "create_coupon",
+      label: "צור קופון",
+      icon: Ticket,
+      description: "צור קופון חדש במערכת",
+    },
+    {
       value: "webhook",
       label: "שלח Webhook",
       icon: Webhook,
       description: "שלח Webhook ל-URL חיצוני",
+    },
+    {
+      value: "end",
+      label: "סיים אוטומציה",
+      icon: X,
+      description: "סיים את האוטומציה כאן",
     },
   ]
 
@@ -185,6 +289,147 @@ export default function AutomationFlowBuilder({
     { value: "in", label: "נמצא ב" },
     { value: "not_in", label: "לא נמצא ב" },
   ]
+
+  const conditionFields = [
+    // Order fields
+    { value: "order.total", label: "סכום הזמנה", category: "הזמנות" },
+    { value: "order.status", label: "סטטוס הזמנה", category: "הזמנות" },
+    { value: "order.newStatus", label: "סטטוס חדש (בשינוי סטטוס)", category: "הזמנות" },
+    { value: "order.oldStatus", label: "סטטוס קודם (בשינוי סטטוס)", category: "הזמנות" },
+    { value: "order.orderNumber", label: "מספר הזמנה", category: "הזמנות" },
+    { value: "order.customerEmail", label: "אימייל לקוח", category: "הזמנות" },
+    { value: "order.customerId", label: "מזהה לקוח", category: "הזמנות" },
+    { value: "order.items", label: "מספר פריטים", category: "הזמנות" },
+    { value: "order.subtotal", label: "סה\"כ לפני הנחה", category: "הזמנות" },
+    { value: "order.discount", label: "הנחה", category: "הזמנות" },
+    { value: "order.shipping", label: "משלוח", category: "הזמנות" },
+    { value: "order.tax", label: "מס", category: "הזמנות" },
+    
+    // Customer fields
+    { value: "customer.tier", label: "רמת לקוח", category: "לקוחות" },
+    { value: "customer.totalSpent", label: "סכום כולל שהוצא", category: "לקוחות" },
+    { value: "customer.orderCount", label: "מספר הזמנות", category: "לקוחות" },
+    { value: "customer.email", label: "אימייל", category: "לקוחות" },
+    { value: "customer.name", label: "שם", category: "לקוחות" },
+    { value: "customer.phone", label: "טלפון", category: "לקוחות" },
+    { value: "customer.city", label: "עיר", category: "לקוחות" },
+    { value: "customer.country", label: "מדינה", category: "לקוחות" },
+    { value: "customer.isSubscribed", label: "רשום לניוזלטר", category: "לקוחות" },
+    
+    // Cart fields
+    { value: "cart.total", label: "סכום עגלה", category: "עגלות" },
+    { value: "cart.items", label: "מספר פריטים בעגלה", category: "עגלות" },
+    { value: "cart.itemCount", label: "כמות פריטים", category: "עגלות" },
+    
+    // Product fields
+    { value: "product.name", label: "שם מוצר", category: "מוצרים" },
+    { value: "product.price", label: "מחיר מוצר", category: "מוצרים" },
+    { value: "product.category", label: "קטגוריה", category: "מוצרים" },
+    { value: "product.tags", label: "תגים", category: "מוצרים" },
+    { value: "product.inStock", label: "במלאי", category: "מוצרים" },
+    
+    // Inventory fields
+    { value: "inventory.quantity", label: "כמות במלאי", category: "מלאי" },
+    { value: "inventory.threshold", label: "סף התראה", category: "מלאי" },
+    
+    // Payment fields
+    { value: "payment.amount", label: "סכום תשלום", category: "תשלומים" },
+    { value: "payment.method", label: "אמצעי תשלום", category: "תשלומים" },
+    { value: "payment.status", label: "סטטוס תשלום", category: "תשלומים" },
+    
+    // General fields
+    { value: "shopId", label: "מזהה חנות", category: "כללי" },
+    { value: "userId", label: "מזהה משתמש", category: "כללי" },
+    { value: "createdAt", label: "תאריך יצירה", category: "כללי" },
+  ]
+
+  // פונקציה שמחזירה את הערכים האפשריים בהתאם לשדה שנבחר
+  const getFieldValueOptions = (field: string): Array<{value: string; label: string}> | null => {
+    switch (field) {
+      case "order.status":
+      case "order.newStatus":
+      case "order.oldStatus":
+        return [
+          { value: "PENDING", label: "ממתין" },
+          { value: "CONFIRMED", label: "מאושר" },
+          { value: "PROCESSING", label: "בטיפול" },
+          { value: "SHIPPED", label: "נשלח" },
+          { value: "DELIVERED", label: "נמסר" },
+          { value: "CANCELLED", label: "בוטל" },
+          { value: "REFUNDED", label: "הוחזר" },
+        ]
+      case "customer.tier":
+        return [
+          { value: "REGULAR", label: "רגיל" },
+          { value: "VIP", label: "VIP" },
+          { value: "PREMIUM", label: "פרימיום" },
+        ]
+      case "payment.status":
+        return [
+          { value: "PENDING", label: "ממתין" },
+          { value: "PROCESSING", label: "בטיפול" },
+          { value: "COMPLETED", label: "הושלם" },
+          { value: "PAID", label: "שולם" },
+          { value: "FAILED", label: "נכשל" },
+          { value: "REFUNDED", label: "הוחזר" },
+        ]
+      case "customer.isSubscribed":
+        return [
+          { value: "true", label: "כן" },
+          { value: "false", label: "לא" },
+        ]
+      case "product.inStock":
+        return [
+          { value: "true", label: "כן" },
+          { value: "false", label: "לא" },
+        ]
+      default:
+        return null // אין אפשרויות מוגדרות מראש - משתמש יכול להזין ערך חופשי
+    }
+  }
+
+  // Helper function to create action nodes recursively
+  const createActionNodes = (actions: any[], startYPos: number, startXPos: number, prefix: string): { nodes: Node[], maxY: number } => {
+    const nodes: Node[] = []
+    let yPos = startYPos
+    
+    actions.forEach((action, index) => {
+      const actionTypeInfo = actionTypes.find((at) => at.value === action.type)
+      
+      // טיפול מיוחד ב-delay node
+      let label = actionTypeInfo?.label || action.type
+      if (action.type === "delay" && action.config?.amount && action.config?.unit) {
+        const unitLabels: Record<string, string> = {
+          seconds: "שניות",
+          minutes: "דקות",
+          hours: "שעות",
+          days: "ימים",
+          weeks: "שבועות",
+        }
+        label = `${action.config.amount} ${unitLabels[action.config.unit] || action.config.unit}`
+      }
+      
+      // טיפול מיוחד ב-create_coupon node
+      if (action.type === "create_coupon" && action.config?.code) {
+        label = `קופון: ${action.config.code}`
+      }
+      
+      nodes.push({
+        id: `${prefix}-${index}`,
+        type: "action",
+        position: { x: startXPos, y: yPos },
+        data: {
+          label,
+          icon: actionTypeInfo?.icon || Package,
+          action,
+          index,
+        },
+      })
+      yPos += 200
+    })
+    
+    return { nodes, maxY: yPos }
+  }
 
   // Create nodes and edges with useMemo
   const initialNodes: Node[] = useMemo(() => {
@@ -203,10 +448,46 @@ export default function AutomationFlowBuilder({
           type: trigger.type,
         },
       })
-      yPos += 150
+      yPos += 200
     }
 
-    // Condition nodes
+    // Actions before conditions (main flow)
+    actions.forEach((action, index) => {
+      const actionTypeInfo = actionTypes.find((at) => at.value === action.type)
+      
+      // טיפול מיוחד ב-delay node
+      let label = actionTypeInfo?.label || action.type
+      if (action.type === "delay" && action.config?.amount && action.config?.unit) {
+        const unitLabels: Record<string, string> = {
+          seconds: "שניות",
+          minutes: "דקות",
+          hours: "שעות",
+          days: "ימים",
+          weeks: "שבועות",
+        }
+        label = `${action.config.amount} ${unitLabels[action.config.unit] || action.config.unit}`
+      }
+      
+      // טיפול מיוחד ב-create_coupon node
+      if (action.type === "create_coupon" && action.config?.code) {
+        label = `קופון: ${action.config.code}`
+      }
+      
+      nodes.push({
+        id: `action-${index}`,
+        type: "action",
+        position: { x: 400, y: yPos },
+        data: {
+          label,
+          icon: actionTypeInfo?.icon || Package,
+          action,
+          index,
+        },
+      })
+      yPos += 200
+    })
+
+    // Condition nodes with branches
     conditions.forEach((condition, index) => {
       const conditionLabel = `${condition.field} ${operators.find((op) => op.value === condition.operator)?.label || condition.operator} ${condition.value}`
       nodes.push({
@@ -219,24 +500,19 @@ export default function AutomationFlowBuilder({
           index,
         },
       })
-      yPos += 150
-    })
-
-    // Action nodes
-    actions.forEach((action, index) => {
-      const actionTypeInfo = actionTypes.find((at) => at.value === action.type)
-      nodes.push({
-        id: `action-${index}`,
-        type: "action",
-        position: { x: 400, y: yPos },
-        data: {
-          label: actionTypeInfo?.label || action.type,
-          icon: actionTypeInfo?.icon || Package,
-          action,
-          index,
-        },
-      })
-      yPos += 150
+      yPos += 250 // רווח גדול יותר בגלל הנקודות של אז/אחרת
+      
+      // Create "then" branch nodes (left side - aligned with "אז")
+      if (condition.thenActions && condition.thenActions.length > 0) {
+        const thenResult = createActionNodes(condition.thenActions, yPos, 200, `then-${index}`)
+        nodes.push(...thenResult.nodes)
+      }
+      
+      // Create "else" branch nodes (right side - aligned with "אחרת")
+      if (condition.elseActions && condition.elseActions.length > 0) {
+        const elseResult = createActionNodes(condition.elseActions, yPos, 600, `else-${index}`)
+        nodes.push(...elseResult.nodes)
+      }
     })
 
     return nodes
@@ -245,17 +521,9 @@ export default function AutomationFlowBuilder({
   const initialEdges: Edge[] = useMemo(() => {
     const edges: Edge[] = []
 
-    // Connect trigger to first condition or first action
+    // Connect trigger to first action (if exists) or first condition
     if (trigger) {
-      if (conditions.length > 0) {
-        edges.push({
-          id: "trigger-condition-0",
-          source: "trigger",
-          target: "condition-0",
-          type: "smoothstep",
-          animated: true,
-        })
-      } else if (actions.length > 0) {
+      if (actions.length > 0) {
         edges.push({
           id: "trigger-action-0",
           source: "trigger",
@@ -263,44 +531,107 @@ export default function AutomationFlowBuilder({
           type: "smoothstep",
           animated: true,
         })
-      }
-    }
-
-    // Connect conditions
-    conditions.forEach((_, index) => {
-      if (index > 0) {
+      } else if (conditions.length > 0) {
         edges.push({
-          id: `condition-${index - 1}-condition-${index}`,
-          source: `condition-${index - 1}`,
-          target: `condition-${index}`,
-          sourceHandle: "then",
+          id: "trigger-condition-0",
+          source: "trigger",
+          target: "condition-0",
           type: "smoothstep",
           animated: true,
         })
       }
-    })
-
-    // Connect conditions to actions
-    if (conditions.length > 0 && actions.length > 0) {
-      edges.push({
-        id: `condition-${conditions.length - 1}-action-0`,
-        source: `condition-${conditions.length - 1}`,
-        target: "action-0",
-        sourceHandle: "then",
-        type: "smoothstep",
-        animated: true,
-      })
     }
 
-    // Connect actions
-    actions.forEach((_, index) => {
+    // Connect actions in sequence
+    actions.forEach((action, index) => {
       if (index > 0) {
+        // אל תחבר מ-end node
+        const prevAction = actions[index - 1]
+        if (prevAction?.type !== "end") {
+          edges.push({
+            id: `action-${index - 1}-action-${index}`,
+            source: `action-${index - 1}`,
+            target: `action-${index}`,
+            type: "smoothstep",
+            animated: true,
+          })
+        }
+      }
+    })
+
+    // Connect last action to first condition
+    if (actions.length > 0 && conditions.length > 0) {
+      const lastAction = actions[actions.length - 1]
+      if (lastAction?.type !== "end") {
         edges.push({
-          id: `action-${index - 1}-action-${index}`,
-          source: `action-${index - 1}`,
-          target: `action-${index}`,
+          id: `action-${actions.length - 1}-condition-0`,
+          source: `action-${actions.length - 1}`,
+          target: "condition-0",
           type: "smoothstep",
           animated: true,
+        })
+      }
+    }
+
+    // Connect conditions and their branches
+    conditions.forEach((condition, index) => {
+      // Connect "then" branch
+      if (condition.thenActions && condition.thenActions.length > 0) {
+        edges.push({
+          id: `condition-${index}-then-${index}-0`,
+          source: `condition-${index}`,
+          target: `then-${index}-0`,
+          sourceHandle: "then",
+          type: "smoothstep",
+          animated: true,
+          style: { stroke: '#10b981' }, // Green for "then"
+        })
+        
+        // Connect within then branch
+        condition.thenActions.forEach((_: any, actionIndex: number) => {
+          if (actionIndex > 0) {
+            const prevAction = condition.thenActions[actionIndex - 1]
+            if (prevAction?.type !== "end") {
+              edges.push({
+                id: `then-${index}-${actionIndex - 1}-then-${index}-${actionIndex}`,
+                source: `then-${index}-${actionIndex - 1}`,
+                target: `then-${index}-${actionIndex}`,
+                type: "smoothstep",
+                animated: true,
+                style: { stroke: '#10b981' },
+              })
+            }
+          }
+        })
+      }
+      
+      // Connect "else" branch
+      if (condition.elseActions && condition.elseActions.length > 0) {
+        edges.push({
+          id: `condition-${index}-else-${index}-0`,
+          source: `condition-${index}`,
+          target: `else-${index}-0`,
+          sourceHandle: "otherwise",
+          type: "smoothstep",
+          animated: true,
+          style: { stroke: '#ef4444' }, // Red for "else"
+        })
+        
+        // Connect within else branch
+        condition.elseActions.forEach((_: any, actionIndex: number) => {
+          if (actionIndex > 0) {
+            const prevAction = condition.elseActions[actionIndex - 1]
+            if (prevAction?.type !== "end") {
+              edges.push({
+                id: `else-${index}-${actionIndex - 1}-else-${index}-${actionIndex}`,
+                source: `else-${index}-${actionIndex - 1}`,
+                target: `else-${index}-${actionIndex}`,
+                type: "smoothstep",
+                animated: true,
+                style: { stroke: '#ef4444' },
+              })
+            }
+          }
         })
       }
     })
@@ -342,15 +673,15 @@ export default function AutomationFlowBuilder({
     // Double click to edit
     if ((event as any).detail === 2) {
       if (node.type === "condition") {
-        const condition = node.data.condition
+        const condition = node.data.condition as any
         setConditionField(condition.field)
         setConditionOperator(condition.operator)
-        setConditionValue(condition.value)
+        setConditionValue(String(condition.value || ""))
         setConditionLogicalOp(condition.logicalOperator || "AND")
         setEditingNodeId(node.id)
         setConditionDialogOpen(true)
       } else if (node.type === "action") {
-        const action = node.data.action
+        const action = node.data.action as any
         setActionType(action.type)
         setActionConfig(action.config)
         setEditingNodeId(node.id)
@@ -428,18 +759,125 @@ export default function AutomationFlowBuilder({
   const renderActionConfig = () => {
     switch (actionType) {
       case "send_email":
+        const defaultEmailTemplate = `<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+      direction: rtl;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%);
+      padding: 30px 20px;
+      text-align: center;
+      color: white;
+    }
+    .content {
+      padding: 30px 20px;
+      color: #333;
+      line-height: 1.6;
+    }
+    .footer {
+      background-color: #f9f9f9;
+      padding: 20px;
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+      border-top: 1px solid #eee;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>שלום {{customer.name}}!</h1>
+    </div>
+    <div class="content">
+      <p>תודה על העניין שלך בחנות שלנו.</p>
+      <p>אנו שמחים לראותך כאן!</p>
+    </div>
+    <div class="footer">
+      <p>הודעה זו נשלחה אוטומטית מ-Quick Shop</p>
+    </div>
+  </div>
+</body>
+</html>`
+
+        const dynamicVariables = [
+          { variable: "{{customer.name}}", description: "שם הלקוח" },
+          { variable: "{{customer.email}}", description: "אימייל הלקוח" },
+          { variable: "{{customer.phone}}", description: "טלפון הלקוח" },
+          { variable: "{{order.orderNumber}}", description: "מספר הזמנה" },
+          { variable: "{{order.total}}", description: "סכום הזמנה" },
+          { variable: "{{order.status}}", description: "סטטוס הזמנה" },
+          { variable: "{{cart.total}}", description: "סכום עגלה" },
+          { variable: "{{cart.items}}", description: "מספר פריטים בעגלה" },
+          { variable: "{{cart.checkoutUrl}}", description: "לינק ישיר לצ'ק אאוט עם העגלה" },
+          { variable: "{{coupon.code}}", description: "קוד קופון" },
+          { variable: "{{coupon.value}}", description: "ערך קופון" },
+          { variable: "{{shop.name}}", description: "שם החנות" },
+          { variable: "{{shop.email}}", description: "אימייל החנות" },
+        ]
+
         return (
           <div className="space-y-4">
             <div>
               <Label>אל</Label>
-              <Input
-                value={actionConfig.to || ""}
-                onChange={(e) =>
-                  setActionConfig({ ...actionConfig, to: e.target.value })
-                }
-                placeholder="customer.email או כתובת אימייל"
-                className="mt-1"
-              />
+              <Select
+                value={actionConfig.toType || "customer"}
+                onValueChange={(value) => {
+                  let to = ""
+                  if (value === "customer") {
+                    to = "{{customer.email}}"
+                  } else if (value === "admin") {
+                    to = "{{shop.email}}"
+                  }
+                  setActionConfig({ ...actionConfig, toType: value, to })
+                }}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="בחר נמען" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="customer">אימייל הלקוח</SelectItem>
+                  <SelectItem value="admin">מנהל האתר</SelectItem>
+                  <SelectItem value="custom">מייל אחר</SelectItem>
+                </SelectContent>
+              </Select>
+              {actionConfig.toType === "custom" && (
+                <Input
+                  value={actionConfig.to || ""}
+                  onChange={(e) =>
+                    setActionConfig({ ...actionConfig, to: e.target.value })
+                  }
+                  placeholder="הזן כתובת אימייל"
+                  className="mt-2"
+                />
+              )}
+              {actionConfig.toType !== "custom" && (
+                <Input
+                  value={actionConfig.to || (actionConfig.toType === "customer" ? "{{customer.email}}" : "{{shop.email}}")}
+                  onChange={(e) =>
+                    setActionConfig({ ...actionConfig, to: e.target.value })
+                  }
+                  placeholder="אימייל או משתנה דינמי"
+                  className="mt-2"
+                />
+              )}
             </div>
             <div>
               <Label>נושא</Label>
@@ -448,21 +886,121 @@ export default function AutomationFlowBuilder({
                 onChange={(e) =>
                   setActionConfig({ ...actionConfig, subject: e.target.value })
                 }
-                placeholder="נושא האימייל"
+                placeholder="נושא האימייל (ניתן להשתמש במשתנים דינמיים)"
                 className="mt-1"
               />
             </div>
             <div>
-              <Label>תוכן</Label>
-              <textarea
-                value={actionConfig.template || ""}
-                onChange={(e) =>
-                  setActionConfig({ ...actionConfig, template: e.target.value })
-                }
-                placeholder="תוכן האימייל (HTML)"
-                className="mt-1 w-full min-h-[100px] p-2 border rounded-md"
-                rows={5}
-              />
+              <div className="flex items-center justify-between mb-2">
+                <Label>תוכן (HTML)</Label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setActionConfig({ ...actionConfig, template: defaultEmailTemplate })
+                  }}
+                >
+                  טען תבנית ברירת מחדל
+                </Button>
+              </div>
+              <Tabs value={emailTab} onValueChange={setEmailTab}>
+                <TabsList className="mb-4">
+                  <TabsTrigger value="edit">עריכה</TabsTrigger>
+                  <TabsTrigger value="preview">תצוגה מקדימה</TabsTrigger>
+                </TabsList>
+                <TabsContent value="edit">
+                  <textarea
+                    value={actionConfig.template || ""}
+                    onChange={(e) =>
+                      setActionConfig({ ...actionConfig, template: e.target.value })
+                    }
+                    placeholder="תוכן האימייל (HTML)"
+                    className="w-full min-h-[300px] p-3 border rounded-md font-mono text-xs"
+                    rows={12}
+                  />
+                </TabsContent>
+                <TabsContent value="preview">
+                  <div className="border rounded-md bg-gray-50 p-4 min-h-[300px] max-h-[500px] overflow-y-auto">
+                    <div 
+                      className="bg-white rounded shadow-sm p-4"
+                      dangerouslySetInnerHTML={{ 
+                        __html: (actionConfig.template || '<p className="text-gray-400 text-sm">התצוגה המקדימה תופיע כאן...</p>')
+                          .replace(/\{\{customer\.name\}\}/g, 'יוסי כהן')
+                          .replace(/\{\{customer\.email\}\}/g, 'yossi@example.com')
+                          .replace(/\{\{customer\.phone\}\}/g, '050-1234567')
+                          .replace(/\{\{order\.orderNumber\}\}/g, 'ORD-12345')
+                          .replace(/\{\{order\.total\}\}/g, '₪299.00')
+                          .replace(/\{\{order\.status\}\}/g, 'CONFIRMED')
+                          .replace(/\{\{cart\.total\}\}/g, '₪199.00')
+                          .replace(/\{\{cart\.items\}\}/g, '3')
+                          .replace(/\{\{coupon\.code\}\}/g, 'SAVE10')
+                          .replace(/\{\{coupon\.value\}\}/g, '10%')
+                          .replace(/\{\{shop\.name\}\}/g, 'החנות שלי')
+                          .replace(/\{\{shop\.email\}\}/g, 'shop@example.com')
+                      }}
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
+            <div>
+              <Label className="mb-2 block">משתנים דינמיים זמינים</Label>
+              <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
+                <p className="text-xs text-gray-600 mb-2">לחץ על משתנה כדי להעתיק אותו:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {dynamicVariables.map((item) => (
+                    <button
+                      key={item.variable}
+                      type="button"
+                      onClick={() => {
+                        const textarea = document.querySelector('textarea[placeholder*="תוכן האימייל"]') as HTMLTextAreaElement
+                        if (textarea) {
+                          const start = textarea.selectionStart || 0
+                          const end = textarea.selectionEnd || 0
+                          const text = textarea.value
+                          const newText = text.substring(0, start) + item.variable + text.substring(end)
+                          setActionConfig({ ...actionConfig, template: newText })
+                          setTimeout(() => {
+                            textarea.focus()
+                            textarea.setSelectionRange(start + item.variable.length, start + item.variable.length)
+                          }, 0)
+                        }
+                      }}
+                      className="text-left p-2 bg-white border border-gray-200 rounded hover:bg-gray-100 transition-colors text-xs"
+                    >
+                      <code className="text-purple-600 font-semibold">{item.variable}</code>
+                      <div className="text-gray-500 mt-1">{item.description}</div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            {/* Send test email button */}
+            <div>
+              <Label className="mb-2 block">שלח מייל לדוגמא</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full"
+                onClick={async () => {
+                  // This will be handled by parent component
+                  if (!actionConfig.subject || !actionConfig.template) {
+                    alert("אנא מלא את נושא המייל והתוכן תחילה")
+                    return
+                  }
+                  
+                  // We'll need to add a callback prop for this
+                  console.log("Send test email", actionConfig)
+                  alert("פונקציה זו תתווסף בהמשך - צריך להעביר callback מהקומפוננטה האב")
+                }}
+              >
+                <Mail className="w-4 h-4 ml-2" />
+                שלח מייל לדוגמא
+              </Button>
+              <p className="text-xs text-gray-500 mt-1">המייל ישלח לכתובת המייל שלך לבדיקה</p>
             </div>
           </div>
         )
@@ -542,6 +1080,154 @@ export default function AutomationFlowBuilder({
           </div>
         )
 
+      case "delay":
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label>כמות</Label>
+              <Input
+                type="number"
+                value={actionConfig.amount || ""}
+                onChange={(e) =>
+                  setActionConfig({
+                    ...actionConfig,
+                    amount: parseInt(e.target.value) || 0,
+                  })
+                }
+                placeholder="לדוגמה: 5"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>יחידת זמן</Label>
+              <Select
+                value={actionConfig.unit || "seconds"}
+                onValueChange={(value) =>
+                  setActionConfig({ ...actionConfig, unit: value })
+                }
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="seconds">שניות</SelectItem>
+                  <SelectItem value="minutes">דקות</SelectItem>
+                  <SelectItem value="hours">שעות</SelectItem>
+                  <SelectItem value="days">ימים</SelectItem>
+                  <SelectItem value="weeks">שבועות</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        )
+
+      case "create_coupon":
+        return (
+          <div className="space-y-4">
+            <div>
+              <Label>קוד קופון (אופציונלי - יווצר אוטומטית אם לא מוגדר)</Label>
+              <Input
+                value={actionConfig.code || ""}
+                onChange={(e) =>
+                  setActionConfig({ ...actionConfig, code: e.target.value })
+                }
+                placeholder="לדוגמה: WELCOME10"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>סוג הנחה</Label>
+              <Select
+                value={actionConfig.type || "PERCENTAGE"}
+                onValueChange={(value) =>
+                  setActionConfig({ ...actionConfig, type: value })
+                }
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PERCENTAGE">אחוז</SelectItem>
+                  <SelectItem value="FIXED">סכום קבוע</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>ערך הנחה</Label>
+              <Input
+                type="number"
+                value={actionConfig.value || ""}
+                onChange={(e) =>
+                  setActionConfig({
+                    ...actionConfig,
+                    value: parseFloat(e.target.value) || 0,
+                  })
+                }
+                placeholder="לדוגמה: 10 (אם אחוז) או 50 (אם סכום קבוע)"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>מינימום הזמנה (אופציונלי)</Label>
+              <Input
+                type="number"
+                value={actionConfig.minOrder || ""}
+                onChange={(e) =>
+                  setActionConfig({
+                    ...actionConfig,
+                    minOrder: parseFloat(e.target.value) || undefined,
+                  })
+                }
+                placeholder="לדוגמה: 100"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>מקסימום שימושים (אופציונלי)</Label>
+              <Input
+                type="number"
+                value={actionConfig.maxUses || ""}
+                onChange={(e) =>
+                  setActionConfig({
+                    ...actionConfig,
+                    maxUses: parseInt(e.target.value) || undefined,
+                  })
+                }
+                placeholder="לדוגמה: 100"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <Label>תוקף עד (אופציונלי)</Label>
+              <Input
+                type="datetime-local"
+                value={actionConfig.endDate || ""}
+                onChange={(e) =>
+                  setActionConfig({ ...actionConfig, endDate: e.target.value })
+                }
+                className="mt-1"
+              />
+            </div>
+            <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+              <input
+                type="checkbox"
+                id="uniquePerCustomer"
+                checked={actionConfig.uniquePerCustomer || false}
+                onChange={(e) =>
+                  setActionConfig({ ...actionConfig, uniquePerCustomer: e.target.checked })
+                }
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <Label htmlFor="uniquePerCustomer" className="cursor-pointer">
+                <div className="font-semibold text-blue-900">קופון ייחודי חד פעמי לכל לקוח</div>
+                <div className="text-xs text-blue-700 mt-1">
+                  כל לקוח יקבל קופון ייחודי משלו שניתן לשימוש חד פעמי בלבד
+                </div>
+              </Label>
+            </div>
+          </div>
+        )
+
       case "webhook":
         return (
           <div className="space-y-4">
@@ -573,6 +1259,17 @@ export default function AutomationFlowBuilder({
                   <SelectItem value="PUT">PUT</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+        )
+
+      case "end":
+        return (
+          <div className="space-y-4">
+            <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+              <p className="text-sm text-gray-600">
+                האוטומציה תסתיים כאן. לא תתבצע שום פעולה נוספת לאחר נקודה זו.
+              </p>
             </div>
           </div>
         )
@@ -676,24 +1373,49 @@ export default function AutomationFlowBuilder({
         </Card>
       )}
 
-      {/* Condition Dialog */}
-      <Dialog open={conditionDialogOpen} onOpenChange={setConditionDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>הוסף תנאי</DialogTitle>
-            <DialogDescription>
+      {/* Condition Sheet */}
+      <Sheet open={conditionDialogOpen} onOpenChange={setConditionDialogOpen} side="left">
+        <SheetContent onClose={() => setConditionDialogOpen(false)} className="w-full sm:max-w-lg">
+          <SheetHeader>
+            <SheetTitle>הוסף תנאי</SheetTitle>
+            <SheetDescription>
               הגדר תנאי שיקבע מתי האוטומציה תרוץ
-            </DialogDescription>
-          </DialogHeader>
+            </SheetDescription>
+          </SheetHeader>
+          <SheetBody>
           <div className="space-y-4">
             <div>
               <Label>שדה</Label>
-              <Input
+              <Select
                 value={conditionField}
-                onChange={(e) => setConditionField(e.target.value)}
-                placeholder="לדוגמה: order.total, customer.tier"
-                className="mt-1"
-              />
+                onValueChange={setConditionField}
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="בחר שדה לבדיקה" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(
+                    conditionFields.reduce((acc, field) => {
+                      if (!acc[field.category]) {
+                        acc[field.category] = []
+                      }
+                      acc[field.category].push(field)
+                      return acc
+                    }, {} as Record<string, Array<{value: string; label: string; category: string}>>)
+                  ).map(([category, fields]) => (
+                    <div key={category}>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
+                        {category}
+                      </div>
+                      {fields.map((field) => (
+                        <SelectItem key={field.value} value={field.value}>
+                          {field.label}
+                        </SelectItem>
+                      ))}
+                    </div>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>אופרטור</Label>
@@ -715,12 +1437,30 @@ export default function AutomationFlowBuilder({
             </div>
             <div>
               <Label>ערך</Label>
-              <Input
-                value={conditionValue}
-                onChange={(e) => setConditionValue(e.target.value)}
-                placeholder="הערך לבדיקה"
-                className="mt-1"
-              />
+              {getFieldValueOptions(conditionField) ? (
+                <Select
+                  value={conditionValue}
+                  onValueChange={setConditionValue}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="בחר ערך" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {getFieldValueOptions(conditionField)?.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Input
+                  value={conditionValue}
+                  onChange={(e) => setConditionValue(e.target.value)}
+                  placeholder="הערך לבדיקה"
+                  className="mt-1"
+                />
+              )}
             </div>
             {conditions.length > 0 && (
               <div>
@@ -742,7 +1482,8 @@ export default function AutomationFlowBuilder({
               </div>
             )}
           </div>
-          <DialogFooter>
+          </SheetBody>
+          <SheetFooter className="gap-2">
             <Button
               variant="outline"
               onClick={() => {
@@ -755,23 +1496,27 @@ export default function AutomationFlowBuilder({
             <Button onClick={handleAddCondition}>
               {editingNodeId ? "עדכן" : "הוסף"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
-      {/* Action Dialog */}
-      <Dialog open={actionDialogOpen} onOpenChange={setActionDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>הוסף פעולה</DialogTitle>
-            <DialogDescription>
+      {/* Action Sheet */}
+      <Sheet open={actionDialogOpen} onOpenChange={setActionDialogOpen} side="left">
+        <SheetContent onClose={() => setActionDialogOpen(false)} className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>הוסף פעולה</SheetTitle>
+            <SheetDescription>
               בחר פעולה שתתבצע כאשר האוטומציה תרוץ
-            </DialogDescription>
-          </DialogHeader>
+            </SheetDescription>
+          </SheetHeader>
+          <SheetBody>
           <div className="space-y-4">
             <div>
               <Label>סוג פעולה</Label>
-              <Select value={actionType} onValueChange={setActionType}>
+              <Select value={actionType} onValueChange={(value) => {
+                setActionType(value)
+                setEmailTab("edit")
+              }}>
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="בחר סוג פעולה">
                     {(() => {
@@ -809,7 +1554,8 @@ export default function AutomationFlowBuilder({
             </div>
             {renderActionConfig()}
           </div>
-          <DialogFooter>
+          </SheetBody>
+          <SheetFooter className="gap-2">
             <Button
               variant="outline"
               onClick={() => {
@@ -822,9 +1568,9 @@ export default function AutomationFlowBuilder({
             <Button onClick={handleAddAction}>
               {editingNodeId ? "עדכן" : "הוסף"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
     </div>
   )
 }

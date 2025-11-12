@@ -1,23 +1,47 @@
-import nodemailer from 'nodemailer'
-
-// Gmail SMTP Configuration
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.GMAIL_USER || 'quickshopil@gmail.com',
-    pass: process.env.GMAIL_APP_PASSWORD || 'umqm cbum rdmp xsmm',
-  },
-})
+import sgMail from '@sendgrid/mail'
+import { prisma } from './prisma'
 
 /**
- * Send an email using Gmail SMTP
+ * Get SendGrid settings from database
+ */
+async function getSendGridSettings() {
+  try {
+    const settings = await prisma.company.findUnique({
+      where: { id: "SENDGRID_GLOBAL_SETTINGS" },
+      select: {
+        settings: true,
+      },
+    })
+
+    if (!settings || !settings.settings) {
+      return null
+    }
+
+    const sendgridSettings = (settings.settings as any)?.sendgrid
+    if (!sendgridSettings || !sendgridSettings.apiKey) {
+      return null
+    }
+
+    return {
+      apiKey: sendgridSettings.apiKey,
+      fromEmail: sendgridSettings.fromEmail || 'no-reply@my-quickshop.com',
+      fromName: sendgridSettings.fromName || 'Quick Shop',
+    }
+  } catch (error) {
+    console.error('Error fetching SendGrid settings:', error)
+    return null
+  }
+}
+
+/**
+ * Send an email using SendGrid only
  */
 export async function sendEmail({
   to,
   subject,
   html,
   text,
-  from = 'Quick Shop <quickshopil@gmail.com>',
+  from,
   attachments,
 }: {
   to: string | string[]
@@ -31,26 +55,104 @@ export async function sendEmail({
     contentType?: string
   }>
 }): Promise<void> {
-  try {
-    const info = await transporter.sendMail({
-      from,
-      to: Array.isArray(to) ? to.join(', ') : to,
-      subject,
-      text: text || '',
-      html: html || text || '',
-      attachments: attachments || [],
-    })
+  // Get SendGrid settings - required!
+  const sendgridSettings = await getSendGridSettings()
+  
+  if (!sendgridSettings || !sendgridSettings.apiKey) {
+    throw new Error('SendGrid is not configured. Please configure SendGrid in Super Admin settings (/admin) before sending emails.')
+  }
 
-    console.log('✅ Email sent successfully:', info.messageId)
-    console.log('📧 Preview URL:', nodemailer.getTestMessageUrl(info))
-  } catch (error: any) {
-    // אם זו שגיאת אימות, נדפיס הודעה קצרה יותר
-    if (error?.code === 'EAUTH') {
-      console.warn('⚠️ Email authentication failed. Check GMAIL_USER and GMAIL_APP_PASSWORD environment variables.')
-    } else {
-      console.error('❌ Error sending email:', error?.message || error)
+  try {
+    sgMail.setApiKey(sendgridSettings.apiKey)
+    
+    // Parse 'from' parameter or use SendGrid settings
+    let fromEmail = sendgridSettings.fromEmail
+    let fromName = sendgridSettings.fromName
+    
+    if (from) {
+      // Parse "Name <email@example.com>" format
+      const fromMatch = from.match(/^(.+?)\s*<(.+?)>$/)
+      if (fromMatch) {
+        fromName = fromMatch[1].trim()
+        fromEmail = fromMatch[2].trim()
+      } else if (from.includes('@')) {
+        fromEmail = from
+      }
     }
-    throw error
+
+    // Convert recipients to array
+    const recipients = Array.isArray(to) ? to : [to]
+    
+    // Validate from email format
+    if (!fromEmail || !fromEmail.includes('@')) {
+      throw new Error('Invalid from email address. Please configure a valid email address in SendGrid settings.')
+    }
+
+    // Send email - SendGrid supports multiple recipients in 'to' field
+    const msg: any = {
+      to: recipients,
+      from: {
+        email: fromEmail,
+        name: fromName || 'Quick Shop',
+      },
+      subject: subject || 'No Subject',
+    }
+
+    // Add content - SendGrid requires at least one of html or text
+    if (html) {
+      msg.html = html
+    }
+    if (text) {
+      msg.text = text
+    }
+    // If no html or text provided, use empty string
+    if (!html && !text) {
+      msg.text = ''
+      msg.html = ''
+    }
+
+    // Add attachments if any
+    if (attachments && attachments.length > 0) {
+      msg.attachments = attachments.map(att => ({
+        content: typeof att.content === 'string' 
+          ? att.content 
+          : Buffer.isBuffer(att.content)
+          ? att.content.toString('base64')
+          : att.content.toString('base64'),
+        filename: att.filename,
+        type: att.contentType || 'application/octet-stream',
+        disposition: 'attachment',
+      }))
+    }
+
+    await sgMail.send(msg)
+    console.log('✅ Email sent successfully via SendGrid to', recipients.length, 'recipient(s)')
+  } catch (error: any) {
+    console.error('❌ Error sending email via SendGrid:', error?.message || error)
+    
+    // Log more details for debugging
+    if (error.response) {
+      console.error('SendGrid response body:', error.response.body)
+      console.error('SendGrid response headers:', error.response.headers)
+    }
+    
+    // Provide more specific error messages
+    let errorMessage = 'Failed to send email via SendGrid'
+    if (error.response?.body) {
+      const body = typeof error.response.body === 'string' 
+        ? JSON.parse(error.response.body) 
+        : error.response.body
+      
+      if (body.errors && Array.isArray(body.errors)) {
+        errorMessage = body.errors.map((e: any) => e.message || e).join(', ')
+      } else if (body.message) {
+        errorMessage = body.message
+      }
+    } else if (error.message) {
+      errorMessage = error.message
+    }
+    
+    throw new Error(`SendGrid error: ${errorMessage}. Please check your SendGrid API key, from email (must be verified in SendGrid), and settings.`)
   }
 }
 
@@ -64,12 +166,30 @@ export function parseEmailTemplate(
   let parsed = template
 
   // Replace {{variable}} with actual values
+  // First handle nested paths like {{customer.name}} or {{coupon.code}}
+  const nestedRegex = /\{\{([\w.]+)\}\}/g
+  parsed = parsed.replace(nestedRegex, (match, path) => {
+    const value = getNestedValue(variables, path)
+    return value !== undefined && value !== null ? String(value) : match
+  })
+
+  // Then handle simple variables for backward compatibility
   Object.entries(variables).forEach(([key, value]) => {
     const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g')
     parsed = parsed.replace(regex, value !== undefined && value !== null ? String(value) : '')
   })
 
   return parsed
+}
+
+/**
+ * Get nested value from object using dot notation
+ */
+function getNestedValue(obj: any, path: string): any {
+  return path.split('.').reduce((current, key) => {
+    if (current === null || current === undefined) return undefined
+    return current[key]
+  }, obj)
 }
 
 /**
@@ -297,15 +417,23 @@ export const emailTemplates = {
 }
 
 /**
- * Verify SMTP connection
+ * Verify SendGrid connection
  */
 export async function verifyEmailConnection(): Promise<boolean> {
   try {
-    await transporter.verify()
-    console.log('✅ Email server is ready to send messages')
+    const sendgridSettings = await getSendGridSettings()
+    
+    if (!sendgridSettings || !sendgridSettings.apiKey) {
+      console.warn('⚠️ SendGrid is not configured')
+      return false
+    }
+
+    // Try to set the API key - if it's invalid, SendGrid will throw an error when we try to send
+    sgMail.setApiKey(sendgridSettings.apiKey)
+    console.log('✅ SendGrid is configured')
     return true
   } catch (error) {
-    console.error('❌ Email server connection failed:', error)
+    console.error('❌ SendGrid connection failed:', error)
     return false
   }
 }

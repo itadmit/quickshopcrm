@@ -58,7 +58,7 @@ export function Header({ title }: HeaderProps) {
   }
 
   return (
-    <header className="h-16 border-b border-gray-200 bg-white flex items-center justify-between px-6">
+    <header className="h-16 border-b border-gray-200 bg-white flex items-center justify-between px-6 sticky top-0 z-50">
       <div className="flex items-center gap-4 flex-1">
         {title && (
           <h1 className="text-2xl font-bold text-gray-900">{title}</h1>

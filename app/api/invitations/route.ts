@@ -126,26 +126,38 @@ export async function POST(req: NextRequest) {
     // שליחת מייל עם קישור אישור
     const acceptUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000'}/invite/accept/${token}`
     
-    await sendEmail({
-      to: email,
-      subject: `הזמנה להצטרפות ל-Quick Shop`,
-      html: `
-        <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #6f65e2;">הזמנה להצטרפות ל-Quick Shop</h2>
-          <p>שלום ${name || email},</p>
-          <p>${session.user.name} הזמין אותך להצטרף לצוות ב-Quick Shop.</p>
-          <p>לחץ על הקישור הבא כדי לאשר את ההזמנה וליצור חשבון:</p>
-          <p style="text-align: center; margin: 30px 0;">
-            <a href="${acceptUrl}" style="background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              אישור והצטרפות
-            </a>
-          </p>
-          <p style="color: #666; font-size: 12px;">
-            הקישור תקף למשך 7 ימים.
-          </p>
-        </div>
-      `,
-    })
+    try {
+      await sendEmail({
+        to: email,
+        subject: `הזמנה להצטרפות ל-Quick Shop`,
+        html: `
+          <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #6f65e2;">הזמנה להצטרפות ל-Quick Shop</h2>
+            <p>שלום ${name || email},</p>
+            <p>${session.user.name} הזמין אותך להצטרף לצוות ב-Quick Shop.</p>
+            <p>לחץ על הקישור הבא כדי לאשר את ההזמנה וליצור חשבון:</p>
+            <p style="text-align: center; margin: 30px 0;">
+              <a href="${acceptUrl}" style="background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                אישור והצטרפות
+              </a>
+            </p>
+            <p style="color: #666; font-size: 12px;">
+              הקישור תקף למשך 7 ימים.
+            </p>
+          </div>
+        `,
+      })
+      console.log(`✅ Invitation email sent to ${email}`)
+    } catch (emailError: any) {
+      // אם יש בעיה עם הגדרות אימייל, נרשום לוג אבל נמשיך
+      const errorMessage = emailError?.message || 'Unknown error'
+      if (errorMessage.includes('not configured') || errorMessage.includes('לא מוגדר')) {
+        console.warn(`⚠️ SendGrid not configured. Invitation created but email not sent to ${email}. Please configure SendGrid in Super Admin settings.`)
+      } else {
+        console.warn(`⚠️ Failed to send invitation email to ${email}:`, errorMessage)
+      }
+      // לא נזרוק שגיאה - ההזמנה נוצרה, רק המייל לא נשלח
+    }
 
     return NextResponse.json(invitation, { status: 201 })
   } catch (error) {

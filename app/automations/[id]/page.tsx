@@ -40,18 +40,21 @@ export default function EditAutomationPage() {
   const [logs, setLogs] = useState<any[]>([])
 
   const eventTypes = [
+    // Order events
     { value: "order.created", label: "הזמנה נוצרה" },
     { value: "order.paid", label: "הזמנה שולמה" },
     { value: "order.shipped", label: "הזמנה נשלחה" },
-    { value: "order.delivered", label: "הזמנה נמסרה" },
-    { value: "order.cancelled", label: "הזמנה בוטלה" },
+    
+    // Cart events
     { value: "cart.abandoned", label: "עגלה ננטשה" },
+    { value: "cart.recovered", label: "עגלה שוחזרה" },
+    
+    // Customer events
     { value: "customer.created", label: "לקוח נוצר" },
-    { value: "customer.subscribed", label: "לקוח נרשם לניוזלטר" },
-    { value: "product.created", label: "מוצר נוצר" },
-    { value: "product.updated", label: "מוצר עודכן" },
-    { value: "inventory.low_stock", label: "מלאי נמוך" },
-    { value: "inventory.out_of_stock", label: "מלאי אזל" },
+    { value: "customer.registered", label: "לקוח נרשם" },
+    { value: "customer.logged_in", label: "לקוח התחבר" },
+    { value: "customer.updated", label: "לקוח עודכן" },
+    { value: "customer.tier_upgraded", label: "לקוח עלה רמה" },
   ]
 
   useEffect(() => {
