@@ -140,11 +140,11 @@ export async function PUT(
           description: data.description,
         }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
-        ...(data.trigger && { trigger: data.trigger }),
+        ...(data.trigger && { trigger: data.trigger as any }),
         ...(data.conditions !== undefined && {
-          conditions: data.conditions,
+          conditions: data.conditions as any,
         }),
-        ...(data.actions && { actions: data.actions }),
+        ...(data.actions && { actions: data.actions as any }),
       },
     })
 
