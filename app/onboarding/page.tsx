@@ -95,13 +95,6 @@ const CATEGORIES = [
   "אחר",
 ]
 
-const THEMES = [
-  { id: "default", name: "ברירת מחדל", description: "תבנית נקייה ומינימליסטית" },
-  { id: "modern", name: "מודרני", description: "תבנית מודרנית עם אנימציות" },
-  { id: "classic", name: "קלאסי", description: "תבנית קלאסית ומסורתית" },
-  { id: "bold", name: "בולט", description: "תבנית בולטת וצבעונית" },
-]
-
 export default function OnboardingPage() {
   const router = useRouter()
   const { data: session } = useSession()
@@ -484,7 +477,7 @@ export default function OnboardingPage() {
                 {currentStep === 2 && "איך הלקוחות יכולים ליצור איתך קשר?"}
                 {currentStep === 3 && "הגדר את שיטות התשלום והמיסים"}
                 {currentStep === 4 && "הגדר את אפשרויות המשלוח"}
-                {currentStep === 5 && "בחר את העיצוב הראשוני של החנות"}
+                {currentStep === 5 && "בחר את צבעי המותג שלך"}
                 {currentStep === 6 && "החנות שלך מוכנה לשימוש!"}
               </CardDescription>
             </CardHeader>
@@ -949,61 +942,51 @@ export default function OnboardingPage() {
 
               {/* שלב 5: עיצוב */}
               {currentStep === 5 && (
-                <div className="space-y-4">
-                  <div>
-                    <Label>תבנית עיצוב</Label>
-                    <div className="mt-2 grid grid-cols-2 gap-4">
-                      {THEMES.map((theme) => (
-                        <div
-                          key={theme.id}
-                          className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                            shopData.theme === theme.id
-                              ? "border-purple-500 bg-purple-50"
-                              : "border-gray-200 hover:border-gray-300"
-                          }`}
-                          onClick={() => updateShopData("theme", theme.id)}
-                        >
-                          <h3 className="font-semibold">{theme.name}</h3>
-                          <p className="text-sm text-gray-600">{theme.description}</p>
-                        </div>
-                      ))}
-                    </div>
+                <div className="space-y-6">
+                  <div className="text-center mb-6">
+                    <Palette className="w-12 h-12 mx-auto text-purple-500 mb-3" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">בחר את צבעי המותג שלך</h3>
+                    <p className="text-sm text-gray-600">הצבעים ישפיעו על מראה החנות שלך</p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="primaryColor">צבע ראשי</Label>
-                      <div className="mt-2 flex items-center gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <Label htmlFor="primaryColor" className="text-sm font-semibold text-gray-700">צבע ראשי</Label>
+                      <div className="flex items-center gap-3">
                         <input
                           id="primaryColor"
                           type="color"
                           value={shopData.primaryColor}
                           onChange={(e) => updateShopData("primaryColor", e.target.value)}
-                          className="w-16 h-10 rounded border"
+                          className="w-20 h-20 rounded-lg border-2 border-gray-300 cursor-pointer"
                         />
-                        <Input
-                          value={shopData.primaryColor}
-                          onChange={(e) => updateShopData("primaryColor", e.target.value)}
-                          className="flex-1"
-                        />
+                        <div className="flex-1">
+                          <Input
+                            value={shopData.primaryColor}
+                            onChange={(e) => updateShopData("primaryColor", e.target.value)}
+                            className="h-12 text-base font-mono border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                          />
+                        </div>
                       </div>
                     </div>
 
-                    <div>
-                      <Label htmlFor="secondaryColor">צבע משני</Label>
-                      <div className="mt-2 flex items-center gap-2">
+                    <div className="space-y-3">
+                      <Label htmlFor="secondaryColor" className="text-sm font-semibold text-gray-700">צבע משני</Label>
+                      <div className="flex items-center gap-3">
                         <input
                           id="secondaryColor"
                           type="color"
                           value={shopData.secondaryColor}
                           onChange={(e) => updateShopData("secondaryColor", e.target.value)}
-                          className="w-16 h-10 rounded border"
+                          className="w-20 h-20 rounded-lg border-2 border-gray-300 cursor-pointer"
                         />
-                        <Input
-                          value={shopData.secondaryColor}
-                          onChange={(e) => updateShopData("secondaryColor", e.target.value)}
-                          className="flex-1"
-                        />
+                        <div className="flex-1">
+                          <Input
+                            value={shopData.secondaryColor}
+                            onChange={(e) => updateShopData("secondaryColor", e.target.value)}
+                            className="h-12 text-base font-mono border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1160,7 +1143,7 @@ export default function OnboardingPage() {
                                 {currentStep === 2 && "פרטי יצירת קשר"}
                                 {currentStep === 3 && "הגדרות תשלום"}
                                 {currentStep === 4 && "הגדרות משלוח"}
-                                {currentStep === 5 && "עיצוב ראשוני"}
+                                {currentStep === 5 && "בחר צבעי המותג"}
                                 {currentStep === 6 && "החנות מוכנה!"}
                               </div>
                             )}
@@ -1190,7 +1173,7 @@ export default function OnboardingPage() {
                     {currentStep === 2 && "איך הלקוחות יכולים ליצור איתך קשר?"}
                     {currentStep === 3 && "הגדר את שיטות התשלום והמיסים"}
                     {currentStep === 4 && "הגדר את אפשרויות המשלוח"}
-                    {currentStep === 5 && "בחר את העיצוב הראשוני של החנות"}
+                    {currentStep === 5 && "בחר את צבעי המותג שלך"}
                     {currentStep === 6 && "החנות שלך מוכנה לשימוש!"}
                   </CardDescription>
                 </CardHeader>
@@ -1655,61 +1638,51 @@ export default function OnboardingPage() {
 
                   {/* שלב 5: עיצוב */}
                   {currentStep === 5 && (
-                    <div className="space-y-4">
-                      <div>
-                        <Label>תבנית עיצוב</Label>
-                        <div className="mt-2 grid grid-cols-2 gap-4">
-                          {THEMES.map((theme) => (
-                            <div
-                              key={theme.id}
-                              className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                                shopData.theme === theme.id
-                                  ? "border-purple-500 bg-purple-50"
-                                  : "border-gray-200 hover:border-gray-300"
-                              }`}
-                              onClick={() => updateShopData("theme", theme.id)}
-                            >
-                              <h3 className="font-semibold">{theme.name}</h3>
-                              <p className="text-sm text-gray-600">{theme.description}</p>
-                            </div>
-                          ))}
-                        </div>
+                    <div className="space-y-6">
+                      <div className="text-center mb-6">
+                        <Palette className="w-12 h-12 mx-auto text-purple-500 mb-3" />
+                        <h3 className="text-lg font-semibold text-gray-900 mb-2">בחר את צבעי המותג שלך</h3>
+                        <p className="text-sm text-gray-600">הצבעים ישפיעו על מראה החנות שלך</p>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="primaryColor">צבע ראשי</Label>
-                          <div className="mt-2 flex items-center gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <Label htmlFor="primaryColor-desktop" className="text-sm font-semibold text-gray-700">צבע ראשי</Label>
+                          <div className="flex items-center gap-3">
                             <input
-                              id="primaryColor"
+                              id="primaryColor-desktop"
                               type="color"
                               value={shopData.primaryColor}
                               onChange={(e) => updateShopData("primaryColor", e.target.value)}
-                              className="w-16 h-10 rounded border"
+                              className="w-20 h-20 rounded-lg border-2 border-gray-300 cursor-pointer"
                             />
-                            <Input
-                              value={shopData.primaryColor}
-                              onChange={(e) => updateShopData("primaryColor", e.target.value)}
-                              className="flex-1"
-                            />
+                            <div className="flex-1">
+                              <Input
+                                value={shopData.primaryColor}
+                                onChange={(e) => updateShopData("primaryColor", e.target.value)}
+                                className="h-12 text-base font-mono border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                              />
+                            </div>
                           </div>
                         </div>
 
-                        <div>
-                          <Label htmlFor="secondaryColor">צבע משני</Label>
-                          <div className="mt-2 flex items-center gap-2">
+                        <div className="space-y-3">
+                          <Label htmlFor="secondaryColor-desktop" className="text-sm font-semibold text-gray-700">צבע משני</Label>
+                          <div className="flex items-center gap-3">
                             <input
-                              id="secondaryColor"
+                              id="secondaryColor-desktop"
                               type="color"
                               value={shopData.secondaryColor}
                               onChange={(e) => updateShopData("secondaryColor", e.target.value)}
-                              className="w-16 h-10 rounded border"
+                              className="w-20 h-20 rounded-lg border-2 border-gray-300 cursor-pointer"
                             />
-                            <Input
-                              value={shopData.secondaryColor}
-                              onChange={(e) => updateShopData("secondaryColor", e.target.value)}
-                              className="flex-1"
-                            />
+                            <div className="flex-1">
+                              <Input
+                                value={shopData.secondaryColor}
+                                onChange={(e) => updateShopData("secondaryColor", e.target.value)}
+                                className="h-12 text-base font-mono border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>

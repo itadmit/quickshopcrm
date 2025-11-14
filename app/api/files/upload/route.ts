@@ -6,11 +6,38 @@ import { writeFile, mkdir } from "fs/promises"
 import { join } from "path"
 import { existsSync } from "fs"
 import { uploadToS3, generateS3Key } from "@/lib/s3"
+import sharp from "sharp"
 
 interface ExtendedSession {
   user: {
     id: string
     companyId: string
+  }
+}
+
+// פונקציה להמרת תמונות ל-WebP
+async function convertToWebP(buffer: Buffer, mimeType: string): Promise<{ buffer: Buffer; extension: string }> {
+  // בדיקה אם זה קובץ תמונה
+  const isImage = mimeType?.startsWith('image/')
+  
+  if (!isImage) {
+    // אם זה לא תמונה, נחזיר את הקובץ כמו שהוא
+    const ext = mimeType === 'application/pdf' ? 'pdf' : 'file'
+    return { buffer, extension: ext }
+  }
+  
+  try {
+    // המרה ל-WebP עם אופטימיזציה
+    const webpBuffer = await sharp(buffer)
+      .webp({ quality: 85, effort: 4 }) // איכות טובה + אופטימיזציה
+      .toBuffer()
+    
+    return { buffer: webpBuffer, extension: 'webp' }
+  } catch (error) {
+    console.error('Error converting image to WebP:', error)
+    // אם ההמרה נכשלה, נחזיר את המקור
+    const ext = mimeType?.split('/')[1] || 'jpg'
+    return { buffer, extension: ext }
   }
 }
 
@@ -58,9 +85,16 @@ export async function POST(req: NextRequest) {
 
     // המרת הקובץ ל-buffer
     const bytes = await file.arrayBuffer()
-    const buffer = Buffer.from(bytes)
+    let buffer = Buffer.from(bytes)
     
-    const sanitizedFileName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_")
+    // המרה ל-WebP אם זו תמונה
+    const { buffer: optimizedBuffer, extension } = await convertToWebP(buffer, file.type || '')
+    buffer = optimizedBuffer
+    
+    // החלפת סיומת הקובץ ל-WebP אם הומר
+    const originalName = file.name.replace(/\.[^/.]+$/, '') // הסרת הסיומת המקורית
+    const newFileName = `${originalName}.${extension}`
+    const sanitizedFileName = newFileName.replace(/[^a-zA-Z0-9.-]/g, "_")
     
     // בדיקה אם S3 מוגדר
     const useS3 = process.env.AWS_S3_BUCKET_NAME && 
@@ -161,7 +195,8 @@ export async function POST(req: NextRequest) {
       
       // העלאה ל-S3
       const s3Key = generateS3Key(shopSlug, finalEntityType, finalIdentifier, sanitizedFileName)
-      filePath = await uploadToS3(buffer, s3Key, file.type || 'application/octet-stream')
+      const finalMimeType = extension === 'webp' ? 'image/webp' : (file.type || 'application/octet-stream')
+      filePath = await uploadToS3(buffer, s3Key, finalMimeType)
     } else {
       // שמירה מקומית (fallback)
       const uploadsDir = join(process.cwd(), "uploads", entityType)
@@ -178,15 +213,16 @@ export async function POST(req: NextRequest) {
     }
 
     // שמירת הקובץ במסד הנתונים
+    const finalMimeType = extension === 'webp' ? 'image/webp' : (file.type || null)
     const fileRecord = await prisma.file.create({
       data: {
         companyId: session.user.companyId,
         entityType,
         entityId,
         path: filePath,
-        name: file.name,
+        name: newFileName, // שם הקובץ עם הסיומת החדשה
         size: buffer.length,
-        mimeType: file.type || null,
+        mimeType: finalMimeType,
         uploadedBy: session.user.id,
       },
     })
