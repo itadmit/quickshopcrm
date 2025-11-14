@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { AppLayout } from "@/components/AppLayout"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { NotificationsSkeleton } from "@/components/skeletons/NotificationsSkeleton"
 import { 
   Bell, 

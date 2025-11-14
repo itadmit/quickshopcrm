@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { 
   Store, 
   Mail, 
@@ -294,6 +294,7 @@ export default function OnboardingPage() {
           title: "שגיאה",
           description: "אנא הזן כתובת URL (Slug) תקינה",
           variant: "destructive",
+          duration: 2000,
         })
         setLoading(false)
         return
@@ -304,6 +305,7 @@ export default function OnboardingPage() {
           title: "שגיאה",
           description: slugAvailability.error || "אנא המתן לבדיקת זמינות ה-slug או בחר slug אחר",
           variant: "destructive",
+          duration: 2000,
         })
         setLoading(false)
         return
@@ -356,20 +358,22 @@ export default function OnboardingPage() {
         throw new Error(data.error || "שגיאה ביצירת החנות")
       }
 
+      // מעבר לדשבורד מיד
+      router.push("/dashboard")
+      
+      // הצגת טוסט הצלחה בדף הבא (ברקע)
       toast({
         title: "הצלחה!",
         description: "החנות נוצרה בהצלחה",
+        duration: 2000,
       })
-
-      // מעבר לדשבורד
-      router.push("/dashboard")
     } catch (error: any) {
       toast({
         title: "שגיאה",
         description: error.message || "אירעה שגיאה ביצירת החנות",
         variant: "destructive",
+        duration: 2000,
       })
-    } finally {
       setLoading(false)
     }
   }

@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { Switch } from "@/components/ui/switch"
 import { Shield, Key, Server, CreditCard, Save, Trash2, AlertCircle, Mail, Send } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"

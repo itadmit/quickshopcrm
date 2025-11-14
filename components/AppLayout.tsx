@@ -7,7 +7,7 @@ import { Sidebar } from "./Sidebar"
 import { Header } from "./Header"
 import { Footer } from "./Footer"
 import { SubscriptionBlock } from "./SubscriptionBlock"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 
 interface AppLayoutProps {
   children: React.ReactNode

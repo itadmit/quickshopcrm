@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { Sparkles, Mail, Lock } from "lucide-react"
 import Image from "next/image"
 
@@ -30,6 +30,7 @@ export default function LoginPage() {
         title: "שגיאה",
         description: "אירעה שגיאה בהתחברות עם Google",
         variant: "destructive",
+        duration: 2000,
       })
       setLoading(false)
     }
@@ -51,30 +52,46 @@ export default function LoginPage() {
           title: "שגיאה בהתחברות",
           description: result.error,
           variant: "destructive",
+          duration: 2000,
         })
       } else {
-        toast({
-          title: "התחברת בהצלחה!",
-          description: "מעביר אותך...",
-        })
-        
         // בדיקה אם יש חנות
         try {
           const shopsResponse = await fetch("/api/shops")
           if (shopsResponse.ok) {
             const shops = await shopsResponse.json()
             if (shops.length === 0) {
-              // אין חנות, מעבר לאשף
+              // אין חנות, מעבר לאשף מיד
               router.push("/onboarding")
+              // הצגת טוסט הצלחה בדף הבא (ברקע)
+              toast({
+                title: "התחברת בהצלחה!",
+                description: "מעביר אותך...",
+                duration: 2000,
+              })
             } else {
-              // יש חנות, מעבר לדשבורד
+              // יש חנות, מעבר לדשבורד מיד
               router.push("/dashboard")
+              // הצגת טוסט הצלחה בדף הבא (ברקע)
+              toast({
+                title: "התחברת בהצלחה!",
+                description: "ברוך שובך",
+                duration: 2000,
+              })
             }
           } else {
             router.push("/dashboard")
+            toast({
+              title: "התחברת בהצלחה!",
+              duration: 2000,
+            })
           }
         } catch (error) {
           router.push("/dashboard")
+          toast({
+            title: "התחברת בהצלחה!",
+            duration: 2000,
+          })
         }
         router.refresh()
       }
@@ -83,6 +100,7 @@ export default function LoginPage() {
         title: "שגיאה",
         description: "אירעה שגיאה בהתחברות",
         variant: "destructive",
+        duration: 2000,
       })
     } finally {
       setLoading(false)

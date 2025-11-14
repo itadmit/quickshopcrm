@@ -20,7 +20,7 @@ import {
   Pencil,
   Palette,
 } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { StorefrontHeader } from "@/components/storefront/StorefrontHeader"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 import {

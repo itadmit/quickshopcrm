@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { useAddToCart } from "@/hooks/useAddToCart"
 import { useTracking } from "@/components/storefront/TrackingPixelProvider"
 import {

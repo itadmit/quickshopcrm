@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import {
   Dialog,
   DialogContent,

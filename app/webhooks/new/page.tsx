@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { Save, Webhook, Globe, X } from "lucide-react"
 
 const AVAILABLE_EVENTS = [

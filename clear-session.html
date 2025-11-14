@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Session</title>
+</head>
+<body>
+    <h1>מנקה Session...</h1>
+    <script>
+        // מחיקת כל הcookies
+        document.cookie.split(";").forEach(function(c) { 
+            document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+        });
+        
+        // מחיקת localStorage ו-sessionStorage
+        localStorage.clear();
+        sessionStorage.clear();
+        
+        alert('Session cleared! עכשיו תתנתק ותתחבר מחדש');
+        window.location.href = '/api/auth/signout?callbackUrl=/login';
+    </script>
+</body>
+</html>

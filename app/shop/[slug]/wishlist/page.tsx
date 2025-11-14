@@ -13,7 +13,7 @@ import {
   ChevronRight,
 } from "lucide-react"
 import Link from "next/link"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton"
 import { useTracking } from "@/components/storefront/TrackingPixelProvider"
 import { trackPageView, trackRemoveFromWishlist } from "@/lib/tracking-events"

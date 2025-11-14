@@ -4,7 +4,7 @@ import { useState } from "react"
 import { AppLayout } from "@/components/AppLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { Wrench, CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
 
 export default function FixProductsPage() {

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { UserPlus, CheckSquare } from "lucide-react"
 import {
   Select,

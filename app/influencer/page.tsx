@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { AppLayout } from "@/components/AppLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import {
   TrendingUp,
   ShoppingBag,

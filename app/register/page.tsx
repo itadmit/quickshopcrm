@@ -7,7 +7,7 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { Mail, Lock, User, Building2, Phone } from "lucide-react"
 import Image from "next/image"
 
@@ -50,14 +50,10 @@ export default function RegisterPage() {
           title: "שגיאה בהרשמה",
           description: data.error || "אירעה שגיאה",
           variant: "destructive",
+          duration: 2000,
         })
         return
       }
-
-      toast({
-        title: "נרשמת בהצלחה!",
-        description: "מתחבר...",
-      })
 
       // התחברות אוטומטית ואז מעבר לאשף
       try {
@@ -68,19 +64,43 @@ export default function RegisterPage() {
         })
 
         if (signInResult?.ok) {
+          // מעבר לדף הבא מיד
           window.location.href = "/onboarding"
+          // הצגת טוסט הצלחה בדף הבא (ברקע)
+          toast({
+            title: "נרשמת בהצלחה!",
+            description: "מתחבר...",
+            duration: 2000,
+          })
         } else {
           // אם ההתחברות נכשלה, מעבר ל-login
-          window.location.href = "/login"
+          toast({
+            title: "שגיאה בהתחברות",
+            description: "אנא התחבר ידנית",
+            variant: "destructive",
+            duration: 2000,
+          })
+          setTimeout(() => {
+            window.location.href = "/login"
+          }, 500)
         }
       } catch (error) {
-        window.location.href = "/login"
+        toast({
+          title: "שגיאה בהתחברות",
+          description: "אנא התחבר ידנית",
+          variant: "destructive",
+          duration: 2000,
+        })
+        setTimeout(() => {
+          window.location.href = "/login"
+        }, 500)
       }
     } catch (error) {
       toast({
         title: "שגיאה",
         description: "אירעה שגיאה בהרשמה",
         variant: "destructive",
+        duration: 2000,
       })
     } finally {
       setLoading(false)

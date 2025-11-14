@@ -1,51 +1,50 @@
-"use client"
-
 import { TrackingPixelProvider } from "@/components/storefront/TrackingPixelProvider"
-import { useParams } from "next/navigation"
-import { useEffect } from "react"
+import { prisma } from "@/lib/prisma"
+import type { Metadata } from 'next'
+
+export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+  const slug = params.slug
+  
+  try {
+    const shop = await prisma.shop.findUnique({
+      where: { slug },
+      select: {
+        name: true,
+        description: true,
+        logo: true,
+        favicon: true,
+      },
+    })
+
+    if (!shop) {
+      return {
+        title: 'חנות לא נמצאה',
+      }
+    }
+
+    return {
+      title: shop.name,
+      description: shop.description || `ברוכים הבאים ל-${shop.name}`,
+      icons: {
+        icon: shop.favicon || shop.logo || '/favicon.ico',
+      },
+    }
+  } catch (error) {
+    console.error('Error generating metadata:', error)
+    return {
+      title: 'חנות',
+    }
+  }
+}
 
 export default function ShopLayout({
   children,
+  params,
 }: {
   children: React.ReactNode
+  params: { slug: string }
 }) {
-  const params = useParams()
-  const slug = params.slug as string
-
-  // עדכון favicon דינמי לפי חנות
-  useEffect(() => {
-    const faviconUrl = `/api/storefront/${slug}/favicon`
-    
-    // הסרת favicon קיים אם יש
-    const existingFavicon = document.querySelector('link[rel="icon"]')
-    if (existingFavicon) {
-      existingFavicon.remove()
-    }
-
-    // הוספת favicon חדש
-    const link = document.createElement('link')
-    link.rel = 'icon'
-    link.type = 'image/svg+xml'
-    link.href = faviconUrl
-    document.head.appendChild(link)
-
-    // גם עבור favicon.ico (למקרה שהדפדפן מחפש את זה)
-    const linkIco = document.createElement('link')
-    linkIco.rel = 'shortcut icon'
-    linkIco.type = 'image/x-icon'
-    linkIco.href = faviconUrl
-    document.head.appendChild(linkIco)
-
-    return () => {
-      // ניקוי בעת unmount
-      const favicons = document.querySelectorAll('link[rel="icon"], link[rel="shortcut icon"]')
-      favicons.forEach(fav => {
-        if (fav.getAttribute('href')?.includes(`/api/storefront/${slug}/favicon`)) {
-          fav.remove()
-        }
-      })
-    }
-  }, [slug])
+  const slug = params.slug
 
   return (
     <TrackingPixelProvider shopSlug={slug}>

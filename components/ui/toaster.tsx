@@ -8,7 +8,7 @@ import {
   ToastTitle,
   ToastViewport,
 } from "@/components/ui/toast"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { CheckCircle2, XCircle } from "lucide-react"
 
 export function Toaster() {

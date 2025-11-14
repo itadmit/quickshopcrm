@@ -8,7 +8,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { Plus, Search, Edit, Trash2, FileText, ExternalLink } from "lucide-react"
 import { PagesSkeleton } from "@/components/skeletons/PagesSkeleton"
 import {

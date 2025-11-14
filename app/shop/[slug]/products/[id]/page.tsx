@@ -1,148 +1,135 @@
-"use client"
-
-import { useParams } from "next/navigation"
-import { useState, useEffect } from "react"
+import { prisma } from "@/lib/prisma"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 import { ProductPageClient } from "./ProductPageClient"
-import { ProductPageSkeleton } from "@/components/skeletons/ProductPageSkeleton"
+import { notFound } from "next/navigation"
 
-export default function ProductPage() {
-  const params = useParams()
-  const slug = params.slug as string
-  const productId = params.id as string
+export const revalidate = 300
 
-  const [shop, setShop] = useState<any>(null)
-  const [product, setProduct] = useState<any>(null)
-  const [reviews, setReviews] = useState<any[]>([])
-  const [averageRating, setAverageRating] = useState(0)
-  const [totalReviews, setTotalReviews] = useState(0)
-  const [relatedProducts, setRelatedProducts] = useState<any[]>([])
-  const [navigation, setNavigation] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [isAdmin, setIsAdmin] = useState(false)
+export default async function ProductPage({ params }: { params: { slug: string; id: string } }) {
+  const { slug, id: productId } = params
+  const session = await getServerSession(authOptions)
 
-  useEffect(() => {
-    fetchProductData()
-  }, [slug, productId])
+  const [shop, product, navigation, isAdmin] = await Promise.all([
+    prisma.shop.findFirst({
+      where: {
+        slug,
+        ...(session?.user?.companyId ? { companyId: session.user.companyId } : { isPublished: true }),
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        logo: true,
+        description: true,
+        theme: true,
+        themeSettings: true,
+        settings: true,
+        taxEnabled: true,
+        taxRate: true,
+        pricesIncludeTax: true,
+      },
+    }),
 
-  const fetchProductData = async () => {
-    setLoading(true)
-    try {
-      // טעינת כל הנתונים במקביל
-      const [shopRes, productRes, navigationRes] = await Promise.all([
-        fetch(`/api/storefront/${slug}/info`),
-        fetch(`/api/storefront/${slug}/products/${productId}`),
-        fetch(`/api/storefront/${slug}/navigation?location=HEADER`),
-      ])
+    prisma.product.findFirst({
+      where: {
+        OR: [{ id: productId }, { slug: productId }],
+        shop: {
+          slug,
+          ...(session?.user?.companyId ? { companyId: session.user.companyId } : { isPublished: true }),
+        },
+      },
+      include: {
+        variants: true,
+        collections: {
+          include: {
+            collection: true,
+          },
+        },
+      },
+    }),
 
-      if (shopRes.ok) {
-        const shopData = await shopRes.json()
-        setShop(shopData)
-      }
+    prisma.navigation.findFirst({
+      where: {
+        shop: { slug },
+        location: 'DESKTOP',
+      },
+      select: {
+        id: true,
+        name: true,
+        location: true,
+        items: true,
+      },
+    }),
 
-      if (productRes.ok) {
-        const productData = await productRes.json()
-        setProduct(productData)
-        
-        // טעינת ביקורות ומוצרים קשורים במקביל
-        const [reviewsRes, relatedRes] = await Promise.all([
-          fetch(`/api/storefront/${slug}/products/${productId}/reviews`),
-          fetch(`/api/storefront/${slug}/products/${productId}/related`),
-        ])
-
-        if (reviewsRes.ok) {
-          const reviewsData = await reviewsRes.json()
-          setReviews(reviewsData.reviews || [])
-          setAverageRating(reviewsData.averageRating || 0)
-          setTotalReviews(reviewsData.totalReviews || 0)
-        }
-
-        if (relatedRes.ok) {
-          const relatedData = await relatedRes.json()
-          setRelatedProducts(relatedData.products || [])
-        }
-      }
-
-      if (navigationRes.ok) {
-        const navData = await navigationRes.json()
-        setNavigation(navData.length > 0 ? navData[0] : null)
-      }
-    } catch (error) {
-      console.error("Error fetching product data:", error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
-    return <ProductPageSkeleton />
-  }
+    (async () => {
+      if (!session?.user?.companyId) return false
+      const adminShop = await prisma.shop.findFirst({
+        where: {
+          slug,
+          companyId: session.user.companyId,
+        },
+        select: { id: true },
+      })
+      return !!adminShop
+    })(),
+  ])
 
   if (!shop || !product) {
-    return (
-      <div className="min-h-screen flex items-center justify-center" dir="rtl">
-        <p className="text-gray-600">מוצר לא נמצא</p>
-      </div>
-    )
+    notFound()
   }
 
-  // הכנת theme
-  const themeSettings = (shop.themeSettings as any) || {}
-  const theme = {
-    primaryColor: themeSettings.primaryColor || "#000000",
-    secondaryColor: themeSettings.secondaryColor || "#333333",
-    logoWidthMobile: themeSettings.logoWidthMobile || 85,
-    logoWidthDesktop: themeSettings.logoWidthDesktop || 135,
-    logoPaddingMobile: themeSettings.logoPaddingMobile || 0,
-    logoPaddingDesktop: themeSettings.logoPaddingDesktop || 0,
-    headerLayout: themeSettings.headerLayout || "logo-left",
-    stickyHeader: themeSettings.stickyHeader !== undefined ? themeSettings.stickyHeader : true,
-    transparentHeader: themeSettings.transparentHeader !== undefined ? themeSettings.transparentHeader : false,
-    logoColorOnScroll: themeSettings.logoColorOnScroll || "none",
-    productImageRatio: themeSettings.productImageRatio || "9:16",
-    productImagePosition: themeSettings.productImagePosition || "left",
-    productShowMobileThumbs: themeSettings.productShowMobileThumbs !== undefined ? themeSettings.productShowMobileThumbs : true,
-    productShowDiscountBadge: themeSettings.productShowDiscountBadge !== undefined ? themeSettings.productShowDiscountBadge : true,
-    productShowQuantityButtons: themeSettings.productShowQuantityButtons !== undefined ? themeSettings.productShowQuantityButtons : true,
-    productShowInventory: themeSettings.productShowInventory !== undefined ? themeSettings.productShowInventory : false,
-    productShowFavoriteButton: themeSettings.productShowFavoriteButton !== undefined ? themeSettings.productShowFavoriteButton : true,
-    productShowShareButton: themeSettings.productShowShareButton !== undefined ? themeSettings.productShowShareButton : true,
-    productImageBorderRadius: themeSettings.productImageBorderRadius || 8,
-    productMobileImagePadding: themeSettings.productMobileImagePadding || false,
-    productDiscountBadgeRounded: themeSettings.productDiscountBadgeRounded !== undefined ? themeSettings.productDiscountBadgeRounded : true,
-    productStickyAddToCart: themeSettings.productStickyAddToCart !== undefined ? themeSettings.productStickyAddToCart : true,
-    productImageButtonsColor: themeSettings.productImageButtonsColor || "white",
-    productDiscountBadgeColor: themeSettings.productDiscountBadgeColor || "red",
-    productShowGalleryArrows: themeSettings.productShowGalleryArrows !== undefined ? themeSettings.productShowGalleryArrows : true,
-    productGalleryArrowsColor: themeSettings.productGalleryArrowsColor || "white",
-    productRelatedRatio: themeSettings.productRelatedRatio || "9:16",
-    productRelatedBgColor: themeSettings.productRelatedBgColor || "#f8f9fa",
-    productCompleteLookBgColor: themeSettings.productCompleteLookBgColor || "#f1f3f4",
-    productCompleteLookTitle: themeSettings.productCompleteLookTitle || "השלם את הלוק",
-    productContentDisplay: themeSettings.productContentDisplay || "accordion",
-    productStrengths: themeSettings.productStrengths || [],
-  }
+  const [reviewsData, relatedProducts] = await Promise.all([
+    prisma.review.findMany({
+      where: {
+        productId: product.id,
+        status: 'APPROVED',
+      },
+      include: {
+        customer: {
+          select: {
+            fullName: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      take: 10,
+    }),
 
-  const shopSettings = (shop.settings as any) || {}
-  const galleryLayout = shopSettings.productGalleryLayout || "standard"
-  const productPageLayout = shopSettings.productPageLayout || null
-  const autoOpenCart = shopSettings.autoOpenCartAfterAdd !== false
+    prisma.product.findMany({
+      where: {
+        shopId: shop.id,
+        id: { not: product.id },
+        status: 'ACTIVE',
+      },
+      include: {
+        variants: true,
+      },
+      take: 4,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    }),
+  ])
+
+  const averageRating = reviewsData.length > 0
+    ? reviewsData.reduce((sum, r) => sum + r.rating, 0) / reviewsData.length
+    : 0
 
   return (
     <ProductPageClient
-      slug={slug}
-      productId={productId}
       shop={shop}
       product={product}
-      reviews={reviews}
+      reviews={reviewsData}
       averageRating={averageRating}
-      totalReviews={totalReviews}
+      totalReviews={reviewsData.length}
       relatedProducts={relatedProducts}
-      galleryLayout={galleryLayout as any}
-      productPageLayout={productPageLayout}
-      theme={theme}
       navigation={navigation}
       isAdmin={isAdmin}
-      autoOpenCart={autoOpenCart}
+      slug={slug}
     />
   )
 }
+

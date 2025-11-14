@@ -25,7 +25,7 @@ import {
   Loader2,
 } from "lucide-react"
 import Link from "next/link"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { StorefrontHeader } from "@/components/storefront/StorefrontHeader"
 import { ProductCard } from "@/components/storefront/ProductCard"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"

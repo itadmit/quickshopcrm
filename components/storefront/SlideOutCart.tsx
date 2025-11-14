@@ -17,7 +17,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { CartSkeleton, CartSummarySkeleton } from "@/components/skeletons/CartSkeleton"
 import { useShopTheme } from "@/hooks/useShopTheme"
 import { useCart } from "@/hooks/useCart"

@@ -28,7 +28,7 @@ import { Users, Search, Eye, Calendar, ShoppingBag, TrendingUp, UserPlus } from 
 import { CustomersSkeleton } from "@/components/skeletons/CustomersSkeleton"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { useShop } from "@/components/providers/ShopProvider"
 
 interface Customer {

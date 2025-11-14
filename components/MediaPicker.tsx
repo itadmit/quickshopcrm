@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { Search, Upload, X, Check, Trash2, Image as ImageIcon, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 

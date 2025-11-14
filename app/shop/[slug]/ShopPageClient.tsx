@@ -12,7 +12,7 @@ import { getThemeStyles } from "@/hooks/useShopTheme"
 import { useTracking } from "@/components/storefront/TrackingPixelProvider"
 import { trackPageView } from "@/lib/tracking-events"
 import { AdminBar } from "@/components/storefront/AdminBar"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 
 interface Shop {
   id: string

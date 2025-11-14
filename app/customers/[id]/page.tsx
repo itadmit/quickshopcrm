@@ -32,7 +32,7 @@ import {
 } from "lucide-react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 
 interface Order {
   id: string

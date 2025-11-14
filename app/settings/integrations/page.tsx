@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Eye, EyeOff, CheckCircle2, ChevronDown, ExternalLink, CreditCard, Truck, Zap } from "lucide-react"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { useShop } from "@/components/providers/ShopProvider"
 import Image from "next/image"
 

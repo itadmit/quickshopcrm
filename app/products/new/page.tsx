@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Badge } from "@/components/ui/badge"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { FormSkeleton } from "@/components/skeletons/FormSkeleton"
 import {
   Save,

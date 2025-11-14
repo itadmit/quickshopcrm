@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { DollarSign, Store, CreditCard, AlertCircle, CheckCircle, XCircle } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { useToast } from "@/components/ui/use-toast"
+import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 
 interface CommissionData {
   companyId: string

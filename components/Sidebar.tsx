@@ -279,7 +279,7 @@ export function Sidebar() {
           </div>
         )}
 
-        {/* Primary Menu - Hidden for INFLUENCER role */}
+        {/* Primary Menu - Hidden only for INFLUENCER role (not SUPER_ADMIN) */}
         {(session as any)?.user?.role !== "INFLUENCER" && (
         <nav className="space-y-1">
           {menuItems
