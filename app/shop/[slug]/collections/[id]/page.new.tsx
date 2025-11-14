@@ -28,6 +28,7 @@ export default async function CollectionPage({ params }: { params: { slug: strin
             OR: [{ collectionId }, { collection: { slug: collectionId } }],
           },
         },
+        status: 'ACTIVE',
       },
       include: {
         variants: true,

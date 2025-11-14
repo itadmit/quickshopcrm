@@ -16,19 +16,6 @@ export default async function ProductPage({ params }: { params: { slug: string; 
         slug,
         ...(session?.user?.companyId ? { companyId: session.user.companyId } : { isPublished: true }),
       },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        logo: true,
-        description: true,
-        theme: true,
-        themeSettings: true,
-        settings: true,
-        taxEnabled: true,
-        taxRate: true,
-        pricesIncludeTax: true,
-      },
     }),
 
     prisma.product.findFirst({
@@ -41,6 +28,7 @@ export default async function ProductPage({ params }: { params: { slug: string; 
       },
       include: {
         variants: true,
+        options: true,
         collections: {
           include: {
             collection: true,
@@ -83,14 +71,9 @@ export default async function ProductPage({ params }: { params: { slug: string; 
     prisma.review.findMany({
       where: {
         productId: product.id,
-        status: 'APPROVED',
       },
       include: {
-        customer: {
-          select: {
-            fullName: true,
-          },
-        },
+        customer: true,
       },
       orderBy: {
         createdAt: 'desc',
@@ -102,7 +85,6 @@ export default async function ProductPage({ params }: { params: { slug: string; 
       where: {
         shopId: shop.id,
         id: { not: product.id },
-        status: 'ACTIVE',
       },
       include: {
         variants: true,
@@ -118,17 +100,28 @@ export default async function ProductPage({ params }: { params: { slug: string; 
     ? reviewsData.reduce((sum, r) => sum + r.rating, 0) / reviewsData.length
     : 0
 
+  const themeSettings = (shop.themeSettings as any) || {}
+  const galleryLayout = themeSettings.productGalleryLayout || 'standard'
+  const productPageLayout = themeSettings.productPageLayout || null
+  const settings = (shop.settings as any) || {}
+  const autoOpenCart = settings.autoOpenCartAfterAdd !== false
+
   return (
     <ProductPageClient
+      slug={slug}
+      productId={productId}
       shop={shop}
-      product={product}
+      product={product as any}
       reviews={reviewsData}
       averageRating={averageRating}
       totalReviews={reviewsData.length}
       relatedProducts={relatedProducts}
+      galleryLayout={galleryLayout}
+      productPageLayout={productPageLayout}
+      theme={themeSettings}
       navigation={navigation}
       isAdmin={isAdmin}
-      slug={slug}
+      autoOpenCart={autoOpenCart}
     />
   )
 }

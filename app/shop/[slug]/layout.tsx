@@ -1,5 +1,8 @@
 import { TrackingPixelProvider } from "@/components/storefront/TrackingPixelProvider"
+import { StorefrontDataProvider } from "@/components/storefront/StorefrontDataProvider"
 import { prisma } from "@/lib/prisma"
+import { getServerSession } from "next-auth"
+import { authOptions } from "@/lib/auth"
 import type { Metadata } from 'next'
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
@@ -37,7 +40,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   }
 }
 
-export default function ShopLayout({
+export default async function ShopLayout({
   children,
   params,
 }: {
@@ -45,10 +48,53 @@ export default function ShopLayout({
   params: { slug: string }
 }) {
   const slug = params.slug
+  const session = await getServerSession(authOptions)
+
+  const [shop, navigation, isAdmin] = await Promise.all([
+    prisma.shop.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        logo: true,
+        description: true,
+        theme: true,
+        themeSettings: true,
+        settings: true,
+      },
+    }),
+
+    prisma.navigation.findFirst({
+      where: {
+        shop: { slug },
+        location: 'MOBILE',
+      },
+    }),
+
+    (async () => {
+      if (!session?.user?.companyId) return false
+      const adminShop = await prisma.shop.findFirst({
+        where: {
+          slug,
+          companyId: session.user.companyId,
+        },
+        select: { id: true },
+      })
+      return !!adminShop
+    })(),
+  ])
 
   return (
     <TrackingPixelProvider shopSlug={slug}>
-      {children}
+      <StorefrontDataProvider 
+        slug={slug}
+        initialShop={shop}
+        initialNavigation={navigation}
+        initialIsAdmin={isAdmin}
+      >
+        {children}
+      </StorefrontDataProvider>
     </TrackingPixelProvider>
   )
 }
