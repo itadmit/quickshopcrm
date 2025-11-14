@@ -52,8 +52,6 @@ const DEFAULT_THEME: ThemeSettings = {
   logoColorOnScroll: "none",
 }
 
-export const revalidate = 300
-
 export default async function ShopPage({ params }: { params: { slug: string } }) {
   const slug = params.slug
 

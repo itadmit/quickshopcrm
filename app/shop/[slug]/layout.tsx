@@ -3,6 +3,8 @@ import { StorefrontDataProvider } from "@/components/storefront/StorefrontDataPr
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
+import { cookies } from "next/headers"
+import { calculateCart } from "@/lib/cart-calculations"
 import type { Metadata } from 'next'
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
@@ -49,8 +51,11 @@ export default async function ShopLayout({
 }) {
   const slug = params.slug
   const session = await getServerSession(authOptions)
+  const cookieStore = cookies()
+  const customerIdCookie = cookieStore.get(`customer_${slug}`)
+  const customerId = customerIdCookie?.value || null
 
-  const [shop, navigation, isAdmin] = await Promise.all([
+  const [shop, navigation, isAdmin, cart] = await Promise.all([
     prisma.shop.findUnique({
       where: { slug },
       select: {
@@ -62,6 +67,9 @@ export default async function ShopLayout({
         theme: true,
         themeSettings: true,
         settings: true,
+        taxEnabled: true,
+        taxRate: true,
+        pricesIncludeTax: true,
       },
     }),
 
@@ -83,6 +91,46 @@ export default async function ShopLayout({
       })
       return !!adminShop
     })(),
+
+    (async () => {
+      if (!customerId) return null
+      
+      const cartData = await prisma.cart.findUnique({
+        where: { id: customerId },
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                  slug: true,
+                  images: true,
+                  price: true,
+                },
+              },
+              variant: {
+                select: {
+                  id: true,
+                  name: true,
+                  price: true,
+                },
+              },
+            },
+          },
+          coupon: true,
+        },
+      })
+
+      if (!cartData || !shop) return null
+
+      return calculateCart(
+        cartData.items,
+        shop,
+        cartData.coupon,
+        null
+      )
+    })(),
   ])
 
   return (
@@ -92,6 +140,8 @@ export default async function ShopLayout({
         initialShop={shop}
         initialNavigation={navigation}
         initialIsAdmin={isAdmin}
+        initialCart={cart}
+        initialCustomerId={customerId}
       >
         {children}
       </StorefrontDataProvider>

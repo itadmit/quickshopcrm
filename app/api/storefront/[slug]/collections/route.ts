@@ -41,11 +41,7 @@ export async function GET(
       },
     })
 
-    return NextResponse.json(collections, {
-      headers: {
-        'Cache-Control': 'public, s-maxage=600, stale-while-revalidate=1200',
-      },
-    })
+    return NextResponse.json(collections)
   } catch (error) {
     console.error("Error fetching collections:", error)
     return NextResponse.json(

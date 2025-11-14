@@ -72,30 +72,29 @@ export function StorefrontDataProvider({
   initialShop,
   initialNavigation,
   initialIsAdmin,
+  initialCart,
+  initialCustomerId,
 }: {
   children: ReactNode
   slug: string
   initialShop: ShopData | null
   initialNavigation: NavigationData | null
   initialIsAdmin: boolean
+  initialCart?: CartData | null
+  initialCustomerId?: string | null
 }) {
   const { data: session } = useSession()
-  const [customerId, setCustomerId] = useState<string | null>(null)
+  const [customerId, setCustomerId] = useState<string | null>(initialCustomerId || null)
   const [autoOpenCart, setAutoOpenCart] = useState(initialShop?.settings?.autoOpenCartAfterAdd !== false)
 
+  // Sync customerId to cookie
   useEffect(() => {
-    const customerData = localStorage.getItem(`storefront_customer_${slug}`)
-    if (customerData) {
-      try {
-        const parsed = JSON.parse(customerData)
-        setCustomerId(parsed.id)
-      } catch (error) {
-        console.error("Error parsing customer data:", error)
-      }
+    if (customerId) {
+      document.cookie = `customer_${slug}=${customerId}; path=/; max-age=${60 * 60 * 24 * 365}`
     }
-  }, [slug])
+  }, [customerId, slug])
 
-  const { data: shop = initialShop, refetch: refetchShop } = useQuery<ShopData>({
+  const { data: shop = initialShop } = useQuery<ShopData>({
     queryKey: ['storefrontShop', slug],
     queryFn: async () => {
       const res = await fetch(`/api/storefront/${slug}/info`)
@@ -103,11 +102,10 @@ export function StorefrontDataProvider({
       return res.json()
     },
     initialData: initialShop || undefined,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    enabled: false,
   })
 
-  const { data: navigation = initialNavigation, refetch: refetchNavigation } = useQuery<NavigationData>({
+  const { data: navigation = initialNavigation } = useQuery<NavigationData>({
     queryKey: ['storefrontNavigation', slug],
     queryFn: async () => {
       const res = await fetch(`/api/storefront/${slug}/navigation?location=MOBILE`)
@@ -115,11 +113,10 @@ export function StorefrontDataProvider({
       return res.json()
     },
     initialData: initialNavigation || undefined,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    enabled: false,
   })
 
-  const { data: cart, refetch: refetchCart } = useQuery<CartData>({
+  const { data: cart = initialCart, refetch: refetchCart } = useQuery<CartData>({
     queryKey: ['storefrontCart', slug, customerId],
     queryFn: async () => {
       if (!customerId) return { items: [], subtotal: 0, total: 0, tax: 0, shipping: 0, coupon: null, automaticDiscount: 0, customerDiscount: 0, giftCardDiscount: 0 } as CartData
@@ -127,12 +124,12 @@ export function StorefrontDataProvider({
       if (!res.ok) throw new Error('Failed to fetch cart')
       return res.json()
     },
-    enabled: !!customerId,
+    initialData: initialCart || undefined,
+    enabled: false,
     staleTime: 0,
-    gcTime: 5 * 60 * 1000,
   })
 
-  const { data: isAdminStatus = initialIsAdmin, refetch: refetchIsAdmin } = useQuery<boolean>({
+  const { data: isAdminStatus = initialIsAdmin } = useQuery<boolean>({
     queryKey: ['storefrontIsAdmin', slug, session?.user?.companyId],
     queryFn: async () => {
       if (!session?.user?.companyId) return false
@@ -141,8 +138,7 @@ export function StorefrontDataProvider({
       return res.json()
     },
     initialData: initialIsAdmin,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 10 * 60 * 1000,
+    enabled: false,
   })
 
   const cartItemCount = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0

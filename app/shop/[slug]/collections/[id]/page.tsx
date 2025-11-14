@@ -2,8 +2,6 @@ import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import { CollectionClient } from "./CollectionClient"
 
-export const revalidate = 300
-
 export default async function CollectionPage({ params }: { params: { slug: string; id: string } }) {
   const { slug, id: collectionId } = params
 
