@@ -44,11 +44,11 @@ model User {
   phone           String?
   auditLogs       AuditLog[]
   blogPosts       BlogPost[]
+  coupons         Coupon[]
   sentInvitations Invitation[]     @relation("Inviter")
   invitation      Invitation?      @relation("InvitedUser")
   notifications   Notification[]
   permissions     UserPermission[]
-  coupons         Coupon[]
   company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
@@ -175,7 +175,6 @@ model Invitation {
   name        String?
   token       String           @unique
   invitedBy   String
-  role        UserRole         @default(USER)
   permissions Json
   status      InvitationStatus @default(PENDING)
   acceptedAt  DateTime?
@@ -183,6 +182,7 @@ model Invitation {
   createdAt   DateTime         @default(now())
   updatedAt   DateTime         @updatedAt
   expiresAt   DateTime
+  role        UserRole         @default(USER)
   company     Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
   inviter     User             @relation("Inviter", fields: [invitedBy], references: [id])
   user        User?            @relation("InvitedUser", fields: [userId], references: [id])
@@ -233,6 +233,7 @@ model Shop {
   customerDiscountSettings Json?
   createdAt                DateTime        @default(now())
   updatedAt                DateTime        @updatedAt
+  automations              Automation[]
   blogs                    Blog[]
   Bundle                   Bundle[]
   Cart                     Cart[]
@@ -254,7 +255,6 @@ model Shop {
   trackingPixels           TrackingPixel[]
   webhooks                 Webhook[]
   wishlistItems            WishlistItem[]
-  automations              Automation[]
 
   @@index([companyId])
   @@index([slug])
@@ -568,9 +568,9 @@ model Coupon {
   applicableCustomers  String[]
   canCombine           Boolean      @default(false)
   influencerId         String?
-  influencer           User?        @relation(fields: [influencerId], references: [id], onDelete: SetNull)
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @default(now())
+  influencer           User?        @relation(fields: [influencerId], references: [id])
   shop                 Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   @@index([shopId])
@@ -580,46 +580,46 @@ model Coupon {
 }
 
 model Discount {
-  id                    String                 @id @default(cuid())
-  shopId                String
-  title                 String
-  description           String?
-  type                  DiscountType
-  value                 Float
-  buyQuantity           Int?
-  getQuantity           Int?
-  getDiscount           Float?
-  nthItem               Int?
-  volumeRules           Json?
-  target                DiscountTarget         @default(ALL_PRODUCTS)
-  customerTarget        DiscountCustomerTarget @default(ALL_CUSTOMERS)
-  applicableProducts    String[]               @default([])
-  applicableCategories  String[]               @default([])
-  applicableCollections String[]               @default([])
-  excludedProducts      String[]               @default([])
-  excludedCategories    String[]               @default([])
-  excludedCollections   String[]               @default([])
-  customerTiers         String[]               @default([])
-  specificCustomers     String[]               @default([])
-  minOrderAmount        Float?
-  maxDiscount           Float?
-  maxUses               Int?
-  usesPerCustomer       Int?                   @default(1)
-  usedCount             Int                    @default(0)
-  startDate             DateTime?
-  endDate               DateTime?
-  isActive              Boolean                @default(true)
-  isAutomatic           Boolean                @default(false)
-  priority              Int                    @default(0)
-  canCombine            Boolean                @default(false)
-  giftProductId         String?
-  giftCondition         GiftCondition?
+  id                     String                 @id @default(cuid())
+  shopId                 String
+  title                  String
+  description            String?
+  type                   DiscountType
+  value                  Float
+  buyQuantity            Int?
+  getQuantity            Int?
+  getDiscount            Float?
+  nthItem                Int?
+  volumeRules            Json?
+  target                 DiscountTarget         @default(ALL_PRODUCTS)
+  customerTarget         DiscountCustomerTarget @default(ALL_CUSTOMERS)
+  applicableProducts     String[]               @default([])
+  applicableCategories   String[]               @default([])
+  applicableCollections  String[]               @default([])
+  excludedProducts       String[]               @default([])
+  excludedCategories     String[]               @default([])
+  excludedCollections    String[]               @default([])
+  customerTiers          String[]               @default([])
+  specificCustomers      String[]               @default([])
+  minOrderAmount         Float?
+  maxDiscount            Float?
+  maxUses                Int?
+  usesPerCustomer        Int?                   @default(1)
+  usedCount              Int                    @default(0)
+  startDate              DateTime?
+  endDate                DateTime?
+  isActive               Boolean                @default(true)
+  isAutomatic            Boolean                @default(false)
+  priority               Int                    @default(0)
+  canCombine             Boolean                @default(false)
+  giftProductId          String?
+  giftCondition          GiftCondition?
   giftConditionProductId String?
-  giftConditionAmount   Float?
-  giftVariantId         String?
-  createdAt             DateTime               @default(now())
-  updatedAt             DateTime               @updatedAt
-  shop                  Shop                   @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  giftConditionAmount    Float?
+  giftVariantId          String?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+  shop                   Shop                   @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   @@index([shopId])
   @@index([isActive])
@@ -1039,19 +1039,19 @@ model TrackingPixel {
 }
 
 model Automation {
-  id          String            @id @default(cuid())
-  shopId      String
+  id          String          @id @default(cuid())
   name        String
   description String?
-  isActive    Boolean           @default(true)
-  trigger     Json              // Trigger configuration
-  conditions  Json?             // Conditions array
-  actions     Json              // Actions array
+  isActive    Boolean         @default(true)
+  trigger     Json
+  conditions  Json?
+  actions     Json
   createdBy   String?
-  createdAt   DateTime          @default(now())
-  updatedAt   DateTime          @updatedAt
-  shop        Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  shopId      String
   logs        AutomationLog[]
+  shop        Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   @@index([shopId])
   @@index([isActive])
@@ -1059,16 +1059,16 @@ model Automation {
 }
 
 model AutomationLog {
-  id           String     @id @default(cuid())
-  automationId String
-  status       String     // "success" | "failed" | "skipped"
-  eventType    String
-  eventPayload Json
-  actionResults Json?     // Results of each action
-  error        String?
-  durationMs   Int?
-  createdAt    DateTime   @default(now())
-  automation   Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
+  id            String     @id @default(cuid())
+  automationId  String
+  status        String
+  error         String?
+  createdAt     DateTime   @default(now())
+  actionResults Json?
+  durationMs    Int?
+  eventPayload  Json
+  eventType     String
+  automation    Automation @relation(fields: [automationId], references: [id], onDelete: Cascade)
 
   @@index([automationId])
   @@index([status])

@@ -19,6 +19,11 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
+    // אופטימיזציה של תמונות
+    formats: ['image/webp'], // WebP בלבד - קטן יותר
+    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 ימים cache
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920], // גדלים אופטימליים
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384], // גדלים קטנים
   },
   // Fix for regenerator runtime issues
   webpack: (config, { isServer }) => {

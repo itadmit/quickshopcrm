@@ -580,6 +580,10 @@ export default function OnboardingPage() {
                       rows={3}
                       className="text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500 resize-none"
                     />
+                    <p className="text-xs text-gray-500 flex items-start gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                      <span>שים לב: טקסט זה יופיע בתוצאות החיפוש של גוגל כשיחפשו את האתר שלך</span>
+                    </p>
                   </div>
 
                   <div className="space-y-2">
@@ -1282,6 +1286,10 @@ export default function OnboardingPage() {
                           rows={3}
                           className="text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500 resize-none"
                         />
+                        <p className="text-xs text-gray-500 flex items-start gap-1.5">
+                          <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
+                          <span>שים לב: טקסט זה יופיע בתוצאות החיפוש של גוגל כשיחפשו את האתר שלך</span>
+                        </p>
                       </div>
 
                       <div className="space-y-2">

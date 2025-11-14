@@ -242,6 +242,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                               src={item.product.images[0]}
                               alt={item.product.name}
                               className="h-full w-full object-cover"
+                              loading="lazy"
                             />
                           </div>
                         ) : (
