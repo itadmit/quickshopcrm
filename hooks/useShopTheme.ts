@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
+import { useStorefrontData } from "@/components/storefront/StorefrontDataProvider"
 
 interface ThemeSettings {
   primaryColor?: string
@@ -137,6 +138,7 @@ const DEFAULT_THEME: ShopTheme = {
 }
 
 export function useShopTheme(slug: string) {
+  const { shop: contextShop, loading: contextLoading } = useStorefrontData()
   const [theme, setTheme] = useState<ShopTheme>(DEFAULT_THEME)
   const [loading, setLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -144,9 +146,13 @@ export function useShopTheme(slug: string) {
   const fetchTheme = useCallback(async () => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/storefront/${slug}/info?t=${Date.now()}`)
-      if (response.ok) {
-        const shop = await response.json()
+      
+      const shop = contextShop || await (async () => {
+        const response = await fetch(`/api/storefront/${slug}/info?t=${Date.now()}`)
+        return response.ok ? await response.json() : null
+      })()
+      
+      if (shop) {
         const themeSettings = (shop.themeSettings as ThemeSettings) || {}
         
         const newTheme = {
@@ -226,7 +232,7 @@ export function useShopTheme(slug: string) {
     } finally {
       setLoading(false)
     }
-  }, [slug])
+  }, [slug, contextShop])
 
   useEffect(() => {
     if (slug) {

@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useStorefrontData } from "@/components/storefront/StorefrontDataProvider"
 
 export interface NavigationItem {
   type: "link" | "page" | "category" | "collection"
@@ -32,35 +33,42 @@ export function useNavigation(
   location: "HEADER" | "FOOTER" | "MOBILE" = "HEADER",
   initialNavigation?: Navigation | null
 ) {
-  // אם יש ניווט התחלתי מהשרת, נשתמש בו
-  const [navigation, setNavigation] = useState<Navigation | null>(initialNavigation || null)
-  const [loading, setLoading] = useState(!initialNavigation)
+  const { navigation: contextNav, loading: contextLoading } = useStorefrontData()
+  const [navigation, setNavigation] = useState<Navigation | null>(initialNavigation || contextNav || null)
+  const [loading, setLoading] = useState(!initialNavigation && !contextNav)
 
   useEffect(() => {
-    // אם יש כבר ניווט מהשרת, לא צריך לטעון
     if (initialNavigation) {
+      setNavigation(initialNavigation)
       return
     }
 
-    // טעינה מהשרת
-    const fetchNavigation = async () => {
-      try {
-        setLoading(true)
-        const response = await fetch(`/api/storefront/${slug}/navigation?location=${location}`)
-        if (response.ok) {
-          const data = await response.json()
-          const nav = data.length > 0 ? data[0] : null
-          setNavigation(nav)
-        }
-      } catch (error) {
-        console.error("Error fetching navigation:", error)
-      } finally {
-        setLoading(false)
-      }
+    if (contextNav && location === "MOBILE") {
+      setNavigation(contextNav)
+      setLoading(false)
+      return
     }
 
-    fetchNavigation()
-  }, [slug, location, initialNavigation])
+    if (location !== "MOBILE") {
+      const fetchNavigation = async () => {
+        try {
+          setLoading(true)
+          const response = await fetch(`/api/storefront/${slug}/navigation?location=${location}`)
+          if (response.ok) {
+            const data = await response.json()
+            const nav = data.length > 0 ? data[0] : null
+            setNavigation(nav)
+          }
+        } catch (error) {
+          console.error("Error fetching navigation:", error)
+        } finally {
+          setLoading(false)
+        }
+      }
+
+      fetchNavigation()
+    }
+  }, [slug, location, initialNavigation, contextNav])
 
   return { navigation, loading }
 }
