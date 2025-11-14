@@ -34,6 +34,9 @@ interface ThemeSettings {
   mobileSideMenuTitle?: string
   mobileSideMenuShowAuthLinks?: boolean
   
+  // Cart settings
+  showCouponByDefault?: boolean
+  
   // Category page settings
   categoryProductsPerRowMobile?: number
   categoryProductsPerRowTablet?: number
@@ -179,6 +182,9 @@ export function useShopTheme(slug: string) {
           mobileSideMenuShowSearch: themeSettings.mobileSideMenuShowSearch !== undefined ? themeSettings.mobileSideMenuShowSearch : true,
           mobileSideMenuTitle: themeSettings.mobileSideMenuTitle || "תפריט",
           mobileSideMenuShowAuthLinks: themeSettings.mobileSideMenuShowAuthLinks !== undefined ? themeSettings.mobileSideMenuShowAuthLinks : true,
+          
+          // Cart settings
+          showCouponByDefault: themeSettings.showCouponByDefault !== undefined ? themeSettings.showCouponByDefault : true,
           
           // Category settings
           categoryProductsPerRowMobile: themeSettings.categoryProductsPerRowMobile || DEFAULT_THEME.categoryProductsPerRowMobile,

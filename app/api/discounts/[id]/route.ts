@@ -7,7 +7,7 @@ import { z } from "zod"
 const updateDiscountSchema = z.object({
   title: z.string().min(1).optional(),
   description: z.string().optional(),
-  type: z.enum(["PERCENTAGE", "FIXED", "BUY_X_GET_Y", "VOLUME_DISCOUNT", "NTH_ITEM_DISCOUNT"]).optional(),
+  type: z.enum(["PERCENTAGE", "FIXED", "BUY_X_GET_Y", "VOLUME_DISCOUNT", "NTH_ITEM_DISCOUNT", "FREE_GIFT"]).optional(),
   value: z.number().min(0).optional(),
   buyQuantity: z.number().int().optional(),
   getQuantity: z.number().int().optional(),
@@ -15,6 +15,11 @@ const updateDiscountSchema = z.object({
   nthItem: z.number().int().optional(),
   volumeRules: z.any().optional(),
   minOrderAmount: z.number().optional(),
+  giftProductId: z.string().optional(),
+  giftCondition: z.enum(["MIN_ORDER_AMOUNT", "SPECIFIC_PRODUCT"]).optional(),
+  giftConditionProductId: z.string().optional(),
+  giftConditionAmount: z.number().optional(),
+  giftVariantId: z.string().optional(),
   maxDiscount: z.number().optional(),
   maxUses: z.number().int().optional(),
   usesPerCustomer: z.number().int().optional(),
@@ -142,6 +147,11 @@ export async function PUT(
         ...(data.excludedCollections !== undefined && { excludedCollections: data.excludedCollections }),
         ...(data.customerTiers !== undefined && { customerTiers: data.customerTiers }),
         ...(data.specificCustomers !== undefined && { specificCustomers: data.specificCustomers }),
+        ...(data.giftProductId !== undefined && { giftProductId: data.giftProductId }),
+        ...(data.giftCondition !== undefined && { giftCondition: data.giftCondition }),
+        ...(data.giftConditionProductId !== undefined && { giftConditionProductId: data.giftConditionProductId }),
+        ...(data.giftConditionAmount !== undefined && { giftConditionAmount: data.giftConditionAmount }),
+        ...(data.giftVariantId !== undefined && { giftVariantId: data.giftVariantId }),
       },
     })
 

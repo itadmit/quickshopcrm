@@ -169,14 +169,31 @@ export async function POST(
       }
     }
 
-    // חישוב מע"מ מחדש עם shipping ו-giftCard
+    // חישוב המחיר הסופי
     const totalDiscount = calculation.automaticDiscount + calculation.couponDiscount
-    const tax = shop.taxEnabled && shop.taxRate
-      ? ((calculation.subtotal - totalDiscount - giftCardDiscount) * shop.taxRate) / 100
-      : 0
-
-    // סכום כולל (הנחת לקוח כבר מחושבת ב-subtotal)
-    const total = calculation.subtotal - totalDiscount - giftCardDiscount - calculation.customerDiscount + shipping + tax
+    const finalPrice = calculation.subtotal - totalDiscount - giftCardDiscount - calculation.customerDiscount
+    
+    // חישוב מע"מ בהתאם להגדרת החנות
+    const taxRate = shop.taxEnabled && shop.taxRate ? shop.taxRate : 0
+    const pricesIncludeTax = shop.pricesIncludeTax ?? true // ברירת מחדל: המחירים כוללים מע"מ
+    
+    let tax = 0
+    let total = 0
+    
+    if (taxRate > 0) {
+      if (pricesIncludeTax) {
+        // המחירים כוללים מע"מ - רק מפרידים את המע"מ לתצוגה
+        tax = finalPrice - (finalPrice / (1 + taxRate / 100))
+        total = finalPrice + shipping
+      } else {
+        // המחירים לא כוללים מע"מ - צריך להוסיף מע"מ
+        tax = finalPrice * (taxRate / 100)
+        total = finalPrice + tax + shipping
+      }
+    } else {
+      // אין מע"מ
+      total = finalPrice + shipping
+    }
 
     // יצירת מספר הזמנה (מתחיל מ-1000 לכל חנות)
     const orderCount = await prisma.order.count({

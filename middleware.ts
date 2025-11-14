@@ -31,6 +31,7 @@ export default withAuth(
 export const config = {
   matcher: [
     "/dashboard/:path*",
+    "/influencer/:path*",
     "/settings/:path*",
     "/notifications/:path*",
     "/products/:path*",

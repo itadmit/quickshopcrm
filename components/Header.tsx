@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
-import { Bell, Search, ChevronDown, Settings, LogOut, User, Store, ExternalLink } from "lucide-react"
+import { Bell, Search, ChevronDown, Settings, LogOut, User, Store, ExternalLink, UserPlus } from "lucide-react"
 import { useShop } from "@/components/providers/ShopProvider"
 import Link from "next/link"
 import {
@@ -17,6 +17,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { NotificationsDrawer } from "@/components/NotificationsDrawer"
+import { InvitePeopleDialog } from "@/components/dialogs/InvitePeopleDialog"
 import { getShopBaseUrl } from "@/lib/utils"
 
 interface HeaderProps {
@@ -28,6 +29,7 @@ export function Header({ title }: HeaderProps) {
   const { selectedShop, shops, setSelectedShop, loading: shopsLoading } = useShop()
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
 
   useEffect(() => {
     const fetchUnreadCount = async () => {
@@ -66,54 +68,6 @@ export function Header({ title }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-4">
-        {/* Shop Selector - מוצג רק אם יש יותר מחנות אחת או שהמשתמש הוזמן לחנות אחרת */}
-        {!shopsLoading && shops.length > 0 && selectedShop && (
-          <div className="flex items-center gap-2">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="flex items-center gap-2 hover:bg-gray-100 rounded-lg px-3 py-2 transition-colors border border-gray-200">
-                  <Store className="w-4 h-4 text-purple-600" />
-                  <span className="text-sm font-medium text-gray-900">
-                    {selectedShop.name}
-                  </span>
-                  {shops.length > 1 && (
-                    <ChevronDown className="w-4 h-4 text-gray-400" />
-                  )}
-                </button>
-              </DropdownMenuTrigger>
-              {shops.length > 1 && (
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>בחר חנות</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {shops.map((shop) => (
-                    <DropdownMenuItem
-                      key={shop.id}
-                      onClick={() => setSelectedShop(shop)}
-                      className={selectedShop?.id === shop.id ? "bg-purple-50" : ""}
-                    >
-                      <Store className="ml-2 h-4 w-4" />
-                      <span>{shop.name}</span>
-                      {selectedShop?.id === shop.id && (
-                        <span className="mr-auto text-purple-600">✓</span>
-                      )}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              )}
-            </DropdownMenu>
-            <a
-              href={getShopBaseUrl(selectedShop)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-700 hover:bg-purple-50 rounded-lg px-2 py-1 transition-colors"
-              title="צפה בחנות"
-            >
-              <ExternalLink className="w-4 h-4" />
-              <span className="hidden sm:inline">צפה בחנות</span>
-            </a>
-          </div>
-        )}
-
         {/* Search */}
         <div className="relative w-64">
           <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -141,6 +95,14 @@ export function Header({ title }: HeaderProps) {
         
         <NotificationsDrawer open={notificationsOpen} onOpenChange={setNotificationsOpen} />
 
+        {/* Invite People Dialog */}
+        {(session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN" || session?.user?.role === "MANAGER") && (
+          <InvitePeopleDialog 
+            open={inviteDialogOpen}
+            onOpenChange={setInviteDialogOpen}
+          />
+        )}
+
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -164,7 +126,7 @@ export function Header({ title }: HeaderProps) {
               <ChevronDown className="w-4 h-4 text-gray-400" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuContent align="start" className="w-56">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium">{session?.user?.name}</p>
@@ -172,20 +134,31 @@ export function Header({ title }: HeaderProps) {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <User className="ml-2 h-4 w-4" />
+            <DropdownMenuItem className="flex flex-row-reverse items-center gap-2 cursor-pointer">
+              <User className="w-4 h-4 flex-shrink-0" />
               <span>הפרופיל שלי</span>
             </DropdownMenuItem>
-            <DropdownMenuItem>
-              <Settings className="ml-2 h-4 w-4" />
-              <span>הגדרות</span>
+            <DropdownMenuItem asChild className="flex flex-row-reverse items-center gap-2 cursor-pointer">
+              <Link href="/settings" className="flex flex-row-reverse items-center gap-2 w-full">
+                <Settings className="w-4 h-4 flex-shrink-0" />
+                <span>הגדרות</span>
+              </Link>
             </DropdownMenuItem>
+            {(session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN" || session?.user?.role === "MANAGER") && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => setInviteDialogOpen(true)} className="flex flex-row-reverse items-center gap-2 cursor-pointer">
+                  <UserPlus className="w-4 h-4 flex-shrink-0" />
+                  <span>הזמנת צוות</span>
+                </DropdownMenuItem>
+              </>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={() => signOut({ callbackUrl: "/login" })}
-              className="text-red-600 focus:text-red-600"
+              className="text-red-600 focus:text-red-600 flex flex-row-reverse items-center gap-2 cursor-pointer"
             >
-              <LogOut className="ml-2 h-4 w-4" />
+              <LogOut className="w-4 h-4 flex-shrink-0" />
               <span>התנתק</span>
             </DropdownMenuItem>
           </DropdownMenuContent>

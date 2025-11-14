@@ -25,6 +25,7 @@ import {
 import Link from "next/link"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
+import { ShopsSkeleton } from "@/components/skeletons/ShopsSkeleton"
 
 interface Shop {
   id: string
@@ -53,6 +54,7 @@ export default function ShopsPage() {
   const [search, setSearch] = useState("")
 
   useEffect(() => {
+    // טעינת הנתונים מיד
     fetchShops()
   }, [])
 
@@ -93,25 +95,11 @@ export default function ShopsPage() {
     (shop.description && shop.description.toLowerCase().includes(search.toLowerCase()))
   )
 
+  // הצגת skeleton רק בזמן טעינה ראשונית
   if (loading) {
     return (
       <AppLayout title="חנויות">
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <h1 className="text-3xl font-bold text-gray-900">חנויות</h1>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i} className="animate-pulse">
-                <CardContent className="p-6">
-                  <div className="h-32 bg-gray-200 rounded-lg mb-4"></div>
-                  <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                  <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+        <ShopsSkeleton />
       </AppLayout>
     )
   }

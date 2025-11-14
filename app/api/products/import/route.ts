@@ -114,30 +114,111 @@ export async function POST(req: NextRequest) {
       }
 
       try {
+        // בדיקה אם יש שדות variants/options
+        const hasVariants = headers.some(h => h.startsWith('variant_') || h.startsWith('option1') || h.startsWith('option2') || h.startsWith('option3'))
+        
+        const productData: any = {
+          shopId,
+          name: row.name,
+          slug,
+          description: row.description || null,
+          sku: row.sku || null,
+          price,
+          comparePrice: row.comparePrice ? parseFloat(row.comparePrice) : null,
+          cost: row.cost ? parseFloat(row.cost) : null,
+          taxEnabled: row.taxEnabled !== "false",
+          inventoryEnabled: row.inventoryEnabled !== "false",
+          inventoryQty: row.inventoryQty ? parseInt(row.inventoryQty) : 0,
+          lowStockAlert: row.lowStockAlert ? parseInt(row.lowStockAlert) : null,
+          weight: row.weight ? parseFloat(row.weight) : null,
+          status: (row.status as any) || "DRAFT",
+          images: row.images ? row.images.split("|").filter((img: string) => img.trim()) : [],
+          video: row.video || null,
+          minQuantity: row.minQuantity ? parseInt(row.minQuantity) : null,
+          maxQuantity: row.maxQuantity ? parseInt(row.maxQuantity) : null,
+          availability: (row.availability as any) || "IN_STOCK",
+          seoTitle: row.seoTitle || null,
+          seoDescription: row.seoDescription || null,
+        }
+
+        // אם יש variants, נוסיף אותם
+        if (hasVariants && (row.option1 || row.option2 || row.option3)) {
+          // איסוף כל הoptions הייחודיים
+          const optionsMap = new Map<string, Set<string>>()
+          
+          if (row.option1 && row.option1Value) {
+            if (!optionsMap.has(row.option1)) {
+              optionsMap.set(row.option1, new Set())
+            }
+            optionsMap.get(row.option1)!.add(row.option1Value)
+          }
+          
+          if (row.option2 && row.option2Value) {
+            if (!optionsMap.has(row.option2)) {
+              optionsMap.set(row.option2, new Set())
+            }
+            optionsMap.get(row.option2)!.add(row.option2Value)
+          }
+          
+          if (row.option3 && row.option3Value) {
+            if (!optionsMap.has(row.option3)) {
+              optionsMap.set(row.option3, new Set())
+            }
+            optionsMap.get(row.option3)!.add(row.option3Value)
+          }
+
+          // יצירת options
+          const optionsToCreate: any[] = []
+          let position = 0
+          for (const [optionName, valuesSet] of optionsMap.entries()) {
+            const values = Array.from(valuesSet).map(value => ({
+              id: value,
+              label: value,
+            }))
+            
+            optionsToCreate.push({
+              name: optionName,
+              type: 'button',
+              values: values,
+              position: position++,
+            })
+          }
+
+          if (optionsToCreate.length > 0) {
+            productData.options = {
+              create: optionsToCreate
+            }
+          }
+
+          // יצירת variant אחד
+          const variantData: any = {
+            name: `${row.option1Value || ''}${row.option2Value ? ' / ' + row.option2Value : ''}${row.option3Value ? ' / ' + row.option3Value : ''}`.trim(),
+            sku: row.variantSku || row.sku || null,
+            price: row.variantPrice ? parseFloat(row.variantPrice) : price,
+            comparePrice: row.variantComparePrice ? parseFloat(row.variantComparePrice) : (row.comparePrice ? parseFloat(row.comparePrice) : null),
+            inventoryQty: row.variantInventoryQty ? parseInt(row.variantInventoryQty) : (row.inventoryQty ? parseInt(row.inventoryQty) : 0),
+          }
+
+          if (row.option1 && row.option1Value) {
+            variantData.option1 = row.option1
+            variantData.option1Value = row.option1Value
+          }
+          if (row.option2 && row.option2Value) {
+            variantData.option2 = row.option2
+            variantData.option2Value = row.option2Value
+          }
+          if (row.option3 && row.option3Value) {
+            variantData.option3 = row.option3
+            variantData.option3Value = row.option3Value
+          }
+
+          productData.variants = {
+            create: [variantData]
+          }
+        }
+
         const product = await prisma.product.create({
-          data: {
-            shopId,
-            name: row.name,
-            slug,
-            description: row.description || null,
-            sku: row.sku || null,
-            price,
-            comparePrice: row.comparePrice ? parseFloat(row.comparePrice) : null,
-            cost: row.cost ? parseFloat(row.cost) : null,
-            taxEnabled: row.taxEnabled !== "false",
-            inventoryEnabled: row.inventoryEnabled !== "false",
-            inventoryQty: row.inventoryQty ? parseInt(row.inventoryQty) : 0,
-            lowStockAlert: row.lowStockAlert ? parseInt(row.lowStockAlert) : null,
-            weight: row.weight ? parseFloat(row.weight) : null,
-            status: (row.status as any) || "DRAFT",
-            images: row.images ? row.images.split("|").filter((img: string) => img.trim()) : [],
-            video: row.video || null,
-            minQuantity: row.minQuantity ? parseInt(row.minQuantity) : null,
-            maxQuantity: row.maxQuantity ? parseInt(row.maxQuantity) : null,
-            availability: (row.availability as any) || "IN_STOCK",
-            seoTitle: row.seoTitle || null,
-            seoDescription: row.seoDescription || null,
-          },
+          data: productData,
         })
 
         products.push(product)

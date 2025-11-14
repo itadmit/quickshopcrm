@@ -5,6 +5,10 @@ import { calculateCart } from "@/lib/cart-calculations"
 import { findCart, hasValidCart } from "@/lib/cart-server"
 import { CheckoutForm } from "./CheckoutForm"
 
+// מבטל caching - תמיד טוען נתונים טריים
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 async function getCart(slug: string, customerId: string | null) {
   try {
     const shop = await prisma.shop.findUnique({
@@ -19,6 +23,7 @@ async function getCart(slug: string, customerId: string | null) {
         logo: true,
         taxEnabled: true,
         taxRate: true,
+        pricesIncludeTax: true,
         customerDiscountSettings: true,
         settings: true,
       },
@@ -177,6 +182,7 @@ export default async function CheckoutPage({
             logo: true,
             taxEnabled: true,
             taxRate: true,
+            pricesIncludeTax: true,
             customerDiscountSettings: true,
             settings: true,
           },

@@ -300,7 +300,7 @@ export function ProductElements({
                   </Button>
                 </>
               )}
-              {maxQty > 0 && (
+              {theme?.productShowInventory && maxQty > 0 && (
                 <span className="text-sm text-gray-500">
                   (זמין: {maxQty})
                 </span>

@@ -76,6 +76,7 @@ export default function CustomersPage() {
   const isAdmin = session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN"
 
   useEffect(() => {
+    // טעינת הנתונים מיד
     fetchCustomers()
   }, [page, tierFilter, search])
 
@@ -201,6 +202,15 @@ export default function CustomersPage() {
     } finally {
       setCreating(false)
     }
+  }
+
+  // הצגת skeleton רק בזמן טעינה ראשונית
+  if (loading) {
+    return (
+      <AppLayout title="לקוחות">
+        <CustomersSkeleton />
+      </AppLayout>
+    )
   }
 
   return (
@@ -377,9 +387,7 @@ export default function CustomersPage() {
         </Card>
 
         {/* Customers Table */}
-        {loading ? (
-          <CustomersSkeleton />
-        ) : customers.length === 0 ? (
+        {customers.length === 0 ? (
           <Card>
             <CardContent className="p-0">
               <div className="text-center py-12">

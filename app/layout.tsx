@@ -21,8 +21,8 @@ const pacifico = Pacifico({
 })
 
 export const metadata: Metadata = {
-  title: 'Quick Shop - מערכת ניהול חנויות אונליין',
-  description: 'מערכת מתקדמת ליצירה וניהול חנויות אונליין',
+  title: 'Quick Shop - Online Store Management System',
+  description: 'Advanced system for creating and managing online stores',
   icons: {
     icon: '/favicon.svg',
     shortcut: '/favicon.svg',

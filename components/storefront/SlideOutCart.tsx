@@ -29,6 +29,8 @@ interface CartItem {
   quantity: number
   price: number
   total: number
+  isGift?: boolean
+  giftDiscountId?: string
   product: {
     id: string
     name: string
@@ -74,7 +76,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
   const { theme } = useShopTheme(slug)
   const [couponCode, setCouponCode] = useState("")
   const [showDiscount, setShowDiscount] = useState(false)
-  const [showCoupon, setShowCoupon] = useState(false)
+  const [showCoupon, setShowCoupon] = useState(theme?.showCouponByDefault ?? true)
   const [updatingItem, setUpdatingItem] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
 
@@ -230,7 +232,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                     <div className="flex gap-3 items-stretch">
                       {/* Product Image - Square, full height */}
                       <Link
-                        href={`/shop/${slug}/products/${item.product?.slug || item.productId}`}
+                        href={`/shop/${slug}/products/${item.productId}`}
                         onClick={onClose}
                         className="flex-shrink-0 self-stretch"
                       >
@@ -255,7 +257,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <Link
-                              href={`/shop/${slug}/products/${item.product?.slug || item.productId}`}
+                              href={`/shop/${slug}/products/${item.productId}`}
                               onClick={onClose}
                               className="block"
                             >
@@ -271,32 +273,38 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                             </p>
                           </div>
                           
-                          {/* Remove Button - Top Right */}
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveItem(item.productId, item.variantId)}
-                            disabled={updatingItem === `${item.productId}-${item.variantId}` || isUpdatingItem}
-                            className="p-1 h-7 w-7 text-gray-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </Button>
+                          {/* Remove Button - Top Right (מוסתר למוצרי מתנה) */}
+                          {!item.isGift && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveItem(item.productId, item.variantId)}
+                              disabled={updatingItem === `${item.productId}-${item.variantId}` || isUpdatingItem}
+                              className="p-1 h-7 w-7 text-gray-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </Button>
+                          )}
+                          {item.isGift && (
+                            <Badge className="bg-green-100 text-green-800 text-xs">מתנה</Badge>
+                          )}
                         </div>
 
                         {/* Bottom Section - Quantity Controls and Total Price */}
                         <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
-                          {/* Quantity Controls */}
-                          <div className="flex items-center border border-gray-300 rounded">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                handleQuantityChange(
-                                  item.productId,
-                                  item.variantId,
-                                  item.quantity - 1
-                                )
-                              }
+                          {/* Quantity Controls (מוסתרים למוצרי מתנה) */}
+                          {!item.isGift ? (
+                            <div className="flex items-center border border-gray-300 rounded">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() =>
+                                  handleQuantityChange(
+                                    item.productId,
+                                    item.variantId,
+                                    item.quantity - 1
+                                  )
+                                }
                               disabled={updatingItem === `${item.productId}-${item.variantId}` || isUpdatingItem}
                               className="p-1 h-7 w-7 rounded-none hover:bg-gray-50 transition-colors"
                             >
@@ -340,12 +348,21 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                               <Plus className="w-3 h-3 text-gray-600" />
                             </Button>
                           </div>
+                          ) : (
+                            <div className="text-xs text-gray-500">כמות: {item.quantity}</div>
+                          )}
                           
                           {/* Total Price - Right aligned */}
                           <div className="text-right">
-                            <span className="font-bold text-base text-gray-900">
-                              ₪{item.total.toFixed(2)}
-                            </span>
+                            {item.isGift ? (
+                              <span className="font-bold text-base text-green-600">
+                                מתנה
+                              </span>
+                            ) : (
+                              <span className="font-bold text-base text-gray-900">
+                                ₪{item.total.toFixed(2)}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
@@ -531,7 +548,8 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
               <button
                 onClick={() => {
                   onClose()
-                  router.push(`/shop/${slug}/checkout`)
+                  // מוסיף timestamp כדי לאלץ טעינה מחדש של דף הצ'ק אאוט
+                  router.push(`/shop/${slug}/checkout?t=${Date.now()}`)
                 }}
                 className="w-full text-white rounded-lg h-11 px-8 font-medium transition-opacity hover:opacity-90"
                 style={{

@@ -48,6 +48,7 @@ model User {
   invitation      Invitation?      @relation("InvitedUser")
   notifications   Notification[]
   permissions     UserPermission[]
+  coupons         Coupon[]
   company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
@@ -174,6 +175,7 @@ model Invitation {
   name        String?
   token       String           @unique
   invitedBy   String
+  role        UserRole         @default(USER)
   permissions Json
   status      InvitationStatus @default(PENDING)
   acceptedAt  DateTime?
@@ -222,6 +224,7 @@ model Shop {
   currency                 String          @default("ILS")
   taxEnabled               Boolean         @default(true)
   taxRate                  Float           @default(18)
+  pricesIncludeTax         Boolean         @default(true)
   theme                    String          @default("default")
   themeSettings            Json?
   domain                   String?
@@ -564,12 +567,15 @@ model Coupon {
   applicableCategories String[]
   applicableCustomers  String[]
   canCombine           Boolean      @default(false)
+  influencerId         String?
+  influencer           User?        @relation(fields: [influencerId], references: [id], onDelete: SetNull)
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @default(now())
   shop                 Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   @@index([shopId])
   @@index([code])
+  @@index([influencerId])
   @@map("coupons")
 }
 
@@ -606,6 +612,11 @@ model Discount {
   isAutomatic           Boolean                @default(false)
   priority              Int                    @default(0)
   canCombine            Boolean                @default(false)
+  giftProductId         String?
+  giftCondition         GiftCondition?
+  giftConditionProductId String?
+  giftConditionAmount   Float?
+  giftVariantId         String?
   createdAt             DateTime               @default(now())
   updatedAt             DateTime               @updatedAt
   shop                  Shop                   @relation(fields: [shopId], references: [id], onDelete: Cascade)
@@ -1070,6 +1081,7 @@ enum UserRole {
   ADMIN
   MANAGER
   USER
+  INFLUENCER
 }
 
 enum InvitationStatus {
@@ -1153,6 +1165,7 @@ enum DiscountType {
   BUY_X_GET_Y
   VOLUME_DISCOUNT
   NTH_ITEM_DISCOUNT
+  FREE_GIFT
 }
 
 enum DiscountTarget {
@@ -1189,4 +1202,9 @@ enum ReturnStatus {
   PROCESSING
   COMPLETED
   CANCELLED
+}
+
+enum GiftCondition {
+  MIN_ORDER_AMOUNT
+  SPECIFIC_PRODUCT
 }

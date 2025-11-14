@@ -68,16 +68,13 @@ export default function RegisterPage() {
         })
 
         if (signInResult?.ok) {
-          setTimeout(() => {
-            router.push("/onboarding")
-            router.refresh()
-          }, 500)
+          window.location.href = "/onboarding"
         } else {
           // אם ההתחברות נכשלה, מעבר ל-login
-          router.push("/login")
+          window.location.href = "/login"
         }
       } catch (error) {
-        router.push("/login")
+        window.location.href = "/login"
       }
     } catch (error) {
       toast({

@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma"
  * סדר עדיפויות:
  * 1. אם יש customerId - מחפש customer cart
  * 2. אם יש sessionId - מחפש session cart
- * 3. אחרת - מחפש כל עגלה פעילה של החנות (fallback)
+ * 3. אחרת - מחזיר null (לא מחזיר עגלה של משתמש אחר!)
  */
 export async function findCart(
   shopId: string,
@@ -92,29 +92,8 @@ export async function findCart(
     }
   }
   
-  // Fallback - מחפשים כל עגלה פעילה של החנות (למקרה שיש בעיה עם cookies)
-  const allCarts = await prisma.cart.findMany({
-    where: {
-      shopId,
-      expiresAt: {
-        gt: new Date(),
-      },
-      items: {
-        not: {
-          equals: [],
-        },
-      },
-    },
-    orderBy: {
-      updatedAt: 'desc',
-    },
-    take: 1,
-  })
-  
-  if (allCarts.length > 0) {
-    return allCarts[0]
-  }
-  
+  // אין customerId ואין sessionId - מחזירים null
+  // לא מחזירים עגלה של משתמש אחר (זה היה גורם לבעיה בגלישה בסתר)
   return null
 }
 

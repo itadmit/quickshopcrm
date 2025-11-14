@@ -115,9 +115,8 @@ export default function ProductsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    if (selectedShop) {
-      fetchProducts()
-    }
+    // טעינת הנתונים מיד - לא מחכים ל-selectedShop
+    fetchProducts()
   }, [pagination.page, statusFilter, categoryFilter, sortBy, sortOrder, search, selectedShop?.id])
 
   const fetchProducts = async () => {
@@ -357,6 +356,15 @@ export default function ProductsPage() {
     }
   }
 
+  // הצגת skeleton רק בזמן טעינה ראשונית
+  if (loading) {
+    return (
+      <AppLayout title="מוצרים">
+        <ProductsSkeleton />
+      </AppLayout>
+    )
+  }
+
   return (
     <AppLayout title="מוצרים">
       {/* Header */}
@@ -495,9 +503,7 @@ export default function ProductsPage() {
       </Card>
 
       {/* Products Table/Grid */}
-      {loading ? (
-        <ProductsSkeleton />
-      ) : products.length === 0 ? (
+      {products.length === 0 ? (
         <Card>
           <CardContent className="pt-6">
             <div className="text-center py-12">

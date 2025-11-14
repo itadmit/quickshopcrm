@@ -53,6 +53,8 @@ interface QuickAddModalProps {
   onSuccess?: () => void
   autoOpenCart?: boolean
   onCartOpen?: () => void
+  isGift?: boolean
+  giftDiscountId?: string | null
 }
 
 export function QuickAddModal({
@@ -64,6 +66,8 @@ export function QuickAddModal({
   onSuccess,
   autoOpenCart = false,
   onCartOpen,
+  isGift = false,
+  giftDiscountId = null,
 }: QuickAddModalProps) {
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null)
   const [quantity, setQuantity] = useState(1)
@@ -194,9 +198,52 @@ export function QuickAddModal({
     currentInventory !== null && 
     currentInventory <= 0
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!canAddToCart) return
 
+    // אם זה מתנה, נוסיף ישירות דרך API
+    if (isGift && giftDiscountId) {
+      try {
+        const headers: HeadersInit = { 'Content-Type': 'application/json' }
+        if (customerId) {
+          headers['x-customer-id'] = customerId
+        }
+
+        const response = await fetch(`/api/storefront/${slug}/cart`, {
+          method: 'POST',
+          headers,
+          credentials: 'include',
+          body: JSON.stringify({
+            productId: product.id,
+            variantId: selectedVariant?.id || null,
+            quantity,
+            isGift: true,
+            giftDiscountId,
+          }),
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to add gift to cart')
+        }
+
+        if (onSuccess) onSuccess()
+        onClose()
+        setQuantity(1)
+        setSelectedVariant(null)
+        setSelectedOptions({})
+        
+        if (autoOpenCart && onCartOpen) {
+          setTimeout(() => {
+            onCartOpen()
+          }, 300)
+        }
+      } catch (error) {
+        console.error('Error adding gift to cart:', error)
+      }
+      return
+    }
+
+    // הוספה רגילה
     addToCart({
       productId: product.id,
       variantId: selectedVariant?.id || null,

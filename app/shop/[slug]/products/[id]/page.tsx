@@ -73,8 +73,16 @@ export default function ProductPage() {
     }
   }
 
-  if (loading || !shop || !product) {
+  if (loading) {
     return <ProductPageSkeleton />
+  }
+
+  if (!shop || !product) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" dir="rtl">
+        <p className="text-gray-600">מוצר לא נמצא</p>
+      </div>
+    )
   }
 
   // הכנת theme
@@ -95,6 +103,7 @@ export default function ProductPage() {
     productShowMobileThumbs: themeSettings.productShowMobileThumbs !== undefined ? themeSettings.productShowMobileThumbs : true,
     productShowDiscountBadge: themeSettings.productShowDiscountBadge !== undefined ? themeSettings.productShowDiscountBadge : true,
     productShowQuantityButtons: themeSettings.productShowQuantityButtons !== undefined ? themeSettings.productShowQuantityButtons : true,
+    productShowInventory: themeSettings.productShowInventory !== undefined ? themeSettings.productShowInventory : false,
     productShowFavoriteButton: themeSettings.productShowFavoriteButton !== undefined ? themeSettings.productShowFavoriteButton : true,
     productShowShareButton: themeSettings.productShowShareButton !== undefined ? themeSettings.productShowShareButton : true,
     productImageBorderRadius: themeSettings.productImageBorderRadius || 8,

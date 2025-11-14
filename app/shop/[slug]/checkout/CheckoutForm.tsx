@@ -210,8 +210,9 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
   }, [formData.deliveryMethod, shop.shippingSettings, shop.pickupSettings, cart.subtotal])
 
   const finalTotal = useMemo(() => {
-    return cart.subtotal - (cart.discount || 0) + (cart.tax || 0) + shippingCost
-  }, [cart.subtotal, cart.discount, cart.tax, shippingCost])
+    // cart.total כבר מחושב נכון (כולל הנחות ומע"מ), רק מוסיפים משלוח
+    return cart.total + shippingCost
+  }, [cart.total, shippingCost])
 
   // PageView event - רק פעם אחת כשהעמוד נטען
   useEffect(() => {
@@ -1042,6 +1043,14 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                     <div className="flex justify-between text-green-600">
                       <span>{formData.deliveryMethod === "pickup" ? "איסוף עצמי" : "משלוח"}</span>
                       <span>חינם</span>
+                    </div>
+                  )}
+                  
+                  {/* Tax info - only if tax is enabled */}
+                  {cart.tax > 0 && (
+                    <div className="flex justify-between text-xs" style={{ color: checkoutColors.textColor, opacity: 0.6 }}>
+                      <span>כולל מע"מ</span>
+                      <span>₪{cart.tax.toFixed(2)}</span>
                     </div>
                   )}
                   

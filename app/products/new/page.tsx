@@ -482,13 +482,27 @@ export default function NewProductPage() {
           // Save options
           for (const option of options.filter(opt => opt.name.trim() && opt.values.length > 0)) {
             try {
+              // Convert values to array of strings (API expects strings, not objects)
+              const formattedValues = option.values.map((value: any) => {
+                if (typeof value === 'string') {
+                  return value
+                } else if (value && typeof value === 'object' && value.label) {
+                  return value.label
+                } else if (value && typeof value === 'object' && value.id) {
+                  // If it's an object with id but no label, try to extract the value
+                  return value.id.split('-').pop() || String(value)
+                } else {
+                  return String(value)
+                }
+              })
+
               await fetch(`/api/products/${product.id}/options`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   name: option.name,
                   type: option.type,
-                  values: option.values,
+                  values: formattedValues,
                   position: options.indexOf(option),
                 }),
               })
@@ -1705,11 +1719,13 @@ export default function NewProductPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {formData.images && formData.images.length > 0 ? (
-                  <img
-                    src={formData.images[0]}
-                    alt={formData.name || "תצוגה מקדימה"}
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
+                  <div className="w-full h-48 bg-gray-50 rounded-lg flex items-center justify-center p-4">
+                    <img
+                      src={formData.images[0]}
+                      alt={formData.name || "תצוגה מקדימה"}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
                 ) : (
                   <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
                     <ImageIcon className="w-12 h-12 text-gray-400" />

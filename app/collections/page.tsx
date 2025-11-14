@@ -41,17 +41,15 @@ export default function CollectionsPage() {
   const [search, setSearch] = useState("")
 
   useEffect(() => {
-    if (selectedShop) {
-      fetchCollections()
-    }
+    // טעינת הנתונים מיד - לא מחכים ל-selectedShop
+    fetchCollections()
   }, [selectedShop])
 
   const fetchCollections = async () => {
-    if (!selectedShop) return
-
     setLoading(true)
     try {
-      const response = await fetch(`/api/collections?shopId=${selectedShop.id}`)
+      const params = selectedShop?.id ? `?shopId=${selectedShop.id}` : ''
+      const response = await fetch(`/api/collections${params}`)
       if (response.ok) {
         const data = await response.json()
         setCollections(data)
@@ -102,6 +100,15 @@ export default function CollectionsPage() {
   const filteredCollections = collections.filter((collection) =>
     collection.name.toLowerCase().includes(search.toLowerCase())
   )
+
+  // הצגת skeleton רק בזמן טעינה ראשונית
+  if (loading) {
+    return (
+      <AppLayout title="קולקציות">
+        <CollectionsSkeleton />
+      </AppLayout>
+    )
+  }
 
   if (!selectedShop) {
     return (
@@ -155,9 +162,7 @@ export default function CollectionsPage() {
         </Card>
 
         {/* Collections List */}
-        {loading ? (
-          <CollectionsSkeleton />
-        ) : filteredCollections.length === 0 ? (
+        {filteredCollections.length === 0 ? (
           <Card>
             <CardContent className="pt-6">
               <div className="text-center py-12">

@@ -5,10 +5,16 @@ import { cookies } from "next/headers"
 import { calculateCart } from "@/lib/cart-calculations"
 import { findCart, isCartEmpty } from "@/lib/cart-server"
 
+// מבטל caching של API זה
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const addToCartSchema = z.object({
   productId: z.string(),
   variantId: z.string().nullable().optional(),
   quantity: z.number().int().min(1),
+  isGift: z.boolean().optional(),
+  giftDiscountId: z.string().optional(),
 })
 
 // הפונקציה findCart הוסרה - משתמשים ב-findCart מ-lib/cart-server.ts
@@ -62,7 +68,48 @@ export async function GET(
     }
 
     // בניית פריטי עגלה
-    const cartItems = cart.items as any[]
+    let cartItems = cart.items as any[]
+    
+    // הוספת מוצרי מתנה אוטומטית לעגלה
+    if (cartItems && cartItems.length > 0) {
+      // חישוב זמני כדי לזהות מוצרי מתנה
+      const tempCalculation = await calculateCart(
+        shop.id,
+        cartItems,
+        cart.couponCode,
+        customerId,
+        shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
+        null
+      )
+      
+      // מציאת מוצרי מתנה שלא קיימים בעגלה
+      const giftItems = tempCalculation.items.filter(item => item.isGift)
+      const existingGiftIds = new Set(
+        cartItems.map((item: any) => `${item.productId}-${item.variantId || 'null'}-${item.isGift ? 'gift' : 'normal'}`)
+      )
+      
+      // הוספת מוצרי מתנה לעגלה אם הם לא קיימים
+      for (const giftItem of giftItems) {
+        const giftKey = `${giftItem.productId}-${giftItem.variantId || 'null'}-gift`
+        if (!existingGiftIds.has(giftKey)) {
+          cartItems.push({
+            productId: giftItem.productId,
+            variantId: giftItem.variantId || null,
+            quantity: giftItem.quantity,
+            isGift: true,
+            giftDiscountId: giftItem.giftDiscountId,
+          })
+        }
+      }
+      
+      // עדכון העגלה עם מוצרי המתנה
+      if (cartItems.length > (cart.items as any[]).length) {
+        await prisma.cart.update({
+          where: { id: cart.id },
+          data: { items: cartItems },
+        })
+      }
+    }
     
     // אם העגלה ריקה, החזר מיד
     if (!cartItems || cartItems.length === 0) {
@@ -151,8 +198,6 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    console.log('🛒 POST - Add to cart started:', { slug: params.slug })
-    
     // נסה למצוא את החנות לפי slug או ID
     let shop = await prisma.shop.findFirst({
       where: {
@@ -161,8 +206,6 @@ export async function POST(
       },
     })
     
-    console.log('🏪 Shop found:', shop ? shop.id : 'NOT FOUND')
-
     // אם לא נמצא לפי slug, ננסה לחפש לפי ID (למקרה שה-slug השתנה)
     if (!shop) {
       shop = await prisma.shop.findFirst({
@@ -257,6 +300,13 @@ export async function POST(
         newQuantity: items[existingItemIndex].quantity + data.quantity
       })
       items[existingItemIndex].quantity += data.quantity
+      // עדכון isGift ו-giftDiscountId אם זה מתנה
+      if (data.isGift) {
+        items[existingItemIndex].isGift = true
+        if (data.giftDiscountId) {
+          items[existingItemIndex].giftDiscountId = data.giftDiscountId
+        }
+      }
     } else {
       console.log('➕ Adding new item to cart:', {
         productId: data.productId,
@@ -267,11 +317,10 @@ export async function POST(
         productId: data.productId,
         variantId: data.variantId || null,
         quantity: data.quantity,
+        ...(data.isGift ? { isGift: true, giftDiscountId: data.giftDiscountId } : {}),
       })
     }
     
-    console.log('📋 Items after update:', items.length)
-    console.log('📦 Updated items details:', JSON.stringify(items, null, 2))
 
     const expiresAt = new Date()
     expiresAt.setDate(expiresAt.getDate() + 30) // 30 days
@@ -286,11 +335,6 @@ export async function POST(
     )
 
     if (cart) {
-      console.log('🔄 Updating existing cart:', {
-        cartId: cart.id,
-        itemsCount: items.length,
-        hasCustomerId: !!customerId
-      })
       cart = await prisma.cart.update({
         where: { id: cart.id },
         data: {
@@ -299,11 +343,6 @@ export async function POST(
           ...(customerId && !cart.customerId ? { customerId } : {}),
         },
       })
-      console.log('✅ Cart updated successfully:', {
-        cartId: cart.id,
-        savedItemsCount: (cart.items as any[]).length
-      })
-      console.log('💾 Saved cart items:', JSON.stringify(cart.items, null, 2))
       
       // יצירת אירוע cart.item_added לכל מוצר חדש שנוסף
       for (const newItem of newItems) {
@@ -325,12 +364,6 @@ export async function POST(
         })
       }
     } else {
-      console.log('🆕 Creating new cart:', {
-        shopId: shop.id,
-        sessionId: customerId ? null : sessionId,
-        customerId: customerId || null,
-        itemsCount: items.length
-      })
       cart = await prisma.cart.create({
         data: {
           shopId: shop.id,
@@ -340,11 +373,6 @@ export async function POST(
           expiresAt,
         },
       })
-      console.log('✅ New cart created:', {
-        cartId: cart.id,
-        savedItemsCount: (cart.items as any[]).length
-      })
-      console.log('💾 Saved cart items:', JSON.stringify(cart.items, null, 2))
       
       // יצירת אירוע cart.created
       await prisma.shopEvent.create({
@@ -364,7 +392,6 @@ export async function POST(
     }
 
     // חישוב העגלה המעודכנת
-    console.log('🧮 Calculating cart totals with items:', JSON.stringify(items, null, 2))
     const calculation = await calculateCart(
       shop.id,
       items as any[],
@@ -373,15 +400,65 @@ export async function POST(
       shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
       null
     )
+    // הוספת מוצרי מתנה לעגלה בפועל
+    const giftItems = calculation.items.filter(item => item.isGift)
+    const existingGiftIds = new Set(
+      items.map((item: any) => `${item.productId}-${item.variantId || 'null'}-${item.isGift ? 'gift' : 'normal'}`)
+    )
     
-    console.log('✅ Cart calculation complete:', {
-      items: calculation.items.length,
-      subtotal: calculation.subtotal,
-      total: calculation.total
-    })
-    console.log('📊 Calculated items:', JSON.stringify(calculation.items, null, 2))
+    let updatedItems = [...items]
+    let hasNewGifts = false
+    
+    for (const giftItem of giftItems) {
+      const giftKey = `${giftItem.productId}-${giftItem.variantId || 'null'}-gift`
+      if (!existingGiftIds.has(giftKey)) {
+        updatedItems.push({
+          productId: giftItem.productId,
+          variantId: giftItem.variantId || null,
+          quantity: giftItem.quantity,
+          isGift: true,
+          giftDiscountId: giftItem.giftDiscountId,
+        })
+        hasNewGifts = true
+      }
+    }
+    
+    // עדכון העגלה עם מוצרי המתנה אם יש חדשים
+    if (hasNewGifts) {
+      cart = await prisma.cart.update({
+        where: { id: cart.id },
+        data: { items: updatedItems },
+      })
+      
+      // חישוב מחדש עם הפריטים המעודכנים
+      const updatedCalculation = await calculateCart(
+        shop.id,
+        updatedItems as any[],
+        cart.couponCode,
+        customerId,
+        shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
+        null
+      )
+      
+      return NextResponse.json({
+        id: cart.id,
+        items: updatedCalculation.items,
+        subtotal: updatedCalculation.subtotal,
+        tax: updatedCalculation.tax,
+        shipping: updatedCalculation.shipping,
+        discount: updatedCalculation.automaticDiscount + updatedCalculation.couponDiscount + updatedCalculation.customerDiscount,
+        customerDiscount: updatedCalculation.customerDiscount > 0 ? updatedCalculation.customerDiscount : undefined,
+        couponDiscount: updatedCalculation.couponDiscount > 0 ? updatedCalculation.couponDiscount : undefined,
+        automaticDiscount: updatedCalculation.automaticDiscount > 0 ? updatedCalculation.automaticDiscount : undefined,
+        total: updatedCalculation.total,
+        couponCode: cart.couponCode,
+        couponStatus: updatedCalculation.couponStatus,
+        expiresAt: cart.expiresAt,
+        giftsRequiringVariantSelection: updatedCalculation.giftsRequiringVariantSelection,
+      })
+    }
 
-    const responseData = {
+    return NextResponse.json({
       id: cart.id,
       items: calculation.items,
       subtotal: calculation.subtotal,
@@ -395,10 +472,8 @@ export async function POST(
       couponCode: cart.couponCode,
       couponStatus: calculation.couponStatus,
       expiresAt: cart.expiresAt,
-    }
-    
-    console.log('📤 Sending response with items:', responseData.items.length)
-    return NextResponse.json(responseData)
+      giftsRequiringVariantSelection: calculation.giftsRequiringVariantSelection,
+    })
   } catch (error) {
     if (error instanceof z.ZodError) {
       console.error("❌ Validation error:", error.errors)
@@ -462,7 +537,7 @@ export async function PUT(
       return NextResponse.json({ error: "Cart not found" }, { status: 404 })
     }
 
-    const items = (cart.items as any[]) || []
+    let items = (cart.items as any[]) || []
     const previousItems = [...items] // שמירת עותק לפני שינויים
 
     // עדכון כמות פריט
@@ -474,12 +549,44 @@ export async function PUT(
       )
 
       if (itemIndex >= 0) {
+        // מונע עדכון או מחיקה של מוצרי מתנה
+        if (items[itemIndex].isGift) {
+          // מוצר מתנה לא ניתן לעדכון או מחיקה
+          return NextResponse.json(
+            { error: "לא ניתן לעדכן או למחוק מוצר מתנה" },
+            { status: 400 }
+          )
+        }
+        
         const oldQuantity = items[itemIndex].quantity
         
         if (body.quantity <= 0) {
           // הסרת פריט
           const removedItem = items[itemIndex]
           items.splice(itemIndex, 1)
+          
+          // בדיקה אם צריך להסיר גם מתנות שלא רלוונטיות
+          const giftCalc = await calculateCart(
+            shop.id,
+            items as any[],
+            cart.couponCode,
+            customerId,
+            shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
+            null
+          )
+          
+          // הסרת מתנות שלא רלוונטיות יותר
+          const relevantGiftIds = new Set(
+            giftCalc.items
+              .filter(item => item.isGift)
+              .map(item => `${item.productId}-${item.variantId || 'null'}`)
+          )
+          
+          items = items.filter((item: any) => {
+            if (!item.isGift) return true
+            const itemKey = `${item.productId}-${item.variantId || 'null'}`
+            return relevantGiftIds.has(itemKey)
+          })
           
           // יצירת אירוע cart.item_removed
           await prisma.shopEvent.create({
@@ -500,6 +607,29 @@ export async function PUT(
         } else if (body.quantity !== oldQuantity) {
           // עדכון כמות
           items[itemIndex].quantity = body.quantity
+          
+          // בדיקה אם צריך להסיר מתנות שלא רלוונטיות יותר אחרי העדכון
+          const giftCalc = await calculateCart(
+            shop.id,
+            items as any[],
+            cart.couponCode,
+            customerId,
+            shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
+            null
+          )
+          
+          // הסרת מתנות שלא רלוונטיות יותר
+          const relevantGiftIds = new Set(
+            giftCalc.items
+              .filter(item => item.isGift)
+              .map(item => `${item.productId}-${item.variantId || 'null'}`)
+          )
+          
+          items = items.filter((item: any) => {
+            if (!item.isGift) return true
+            const itemKey = `${item.productId}-${item.variantId || 'null'}`
+            return relevantGiftIds.has(itemKey)
+          })
           
           // יצירת אירוע cart.item_updated
           await prisma.shopEvent.create({
@@ -594,6 +724,63 @@ export async function PUT(
       null // shipping - לא מחושב כאן
     )
 
+    // הוספת מוצרי מתנה לעגלה בפועל
+    const giftItems = calculation.items.filter(item => item.isGift)
+    const existingGiftIds = new Set(
+      items.map((item: any) => `${item.productId}-${item.variantId || 'null'}-${item.isGift ? 'gift' : 'normal'}`)
+    )
+    
+    let updatedItems = [...items]
+    let hasNewGifts = false
+    
+    for (const giftItem of giftItems) {
+      const giftKey = `${giftItem.productId}-${giftItem.variantId || 'null'}-gift`
+      if (!existingGiftIds.has(giftKey)) {
+        updatedItems.push({
+          productId: giftItem.productId,
+          variantId: giftItem.variantId || null,
+          quantity: giftItem.quantity,
+          isGift: true,
+          giftDiscountId: giftItem.giftDiscountId,
+        })
+        hasNewGifts = true
+      }
+    }
+    
+    // עדכון העגלה עם מוצרי המתנה אם יש חדשים
+    if (hasNewGifts) {
+      await prisma.cart.update({
+        where: { id: cart.id },
+        data: { items: updatedItems },
+      })
+      
+      // חישוב מחדש עם הפריטים המעודכנים
+      const updatedCalculation = await calculateCart(
+        shop.id,
+        updatedItems as any[],
+        cart.couponCode,
+        customerId,
+        shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
+        null
+      )
+      
+      return NextResponse.json({
+        id: cart.id,
+        items: updatedCalculation.items,
+        subtotal: updatedCalculation.subtotal,
+        tax: updatedCalculation.tax,
+        shipping: updatedCalculation.shipping,
+        discount: updatedCalculation.automaticDiscount + updatedCalculation.couponDiscount + updatedCalculation.customerDiscount,
+        customerDiscount: updatedCalculation.customerDiscount > 0 ? updatedCalculation.customerDiscount : undefined,
+        couponDiscount: updatedCalculation.couponDiscount > 0 ? updatedCalculation.couponDiscount : undefined,
+        automaticDiscount: updatedCalculation.automaticDiscount > 0 ? updatedCalculation.automaticDiscount : undefined,
+        total: updatedCalculation.total,
+        couponCode: cart.couponCode,
+        couponStatus: updatedCalculation.couponStatus,
+        expiresAt: cart.expiresAt,
+      })
+    }
+
     return NextResponse.json({
       id: cart.id,
       items: calculation.items,
@@ -681,6 +868,11 @@ export async function DELETE(
     })
 
     const items = cartItems.filter((item) => {
+      // מונע מחיקת מוצרי מתנה
+      if (item.isGift) {
+        return true // נשאיר את מוצר המתנה בעגלה
+      }
+      
       // השוואה מדויקת - גם null וגם undefined וגם "null" נחשבים כאותו דבר
       const itemVariantId = item.variantId === "null" ? null : item.variantId
       const queryVariantId = variantId === "null" ? null : variantId
@@ -695,6 +887,7 @@ export async function DELETE(
         variantId: item.variantId,
         itemVariantId,
         queryVariantId,
+        isGift: item.isGift,
         shouldRemove,
         willKeep: !shouldRemove
       })
@@ -707,9 +900,38 @@ export async function DELETE(
       itemsRemoved: cartItems.length - items.length
     })
 
+    // חישוב מחדש של העגלה כדי לבדוק אם המתנות עדיין רלוונטיות
+    const giftCalculation = await calculateCart(
+      shop.id,
+      items as any[],
+      cart.couponCode,
+      customerId,
+      shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
+      null
+    )
+
+    // הסרת מתנות שלא רלוונטיות יותר
+    const relevantGiftIds = new Set(
+      giftCalculation.items
+        .filter(item => item.isGift)
+        .map(item => `${item.productId}-${item.variantId || 'null'}`)
+    )
+    
+    const filteredItems = items.filter((item: any) => {
+      if (!item.isGift) return true
+      const itemKey = `${item.productId}-${item.variantId || 'null'}`
+      return relevantGiftIds.has(itemKey)
+    })
+
+    console.log('🎁 Gift items check:', {
+      before: items.filter((i: any) => i.isGift).length,
+      after: filteredItems.filter((i: any) => i.isGift).length,
+      removed: items.filter((i: any) => i.isGift).length - filteredItems.filter((i: any) => i.isGift).length
+    })
+
     const updatedCart = await prisma.cart.update({
       where: { id: cart.id },
-      data: { items },
+      data: { items: filteredItems },
     })
 
     // אם אין פריטים, החזר עגלה ריקה עם couponStatus

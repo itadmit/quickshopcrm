@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Store, Package, ShoppingBag, TrendingUp, CheckSquare, Calendar, Bell, Clock, AlertCircle, Circle, CheckCircle2, User, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton"
+import Link from "next/link"
 
 interface Stats {
   shops: { total: number; active: number }
@@ -39,13 +40,15 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null)
 
+  // הפניית משפיענים לדשבורד שלהם
   useEffect(() => {
-    // נחכה שה-session יטען לפני שנבצע fetch
-    if (status !== 'authenticated') {
-      setLoading(false)
-      return
+    if (session?.user?.role === "INFLUENCER") {
+      router.push("/influencer")
     }
+  }, [session, router])
 
+  useEffect(() => {
+    // טעינת הנתונים מיד - לא מחכים ל-session
     async function fetchStats() {
       try {
         const response = await fetch('/api/dashboard/stats')
@@ -78,10 +81,12 @@ export default function DashboardPage() {
       }
     }
     
+    // טעינה מיד - לא מחכים ל-session
     fetchStats()
     fetchSubscription()
-  }, [status])
+  }, [])
 
+  // הצגת skeleton רק בזמן טעינה ראשונית
   if (loading) {
     return (
       <AppLayout>
@@ -151,62 +156,76 @@ export default function DashboardPage() {
             </h2>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => router.push('/shops')}>
-              צור חנות חדשה
-            </Button>
-            <Button variant="outline" onClick={() => router.push('/products')}>
-              הוסף מוצר
-            </Button>
-            <Button variant="outline" onClick={() => router.push('/orders')}>
-              צפה בהזמנות
-            </Button>
-            <Button onClick={() => router.push('/shops')}>
-              + צור חנות
-            </Button>
+            <Link href="/shops" prefetch={true}>
+              <Button variant="outline">
+                צור חנות חדשה
+              </Button>
+            </Link>
+            <Link href="/products" prefetch={true}>
+              <Button variant="outline">
+                הוסף מוצר
+              </Button>
+            </Link>
+            <Link href="/orders" prefetch={true}>
+              <Button variant="outline">
+                צפה בהזמנות
+              </Button>
+            </Link>
+            <Link href="/shops" prefetch={true}>
+              <Button>
+                + צור חנות
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <Card className="shadow-sm hover-lift cursor-pointer" onClick={() => router.push('/shops')}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">חנויות פעילות</CardTitle>
-            <Store className="h-5 w-5 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{stats.shops.active}</div>
-            <p className="text-xs text-gray-500 mt-1">
-              סה״כ {stats.shops.total} חנויות במערכת
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/shops" prefetch={true} className="block">
+          <Card className="shadow-sm hover-lift cursor-pointer">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">חנויות פעילות</CardTitle>
+              <Store className="h-5 w-5 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.shops.active}</div>
+              <p className="text-xs text-gray-500 mt-1">
+                סה״כ {stats.shops.total} חנויות במערכת
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="shadow-sm hover-lift cursor-pointer" onClick={() => router.push('/products')}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">מוצרים פעילים</CardTitle>
-            <Package className="h-5 w-5 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{stats.products.published}</div>
-            <p className="text-xs text-gray-500 mt-1">
-              סה״כ {stats.products.total} מוצרים
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/products" prefetch={true} className="block">
+          <Card className="shadow-sm hover-lift cursor-pointer">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">מוצרים פעילים</CardTitle>
+              <Package className="h-5 w-5 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.products.published}</div>
+              <p className="text-xs text-gray-500 mt-1">
+                סה״כ {stats.products.total} מוצרים
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="shadow-sm hover-lift cursor-pointer" onClick={() => router.push('/orders')}>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">הזמנות ממתינות</CardTitle>
-            <ShoppingBag className="h-5 w-5 text-purple-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{stats.orders.pending}</div>
-            <p className="text-xs text-gray-500 mt-1">
-              סה״כ {stats.orders.total} הזמנות
-            </p>
-          </CardContent>
-        </Card>
+        <Link href="/orders" prefetch={true} className="block">
+          <Card className="shadow-sm hover-lift cursor-pointer">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">הזמנות ממתינות</CardTitle>
+              <ShoppingBag className="h-5 w-5 text-purple-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">{stats.orders.pending}</div>
+              <p className="text-xs text-gray-500 mt-1">
+                סה״כ {stats.orders.total} הזמנות
+              </p>
+            </CardContent>
+          </Card>
+        </Link>
 
         <Card className="shadow-sm hover-lift">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -243,71 +262,65 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div 
-                  className="p-4 border-2 border-gray-200 hover:border-purple-300 rounded-lg cursor-pointer transition-all group"
-                  onClick={() => router.push('/shops/new')}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Store className="w-5 h-5 text-purple-600" />
+                <Link href="/shops/new" prefetch={true} className="block">
+                  <div className="p-4 border-2 border-gray-200 hover:border-purple-300 rounded-lg cursor-pointer transition-all group">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Store className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <h3 className="font-semibold text-gray-900">צרו חנות חדשה</h3>
                     </div>
-                    <h3 className="font-semibold text-gray-900">צרו חנות חדשה</h3>
+                    <p className="text-sm text-gray-600">
+                      התחילו עם תבנית מוכנה או צרו מאפס
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-600">
-                    התחילו עם תבנית מוכנה או צרו מאפס
-                  </p>
-                </div>
+                </Link>
 
-                <div 
-                  className="p-4 border-2 border-gray-200 hover:border-blue-300 rounded-lg cursor-pointer transition-all group"
-                  onClick={() => {
-                    if (selectedShop) {
-                      router.push('/products/new')
-                    } else {
-                      router.push('/products')
-                    }
-                  }}
+                <Link 
+                  href={selectedShop ? "/products/new" : "/products"} 
+                  prefetch={true} 
+                  className="block"
                 >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <Package className="w-5 h-5 text-blue-600" />
+                  <div className="p-4 border-2 border-gray-200 hover:border-blue-300 rounded-lg cursor-pointer transition-all group">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Package className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <h3 className="font-semibold text-gray-900">הוסיפו מוצרים</h3>
                     </div>
-                    <h3 className="font-semibold text-gray-900">הוסיפו מוצרים</h3>
+                    <p className="text-sm text-gray-600">
+                      התחילו למכור עם קטלוג מוצרים מקצועי
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-600">
-                    התחילו למכור עם קטלוג מוצרים מקצועי
-                  </p>
-                </div>
+                </Link>
 
-                <div 
-                  className="p-4 border-2 border-gray-200 hover:border-green-300 rounded-lg cursor-pointer transition-all group"
-                  onClick={() => router.push('/orders')}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <ShoppingBag className="w-5 h-5 text-green-600" />
+                <Link href="/orders" prefetch={true} className="block">
+                  <div className="p-4 border-2 border-gray-200 hover:border-green-300 rounded-lg cursor-pointer transition-all group">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <ShoppingBag className="w-5 h-5 text-green-600" />
+                      </div>
+                      <h3 className="font-semibold text-gray-900">נהלו הזמנות</h3>
                     </div>
-                    <h3 className="font-semibold text-gray-900">נהלו הזמנות</h3>
+                    <p className="text-sm text-gray-600">
+                      צפו וטפלו בהזמנות שלכם
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-600">
-                    צפו וטפלו בהזמנות שלכם
-                  </p>
-                </div>
+                </Link>
 
-                <div 
-                  className="p-4 border-2 border-gray-200 hover:border-orange-300 rounded-lg cursor-pointer transition-all group"
-                  onClick={() => router.push('/settings')}
-                >
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                      <TrendingUp className="w-5 h-5 text-orange-600" />
+                <Link href="/settings" prefetch={true} className="block">
+                  <div className="p-4 border-2 border-gray-200 hover:border-orange-300 rounded-lg cursor-pointer transition-all group">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <TrendingUp className="w-5 h-5 text-orange-600" />
+                      </div>
+                      <h3 className="font-semibold text-gray-900">הגדירו תשלומים</h3>
                     </div>
-                    <h3 className="font-semibold text-gray-900">הגדירו תשלומים</h3>
+                    <p className="text-sm text-gray-600">
+                      חברו את שיטת התשלום שלכם
+                    </p>
                   </div>
-                  <p className="text-sm text-gray-600">
-                    חברו את שיטת התשלום שלכם
-                  </p>
-                </div>
+                </Link>
               </div>
             </CardContent>
           </Card>
@@ -363,14 +376,15 @@ export default function DashboardPage() {
                   <Bell className="w-5 h-5 text-purple-600" />
                   <CardTitle>התראות אחרונות</CardTitle>
                 </div>
-                <Button 
-                  variant="link" 
-                  size="sm"
-                  onClick={() => router.push('/notifications')}
-                  className="text-purple-600 hover:text-purple-700 p-0 h-auto font-normal"
-                >
-                  ראה הכל ←
-                </Button>
+                <Link href="/notifications" prefetch={true}>
+                  <Button 
+                    variant="link" 
+                    size="sm"
+                    className="text-purple-600 hover:text-purple-700 p-0 h-auto font-normal"
+                  >
+                    ראה הכל ←
+                  </Button>
+                </Link>
               </div>
             </CardHeader>
             <CardContent>
@@ -380,13 +394,14 @@ export default function DashboardPage() {
                   <p className="text-sm text-gray-600 mb-4">
                     אין התראות חדשות
                   </p>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => router.push('/notifications')}
-                  >
-                    ראה התראות
-                  </Button>
+                  <Link href="/notifications" prefetch={true}>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                    >
+                      ראה התראות
+                    </Button>
+                  </Link>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -401,10 +416,11 @@ export default function DashboardPage() {
                     }
                     const NotifIcon = getNotifIcon()
                     return (
-                      <div 
+                      <Link 
                         key={notif.id}
-                        className={`p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors border-r-2 ${notif.isRead ? 'border-gray-200 opacity-60' : 'border-purple-500'}`}
-                        onClick={() => router.push('/notifications')}
+                        href="/notifications" 
+                        prefetch={true}
+                        className={`block p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors border-r-2 ${notif.isRead ? 'border-gray-200 opacity-60' : 'border-purple-500'}`}
                       >
                         <div className="flex items-start gap-3">
                           <div className={`mt-0.5 p-1.5 rounded-full ${notif.isRead ? 'bg-gray-100' : 'bg-purple-100'}`}>
@@ -415,7 +431,7 @@ export default function DashboardPage() {
                             <div className="text-xs text-gray-600 truncate">{notif.message}</div>
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     )
                   })}
                 </div>

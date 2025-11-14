@@ -25,6 +25,7 @@ const createCouponSchema = z.object({
   applicableCategories: z.array(z.string()).default([]),
   applicableCustomers: z.array(z.string()).default([]),
   canCombine: z.boolean().default(false),
+  influencerId: z.string().optional(),
 })
 
 // GET - קבלת כל הקופונים
@@ -55,6 +56,13 @@ export async function GET(req: NextRequest) {
           select: {
             id: true,
             name: true,
+          },
+        },
+        influencer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
           },
         },
       },
@@ -136,6 +144,7 @@ export async function POST(req: NextRequest) {
       applicableCategories: data.applicableCategories || [],
       applicableCustomers: data.applicableCustomers || [],
       canCombine: data.canCombine,
+      influencerId: data.influencerId || null,
     }
 
     const coupon = await prisma.coupon.create({

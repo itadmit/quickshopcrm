@@ -19,6 +19,7 @@ const updateCouponSchema = z.object({
   applicableCategories: z.array(z.string()).optional(),
   applicableCustomers: z.array(z.string()).optional(),
   canCombine: z.boolean().optional(),
+  influencerId: z.string().optional(),
 })
 
 // GET - קבלת פרטי קופון
@@ -44,6 +45,13 @@ export async function GET(
           select: {
             id: true,
             name: true,
+          },
+        },
+        influencer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
           },
         },
       },
@@ -111,6 +119,9 @@ export async function PUT(
     }
     if (data.endDate !== undefined) {
       updateData.endDate = data.endDate ? new Date(data.endDate) : null
+    }
+    if (data.influencerId !== undefined) {
+      updateData.influencerId = data.influencerId || null
     }
 
     const updatedCoupon = await prisma.coupon.update({

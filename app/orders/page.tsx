@@ -69,6 +69,7 @@ export default function OrdersPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
+    // טעינת הנתונים מיד
     fetchOrders()
   }, [page, statusFilter, paymentStatusFilter, search])
 
@@ -227,6 +228,15 @@ export default function OrdersPage() {
     )
   }
 
+  // הצגת skeleton רק בזמן טעינה ראשונית
+  if (loading) {
+    return (
+      <AppLayout title="הזמנות">
+        <OrdersSkeleton />
+      </AppLayout>
+    )
+  }
+
   return (
     <AppLayout title="הזמנות">
       <div className="space-y-6">
@@ -301,9 +311,7 @@ export default function OrdersPage() {
         </Card>
 
         {/* Orders Table */}
-        {loading ? (
-          <OrdersSkeleton />
-        ) : orders.length === 0 ? (
+        {orders.length === 0 ? (
           <Card>
             <CardContent className="p-0">
               <div className="text-center py-12">

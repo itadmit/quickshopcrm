@@ -19,6 +19,7 @@ const updateShopSchema = z.object({
   currency: z.string().optional(),
   taxEnabled: z.boolean().optional(),
   taxRate: z.number().optional(),
+  pricesIncludeTax: z.boolean().optional(),
   theme: z.string().optional(),
   themeSettings: z.any().nullable().optional(),
   domain: z.string().nullable().optional(),

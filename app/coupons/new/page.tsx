@@ -11,13 +11,14 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
-import { Save, Tag, Percent, DollarSign, Calendar, Users } from "lucide-react"
+import { Save, Tag, Percent, DollarSign, Calendar, Users, UserCheck } from "lucide-react"
 
 export default function NewCouponPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { selectedShop } = useShop()
   const [saving, setSaving] = useState(false)
+  const [influencers, setInfluencers] = useState<Array<{ id: string; name: string; email: string }>>([])
   
   const [formData, setFormData] = useState({
     code: "",
@@ -36,7 +37,24 @@ export default function NewCouponPage() {
     endDate: "",
     isActive: true,
     canCombine: false,
+    influencerId: "",
   })
+
+  // Fetch influencers on mount
+  useEffect(() => {
+    const fetchInfluencers = async () => {
+      try {
+        const response = await fetch("/api/users?role=INFLUENCER")
+        if (response.ok) {
+          const data = await response.json()
+          setInfluencers(data)
+        }
+      } catch (error) {
+        console.error("Error fetching influencers:", error)
+      }
+    }
+    fetchInfluencers()
+  }, [])
 
   const handleSubmit = async () => {
     if (!selectedShop) {
@@ -111,6 +129,7 @@ export default function NewCouponPage() {
         applicableCategories: [],
         applicableCustomers: [],
         canCombine: formData.canCombine,
+        influencerId: formData.influencerId || undefined,
       }
 
       const response = await fetch("/api/coupons", {
@@ -459,6 +478,42 @@ export default function NewCouponPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Influencer Assignment */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCheck className="w-5 h-5" />
+                  שיוך למשפיען
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="influencerId">משפיען (אופציונלי)</Label>
+                  <Select
+                    value={formData.influencerId || "none"}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, influencerId: value === "none" ? "" : value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="בחר משפיען..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">ללא משפיען</SelectItem>
+                      {influencers.map((influencer) => (
+                        <SelectItem key={influencer.id} value={influencer.id}>
+                          {influencer.name} ({influencer.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-500">
+                    שייך קופון זה למשפיען לצורך מעקב וניתוח
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Status */}
             <Card>
               <CardHeader>

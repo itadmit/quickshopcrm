@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -56,6 +56,7 @@ export function ProductPageClient({
   autoOpenCart: initialAutoOpenCart,
 }: ProductPageClientProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
 
   const [reviews] = useState<any[]>(initialReviews)
@@ -64,6 +65,29 @@ export function ProductPageClient({
   const [relatedProducts] = useState<any[]>(initialRelatedProducts)
   const [showReviews, setShowReviews] = useState(false)
   const [showQuickBuy, setShowQuickBuy] = useState(false)
+  const [isGift, setIsGift] = useState(false)
+  const [giftDiscountId, setGiftDiscountId] = useState<string | null>(null)
+
+  // בדיקה אם המודל נפתח כמודל מתנה דרך query params או event
+  useEffect(() => {
+    const giftParam = searchParams.get("gift")
+    const discountIdParam = searchParams.get("discountId")
+    // רק אם יש גם gift וגם discountId - זה באמת מתנה
+    if (giftParam === "true" && discountIdParam) {
+      setIsGift(true)
+      setGiftDiscountId(discountIdParam)
+      setShowQuickBuy(true)
+    } else {
+      // אם אין query params של מתנה, וודא שה-state נקי
+      if (!giftParam || giftParam !== "true") {
+        setIsGift(false)
+        setGiftDiscountId(null)
+      }
+    }
+  }, [searchParams])
+
+  // הערה: ה-event של openGiftVariantModal מטופל ב-GiftVariantModalHandler
+
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [isDuplicating, setIsDuplicating] = useState(false)
@@ -77,6 +101,7 @@ export function ProductPageClient({
     quantity,
     setQuantity,
     selectedVariant,
+    setSelectedVariant,
     isInWishlist,
     cartItemCount,
     selectedOptionValues,
@@ -512,14 +537,34 @@ export function ProductPageClient({
       </main>
 
       {/* Quick Buy Modal */}
-      <Dialog open={showQuickBuy} onOpenChange={setShowQuickBuy}>
+      <Dialog open={showQuickBuy} onOpenChange={(open) => {
+        if (!open) {
+          // איפוס state כשסוגרים את המודל
+          setIsGift(false)
+          setGiftDiscountId(null)
+          // ניקוי query params אם יש
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href)
+            if (url.searchParams.get('gift') === 'true') {
+              url.searchParams.delete('gift')
+              url.searchParams.delete('discountId')
+              window.history.replaceState({}, '', url.toString())
+            }
+          }
+        }
+        setShowQuickBuy(open)
+      }}>
         <DialogContent className="max-w-md" dir="rtl">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-900">קנייה מהירה</h2>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setShowQuickBuy(false)}
+              onClick={() => {
+                setShowQuickBuy(false)
+                setIsGift(false)
+                setGiftDiscountId(null)
+              }}
               className="p-2"
             >
               <X className="w-5 h-5" />
@@ -528,6 +573,14 @@ export function ProductPageClient({
           
           {product && (
             <div className="space-y-4">
+              {/* הודעת מתנה */}
+              {isGift && (
+                <div className="bg-gradient-to-r from-pink-50 to-purple-50 border-2 border-pink-200 rounded-lg p-4 text-center">
+                  <div className="text-2xl mb-2">🎁</div>
+                  <h3 className="text-lg font-bold text-pink-700">מזל טוב! קבלת מתנה</h3>
+                </div>
+              )}
+
               <div className="flex gap-4">
                 {product.images && product.images.length > 0 && (
                   <img
@@ -552,28 +605,136 @@ export function ProductPageClient({
               </div>
 
               {/* Options in Modal */}
-              {product.options && product.options.length > 0 && (
-                <div className="space-y-3">
-                  {product.options.map((option) => {
+              {(() => {
+                // בניית options מה-variants אם אין options במסד הנתונים
+                let displayOptions = product.options && product.options.length > 0 
+                  ? product.options 
+                  : []
+                
+                // אם אין options אבל יש variants, נבנה options מה-variants
+                if (displayOptions.length === 0 && product.variants && product.variants.length > 0) {
+                  const optionTypes = Array.from(
+                    new Set(
+                      product.variants.flatMap((v: any) => {
+                        const types: string[] = []
+                        if (v.option1) types.push(v.option1)
+                        if (v.option2) types.push(v.option2)
+                        if (v.option3) types.push(v.option3)
+                        return types
+                      })
+                    )
+                  )
+                  
+                  displayOptions = optionTypes.map((optionType, index) => {
+                    // מציאת כל הערכים האפשריים לסוג הזה
+                    const values = Array.from(
+                      new Set(
+                        product.variants
+                          ?.map((v: any) => {
+                            if (v.option1 === optionType) return v.option1Value
+                            if (v.option2 === optionType) return v.option2Value
+                            if (v.option3 === optionType) return v.option3Value
+                            return null
+                          })
+                          .filter((val: any) => val !== null && val !== undefined) || []
+                      )
+                    ).map((value: any) => ({
+                      id: value,
+                      label: value,
+                    }))
+                    
+                    return {
+                      id: `option-${optionType}-${index}`,
+                      name: optionType,
+                      values: values,
+                    }
+                  })
+                }
+                
+                return displayOptions.length > 0 ? (
+                  <div className="space-y-3">
+                    {displayOptions.map((option: any) => {
                     const isOptionSelected = selectedOptionValues[option.id] !== undefined
+                    const optionName = option.name === "Size" ? "מידה" : 
+                                      option.name === "Color" ? "צבע" : 
+                                      option.name
                     return (
                       <div key={option.id}>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          {option.name}
+                          {optionName}
                         </label>
                         <div className="flex flex-wrap items-center gap-2">
                           {(Array.isArray(option.values) ? option.values : []).map((value: any) => {
                             const valueId = typeof value === 'object' ? value.id : value
                             const valueLabel = typeof value === 'object' ? value.label : value
                             const isSelected = selectedOptionValues[option.id] === valueId
+                            
+                            // בדיקה האם האפשרות זמינה
+                            let isAvailable = true
+                            if (product.variants && product.variants.length > 0) {
+                              isAvailable = product.variants.some((variant: any) => {
+                                const variantValues = [
+                                  variant.option1Value,
+                                  variant.option2Value,
+                                  variant.option3Value,
+                                ].filter(Boolean)
+                                
+                                // בדיקה אם ה-variant תואם את הבחירות הנוכחיות + הערך הזה
+                                const matchesCurrentSelections = displayOptions.every((opt: any) => {
+                                  if (opt.id === option.id) return true
+                                  const selectedValueId = selectedOptionValues[opt.id]
+                                  if (selectedValueId === undefined) return true
+                                  
+                                  const selectedValue = opt.values?.find((v: any) => {
+                                    const vId = typeof v === 'object' ? v.id : v
+                                    return vId === selectedValueId
+                                  })
+                                  const selectedLabel = typeof selectedValue === 'object' ? selectedValue?.label : selectedValue
+                                  
+                                  // בדיקה לפי שם האופציה (option1, option2, option3)
+                                  const optionName = opt.name
+                                  let variantValue: string | null = null
+                                  if (variant.option1 === optionName) variantValue = variant.option1Value
+                                  else if (variant.option2 === optionName) variantValue = variant.option2Value
+                                  else if (variant.option3 === optionName) variantValue = variant.option3Value
+                                  
+                                  if (!variantValue) return true
+                                  
+                                  const vStr = variantValue?.toString().trim().toLowerCase()
+                                  const labelStr = selectedLabel?.toString().trim().toLowerCase()
+                                  return vStr === labelStr || vStr?.includes(labelStr) || labelStr?.includes(vStr)
+                                })
+                                
+                                // בדיקה אם ה-variant תואם את הערך הנוכחי
+                                const optionName = option.name
+                                let variantValue: string | null = null
+                                if (variant.option1 === optionName) variantValue = variant.option1Value
+                                else if (variant.option2 === optionName) variantValue = variant.option2Value
+                                else if (variant.option3 === optionName) variantValue = variant.option3Value
+                                
+                                const matchesThisOption = variantValue ? (() => {
+                                  const vStr = variantValue.toString().trim().toLowerCase()
+                                  const labelStr = valueLabel?.toString().trim().toLowerCase()
+                                  return vStr === labelStr || vStr?.includes(labelStr) || labelStr?.includes(vStr)
+                                })() : false
+                                
+                                const hasStock = variant.inventoryQty === null || variant.inventoryQty === undefined || variant.inventoryQty > 0
+                                
+                                return matchesCurrentSelections && matchesThisOption && hasStock
+                              })
+                            }
+                            
                             return (
                               <button
                                 key={valueId}
                                 onClick={() => setSelectedOptionValues({ ...selectedOptionValues, [option.id]: valueId })}
+                                disabled={!isAvailable}
                                 className={`px-3 py-1.5 border-2 rounded-sm text-sm font-medium transition-all ${
                                   isSelected
                                     ? "text-white"
-                                    : "border-gray-300 text-gray-700 hover:border-gray-400"
+                                    : isAvailable
+                                    ? "border-gray-300 text-gray-700 hover:border-gray-400"
+                                    : "border-gray-200 text-gray-400 opacity-50 cursor-not-allowed"
                                 }`}
                                 style={isSelected ? {
                                   borderColor: theme.primaryColor,
@@ -600,14 +761,15 @@ export function ProductPageClient({
                         {!isOptionSelected && (
                           <p className="text-red-600 text-sm mt-2 font-medium flex items-center gap-1.5">
                             <AlertCircle className="w-4 h-4" />
-                            יש לבחור {option.name}
+                            יש לבחור {optionName}
                           </p>
                         )}
                       </div>
                     )
                   })}
-                </div>
-              )}
+                  </div>
+                ) : null
+              })()}
 
               {/* Quantity in Modal */}
               <div>
@@ -658,7 +820,7 @@ export function ProductPageClient({
                             </Button>
                           </>
                         )}
-                        {maxQty > 0 && (
+                        {theme?.productShowInventory && maxQty > 0 && (
                           <span className="text-sm text-gray-500">
                             (זמין: {maxQty})
                           </span>
@@ -671,49 +833,134 @@ export function ProductPageClient({
 
               {/* Actions */}
               <div className="space-y-2 pt-4">
-                <button
-                  onClick={async () => {
-                    const success = await handleAddToCart(true)
-                    if (success) {
-                      setShowQuickBuy(false)
-                    }
-                  }}
-                  disabled={product.availability === "OUT_OF_STOCK" || isAddingToCart}
-                  className="w-full text-white rounded-sm h-11 px-8 font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                  style={{ backgroundColor: theme.primaryColor || "#000000" }}
-                >
-                  {isAddingToCart ? (
-                    <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-                  ) : (
-                    <ShoppingCart className="w-5 h-5 ml-2" />
-                  )}
-                  {isAddingToCart ? "מוסיף..." : "הוסף לעגלה"}
-                </button>
-                <Button
-                  onClick={async () => {
-                    setIsProcessingCheckout(true)
-                    const success = await handleAddToCart(false)
-                    if (success) {
-                      setShowQuickBuy(false)
-                      router.push(`/shop/${slug}/checkout`)
-                    } else {
-                      setIsProcessingCheckout(false)
-                    }
-                  }}
-                  disabled={product.availability === "OUT_OF_STOCK" || isProcessingCheckout}
-                  variant="outline"
-                  className="w-full border-2"
-                  style={{
-                    borderColor: theme.primaryColor,
-                    color: theme.primaryColor,
-                  }}
-                  size="lg"
-                >
-                  {isProcessingCheckout ? (
-                    <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-                  ) : null}
-                  קנה עכשיו
-                </Button>
+                {/* רק אם זה באמת מתנה - יש giftDiscountId ו-isGift */}
+                {isGift && giftDiscountId ? (
+                  <button
+                    onClick={async () => {
+                      setIsProcessingCheckout(true)
+                      try {
+                        const customerData = localStorage.getItem(`storefront_customer_${slug}`)
+                        const headers: HeadersInit = { 'Content-Type': 'application/json' }
+                        let customerId: string | null = null
+                        
+                        if (customerData) {
+                          try {
+                            const parsed = JSON.parse(customerData)
+                            customerId = parsed.id
+                            if (customerId) {
+                              headers['x-customer-id'] = customerId
+                            }
+                          } catch (error) {
+                            console.error("Error parsing customer data:", error)
+                          }
+                        }
+
+                        const response = await fetch(`/api/storefront/${slug}/cart`, {
+                          method: 'POST',
+                          headers,
+                          credentials: 'include',
+                          body: JSON.stringify({
+                            productId: product.id,
+                            variantId: selectedVariant,
+                            quantity,
+                            isGift: true,
+                            giftDiscountId,
+                          }),
+                        })
+
+                        if (!response.ok) {
+                          const errorData = await response.json().catch(() => ({}))
+                          throw new Error(errorData.error || 'Failed to add gift to cart')
+                        }
+
+                        setShowQuickBuy(false)
+                        setIsGift(false)
+                        setGiftDiscountId(null)
+                        setIsProcessingCheckout(false)
+                        
+                        // ניקוי query params
+                        if (typeof window !== 'undefined') {
+                          const url = new URL(window.location.href)
+                          url.searchParams.delete('gift')
+                          url.searchParams.delete('discountId')
+                          window.history.replaceState({}, '', url.toString())
+                        }
+                        
+                        toast({
+                          title: "הצלחה",
+                          description: "המתנה נוספה לעגלה בהצלחה!",
+                        })
+                        
+                        router.push(`/shop/${slug}/checkout`)
+                      } catch (error: any) {
+                        console.error('Error adding gift to cart:', error)
+                        setIsProcessingCheckout(false)
+                        toast({
+                          title: "שגיאה",
+                          description: error.message || "אירעה שגיאה בהוספת המתנה לעגלה",
+                          variant: "destructive",
+                        })
+                      }
+                    }}
+                    disabled={product.availability === "OUT_OF_STOCK" || isProcessingCheckout || (product.options && product.options.length > 0 && !selectedVariant)}
+                    className="w-full text-white rounded-sm h-11 px-8 font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    style={{ backgroundColor: theme.primaryColor || "#000000" }}
+                  >
+                    {isProcessingCheckout ? (
+                      <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                    ) : (
+                      <ShoppingCart className="w-5 h-5 ml-2" />
+                    )}
+                    {isProcessingCheckout ? "מוסיף..." : "הוסף מתנה לעגלה"}
+                  </button>
+                ) : (
+                  /* מוצר רגיל - לא מתנה */
+                  <>
+                    <button
+                      onClick={async () => {
+                        const success = await handleAddToCart(true)
+                        if (success) {
+                          setShowQuickBuy(false)
+                        }
+                      }}
+                      disabled={product.availability === "OUT_OF_STOCK" || isAddingToCart || (product.options && product.options.length > 0 && !selectedVariant)}
+                      className="w-full text-white rounded-sm h-11 px-8 font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                      style={{ backgroundColor: theme.primaryColor || "#000000" }}
+                    >
+                      {isAddingToCart ? (
+                        <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                      ) : (
+                        <ShoppingCart className="w-5 h-5 ml-2" />
+                      )}
+                      {isAddingToCart ? "מוסיף..." : "הוסף לעגלה"}
+                    </button>
+                    <Button
+                      onClick={async () => {
+                        setIsProcessingCheckout(true)
+                        const success = await handleAddToCart(false)
+                        if (success) {
+                          setShowQuickBuy(false)
+                          router.push(`/shop/${slug}/checkout`)
+                        } else {
+                          setIsProcessingCheckout(false)
+                        }
+                      }}
+                      disabled={product.availability === "OUT_OF_STOCK" || isProcessingCheckout || (product.options && product.options.length > 0 && !selectedVariant)}
+                      variant="outline"
+                      className="w-full border-2"
+                      style={{
+                        borderColor: theme.primaryColor,
+                        color: theme.primaryColor,
+                      }}
+                      size="lg"
+                    >
+                      {isProcessingCheckout ? (
+                        <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                      ) : null}
+                      קנה עכשיו
+                    </Button>
+                  </>
+                )}
               </div>
             </div>
           )}

@@ -8,14 +8,19 @@ const createDiscountSchema = z.object({
   shopId: z.string(),
   title: z.string().min(1, "כותרת ההנחה היא חובה"),
   description: z.string().optional(),
-  type: z.enum(["PERCENTAGE", "FIXED", "BUY_X_GET_Y", "VOLUME_DISCOUNT", "NTH_ITEM_DISCOUNT"]),
-  value: z.number().min(0, "ערך ההנחה חייב להיות חיובי"),
+  type: z.enum(["PERCENTAGE", "FIXED", "BUY_X_GET_Y", "VOLUME_DISCOUNT", "NTH_ITEM_DISCOUNT", "FREE_GIFT"]),
+  value: z.number().min(0, "ערך ההנחה חייב להיות חיובי").optional(),
   buyQuantity: z.number().int().optional(),
   getQuantity: z.number().int().optional(),
   getDiscount: z.number().optional(),
   nthItem: z.number().int().optional(),
   volumeRules: z.any().optional(),
   minOrderAmount: z.number().optional(),
+  giftProductId: z.string().optional(),
+  giftCondition: z.enum(["MIN_ORDER_AMOUNT", "SPECIFIC_PRODUCT"]).optional(),
+  giftConditionProductId: z.string().optional(),
+  giftConditionAmount: z.number().optional(),
+  giftVariantId: z.string().optional(),
   maxDiscount: z.number().optional(),
   maxUses: z.number().int().optional(),
   usesPerCustomer: z.number().int().default(1),
@@ -100,6 +105,14 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const data = createDiscountSchema.parse(body)
 
+    console.log('🎁 Creating discount:', {
+      type: data.type,
+      isAutomatic: data.isAutomatic,
+      giftProductId: data.giftProductId,
+      giftCondition: data.giftCondition,
+      giftConditionAmount: data.giftConditionAmount,
+    })
+
     // בדיקה שהחנות שייכת למשתמש
     const shop = await prisma.shop.findFirst({
       where: {
@@ -144,7 +157,22 @@ export async function POST(req: NextRequest) {
         excludedCollections: data.excludedCollections,
         customerTiers: data.customerTiers,
         specificCustomers: data.specificCustomers,
+        giftProductId: data.giftProductId,
+        giftCondition: data.giftCondition,
+        giftConditionProductId: data.giftConditionProductId,
+        giftConditionAmount: data.giftConditionAmount,
+        giftVariantId: data.giftVariantId,
       },
+    })
+
+    console.log('🎁 Discount created:', {
+      id: discount.id,
+      type: discount.type,
+      isAutomatic: discount.isAutomatic,
+      isActive: discount.isActive,
+      giftProductId: discount.giftProductId,
+      giftCondition: discount.giftCondition,
+      giftConditionAmount: discount.giftConditionAmount,
     })
 
     await prisma.shopEvent.create({

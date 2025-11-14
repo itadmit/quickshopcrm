@@ -36,17 +36,15 @@ export default function PagesPage() {
   const [search, setSearch] = useState("")
 
   useEffect(() => {
-    if (selectedShop) {
-      fetchPages()
-    }
+    // טעינת הנתונים מיד - לא מחכים ל-selectedShop
+    fetchPages()
   }, [selectedShop])
 
   const fetchPages = async () => {
-    if (!selectedShop) return
-
     setLoading(true)
     try {
-      const response = await fetch(`/api/pages?shopId=${selectedShop.id}`)
+      const params = selectedShop?.id ? `?shopId=${selectedShop.id}` : ''
+      const response = await fetch(`/api/pages${params}`)
       if (response.ok) {
         const data = await response.json()
         setPages(data)
@@ -87,8 +85,8 @@ export default function PagesPage() {
     page.title.toLowerCase().includes(search.toLowerCase())
   )
 
-  // טעינה - בזמן שהחנויות נטענות
-  if (shopsLoading) {
+  // הצגת skeleton רק בזמן טעינה ראשונית
+  if (loading || shopsLoading) {
     return (
       <AppLayout title="דפים">
         <PagesSkeleton />

@@ -55,7 +55,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { email, name, permissions } = body
+    const { email, name, role, permissions } = body
 
     if (!email || !permissions) {
       return NextResponse.json(
@@ -63,6 +63,10 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       )
     }
+
+    // בדיקת role תקין
+    const validRoles = ["MANAGER", "USER", "INFLUENCER"]
+    const userRole = role && validRoles.includes(role) ? role : "USER"
 
     // בדיקה אם המשתמש כבר קיים
     const existingUser = await prisma.user.findUnique({
@@ -110,6 +114,7 @@ export async function POST(req: NextRequest) {
         name: name || null,
         token,
         invitedBy: session.user.id,
+        role: userRole as any,
         permissions: permissions as any,
         expiresAt,
         status: "PENDING",
@@ -126,15 +131,27 @@ export async function POST(req: NextRequest) {
     // שליחת מייל עם קישור אישור
     const acceptUrl = `${process.env.NEXT_PUBLIC_APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000'}/invite/accept/${token}`
     
+    // טקסט מותאם לפי סוג המשתמש
+    const roleText = userRole === "INFLUENCER" 
+      ? "כמשפיען/ית" 
+      : userRole === "MANAGER" 
+      ? "כמנהל" 
+      : "כעובד"
+    
+    const roleDescription = userRole === "INFLUENCER"
+      ? "תקבל/י גישה לדשבורד משפיען/ית ייעודי עם כלים לניהול קופונים והזמנות."
+      : "תקבל/י גישה למערכת בהתאם להרשאות שהוגדרו עבורך."
+    
     try {
       await sendEmail({
         to: email,
-        subject: `הזמנה להצטרפות ל-Quick Shop`,
+        subject: `הזמנה להצטרפות ל-Quick Shop ${roleText}`,
         html: `
           <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <h2 style="color: #6f65e2;">הזמנה להצטרפות ל-Quick Shop</h2>
             <p>שלום ${name || email},</p>
-            <p>${session.user.name} הזמין אותך להצטרף לצוות ב-Quick Shop.</p>
+            <p>${session.user.name} הזמין אותך להצטרף לצוות ב-Quick Shop ${roleText}.</p>
+            <p>${roleDescription}</p>
             <p>לחץ על הקישור הבא כדי לאשר את ההזמנה וליצור חשבון:</p>
             <p style="text-align: center; margin: 30px 0;">
               <a href="${acceptUrl}" style="background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
@@ -143,6 +160,10 @@ export async function POST(req: NextRequest) {
             </p>
             <p style="color: #666; font-size: 12px;">
               הקישור תקף למשך 7 ימים.
+            </p>
+            <p style="color: #666; font-size: 12px; margin-top: 20px;">
+              אם הכפתור לא עובד, תוכל/י להעתיק ולהדביק את הקישור הבא בדפדפן:<br>
+              <a href="${acceptUrl}" style="color: #6f65e2; word-break: break-all;">${acceptUrl}</a>
             </p>
           </div>
         `,

@@ -19,7 +19,8 @@
     "queue:test": "ts-node scripts/test-automation-queue.ts",
     "redis:start": "redis-server --daemonize yes",
     "redis:stop": "redis-cli shutdown",
-    "redis:check": "redis-cli ping"
+    "redis:check": "redis-cli ping",
+    "remove-gift-items": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/remove-gift-items-from-cart.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"

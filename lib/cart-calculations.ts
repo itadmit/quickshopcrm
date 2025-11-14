@@ -25,6 +25,19 @@ export interface EnrichedCartItem {
   } | null
   price: number // מחיר אחרי הנחת לקוח
   total: number // מחיר כולל כמות
+  isGift?: boolean // האם זה מוצר מתנה
+  giftDiscountId?: string // ID של ההנחה שגרמה למתנה זו
+}
+
+/**
+ * מתנה שדורשת בחירת וריאציה
+ */
+export interface GiftRequiringVariantSelection {
+  discountId: string
+  productId: string
+  productName: string
+  hasVariants: boolean
+  isOutOfStock?: boolean // האם המוצר אזל מהמלאי
 }
 
 /**
@@ -45,6 +58,7 @@ export interface CartCalculationResult {
     reason?: string
     minOrderRequired?: number
   }
+  giftsRequiringVariantSelection?: GiftRequiringVariantSelection[]
 }
 
 /**
@@ -100,6 +114,232 @@ function calculateCustomerDiscountSync(
   }
 
   return Math.min(discount, basePrice)
+}
+
+/**
+ * הוספת מוצרי מתנה לעגלה
+ */
+async function addGiftItemsToCart(
+  shopId: string,
+  enrichedItems: EnrichedCartItem[],
+  subtotal: number,
+  customerId: string | null,
+  customer: { totalSpent: number; orderCount: number; tier: string | null } | null
+): Promise<{
+  giftItems: EnrichedCartItem[]
+  giftsRequiringVariantSelection: GiftRequiringVariantSelection[]
+}> {
+  const now = new Date()
+  
+  const freeGiftDiscounts = await prisma.discount.findMany({
+    where: {
+      shopId,
+      isActive: true,
+      isAutomatic: true,
+      type: "FREE_GIFT",
+      giftProductId: { not: null },
+      AND: [
+        {
+          OR: [
+            { startDate: null },
+            { startDate: { lte: now } },
+          ],
+        },
+        {
+          OR: [
+            { endDate: null },
+            { endDate: { gte: now } },
+          ],
+        },
+      ],
+    },
+    orderBy: { priority: 'desc' },
+  })
+
+  const giftItems: EnrichedCartItem[] = []
+  const giftsRequiringVariantSelection: GiftRequiringVariantSelection[] = []
+
+  for (const giftDiscount of freeGiftDiscounts) {
+    if (!giftDiscount.giftProductId) continue
+
+    // בדיקת תנאי המתנה
+    let conditionMet = false
+
+    if (giftDiscount.giftCondition === "MIN_ORDER_AMOUNT") {
+      const minAmount = giftDiscount.giftConditionAmount ?? giftDiscount.minOrderAmount ?? 0
+      conditionMet = subtotal >= minAmount
+    } else if (giftDiscount.giftCondition === "SPECIFIC_PRODUCT") {
+      if (giftDiscount.giftConditionProductId) {
+        conditionMet = enrichedItems.some(
+          item => item.productId === giftDiscount.giftConditionProductId && !item.isGift
+        )
+      }
+    } else {
+      const minAmount = giftDiscount.minOrderAmount || 0
+      conditionMet = subtotal >= minAmount
+    }
+
+    // בדיקת customerTarget
+    let customerMatch = false
+    if (giftDiscount.customerTarget === "ALL_CUSTOMERS") {
+      customerMatch = true
+    } else if (giftDiscount.customerTarget === "REGISTERED_CUSTOMERS" && customerId) {
+      customerMatch = true
+    } else if (giftDiscount.customerTarget === "SPECIFIC_CUSTOMERS" && customerId && giftDiscount.specificCustomers && Array.isArray(giftDiscount.specificCustomers) && giftDiscount.specificCustomers.includes(customerId)) {
+      customerMatch = true
+    } else if (giftDiscount.customerTarget === "CUSTOMER_TIERS" && customerId && customer && customer.tier && giftDiscount.customerTiers && Array.isArray(giftDiscount.customerTiers) && giftDiscount.customerTiers.includes(customer.tier)) {
+      customerMatch = true
+    }
+
+    if (!conditionMet || !customerMatch) {
+      continue
+    }
+
+    // בדיקה אם מוצר המתנה כבר קיים בעגלה (לא כמוצר מתנה)
+    const giftAlreadyInCart = enrichedItems.some(
+      item => item.productId === giftDiscount.giftProductId && !item.isGift
+    )
+
+    if (giftAlreadyInCart) {
+      continue
+    }
+
+    // טעינת מוצר המתנה כולל וריאציות
+    const giftProduct = await prisma.product.findUnique({
+      where: { id: giftDiscount.giftProductId },
+      select: {
+        id: true,
+        name: true,
+        price: true,
+        comparePrice: true,
+        images: true,
+        sku: true,
+        inventoryQty: true,
+        variants: {
+          select: {
+            id: true,
+            name: true,
+            price: true,
+            sku: true,
+            inventoryQty: true,
+            productId: true,
+          },
+        },
+      },
+    })
+
+    if (!giftProduct) {
+      continue
+    }
+
+    // בדיקה אם יש וריאציות למוצר המתנה
+    const hasVariants = giftProduct.variants && giftProduct.variants.length > 0
+
+    // טעינת variant אם יש
+    let giftVariant = null
+    if (giftDiscount.giftVariantId) {
+      giftVariant = await prisma.productVariant.findUnique({
+        where: { id: giftDiscount.giftVariantId },
+        select: {
+          id: true,
+          name: true,
+          price: true,
+          sku: true,
+          inventoryQty: true,
+          productId: true,
+        },
+      })
+
+      // בדיקה שהגרסה שייכת למוצר הנכון
+      if (giftVariant && giftVariant.productId !== giftProduct.id) {
+        giftVariant = null
+      }
+    } else if (hasVariants) {
+      // אם יש וריאציות אבל לא נבחר variant - נסמן שהמתנה דורשת בחירת וריאציה
+      const availableVariants = giftProduct.variants.filter(
+        (v) => v.inventoryQty === null || v.inventoryQty === undefined || v.inventoryQty >= 0
+      )
+      
+      if (availableVariants.length === 0) {
+        // אם אין variant זמין, נסמן שהמתנה אזלה מהמלאי
+        giftsRequiringVariantSelection.push({
+          discountId: giftDiscount.id,
+          productId: giftProduct.id,
+          productName: giftProduct.name,
+          hasVariants: true,
+          isOutOfStock: true,
+        })
+        continue
+      }
+      
+      // אם יש variant זמין אחד בלבד, נשתמש בו
+      if (availableVariants.length === 1) {
+        giftVariant = availableVariants[0]
+      } else {
+        // אם יש כמה variants זמינים, נסמן שהמתנה דורשת בחירת וריאציה
+        giftsRequiringVariantSelection.push({
+          discountId: giftDiscount.id,
+          productId: giftProduct.id,
+          productName: giftProduct.name,
+          hasVariants: true,
+        })
+        continue
+      }
+    }
+
+    // בדיקת מלאי - למוצרי מתנה נדלג רק אם המלאי שלילי (פחות מ-0)
+    if (giftVariant) {
+      if (giftVariant.inventoryQty !== null && giftVariant.inventoryQty < 0) {
+        continue
+      }
+    } else if (giftProduct) {
+      const productWithInventory = await prisma.product.findUnique({
+        where: { id: giftProduct.id },
+        select: { inventoryQty: true },
+      })
+      if (productWithInventory?.inventoryQty !== null && productWithInventory.inventoryQty < 0) {
+        continue
+      }
+    }
+
+    // הוספת מוצר המתנה
+    giftItems.push({
+      productId: giftProduct.id,
+      variantId: giftVariant?.id || null,
+      quantity: 1,
+      product: {
+        id: giftProduct.id,
+        name: giftProduct.name,
+        price: giftProduct.price,
+        comparePrice: giftProduct.comparePrice,
+        images: giftProduct.images || [],
+        sku: giftProduct.sku,
+      },
+      variant: giftVariant
+        ? {
+            id: giftVariant.id,
+            name: giftVariant.name,
+            price: giftVariant.price ?? 0,
+            sku: giftVariant.sku,
+            inventoryQty: giftVariant.inventoryQty,
+          }
+        : null,
+      price: 0, // מחיר 0 למוצר מתנה
+      total: 0, // סה"כ 0
+      isGift: true,
+      giftDiscountId: giftDiscount.id,
+    })
+
+    // אם לא ניתן לשלב, נעצור אחרי הראשונה
+    if (!giftDiscount.canCombine) {
+      break
+    }
+  }
+
+  return {
+    giftItems,
+    giftsRequiringVariantSelection,
+  }
 }
 
 /**
@@ -482,7 +722,7 @@ async function calculateCouponDiscount(
  */
 export async function calculateCart(
   shopId: string,
-  cartItems: Array<{ productId: string; variantId?: string | null; quantity: number }>,
+  cartItems: Array<{ productId: string; variantId?: string | null; quantity: number; isGift?: boolean; giftDiscountId?: string }>,
   couponCode: string | null = null,
   customerId: string | null = null,
   taxRate: number | null = null,
@@ -531,6 +771,7 @@ export async function calculateCart(
       select: {
         taxEnabled: true,
         taxRate: true,
+        pricesIncludeTax: true,
         customerDiscountSettings: true,
       },
     }),
@@ -591,11 +832,12 @@ export async function calculateCart(
       })
     }
     
-    const basePrice = variant?.price || product.price
+    // אם זה מתנה, המחיר הוא 0
+    const basePrice = item.isGift ? 0 : (variant?.price || product.price)
     let itemPrice = basePrice
 
-    // חישוב הנחת לקוח רשום
-    if (customerId && customer && customerDiscountSettings) {
+    // חישוב הנחת לקוח רשום (רק אם זה לא מתנה)
+    if (!item.isGift && customerId && customer && customerDiscountSettings) {
       const discount = calculateCustomerDiscountSync(
         customerDiscountSettings as any,
         customer,
@@ -606,7 +848,11 @@ export async function calculateCart(
     }
 
     const itemTotal = itemPrice * item.quantity
-    subtotal += itemTotal
+    
+    // אם זה לא מתנה, נוסיף לסכום הביניים
+    if (!item.isGift) {
+      subtotal += itemTotal
+    }
 
     enrichedItems.push({
       productId: item.productId,
@@ -631,8 +877,22 @@ export async function calculateCart(
         : null,
       price: itemPrice,
       total: itemTotal,
+      isGift: item.isGift,
+      giftDiscountId: item.giftDiscountId,
     })
   }
+
+  // הוספת מוצרי מתנה לעגלה
+  const { giftItems, giftsRequiringVariantSelection } = await addGiftItemsToCart(
+    shopId,
+    enrichedItems,
+    subtotal,
+    customerId,
+    customer
+  )
+  
+  // הוספת מוצרי המתנה ל-enrichedItems
+  enrichedItems.push(...giftItems)
 
   // חישוב הנחות אוטומטיות
   const automaticDiscount = await calculateAutomaticDiscounts(
@@ -651,22 +911,34 @@ export async function calculateCart(
     subtotal
   )
 
-  // חישוב מע"מ - המחירים כבר כוללים מע"ם, אז רק מפרידים אותו לתצוגה
+  // חישוב מע"מ
   const finalTaxRate = taxRate !== null ? taxRate : (shop?.taxEnabled && shop.taxRate ? shop.taxRate : 0)
   const totalDiscount = automaticDiscount + couponResult.discount
+  const pricesIncludeTax = shop?.pricesIncludeTax ?? true // ברירת מחדל: המחירים כוללים מע"מ
   
-  // אם יש מע"ם, מחשבים כמה מתוך המחיר הוא מע"ם (לא מוסיפים!)
-  // דוגמה: אם המחיר 117 והמע"מ 17%, אז המחיר לפני מע"ם הוא 100 והמע"ם הוא 17
   const finalPrice = subtotal - totalDiscount - customerDiscountTotal
-  const tax = finalTaxRate > 0
-    ? finalPrice - (finalPrice / (1 + finalTaxRate / 100))
-    : 0
+  
+  let tax = 0
+  let total = 0
+  
+  if (finalTaxRate > 0) {
+    if (pricesIncludeTax) {
+      // המחירים כוללים מע"מ - רק מפרידים את המע"מ לתצוגה
+      // דוגמה: אם המחיר 117 והמע"מ 17%, אז המחיר לפני מע"ם הוא 100 והמע"ם הוא 17
+      tax = finalPrice - (finalPrice / (1 + finalTaxRate / 100))
+      total = finalPrice + (shippingCost !== null ? shippingCost : 0)
+    } else {
+      // המחירים לא כוללים מע"מ - צריך להוסיף מע"מ
+      tax = finalPrice * (finalTaxRate / 100)
+      total = finalPrice + tax + (shippingCost !== null ? shippingCost : 0)
+    }
+  } else {
+    // אין מע"מ
+    total = finalPrice + (shippingCost !== null ? shippingCost : 0)
+  }
 
   // חישוב משלוח
   const shipping = shippingCost !== null ? shippingCost : 0
-
-  // סה"כ - המחירים כבר כוללים מע"ם, אז לא מוסיפים אותו
-  const total = finalPrice + shipping
 
   const result: CartCalculationResult = {
     items: enrichedItems,
@@ -685,6 +957,11 @@ export async function calculateCart(
       code: couponCode,
       ...couponResult.status,
     }
+  }
+
+  // הוספת מתנות שדורשות בחירת וריאציה
+  if (giftsRequiringVariantSelection.length > 0) {
+    result.giftsRequiringVariantSelection = giftsRequiringVariantSelection
   }
 
   return result

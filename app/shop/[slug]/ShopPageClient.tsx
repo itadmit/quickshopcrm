@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { Package } from "lucide-react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton"
 import { StorefrontHeader } from "@/components/storefront/StorefrontHeader"
 import { ProductCard } from "@/components/storefront/ProductCard"
@@ -11,6 +12,7 @@ import { getThemeStyles } from "@/hooks/useShopTheme"
 import { useTracking } from "@/components/storefront/TrackingPixelProvider"
 import { trackPageView } from "@/lib/tracking-events"
 import { AdminBar } from "@/components/storefront/AdminBar"
+import { useToast } from "@/components/ui/use-toast"
 
 interface Shop {
   id: string
@@ -78,6 +80,9 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
   const [loading, setLoading] = useState(false)
   const [cartItemCount, setCartItemCount] = useState(0)
   const { trackEvent } = useTracking()
+  const { toast } = useToast()
+  const searchParams = useSearchParams()
+  const [customerId, setCustomerId] = useState<string | null>(null)
 
   useEffect(() => {
     if (shop) {
@@ -88,8 +93,58 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
   }, [shop?.id, slug]) // רק כשהחנות משתנה, לא trackEvent
 
   useEffect(() => {
+    // קבלת customerId מ-localStorage
+    const customerData = localStorage.getItem(`storefront_customer_${slug}`)
+    if (customerData) {
+      try {
+        const parsed = JSON.parse(customerData)
+        setCustomerId(parsed.id)
+      } catch (error) {
+        console.error("Error parsing customer data:", error)
+      }
+    }
     fetchCartCount()
   }, [slug])
+
+  // הפעלת קופון אוטומטית אם יש בURL
+  useEffect(() => {
+    const couponCode = searchParams.get("coupon")
+    if (couponCode && customerId) {
+      applyCouponAutomatically(couponCode)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, customerId])
+
+  const applyCouponAutomatically = async (couponCode: string) => {
+    try {
+      const headers: HeadersInit = { "Content-Type": "application/json" }
+      if (customerId) {
+        headers["x-customer-id"] = customerId
+      }
+
+      const response = await fetch(`/api/storefront/${slug}/cart`, {
+        method: "PUT",
+        headers,
+        credentials: "include",
+        body: JSON.stringify({
+          couponCode,
+        }),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "קופון הופעל!",
+          description: `קוד הנחה ${couponCode} הופעל בעגלה שלך`,
+        })
+        fetchCartCount()
+      } else {
+        const error = await response.json()
+        console.error("Failed to apply coupon:", error)
+      }
+    } catch (error) {
+      console.error("Error applying coupon automatically:", error)
+    }
+  }
 
   const fetchCartCount = async () => {
     try {

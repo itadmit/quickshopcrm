@@ -8,12 +8,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useToast } from "@/components/ui/use-toast"
-import { CheckCircle2, AlertCircle, Loader2 } from "lucide-react"
+import { CheckCircle2, AlertCircle, Loader2, UserPlus } from "lucide-react"
 
 interface Invitation {
   id: string
   email: string
   name: string | null
+  role: string
   company: {
     name: string
   }
@@ -37,6 +38,7 @@ export default function AcceptInvitationPage() {
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: "",
+    phone: "",
     password: "",
     confirmPassword: "",
   })
@@ -67,7 +69,7 @@ export default function AcceptInvitationPage() {
   const handleAccept = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.name || !formData.password) {
+    if (!formData.name || !formData.phone || !formData.password) {
       toast({
         title: "שגיאה",
         description: "אנא מלא את כל השדות",
@@ -101,6 +103,7 @@ export default function AcceptInvitationPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: formData.name,
+          phone: formData.phone,
           password: formData.password,
         }),
       })
@@ -108,11 +111,11 @@ export default function AcceptInvitationPage() {
       if (response.ok) {
         toast({
           title: "הצלחה!",
-          description: "החשבון נוצר בהצלחה. אתה מועבר להתחברות...",
+          description: "החשבון נוצר בהצלחה. מועבר להתחברות...",
         })
         setTimeout(() => {
-          router.push("/login")
-        }, 2000)
+          window.location.href = "/login"
+        }, 1500)
       } else {
         const errorData = await response.json()
         toast({
@@ -135,32 +138,34 @@ export default function AcceptInvitationPage() {
 
   if (loading) {
     return (
-      <AppLayout hideSidebar={true} hideHeader={true}>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center p-4">
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
         </div>
-      </AppLayout>
+      </div>
     )
   }
 
   if (error || !invitation) {
     return (
-      <AppLayout hideSidebar={true} hideHeader={true}>
-        <Card className="shadow-lg">
-          <CardContent className="pt-6">
-            <div className="text-center">
-              <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                שגיאה
-              </h2>
-              <p className="text-gray-600 mb-6">{error || "ההזמנה לא נמצאה"}</p>
-              <Button onClick={() => router.push("/login")} variant="outline">
-                חזור לדף ההתחברות
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </AppLayout>
+      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <Card className="shadow-xl border-0">
+            <CardContent className="pt-6">
+              <div className="text-center">
+                <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+                <h2 className="text-2xl font-bold text-gray-900 mb-2">
+                  שגיאה
+                </h2>
+                <p className="text-gray-600 mb-6">{error || "ההזמנה לא נמצאה"}</p>
+                <Button onClick={() => router.push("/login")} variant="outline">
+                  חזור לדף ההתחברות
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     )
   }
 
@@ -168,15 +173,29 @@ export default function AcceptInvitationPage() {
     (allowed) => allowed
   ).length
 
+  const roleText = invitation.role === "INFLUENCER" 
+    ? "משפיען/ית" 
+    : invitation.role === "MANAGER" 
+    ? "מנהל" 
+    : invitation.role === "USER"
+    ? "עובד"
+    : "משתמש"
+
   return (
-    <AppLayout hideSidebar={true} hideHeader={true}>
-      <Card className="shadow-lg">
-        <CardHeader>
-          <CardTitle className="text-center text-2xl">
-            אישור הזמנה להצטרפות
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <Card className="shadow-xl border-0">
+          <CardHeader className="text-center pb-2">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full flex items-center justify-center shadow-lg">
+                <UserPlus className="w-8 h-8 text-white" />
+              </div>
+            </div>
+            <CardTitle className="text-center text-2xl">
+              אישור הזמנה להצטרפות
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
           <div className="mb-6 p-4 bg-purple-50 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <CheckCircle2 className="w-5 h-5 text-purple-600" />
@@ -187,7 +206,15 @@ export default function AcceptInvitationPage() {
             <div className="text-sm text-gray-600 space-y-1">
               <div>חברה: {invitation.company.name}</div>
               <div>אימייל: {invitation.email}</div>
-              <div>הרשאות: {permissionsCount} פריטים</div>
+              <div>סוג משתמש: {roleText}</div>
+              {invitation.role !== "INFLUENCER" && (
+                <div>הרשאות: {permissionsCount} פריטים</div>
+              )}
+              {invitation.role === "INFLUENCER" && (
+                <div className="text-purple-700 font-medium mt-2">
+                  תקבל/י גישה לדשבורד משפיען/ית ייעודי
+                </div>
+              )}
             </div>
           </div>
 
@@ -203,6 +230,20 @@ export default function AcceptInvitationPage() {
                 }
                 required
                 placeholder="הזן את שמך המלא"
+              />
+            </div>
+
+            <div className="grid gap-2">
+              <Label htmlFor="phone">טלפון *</Label>
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) =>
+                  setFormData({ ...formData, phone: e.target.value })
+                }
+                required
+                placeholder="מספר טלפון"
               />
             </div>
 
@@ -257,7 +298,8 @@ export default function AcceptInvitationPage() {
           </form>
         </CardContent>
       </Card>
-    </AppLayout>
+      </div>
+    </div>
   )
 }
 

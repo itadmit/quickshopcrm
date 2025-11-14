@@ -16,6 +16,7 @@ import {
 import { useRouter } from "next/navigation"
 import { SlideOutCart } from "./SlideOutCart"
 import { SearchDialog } from "./SearchDialog"
+import { GiftVariantModalHandler } from "./GiftVariantModalHandler"
 import { useShopTheme } from "@/hooks/useShopTheme"
 import { useCart } from "@/hooks/useCart"
 import { useNavigation } from "@/hooks/useNavigation"
@@ -815,6 +816,19 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
           customerId={customerId}
           onCartUpdate={onCartUpdate}
           refreshKey={cartRefreshKey}
+        />
+      )}
+
+      {/* Gift Variant Modal Handler */}
+      {mounted && (
+        <GiftVariantModalHandler
+          customerId={customerId}
+          onCartOpen={() => {
+            setCartOpen(true)
+            if (onCartUpdate) {
+              onCartUpdate()
+            }
+          }}
         />
       )}
 

@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/components/ui/use-toast"
 import { FormSkeleton } from "@/components/skeletons/FormSkeleton"
-import { Save, Tag, Percent, DollarSign, Calendar, Users } from "lucide-react"
+import { Save, Tag, Percent, DollarSign, Calendar, Users, UserCheck } from "lucide-react"
 
 export default function EditCouponPage() {
   const router = useRouter()
@@ -22,6 +22,7 @@ export default function EditCouponPage() {
   const couponId = params.id as string
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [influencers, setInfluencers] = useState<Array<{ id: string; name: string; email: string }>>([])
   
   const [formData, setFormData] = useState({
     code: "",
@@ -35,13 +36,27 @@ export default function EditCouponPage() {
     endDate: "",
     isActive: true,
     canCombine: false,
+    influencerId: "",
   })
 
   useEffect(() => {
     if (couponId) {
       fetchCoupon()
     }
+    fetchInfluencers()
   }, [couponId])
+
+  const fetchInfluencers = async () => {
+    try {
+      const response = await fetch("/api/users?role=INFLUENCER")
+      if (response.ok) {
+        const data = await response.json()
+        setInfluencers(data)
+      }
+    } catch (error) {
+      console.error("Error fetching influencers:", error)
+    }
+  }
 
   const fetchCoupon = async () => {
     try {
@@ -74,6 +89,7 @@ export default function EditCouponPage() {
           endDate: endDateFormatted,
           isActive: coupon.isActive ?? true,
           canCombine: coupon.canCombine ?? false,
+          influencerId: coupon.influencerId || "",
         })
       } else {
         toast({
@@ -143,6 +159,7 @@ export default function EditCouponPage() {
         applicableCategories: [],
         applicableCustomers: [],
         canCombine: formData.canCombine,
+        influencerId: formData.influencerId || undefined,
       }
 
       const response = await fetch(`/api/coupons/${couponId}`, {
@@ -422,6 +439,42 @@ export default function EditCouponPage() {
 
           {/* Sidebar */}
           <div className="space-y-6">
+            {/* Influencer Assignment */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <UserCheck className="w-5 h-5" />
+                  שיוך למשפיען
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="influencerId">משפיען (אופציונלי)</Label>
+                  <Select
+                    value={formData.influencerId || "none"}
+                    onValueChange={(value) =>
+                      setFormData((prev) => ({ ...prev, influencerId: value === "none" ? "" : value }))
+                    }
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="בחר משפיען..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">ללא משפיען</SelectItem>
+                      {influencers.map((influencer) => (
+                        <SelectItem key={influencer.id} value={influencer.id}>
+                          {influencer.name} ({influencer.email})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-sm text-gray-500">
+                    שייך קופון זה למשפיען לצורך מעקב וניתוח
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Status */}
             <Card>
               <CardHeader>

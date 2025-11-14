@@ -11,16 +11,28 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // Get role filter from query params
+    const { searchParams } = new URL(req.url)
+    const roleFilter = searchParams.get("role")
+
+    const where: any = {
+      companyId: session.user.companyId,
+    }
+
+    // Add role filter if provided
+    if (roleFilter) {
+      where.role = roleFilter
+    }
+
     const users = await prisma.user.findMany({
-      where: {
-        companyId: session.user.companyId,
-      },
+      where,
       select: {
         id: true,
         name: true,
         email: true,
         role: true,
         avatar: true,
+        phone: true,
       },
       orderBy: {
         name: "asc",

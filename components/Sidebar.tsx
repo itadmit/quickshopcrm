@@ -41,6 +41,11 @@ const menuItems = [
   { icon: Inbox, label: "התראות", href: "/notifications", hasBadge: true, permission: "notifications" },
 ]
 
+// פריטים למשפיענים/יות
+const influencerItems = [
+  { icon: TrendingUp, label: "דשבורד משפיען/ית", href: "/influencer", permission: "influencer" },
+]
+
 const salesItems = [
   { icon: Package, label: "מוצרים", href: "/products", permission: "products" },
   { icon: ShoppingCart, label: "הזמנות", href: "/orders", permission: "orders" },
@@ -242,7 +247,40 @@ export function Sidebar() {
 
       {/* Main Navigation */}
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
-        {/* Primary Menu */}
+        {/* Influencer Menu - Only for INFLUENCER role */}
+        {(session as any)?.user?.role === "INFLUENCER" && (
+          <div>
+            <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+              משפיען/ית
+            </h3>
+            <nav className="space-y-1">
+              {influencerItems
+                .filter((item) => hasPermission(item.permission))
+                .map((item) => {
+                  const Icon = item.icon
+                  const isActive = pathname === item.href
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                        isActive
+                          ? "bg-purple-100 text-purple-700"
+                          : "text-gray-700 hover:bg-gray-200"
+                      )}
+                    >
+                      <Icon className="w-5 h-5 flex-shrink-0" />
+                      <span className="flex-1">{item.label}</span>
+                    </Link>
+                  )
+                })}
+            </nav>
+          </div>
+        )}
+
+        {/* Primary Menu - Hidden for INFLUENCER role */}
+        {(session as any)?.user?.role !== "INFLUENCER" && (
         <nav className="space-y-1">
           {menuItems
             .filter((item) => hasPermission(item.permission))
@@ -272,8 +310,10 @@ export function Sidebar() {
               )
             })}
         </nav>
+        )}
 
-        {/* Sales Section */}
+        {/* Sales Section - Hidden for INFLUENCER role */}
+        {(session as any)?.user?.role !== "INFLUENCER" && (
         <div>
           <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
             מכירות
@@ -302,8 +342,10 @@ export function Sidebar() {
               })}
           </nav>
         </div>
+        )}
 
-        {/* Marketing Section */}
+        {/* Marketing Section - Hidden for INFLUENCER role */}
+        {(session as any)?.user?.role !== "INFLUENCER" && (
         <div>
           <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
             שיווק והנחות
@@ -332,8 +374,10 @@ export function Sidebar() {
               })}
           </nav>
         </div>
+        )}
 
-        {/* Content Section */}
+        {/* Content Section - Hidden for INFLUENCER role */}
+        {(session as any)?.user?.role !== "INFLUENCER" && (
         <div>
           <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
             תוכן
@@ -362,8 +406,10 @@ export function Sidebar() {
               })}
           </nav>
         </div>
+        )}
 
-        {/* Customer Service Section */}
+        {/* Customer Service Section - Hidden for INFLUENCER role */}
+        {(session as any)?.user?.role !== "INFLUENCER" && (
         <div>
           <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
             שירות לקוחות
@@ -392,8 +438,10 @@ export function Sidebar() {
               })}
           </nav>
         </div>
+        )}
 
-        {/* Products Section */}
+        {/* Products Section - Hidden for INFLUENCER role */}
+        {(session as any)?.user?.role !== "INFLUENCER" && (
         <div>
           <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
             מוצרים נוספים
@@ -422,8 +470,10 @@ export function Sidebar() {
               })}
           </nav>
         </div>
+        )}
 
-        {/* System Section */}
+        {/* System Section - Hidden for INFLUENCER role */}
+        {(session as any)?.user?.role !== "INFLUENCER" && (
         <div>
           <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
             מערכת
@@ -452,8 +502,10 @@ export function Sidebar() {
               })}
           </nav>
         </div>
+        )}
 
-        {/* Settings Section */}
+        {/* Settings Section - Hidden for INFLUENCER role */}
+        {(session as any)?.user?.role !== "INFLUENCER" && (
         <div>
           <h3 className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
             הגדרות
@@ -496,6 +548,7 @@ export function Sidebar() {
               })}
           </nav>
         </div>
+        )}
 
         {/* Super Admin Section - Only for SUPER_ADMIN */}
         {(session as any)?.user?.role === "SUPER_ADMIN" && (

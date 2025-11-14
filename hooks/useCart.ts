@@ -9,6 +9,8 @@ interface CartItem {
   quantity: number
   price: number
   total: number
+  isGift?: boolean
+  giftDiscountId?: string
   product: {
     id: string
     name: string
@@ -24,6 +26,14 @@ interface CartItem {
     sku: string | null
     inventoryQty: number | null
   } | null
+}
+
+interface GiftRequiringVariantSelection {
+  discountId: string
+  productId: string
+  productName: string
+  hasVariants: boolean
+  isOutOfStock?: boolean
 }
 
 interface Cart {
@@ -44,6 +54,7 @@ interface Cart {
     reason?: string
     minOrderRequired?: number
   }
+  giftsRequiringVariantSelection?: GiftRequiringVariantSelection[]
 }
 
 /**
@@ -91,16 +102,10 @@ export function useCart(slug: string, customerId?: string | null) {
       variantId?: string | null
       quantity?: number
     }) => {
-      console.log('🛒 useCart - addItem called:', { productId, variantId, quantity, slug, customerId })
-      
       const headers: HeadersInit = { 'Content-Type': 'application/json' }
       if (customerId) {
         headers['x-customer-id'] = customerId
       }
-      
-      console.log('📤 useCart - Sending request to:', `/api/storefront/${slug}/cart`)
-      console.log('📋 useCart - Headers:', headers)
-      console.log('📦 useCart - Body:', { productId, variantId, quantity })
       
       const response = await fetch(`/api/storefront/${slug}/cart`, {
         method: 'POST',
@@ -109,29 +114,46 @@ export function useCart(slug: string, customerId?: string | null) {
         body: JSON.stringify({ productId, variantId, quantity }),
       })
       
-      console.log('📥 useCart - Response status:', response.status, response.statusText)
-      
       if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'Failed to add item' }))
-        console.error('❌ useCart - Add to cart failed:', error)
         throw new Error(error.error || 'Failed to add to cart')
       }
       
       const data = await response.json()
-      console.log('✅ useCart - Add to cart success:', data)
       return data
     },
-    onSuccess: (data) => {
-      console.log('✨ useCart - onSuccess called with data:', data)
+    onSuccess: (data: Cart) => {
       queryClient.setQueryData(['cart', slug, customerId], data)
-      console.log('📌 useCart - Query data updated')
-      toast({
-        title: 'נוסף לעגלה',
-        description: 'המוצר נוסף לעגלה בהצלחה',
-      })
+      
+      // טיפול במתנות שדורשות בחירת וריאציה
+      if (data.giftsRequiringVariantSelection && data.giftsRequiringVariantSelection.length > 0) {
+        const gift = data.giftsRequiringVariantSelection[0]
+        
+        if (gift.isOutOfStock) {
+          toast({
+            title: 'מתנה לא זמינה',
+            description: `לצערנו אזל המלאי ממוצר המתנה "${gift.productName}" ולכן המבצע לא חל`,
+            variant: 'destructive',
+          })
+        } else {
+          // נשלח event כדי לפתוח מודל בחירת וריאציה
+          // הקומפוננטה שצריכה לטפל בזה תאזין ל-event הזה
+          window.dispatchEvent(new CustomEvent('openGiftVariantModal', {
+            detail: {
+              productId: gift.productId,
+              productName: gift.productName,
+              discountId: gift.discountId,
+            }
+          }))
+        }
+      } else {
+        toast({
+          title: 'נוסף לעגלה',
+          description: 'המוצר נוסף לעגלה בהצלחה',
+        })
+      }
     },
     onError: (error: Error) => {
-      console.error('💥 useCart - onError called:', error)
       toast({
         title: 'שגיאה',
         description: error.message,

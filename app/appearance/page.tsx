@@ -71,6 +71,7 @@ interface AppearanceSettings {
   
   // התנהגות סל
   cartBehavior: "open-cart" | "show-notification"
+  showCouponByDefault: boolean
   
   // טוב בר
   topBarEnabled: boolean
@@ -157,6 +158,7 @@ interface AppearanceSettings {
   productShowMobileThumbs: boolean
   productShowDiscountBadge: boolean
   productShowQuantityButtons: boolean
+  productShowInventory: boolean
   productShowFavoriteButton: boolean
   productShowShareButton: boolean
   productImageBorderRadius: number
@@ -252,6 +254,7 @@ export default function AppearancePage() {
     mobileSideMenuTitle: "תפריט",
     mobileSideMenuShowAuthLinks: true,
     cartBehavior: "open-cart",
+    showCouponByDefault: true,
     topBarEnabled: false,
     topBarBgColor: "#000000",
     topBarTextColor: "#ffffff",
@@ -312,6 +315,7 @@ export default function AppearancePage() {
     productShowMobileThumbs: true,
     productShowDiscountBadge: true,
     productShowQuantityButtons: true,
+    productShowInventory: false,
     productShowFavoriteButton: true,
     productShowShareButton: true,
     productImageBorderRadius: 8,
@@ -404,6 +408,7 @@ export default function AppearancePage() {
           mobileSideMenuTitle: themeSettings.mobileSideMenuTitle || "תפריט",
           mobileSideMenuShowAuthLinks: themeSettings.mobileSideMenuShowAuthLinks !== undefined ? themeSettings.mobileSideMenuShowAuthLinks : true,
           cartBehavior: shopSettings.cartBehavior || "open-cart",
+          showCouponByDefault: themeSettings.showCouponByDefault !== undefined ? themeSettings.showCouponByDefault : true,
           topBarEnabled: themeSettings.topBarEnabled || false,
           topBarBgColor: themeSettings.topBarBgColor || "#000000",
           topBarTextColor: themeSettings.topBarTextColor || "#ffffff",
@@ -460,6 +465,7 @@ export default function AppearancePage() {
           productShowMobileThumbs: themeSettings.productShowMobileThumbs !== undefined ? themeSettings.productShowMobileThumbs : true,
           productShowDiscountBadge: themeSettings.productShowDiscountBadge !== undefined ? themeSettings.productShowDiscountBadge : true,
           productShowQuantityButtons: themeSettings.productShowQuantityButtons !== undefined ? themeSettings.productShowQuantityButtons : true,
+          productShowInventory: themeSettings.productShowInventory !== undefined ? themeSettings.productShowInventory : false,
           productShowFavoriteButton: themeSettings.productShowFavoriteButton !== undefined ? themeSettings.productShowFavoriteButton : true,
           productShowShareButton: themeSettings.productShowShareButton !== undefined ? themeSettings.productShowShareButton : true,
           productImageBorderRadius: themeSettings.productImageBorderRadius || 8,
@@ -546,6 +552,7 @@ export default function AppearancePage() {
             mobileSideMenuShowSearch: settings.mobileSideMenuShowSearch,
             mobileSideMenuTitle: settings.mobileSideMenuTitle,
             mobileSideMenuShowAuthLinks: settings.mobileSideMenuShowAuthLinks,
+            showCouponByDefault: settings.showCouponByDefault,
             topBarEnabled: settings.topBarEnabled,
             topBarBgColor: settings.topBarBgColor,
             topBarTextColor: settings.topBarTextColor,
@@ -1291,6 +1298,20 @@ export default function AppearancePage() {
                   ? "עגלת הקניות תיפתח אוטומטית אחרי הוספת מוצר"
                   : "תוצג הודעת הצלחה קטנה בלי לפתוח את העגלה"}
               </p>
+            </div>
+            <div className="pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-base font-semibold">הצגת קופון ברירת מחדל</Label>
+                  <p className="text-sm text-gray-600 mt-1">
+                    האם להציג את החלק של קופון פתוח כברירת מחדל בעגלה
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.showCouponByDefault}
+                  onCheckedChange={(checked) => updateSettings("showCouponByDefault", checked)}
+                />
+              </div>
             </div>
           </div>
         )
@@ -2610,6 +2631,17 @@ export default function AppearancePage() {
                           <Switch
                             checked={settings.productShowQuantityButtons}
                             onCheckedChange={(checked) => updateSettings("productShowQuantityButtons", checked)}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="text-sm font-medium">הצג כמות במלאי</Label>
+                            <p className="text-xs text-gray-500">הצגת כמות זמינה במלאי (זמין: X יחידות)</p>
+                          </div>
+                          <Switch
+                            checked={settings.productShowInventory}
+                            onCheckedChange={(checked) => updateSettings("productShowInventory", checked)}
                           />
                         </div>
 

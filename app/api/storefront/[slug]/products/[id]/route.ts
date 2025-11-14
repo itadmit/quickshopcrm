@@ -45,7 +45,18 @@ export async function GET(
         },
         tags: true,
         variants: true,
-        options: true,
+        options: {
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            values: true,
+            position: true,
+          },
+          orderBy: {
+            position: 'asc',
+          },
+        },
         reviews: {
           where: {
             isApproved: true,

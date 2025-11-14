@@ -35,7 +35,7 @@ export function useProductPage({
   const searchParams = useSearchParams()
   const { toast } = useToast()
 
-  const [product] = useState<Product>(initialProduct)
+  const [product, setProduct] = useState<Product>(initialProduct)
   const [selectedImage, setSelectedImage] = useState(0)
   const [quantity, setQuantity] = useState(1)
   const [selectedVariant, setSelectedVariant] = useState<string | null>(null)
@@ -62,6 +62,13 @@ export function useProductPage({
       setCartRefreshKey(prev => prev + 1)
     }
   })
+
+  // עדכון product כאשר initialProduct משתנה
+  useEffect(() => {
+    setProduct(initialProduct)
+    // איפוס תמונה נבחרת למוצר חדש
+    setSelectedImage(0)
+  }, [initialProduct])
 
   // טעינת customer ID מ-localStorage
   useEffect(() => {
@@ -183,25 +190,37 @@ export function useProductPage({
 
   // עדכון meta tags ל-SEO + PageView event
   useEffect(() => {
-    if (!product) return
+    if (!product || typeof document === 'undefined') return
 
     const title = product.seoTitle || product.name
     const description = product.seoDescription || product.description || ""
     const image = product.images && product.images.length > 0 ? product.images[0] : ""
     
+    // עדכון title
     document.title = title
     
     trackPageView(trackEvent, `/shop/${slug}/products/${productId}`, title)
     
+    // עדכון meta tags - רק עדכון, לא הסרה ב-cleanup
+    // זה בטוח יותר ולא גורם לבעיות עם removeChild
     const updateMetaTag = (name: string, content: string, isProperty = false) => {
-      const attribute = isProperty ? 'property' : 'name'
-      let meta = document.querySelector(`meta[${attribute}="${name}"]`)
-      if (!meta) {
-        meta = document.createElement('meta')
-        meta.setAttribute(attribute, name)
-        document.head.appendChild(meta)
+      if (typeof document === 'undefined' || !document.head) return
+      
+      try {
+        const attribute = isProperty ? 'property' : 'name'
+        let meta = document.querySelector(`meta[${attribute}="${name}"]`)
+        if (!meta) {
+          meta = document.createElement('meta')
+          meta.setAttribute(attribute, name)
+          document.head.appendChild(meta)
+        }
+        if (meta) {
+          meta.setAttribute('content', content)
+        }
+      } catch (error) {
+        // התעלם משגיאות - לא קריטי
+        console.debug('Error updating meta tag:', name, error)
       }
-      meta.setAttribute('content', content)
     }
 
     updateMetaTag('description', description)
@@ -217,6 +236,9 @@ export function useProductPage({
     if (image) {
       updateMetaTag('twitter:image', image)
     }
+
+    // אין cleanup - נשאיר את ה-meta tags כי הם יתעדכנו במוצר הבא
+    // זה מונע בעיות עם removeChild כשהקומפוננטה מתבטלת
   }, [product?.id, slug, productId, trackEvent])
 
   // ViewContent event

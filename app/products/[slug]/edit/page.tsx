@@ -525,25 +525,17 @@ export default function EditProductPage() {
 
           // Update or create options
           for (const option of options.filter(opt => opt.name.trim() && opt.values.length > 0)) {
-            // Convert values to proper format (objects with id, label, metadata)
+            // Convert values to array of strings (API expects strings, not objects)
             const formattedValues = option.values.map((value: any) => {
               if (typeof value === 'string') {
-                // New string value - convert to object
-                return {
-                  id: `value-${Date.now()}-${Math.random()}`,
-                  label: value,
-                  metadata: {},
-                }
-              } else if (value && typeof value === 'object') {
-                // Already an object - use as is
                 return value
+              } else if (value && typeof value === 'object' && value.label) {
+                return value.label
+              } else if (value && typeof value === 'object' && value.id) {
+                // If it's an object with id but no label, try to extract the value
+                return value.id.split('-').pop() || String(value)
               } else {
-                // Fallback
-                return {
-                  id: `value-${Date.now()}-${Math.random()}`,
-                  label: String(value),
-                  metadata: {},
-                }
+                return String(value)
               }
             })
 
@@ -581,18 +573,37 @@ export default function EditProductPage() {
           const existingVariantsRes = await fetch(`/api/products/${productSlug}/variants`)
           const existingVariants = existingVariantsRes.ok ? await existingVariantsRes.json() : []
 
-          // Delete old variants that are not in new variants
-          for (const existing of existingVariants) {
-            if (!variants.find(v => v.id === existing.id)) {
+          // Check if we need to regenerate all variants
+          // This happens when:
+          // 1. Any variant has a temporary ID (means variants were regenerated)
+          // 2. Number of variants changed
+          const hasTemporaryIds = variants.some(v => v.id.startsWith('temp-'))
+          const shouldRegenerateAll = hasTemporaryIds || (variants.length !== existingVariants.length)
+
+          if (shouldRegenerateAll) {
+            // Delete ALL existing variants and create new ones
+            for (const existing of existingVariants) {
               await fetch(`/api/products/${productSlug}/variants/${existing.id}`, {
                 method: "DELETE",
               })
+            }
+          } else {
+            // Only delete variants that are not in the new list
+            for (const existing of existingVariants) {
+              const foundInNew = variants.find(v => v.id === existing.id)
+              if (!foundInNew) {
+                await fetch(`/api/products/${productSlug}/variants/${existing.id}`, {
+                  method: "DELETE",
+                })
+              }
             }
           }
 
           // Update or create variants
           for (const variant of variants) {
-            const existing = existingVariants.find((e: any) => e.id === variant.id)
+            // If we regenerated all variants, treat all as new
+            const existing = shouldRegenerateAll ? null : 
+                            (variant.id.startsWith('temp-') ? null : existingVariants.find((e: any) => e.id === variant.id))
             
             // Map option values
             const optionKeys = Object.keys(variant.optionValues)
@@ -1521,11 +1532,13 @@ export default function EditProductPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {formData.images && formData.images.length > 0 ? (
-                  <img
-                    src={formData.images[0]}
-                    alt={formData.name || "תצוגה מקדימה"}
-                    className="w-full h-48 object-cover rounded-lg"
-                  />
+                  <div className="w-full h-48 bg-gray-50 rounded-lg flex items-center justify-center p-4">
+                    <img
+                      src={formData.images[0]}
+                      alt={formData.name || "תצוגה מקדימה"}
+                      className="max-w-full max-h-full object-contain"
+                    />
+                  </div>
                 ) : (
                   <div className="w-full h-48 bg-gray-100 rounded-lg flex items-center justify-center">
                     <ImageIcon className="w-12 h-12 text-gray-400" />

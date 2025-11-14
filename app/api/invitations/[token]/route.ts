@@ -61,11 +61,11 @@ export async function POST(
   try {
     const { token } = params
     const body = await req.json()
-    const { name, password } = body
+    const { name, phone, password } = body
 
-    if (!name || !password) {
+    if (!name || !phone || !password) {
       return NextResponse.json(
-        { error: "Name and password are required" },
+        { error: "Name, phone and password are required" },
         { status: 400 }
       )
     }
@@ -117,14 +117,15 @@ export async function POST(
     // הצפנת סיסמה
     const hashedPassword = await bcrypt.hash(password, 10)
 
-    // יצירת משתמש חדש
+    // יצירת משתמש חדש עם ה-role מההזמנה
     const user = await prisma.user.create({
       data: {
         email: invitation.email,
         name,
+        phone,
         password: hashedPassword,
         companyId: invitation.companyId,
-        role: "USER",
+        role: invitation.role || "USER",
       },
     })
 

@@ -60,6 +60,7 @@ interface ShopData {
   currency: string
   taxEnabled: boolean
   taxRate: number
+  pricesIncludeTax: boolean
   
   // שלב 4
   shippingEnabled: boolean
@@ -139,6 +140,7 @@ export function ShopSettings() {
     currency: "ILS",
     taxEnabled: true,
     taxRate: 18,
+    pricesIncludeTax: true,
     shippingEnabled: false,
     shippingOptions: {
       fixed: false,
@@ -252,6 +254,7 @@ export function ShopSettings() {
           currency: shop.currency || "ILS",
           taxEnabled: shop.taxEnabled ?? true,
           taxRate: shop.taxRate || 18,
+          pricesIncludeTax: shop.pricesIncludeTax ?? true,
           shippingEnabled: shipping.enabled || false,
           shippingOptions: shippingOptions,
           shippingZones: shipping.zones || [],
@@ -371,6 +374,7 @@ export function ShopSettings() {
           currency: shopData.currency,
           taxEnabled: shopData.taxEnabled,
           taxRate: shopData.taxRate,
+          pricesIncludeTax: shopData.pricesIncludeTax,
           theme: shopData.theme,
           themeSettings: {
             primaryColor: shopData.primaryColor,
@@ -1162,17 +1166,34 @@ export function ShopSettings() {
                   </Label>
                 </div>
                 {shopData.taxEnabled && (
-                  <div className="mt-2 mr-6">
-                    <Label htmlFor="taxRate">אחוז מע"מ</Label>
-                    <Input
-                      id="taxRate"
-                      type="number"
-                      value={shopData.taxRate}
-                      onChange={(e) => updateShopData("taxRate", parseFloat(e.target.value) || 0)}
-                      min="0"
-                      max="100"
-                      className="h-10 text-sm"
-                    />
+                  <div className="mt-2 mr-6 space-y-3">
+                    <div>
+                      <Label htmlFor="taxRate">אחוז מע"מ</Label>
+                      <Input
+                        id="taxRate"
+                        type="number"
+                        value={shopData.taxRate}
+                        onChange={(e) => updateShopData("taxRate", parseFloat(e.target.value) || 0)}
+                        min="0"
+                        max="100"
+                        className="h-10 text-sm"
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2 space-x-reverse">
+                      <Checkbox
+                        id="pricesIncludeTax"
+                        checked={shopData.pricesIncludeTax}
+                        onCheckedChange={(checked) => updateShopData("pricesIncludeTax", checked)}
+                      />
+                      <Label htmlFor="pricesIncludeTax" className="cursor-pointer text-sm">
+                        המחירים באתר כוללים מע"מ
+                      </Label>
+                    </div>
+                    <p className="text-xs text-gray-500 mr-6">
+                      {shopData.pricesIncludeTax 
+                        ? "המחירים שמוצגים ללקוחות כבר כוללים מע״מ" 
+                        : "המע״מ יתווסף למחיר בעת התשלום"}
+                    </p>
                   </div>
                 )}
               </div>
