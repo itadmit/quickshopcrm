@@ -128,6 +128,12 @@ export async function POST(
         console.log('🔍 Checking if product has other variants...')
       }
       
+      // הוסף addons אם יש
+      if (item.addons && item.addons.length > 0) {
+        orderItem.addons = item.addons
+        console.log('✅ Added addons to order item:', item.addons)
+      }
+      
       console.log('📦 Order item:', JSON.stringify(orderItem, null, 2))
       return orderItem
     })

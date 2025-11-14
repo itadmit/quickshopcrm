@@ -167,8 +167,8 @@ export const authOptions: NextAuthOptions = {
             })
             
             if (!existingUser) {
-              // המשתמש נמחק - נחזיר null כדי להפסיק את ה-session
-              return null as any
+              // המשתמש נמחק - נזרוק שגיאה שתגרום ל-NextAuth לנקות את ה-session
+              throw new Error('User has been deleted')
             }
             
             // עדכון הנתונים מה-DB
@@ -178,7 +178,8 @@ export const authOptions: NextAuthOptions = {
             token.companyId = existingUser.companyId
           } catch (error) {
             console.error('Error checking user in JWT callback:', error)
-            return null as any
+            // נזרוק את השגיאה הלאה כדי ש-NextAuth יטפל בה
+            throw error
           }
         }
         
@@ -187,55 +188,42 @@ export const authOptions: NextAuthOptions = {
         // טיפול בשגיאות פענוח JWT (כאשר יש cookies ישנים)
         if (error?.message?.includes('decryption') || error?.name === 'JWEDecryptionFailed') {
           console.warn('⚠️  שגיאת פענוח JWT - כנראה יש cookies ישנים. נא למחוק cookies ולנסות שוב.')
-          // מחזירים null כדי לאפשר התחברות מחדש
-          return null as any
         }
+        // נזרוק את השגיאה כדי ש-NextAuth ינקה את ה-session
         throw error
       }
     },
     async session({ session, token }) {
+      // אם token חסר, זה אומר שה-JWT callback נכשל - נזרוק שגיאה
+      if (!token || !token.id) {
+        throw new Error('Invalid token')
+      }
+      
       try {
-        // אם token הוא null, המשתמש נמחק או יש בעיה עם ה-JWT - נחזיר session ריק
-        if (!token || !token.id) {
-          return null as any
+        // בדיקה שהמשתמש עדיין קיים
+        const existingUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { id: true, email: true, name: true, role: true, companyId: true },
+        })
+        
+        if (!existingUser) {
+          // המשתמש נמחק - נזרוק שגיאה
+          throw new Error('User not found')
         }
         
-        // בדיקה נוספת שהמשתמש עדיין קיים
-        try {
-          const existingUser = await prisma.user.findUnique({
-            where: { id: token.id as string },
-            select: { id: true, email: true, name: true, role: true, companyId: true },
-          })
-          
-          if (!existingUser) {
-            // המשתמש נמחק - נחזיר null
-            return null as any
-          }
-          
-          if (session.user) {
-            session.user.id = existingUser.id
-            session.user.name = existingUser.name
-            session.user.role = existingUser.role
-            session.user.companyId = existingUser.companyId
-            session.user.companyName = token.companyName as string
-          }
-        } catch (error) {
-          console.error('Error checking user in session callback:', error)
-          return null as any
+        if (session.user) {
+          session.user.id = existingUser.id
+          session.user.name = existingUser.name
+          session.user.role = existingUser.role
+          session.user.companyId = existingUser.companyId
+          session.user.companyName = token.companyName as string
         }
         
         return session
       } catch (error: any) {
-        // טיפול בשגיאות פענוח JWT - נחזיר null במקום לזרוק שגיאה
-        if (error?.message?.includes('decryption') || 
-            error?.name === 'JWEDecryptionFailed' ||
-            error?.stack?.includes('decrypt')) {
-          console.warn('⚠️  שגיאת פענוח JWT ב-session - כנראה יש cookies ישנים. נא למחוק cookies ולנסות שוב.')
-          return null as any
-        }
-        // לכל שגיאה אחרת, נחזיר null במקום לזרוק
         console.error('Error in session callback:', error)
-        return null as any
+        // נזרוק את השגיאה כדי ש-NextAuth ינקה את ה-session
+        throw error
       }
     }
   },

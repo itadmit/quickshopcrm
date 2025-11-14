@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
-import { Bell, Search, ChevronDown, Settings, LogOut, User, Store, ExternalLink, UserPlus } from "lucide-react"
+import { Bell, ChevronDown, Settings, LogOut, User, ExternalLink, UserPlus } from "lucide-react"
 import { useShop } from "@/components/providers/ShopProvider"
 import Link from "next/link"
 import {
@@ -14,10 +14,10 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { NotificationsDrawer } from "@/components/NotificationsDrawer"
 import { InvitePeopleDialog } from "@/components/dialogs/InvitePeopleDialog"
+import { GlobalSearch } from "@/components/GlobalSearch"
 import { getShopBaseUrl } from "@/lib/utils"
 
 interface HeaderProps {
@@ -61,22 +61,33 @@ export function Header({ title }: HeaderProps) {
 
   return (
     <header className="h-16 border-b border-gray-200 bg-white flex items-center justify-between px-6 sticky top-0 z-50">
-      <div className="flex items-center gap-4 flex-1">
+      <div className="flex items-center gap-4">
         {title && (
           <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
         )}
       </div>
 
+      {/* Global Search - Center */}
+      <div className="flex-1 max-w-2xl mx-8">
+        <GlobalSearch />
+      </div>
+
       <div className="flex items-center gap-4">
-        {/* Search */}
-        <div className="relative w-64">
-          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-          <Input
-            type="search"
-            placeholder="חיפוש..."
-            className="pr-10"
-          />
-        </div>
+        {/* View Store Button */}
+        {selectedShop && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-2"
+            onClick={() => {
+              const shopUrl = getShopBaseUrl(selectedShop)
+              window.open(shopUrl, '_blank')
+            }}
+          >
+            <ExternalLink className="w-4 h-4" />
+            <span>צפייה בחנות</span>
+          </Button>
+        )}
 
         {/* Notifications */}
         <Button 

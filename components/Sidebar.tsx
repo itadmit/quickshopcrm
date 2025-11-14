@@ -34,6 +34,8 @@ import {
   DollarSign,
   Workflow,
   Mail,
+  Sliders,
+  Plus,
 } from "lucide-react"
 
 const menuItems = [
@@ -89,11 +91,13 @@ const systemItems = [
 const settingsItems = [
   { icon: Settings, label: "הגדרות", href: "/settings", permission: "settings" },
   { icon: Plug, label: "אינטגרציות", href: "/settings/integrations", permission: "integrations" },
+  { icon: Sliders, label: "שדות מותאמים", href: "/settings/custom-fields", permission: "settings" },
+  { icon: Plus, label: "תוספות למוצרים", href: "/settings/product-addons", permission: "settings" },
 ]
 
 const superAdminItems = [
-  { icon: Shield, label: "הגדרות PayPlus", href: "/admin", permission: "super_admin" },
-  { icon: Mail, label: "הגדרות SendGrid", href: "/admin", permission: "super_admin" },
+  { icon: Shield, label: "הגדרות PayPlus", href: "/admin/payplus", permission: "super_admin" },
+  { icon: Mail, label: "הגדרות SendGrid", href: "/admin/sendgrid", permission: "super_admin" },
   { icon: DollarSign, label: "גביית עמלות", href: "/admin/commissions", permission: "super_admin" },
 ]
 

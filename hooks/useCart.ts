@@ -97,10 +97,18 @@ export function useCart(slug: string, customerId?: string | null) {
       productId,
       variantId,
       quantity = 1,
+      addons,
     }: {
       productId: string
       variantId?: string | null
       quantity?: number
+      addons?: Array<{
+        addonId: string
+        valueId: string | null
+        label: string
+        price: number
+        quantity: number
+      }>
     }) => {
       const headers: HeadersInit = { 'Content-Type': 'application/json' }
       if (customerId) {
@@ -111,7 +119,7 @@ export function useCart(slug: string, customerId?: string | null) {
         method: 'POST',
         headers,
         credentials: 'include',
-        body: JSON.stringify({ productId, variantId, quantity }),
+        body: JSON.stringify({ productId, variantId, quantity, addons }),
       })
       
       if (!response.ok) {
@@ -209,9 +217,17 @@ export function useCart(slug: string, customerId?: string | null) {
     mutationFn: async ({
       productId,
       variantId,
+      addons,
     }: {
       productId: string
       variantId: string | null
+      addons?: Array<{
+        addonId: string
+        valueId: string | null
+        label: string
+        price: number
+        quantity: number
+      }>
     }) => {
       const headers: HeadersInit = {}
       if (customerId) {
@@ -221,6 +237,9 @@ export function useCart(slug: string, customerId?: string | null) {
       const params = new URLSearchParams({ productId })
       if (variantId) {
         params.append('variantId', variantId)
+      }
+      if (addons && addons.length > 0) {
+        params.append('addons', JSON.stringify(addons))
       }
       
       const response = await fetch(

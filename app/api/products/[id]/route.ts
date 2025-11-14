@@ -6,7 +6,7 @@ import { z } from "zod"
 
 const updateProductSchema = z.object({
   name: z.string().min(2).optional(),
-  slug: z.string().min(2).regex(/^[a-z0-9-]+$/).optional(),
+  slug: z.string().min(2).regex(/^[\u0590-\u05FFa-z0-9\-]+$/, "סלאג יכול להכיל רק אותיות עבריות/אנגליות, מספרים ומקפים").optional(),
   description: z.string().optional(),
   sku: z.string().optional(),
   price: z.number().min(0).optional(),
@@ -16,9 +16,14 @@ const updateProductSchema = z.object({
   inventoryEnabled: z.boolean().optional(),
   inventoryQty: z.number().int().optional(),
   lowStockAlert: z.number().int().optional(),
+  trackInventory: z.boolean().optional(),
+  sellWhenSoldOut: z.boolean().optional(),
+  priceByWeight: z.boolean().optional(),
   weight: z.number().optional(),
   dimensions: z.any().optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).optional(),
+  scheduledPublishDate: z.union([z.string().datetime(), z.null(), z.literal("")]).optional(),
+  notifyOnPublish: z.boolean().optional(),
   images: z.array(z.string()).optional(),
   video: z.string().optional(),
   minQuantity: z.number().int().optional(),
@@ -28,6 +33,8 @@ const updateProductSchema = z.object({
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
   customFields: z.any().optional(),
+  badges: z.any().optional(),
+  addonIds: z.array(z.string()).optional(),
 })
 
 // GET - קבלת פרטי מוצר
@@ -94,10 +101,24 @@ export async function GET(
   }
 }
 
-// PUT - עדכון מוצר
+// PUT & PATCH - עדכון מוצר
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
+) {
+  return updateProduct(req, params)
+}
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  return updateProduct(req, params)
+}
+
+async function updateProduct(
+  req: NextRequest,
+  params: { id: string }
 ) {
   try {
     const session = await getServerSession(authOptions)
@@ -145,11 +166,20 @@ export async function PUT(
       }
     }
 
-    // המרת availableDate אם קיים
+    // המרת תאריכים אם קיימים
     const updateData: any = { ...data }
     if (updateData.availableDate) {
       updateData.availableDate = new Date(updateData.availableDate)
     }
+    if (updateData.scheduledPublishDate && updateData.scheduledPublishDate !== "") {
+      updateData.scheduledPublishDate = new Date(updateData.scheduledPublishDate)
+    } else if (updateData.scheduledPublishDate === null || updateData.scheduledPublishDate === "") {
+      updateData.scheduledPublishDate = null
+    }
+
+    // הסר addonIds מה-updateData (הוא לא חלק מהמודל של Product)
+    const addonIds = updateData.addonIds
+    delete updateData.addonIds
 
     // עדכון המוצר
     const product = await prisma.product.update({
@@ -166,6 +196,61 @@ export async function PUT(
         },
       },
     })
+
+    // עדכון ProductAddons
+    if (addonIds !== undefined) {
+      try {
+        // מצא את כל ה-addons שהמוצר משויך אליהם כרגע
+        const existingAddons = await prisma.productAddon.findMany({
+          where: {
+            shopId: product.shopId,
+            productIds: {
+              has: product.id,
+            },
+          },
+          select: { id: true, productIds: true },
+        })
+
+        const existingAddonIds = existingAddons.map(a => a.id)
+        const newAddonIds = Array.isArray(addonIds) ? addonIds : []
+
+        // הסר את המוצר מ-addons שכבר לא נבחרו
+        const addonsToRemoveFrom = existingAddonIds.filter(id => !newAddonIds.includes(id))
+        await Promise.all(
+          addonsToRemoveFrom.map(async (addonId) => {
+            const addon = existingAddons.find(a => a.id === addonId)
+            if (addon) {
+              const updatedProductIds = addon.productIds.filter(pid => pid !== product.id)
+              await prisma.productAddon.update({
+                where: { id: addonId },
+                data: { productIds: updatedProductIds },
+              })
+            }
+          })
+        )
+
+        // הוסף את המוצר ל-addons חדשים
+        const addonsToAddTo = newAddonIds.filter((id: string) => !existingAddonIds.includes(id))
+        await Promise.all(
+          addonsToAddTo.map(async (addonId: string) => {
+            const addon = await prisma.productAddon.findUnique({
+              where: { id: addonId },
+              select: { productIds: true },
+            })
+
+            if (addon && !addon.productIds.includes(product.id)) {
+              await prisma.productAddon.update({
+                where: { id: addonId },
+                data: { productIds: [...addon.productIds, product.id] },
+              })
+            }
+          })
+        )
+      } catch (error) {
+        console.error("Error updating product addons:", error)
+        // לא נכשיל את כל הבקשה בגלל שגיאה ב-addons
+      }
+    }
 
     // יצירת אירוע
     await prisma.shopEvent.create({
@@ -225,6 +310,32 @@ export async function DELETE(
 
     if (!product) {
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
+    }
+
+    // הסר את המוצר מכל ה-ProductAddons לפני המחיקה
+    try {
+      const addonsWithProduct = await prisma.productAddon.findMany({
+        where: {
+          shopId: product.shopId,
+          productIds: {
+            has: product.id,
+          },
+        },
+        select: { id: true, productIds: true },
+      })
+
+      await Promise.all(
+        addonsWithProduct.map(async (addon) => {
+          const updatedProductIds = addon.productIds.filter(pid => pid !== product.id)
+          await prisma.productAddon.update({
+            where: { id: addon.id },
+            data: { productIds: updatedProductIds },
+          })
+        })
+      )
+    } catch (error) {
+      console.error("Error removing product from addons:", error)
+      // ממשיכים למחיקה גם אם זה נכשל
     }
 
     // מחיקת המוצר (עם כל הקשרים - cascade)

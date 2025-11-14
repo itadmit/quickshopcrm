@@ -3,6 +3,10 @@ import { prisma } from "@/lib/prisma"
 import { cookies } from "next/headers"
 import { findCart } from "@/lib/cart-server"
 
+// מבטל caching של API זה
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 // GET - קבלת מספר פריטים בעגלה
 export async function GET(
   req: NextRequest,

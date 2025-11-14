@@ -18,9 +18,11 @@ import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton"
 import { StorefrontHeader } from "@/components/storefront/StorefrontHeader"
 import { ProductCard } from "@/components/storefront/ProductCard"
 import { useShopTheme, getThemeStyles } from "@/hooks/useShopTheme"
+import { ProductBadges } from "@/components/storefront/ProductBadges"
 import { useTracking } from "@/components/storefront/TrackingPixelProvider"
 import { trackPageView } from "@/lib/tracking-events"
 import { AdminBar } from "@/components/storefront/AdminBar"
+import { getProductPrice, formatProductPrice, formatComparePrice } from "@/lib/product-price"
 
 interface Category {
   id: string
@@ -476,7 +478,7 @@ export default function CategoryPage() {
                 href={`/shop/${slug}/products/${product.slug || product.id}`}
                 className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow"
               >
-                <div className="aspect-square overflow-hidden bg-gray-100">
+                <div className="relative aspect-square overflow-hidden bg-gray-100">
                   {product.images && product.images.length > 0 ? (
                     <img
                       src={product.images[0]}
@@ -488,16 +490,28 @@ export default function CategoryPage() {
                       <Package className="w-10 h-10 text-gray-400" />
                     </div>
                   )}
+                  <ProductBadges
+                    badges={(product as any).badges || []}
+                    isSoldOut={product.availability === "OUT_OF_STOCK"}
+                    comparePrice={(() => {
+                      const priceInfo = getProductPrice(product)
+                      return priceInfo.comparePrice
+                    })()}
+                    price={(() => {
+                      const priceInfo = getProductPrice(product)
+                      return priceInfo.price
+                    })()}
+                  />
                 </div>
                 <div className="p-2">
                   <h3 className="text-xs font-semibold text-gray-900 mb-1 line-clamp-2">{product.name}</h3>
                   <div className="flex flex-col gap-1">
                     <span className="text-sm font-bold text-gray-900">
-                      ₪{product.price.toFixed(2)}
+                      {formatProductPrice(product)}
                     </span>
-                    {product.comparePrice && (
+                    {formatComparePrice(product) && (
                       <span className="text-xs text-gray-500 line-through">
-                        ₪{product.comparePrice.toFixed(2)}
+                        {formatComparePrice(product)}
                       </span>
                     )}
                   </div>
@@ -516,7 +530,7 @@ export default function CategoryPage() {
                 href={`/shop/${slug}/products/${product.slug || product.id}`}
                 className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow"
               >
-                <div className="aspect-square overflow-hidden bg-gray-100">
+                <div className="relative aspect-square overflow-hidden bg-gray-100">
                   {product.images && product.images.length > 0 ? (
                     <img
                       src={product.images[0]}
@@ -528,16 +542,28 @@ export default function CategoryPage() {
                       <Package className="w-10 h-10 text-gray-400" />
                     </div>
                   )}
+                  <ProductBadges
+                    badges={(product as any).badges || []}
+                    isSoldOut={product.availability === "OUT_OF_STOCK"}
+                    comparePrice={(() => {
+                      const priceInfo = getProductPrice(product)
+                      return priceInfo.comparePrice
+                    })()}
+                    price={(() => {
+                      const priceInfo = getProductPrice(product)
+                      return priceInfo.price
+                    })()}
+                  />
                 </div>
                 <div className="p-4">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3">{product.name}</h3>
                   <div className="flex items-center gap-3 mb-2">
                     <span className="text-xl font-bold text-gray-900">
-                      ₪{product.price.toFixed(2)}
+                      {formatProductPrice(product)}
                     </span>
-                    {product.comparePrice && (
+                    {formatComparePrice(product) && (
                       <span className="text-base text-gray-500 line-through">
-                        ₪{product.comparePrice.toFixed(2)}
+                        {formatComparePrice(product)}
                       </span>
                     )}
                   </div>
@@ -556,7 +582,7 @@ export default function CategoryPage() {
                 href={`/shop/${slug}/products/${product.slug || product.id}`}
                 className="flex gap-6 p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors group"
               >
-                <div className="w-32 h-32 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
+                <div className="relative w-32 h-32 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
                   {product.images && product.images.length > 0 ? (
                     <img
                       src={product.images[0]}
@@ -568,6 +594,18 @@ export default function CategoryPage() {
                       <Package className="w-10 h-10 text-gray-400" />
                     </div>
                   )}
+                  <ProductBadges
+                    badges={(product as any).badges || []}
+                    isSoldOut={product.availability === "OUT_OF_STOCK"}
+                    comparePrice={(() => {
+                      const priceInfo = getProductPrice(product)
+                      return priceInfo.comparePrice
+                    })()}
+                    price={(() => {
+                      const priceInfo = getProductPrice(product)
+                      return priceInfo.price
+                    })()}
+                  />
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-gray-700">
@@ -575,11 +613,11 @@ export default function CategoryPage() {
                   </h3>
                   <div className="flex items-center gap-2">
                     <span className="text-xl font-bold text-gray-900">
-                      ₪{product.price.toFixed(2)}
+                      {formatProductPrice(product)}
                     </span>
-                    {product.comparePrice && (
+                    {formatComparePrice(product) && (
                       <span className="text-sm text-gray-500 line-through">
-                        ₪{product.comparePrice.toFixed(2)}
+                        {formatComparePrice(product)}
                       </span>
                     )}
                   </div>

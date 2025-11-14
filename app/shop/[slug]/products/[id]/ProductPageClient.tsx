@@ -38,6 +38,8 @@ import { LoadingOverlay } from "@/components/storefront/LoadingOverlay"
 import { useProductPage } from "./hooks/useProductPage"
 import { ProductElements } from "./components/ProductElements"
 import { Product, ProductPageClientProps, GalleryLayout } from "./types"
+import { ProductAddonsSelector } from "./components/ProductAddonsSelector"
+import { ProductCustomFields } from "./components/ProductCustomFields"
 
 export function ProductPageClient({
   slug,
@@ -54,6 +56,7 @@ export function ProductPageClient({
   navigation,
   isAdmin,
   autoOpenCart: initialAutoOpenCart,
+  productAddons = [],
 }: ProductPageClientProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -67,6 +70,16 @@ export function ProductPageClient({
   const [showQuickBuy, setShowQuickBuy] = useState(false)
   const [isGift, setIsGift] = useState(false)
   const [giftDiscountId, setGiftDiscountId] = useState<string | null>(null)
+  
+  // State for Product Add-ons
+  const [selectedAddons, setSelectedAddons] = useState<Array<{
+    addonId: string
+    valueId: string | null
+    label: string
+    price: number
+    quantity: number
+  }>>([])
+  const [addonsTotal, setAddonsTotal] = useState(0)
 
   // בדיקה אם המודל נפתח כמודל מתנה דרך query params או event
   useEffect(() => {
@@ -129,6 +142,7 @@ export function ProductPageClient({
     initialGalleryLayout,
     initialProductPageLayout,
     autoOpenCart: initialAutoOpenCart,
+    selectedAddons,
   })
 
   // פונקציות לניהול layout
@@ -250,10 +264,11 @@ export function ProductPageClient({
     }
   }
 
-  // מחיר נוכחי
-  const currentPrice = selectedVariant && product.variants
+  // מחיר נוכחי (כולל תוספות)
+  const basePrice = selectedVariant && product.variants
     ? product.variants.find((v) => v.id === selectedVariant)?.price || product.price
     : product.price
+  const currentPrice = basePrice + addonsTotal
 
   if (!product) {
     return (
@@ -471,9 +486,36 @@ export function ProductPageClient({
           )}>
             {otherElements
               .sort((a, b) => a.position - b.position)
-              .map((element) => renderElement(element))}
+              .map((element) => {
+                // הוסף את התוספות אחרי variants (position 4) ולפני quantity (position 5)
+                if (element.position === 5 && element.type === "product-quantity" && productAddons && productAddons.length > 0) {
+                  return (
+                    <div key="elements-with-addons">
+                      {/* Product Add-ons */}
+                      <div className="mb-6">
+                        <ProductAddonsSelector
+                          addons={productAddons}
+                          onChange={setSelectedAddons}
+                          onPriceChange={setAddonsTotal}
+                          theme={theme}
+                        />
+                      </div>
+                      {/* Quantity element */}
+                      {renderElement(element)}
+                    </div>
+                  )
+                }
+                return renderElement(element)
+              })}
           </div>
         </div>
+
+        {/* Custom Fields */}
+        {product.customFieldValues && product.customFieldValues.length > 0 && (
+          <div className="mt-8 max-w-2xl">
+            <ProductCustomFields customFieldValues={product.customFieldValues as any} />
+          </div>
+        )}
 
         {/* Reviews Section */}
         {showReviews && !layoutElements.find(el => el.type === "product-reviews") && (

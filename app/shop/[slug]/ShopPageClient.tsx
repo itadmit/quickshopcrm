@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Package } from "lucide-react"
+import { Package, ShoppingBag, Watch, Glasses, Shirt, Laptop, Coffee, Sparkles, ArrowRight, Zap, Star, Heart, TrendingUp, Gift, Award, Flame, Tag, Bell } from "lucide-react"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton"
@@ -14,6 +14,8 @@ import { trackPageView } from "@/lib/tracking-events"
 import { AdminBar } from "@/components/storefront/AdminBar"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { useStorefrontData } from "@/components/storefront/StorefrontDataProvider"
+import { defaultSections, HomePageSection, sectionLabels } from "@/components/customize/HomePageCustomizer"
+import { cn } from "@/lib/utils"
 
 interface Shop {
   id: string
@@ -34,6 +36,15 @@ interface Product {
   comparePrice: number | null
   images: string[]
   availability: string
+  variants?: Array<{
+    id: string
+    name: string
+    price: number | null
+    comparePrice: number | null
+    inventoryQty: number | null
+    sku: string | null
+    options: Record<string, string>
+  }>
 }
 
 interface ThemeSettings {
@@ -84,8 +95,82 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
   const searchParams = useSearchParams()
   const [customerId, setCustomerId] = useState<string | null>(null)
   const { cart } = useStorefrontData()
+  const [homePageSections, setHomePageSections] = useState<HomePageSection[]>([])
+  const [isCustomizeMode, setIsCustomizeMode] = useState(false)
+  const [categories, setCategories] = useState<any[]>([])
+  const [loadingSections, setLoadingSections] = useState(true)
   
   const cartItemCount = cart?.items?.reduce((sum: number, item: any) => sum + item.quantity, 0) || 0
+
+  // Placeholder icons for empty store
+  const placeholderIcons = [ShoppingBag, Watch, Glasses, Shirt, Laptop, Coffee, Package, Sparkles]
+  const categoryIcons = [Shirt, Watch, Laptop, Coffee, Glasses, ShoppingBag]
+
+  // טעינת homePageLayout מה-API
+  useEffect(() => {
+    const fetchHomePageLayout = async () => {
+      try {
+        const response = await fetch(`/api/storefront/${slug}/home-page-layout`)
+        if (response.ok) {
+          const data = await response.json()
+          if (data.sections && Array.isArray(data.sections) && data.sections.length > 0) {
+            setHomePageSections(data.sections)
+          } else {
+            // אם אין sections מותאמים אישית, נשתמש ב-defaultSections
+            setHomePageSections(defaultSections)
+          }
+        } else {
+          // אם יש שגיאה, נשתמש ב-defaultSections
+          setHomePageSections(defaultSections)
+        }
+      } catch (error) {
+        console.error("Error fetching home page layout:", error)
+        // אם יש שגיאה, נשתמש ב-defaultSections
+        setHomePageSections(defaultSections)
+      } finally {
+        setLoadingSections(false)
+      }
+    }
+
+    fetchHomePageLayout()
+  }, [slug])
+
+  // טעינת קטגוריות
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(`/api/storefront/${slug}/categories`)
+        if (response.ok) {
+          const data = await response.json()
+          setCategories(data)
+        }
+      } catch (error) {
+        console.error("Error fetching categories:", error)
+      }
+    }
+
+    fetchCategories()
+  }, [slug])
+
+  // קריאת הגדרות customize mode
+  useEffect(() => {
+    const customizeParam = searchParams.get("customize")
+    setIsCustomizeMode(customizeParam === "true")
+    
+    if (customizeParam === "true") {
+      // האזנה לעדכונים מה-customize window
+      const handleMessage = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return
+        
+        if (event.data.type === "updateHomePageSections") {
+          setHomePageSections(event.data.sections)
+        }
+      }
+      
+      window.addEventListener("message", handleMessage)
+      return () => window.removeEventListener("message", handleMessage)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     if (shop) {
@@ -146,6 +231,544 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
     }
   }
 
+  // קבלת config של סקשן מההגדרות או ברירת מחדל
+  const getSectionConfig = (sectionId: string, defaultConfig: any = {}) => {
+    if (homePageSections.length > 0) {
+      const section = homePageSections.find(s => s.id === sectionId)
+      return section ? { ...defaultConfig, ...section.config } : defaultConfig
+    }
+    return defaultConfig
+  }
+
+  // בדיקה אם סקשן מוסתר
+  const isSectionVisible = (sectionId: string) => {
+    if (homePageSections.length === 0) return true // ברירת מחדל - הכל גלוי
+    const section = homePageSections.find(s => s.id === sectionId)
+    return section ? section.visible : true
+  }
+
+  // קבלת הסקשנים הממוינים לפי position
+  const getSortedSections = () => {
+    return [...homePageSections].sort((a, b) => a.position - b.position)
+  }
+
+  // פונקציה שמציגה סקשן hero
+  const renderHeroSection = (section: HomePageSection) => {
+    const config = section.config
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+    const bgImage = isMobile 
+      ? (config.backgroundImageMobile || config.backgroundImage || "")
+      : (config.backgroundImage || "")
+    const video = config.video || ""
+    // אם אין title, הצג את שם האתר. אם יש textColor, השתמש בו, אחרת ברירת מחדל כהה
+    const displayTitle = config.title || shop.name || ""
+    const textColor = config.textColor || (bgImage || video ? "#ffffff" : "#000000")
+    const overlayColor = config.overlayColor || "#000000"
+    const addOverlay = config.addOverlay !== false // ברירת מחדל true, אבל אם אין רקע אז false
+    
+    // חישוב opacity של ההחשכה - רק אם יש רקע
+    const overlayOpacity = (bgImage || video) && addOverlay ? 0.3 : 0
+    
+    return (
+      <section key={section.id} className="relative w-full h-[600px] md:h-[700px] overflow-hidden bg-gray-100">
+        {/* רקע - סרטון או תמונה */}
+        {video ? (
+          <div className="relative w-full h-full">
+            <video
+              src={video}
+              className="w-full h-full object-cover"
+              autoPlay
+              loop
+              muted
+              playsInline
+            />
+            {addOverlay && (
+              <div 
+                className="absolute inset-0"
+                style={{ backgroundColor: overlayColor, opacity: overlayOpacity }}
+              />
+            )}
+          </div>
+        ) : bgImage ? (
+          <div className="relative w-full h-full">
+            <img
+              src={bgImage}
+              alt={config.title || "Hero"}
+              className="w-full h-full object-cover"
+            />
+            {addOverlay && (
+              <div 
+                className="absolute inset-0"
+                style={{ backgroundColor: overlayColor, opacity: overlayOpacity }}
+              />
+            )}
+          </div>
+        ) : (
+          <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200" />
+        )}
+
+        {/* תוכן */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-center px-4" style={{ color: textColor }}>
+            {displayTitle && (
+              <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight">
+                {displayTitle}
+              </h1>
+            )}
+            {config.subtitle && (
+              <p className="text-xl md:text-2xl mb-6">{config.subtitle}</p>
+            )}
+            {config.description && (
+              <p className="text-lg mb-8 max-w-2xl mx-auto">{config.description}</p>
+            )}
+            {config.buttonText && (
+              <Link
+                href={config.buttonUrl || `/shop/${slug}/search`}
+                className={cn(
+                  "inline-block px-8 py-3 font-semibold rounded-sm transition-colors",
+                  bgImage || video
+                    ? "bg-white text-gray-900 hover:bg-gray-100"
+                    : "bg-gray-900 text-white hover:bg-gray-800"
+                )}
+              >
+                {config.buttonText}
+              </Link>
+            )}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // פונקציה שמציגה סקשן new-arrivals
+  const renderNewArrivalsSection = (section: HomePageSection) => {
+    const config = section.config
+    const sectionProducts = config.products && config.products.length > 0
+      ? products.filter(p => config.products!.includes(p.id))
+      : products.slice(0, 4)
+
+    return (
+      <section key={section.id} className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3 mb-12">
+            {config.icon === "sparkles" && <Sparkles className="w-8 h-8 text-gray-900" />}
+            {config.icon === "trending-up" && <TrendingUp className="w-8 h-8 text-gray-900" />}
+            {config.icon === "star" && <Star className="w-8 h-8 text-gray-900" />}
+            {config.icon === "heart" && <Heart className="w-8 h-8 text-gray-900" />}
+            {config.icon === "zap" && <Zap className="w-8 h-8 text-gray-900" />}
+            {config.icon === "gift" && <Gift className="w-8 h-8 text-gray-900" />}
+            {config.icon === "award" && <Award className="w-8 h-8 text-gray-900" />}
+            {config.icon === "flame" && <Flame className="w-8 h-8 text-gray-900" />}
+            {config.icon === "shopping-bag" && <ShoppingBag className="w-8 h-8 text-gray-900" />}
+            {config.icon === "package" && <Package className="w-8 h-8 text-gray-900" />}
+            {config.icon === "tag" && <Tag className="w-8 h-8 text-gray-900" />}
+            {config.icon === "bell" && <Bell className="w-8 h-8 text-gray-900" />}
+            <h2 className="text-3xl font-bold text-gray-900">{config.title || "חדש באתר"}</h2>
+          </div>
+          {config.subtitle && (
+            <p className="text-gray-600 mb-8">{config.subtitle}</p>
+          )}
+          {sectionProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {sectionProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={{
+                    ...product,
+                    variants: product.variants?.filter(v => v.price !== null).map(v => ({
+                      ...v,
+                      price: v.price!
+                    }))
+                  }}
+                  slug={slug}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {[1, 2, 3, 4].map((i) => {
+                const Icon = placeholderIcons[i - 1]
+                return (
+                  <Card key={i} className="h-full overflow-hidden group cursor-default opacity-75 hover:opacity-90 transition-opacity">
+                    <CardContent className="p-0">
+                      <div className="relative w-full aspect-square bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                        <Icon className="w-16 h-16 text-gray-300" />
+                      </div>
+                      <div className="p-4 space-y-2">
+                        <div className="h-5 w-3/4 bg-gray-200 rounded animate-pulse" />
+                        <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse" />
+                        <div className="flex items-center justify-between pt-2">
+                          <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+    )
+  }
+
+  // פונקציה שמציגה סקשן categories
+  const renderCategoriesSection = (section: HomePageSection) => {
+    const config = section.config
+    const displayCategories = config.categories && config.categories.includes("all")
+      ? categories
+      : categories.filter(c => config.categories?.includes(c.id))
+
+    return (
+      <section key={section.id} className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="mb-12">
+            <h2 className="text-3xl font-bold text-gray-900 mb-2">{config.title || "קטגוריות"}</h2>
+            {config.subtitle && (
+              <p className="text-gray-600">{config.subtitle}</p>
+            )}
+          </div>
+          {displayCategories.length > 0 ? (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {displayCategories.slice(0, 6).map((category, i) => {
+                const Icon = categoryIcons[i % categoryIcons.length]
+                return (
+                  <Link
+                    key={category.id}
+                    href={`/shop/${slug}/categories/${category.id}`}
+                  >
+                    <Card className="overflow-hidden group cursor-pointer hover:shadow-lg transition-shadow">
+                      <CardContent className="p-0">
+                        {category.image ? (
+                          <div className="relative w-full aspect-square">
+                            <img
+                              src={category.image}
+                              alt={category.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="relative w-full aspect-square bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                            <Icon className="w-12 h-12 text-gray-300" />
+                          </div>
+                        )}
+                        <div className="p-3">
+                          <p className="text-center font-medium text-gray-900">{category.name}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                )
+              })}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              {[1, 2, 3, 4, 5, 6].map((i) => {
+                const Icon = categoryIcons[i - 1]
+                return (
+                  <Card key={i} className="overflow-hidden group cursor-default hover:shadow-lg transition-shadow">
+                    <CardContent className="p-0">
+                      <div className="relative w-full aspect-square bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                        <Icon className="w-12 h-12 text-gray-300" />
+                      </div>
+                      <div className="p-3">
+                        <div className="h-5 w-3/4 mx-auto bg-gray-200 rounded animate-pulse" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+    )
+  }
+
+  // פונקציה שמציגה סקשן hero-cta
+  const renderHeroCTASection = (section: HomePageSection) => {
+    const config = section.config
+    const bgImage = config.backgroundImage || ""
+
+    return (
+      <section key={section.id} className="relative w-full h-[600px] md:h-[700px] overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+        {bgImage ? (
+          <div className="relative w-full h-full">
+            <img
+              src={bgImage}
+              alt={config.title || "Hero CTA"}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/30" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-white px-4">
+                {config.icon === "star" && (
+                  <div className="flex justify-center mb-8">
+                    <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center">
+                      <Star className="w-12 h-12 text-white" />
+                    </div>
+                  </div>
+                )}
+                {config.title && (
+                  <h2 className="text-3xl md:text-5xl font-bold mb-6">{config.title}</h2>
+                )}
+                {config.description && (
+                  <p className="text-lg md:text-xl mb-8 max-w-3xl mx-auto">{config.description}</p>
+                )}
+                {config.buttonText && (
+                  <Link
+                    href={config.buttonUrl || `/shop/${slug}/search`}
+                    className="inline-block px-8 py-4 text-lg font-semibold text-white bg-transparent border-2 border-white rounded-md hover:bg-white/10 transition-all"
+                  >
+                    {config.buttonText}
+                  </Link>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center text-gray-700 px-4">
+              {config.icon === "star" && (
+                <div className="flex justify-center mb-8">
+                  <div className="w-24 h-24 rounded-full bg-gray-300 flex items-center justify-center">
+                    <Star className="w-12 h-12 text-gray-400" />
+                  </div>
+                </div>
+              )}
+              {config.title && (
+                <h2 className="text-3xl md:text-5xl font-bold mb-6">{config.title}</h2>
+              )}
+              {config.description && (
+                <p className="text-lg md:text-xl mb-8 max-w-3xl mx-auto">{config.description}</p>
+              )}
+              {config.buttonText && (
+                <Link
+                  href={config.buttonUrl || `/shop/${slug}/search`}
+                  className="inline-block px-8 py-4 text-lg font-semibold text-gray-700 bg-transparent border-2 border-gray-400 rounded-md hover:bg-gray-200 hover:border-gray-500 transition-all"
+                >
+                  {config.buttonText}
+                </Link>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
+    )
+  }
+
+  // פונקציה שמציגה סקשן featured-products
+  const renderFeaturedProductsSection = (section: HomePageSection) => {
+    const config = section.config
+    const sectionProducts = config.products && config.products.length > 0
+      ? products.filter(p => config.products!.includes(p.id))
+      : featuredProducts
+
+    return (
+      <section key={section.id} className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3 mb-12">
+            {config.icon === "sparkles" && <Sparkles className="w-8 h-8 text-gray-900" />}
+            {config.icon === "trending-up" && <TrendingUp className="w-8 h-8 text-gray-900" />}
+            {config.icon === "star" && <Star className="w-8 h-8 text-gray-900" />}
+            {config.icon === "heart" && <Heart className="w-8 h-8 text-gray-900" />}
+            {config.icon === "zap" && <Zap className="w-8 h-8 text-gray-900" />}
+            {config.icon === "gift" && <Gift className="w-8 h-8 text-gray-900" />}
+            {config.icon === "award" && <Award className="w-8 h-8 text-gray-900" />}
+            {config.icon === "flame" && <Flame className="w-8 h-8 text-gray-900" />}
+            {config.icon === "shopping-bag" && <ShoppingBag className="w-8 h-8 text-gray-900" />}
+            {config.icon === "package" && <Package className="w-8 h-8 text-gray-900" />}
+            {config.icon === "tag" && <Tag className="w-8 h-8 text-gray-900" />}
+            {config.icon === "bell" && <Bell className="w-8 h-8 text-gray-900" />}
+            <h2 className="text-3xl font-bold text-gray-900">{config.title || "מוצרים מומלצים"}</h2>
+          </div>
+          {config.subtitle && (
+            <p className="text-gray-600 mb-8">{config.subtitle}</p>
+          )}
+          {sectionProducts.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {sectionProducts.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  product={{
+                    ...product,
+                    variants: product.variants?.filter(v => v.price !== null).map(v => ({
+                      ...v,
+                      price: v.price!
+                    }))
+                  }}
+                  slug={slug}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => {
+                const Icon = placeholderIcons[(i - 1) % placeholderIcons.length]
+                return (
+                  <Card key={i} className="h-full overflow-hidden group cursor-default opacity-75 hover:opacity-90 transition-opacity">
+                    <CardContent className="p-0">
+                      <div className="relative w-full aspect-square bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
+                        <Icon className="w-16 h-16 text-gray-300" />
+                      </div>
+                      <div className="p-4 space-y-2">
+                        <div className="h-5 w-3/4 bg-gray-200 rounded animate-pulse" />
+                        <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse" />
+                        <div className="flex items-center justify-between pt-2">
+                          <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+    )
+  }
+
+  // פונקציה שמציגה סקשן about
+  const renderAboutSection = (section: HomePageSection) => {
+    const config = section.config
+    const bgImage = config.backgroundImage || ""
+
+    return (
+      <section key={section.id} className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {bgImage ? (
+              <div className="order-2 lg:order-1">
+                <div className="relative aspect-[4/3] rounded-2xl overflow-hidden">
+                  <img
+                    src={bgImage}
+                    alt={config.title || "אודות"}
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="order-2 lg:order-1">
+                <div className="relative aspect-[4/3] bg-gradient-to-br from-gray-100 to-gray-200 rounded-2xl flex items-center justify-center">
+                  <Heart className="w-24 h-24 text-gray-300" />
+                </div>
+              </div>
+            )}
+            <div className="order-1 lg:order-2 space-y-6">
+              {config.title && (
+                <h2 className="text-3xl md:text-4xl font-bold text-gray-900">{config.title}</h2>
+              )}
+              {config.subtitle && (
+                <p className="text-xl text-gray-600">{config.subtitle}</p>
+              )}
+              {config.description && (
+                <p className="text-gray-600 leading-relaxed whitespace-pre-line">{config.description}</p>
+              )}
+              {config.buttonText && (
+                <Link
+                  href={config.buttonUrl || `/shop/${slug}/search`}
+                  className="inline-block text-lg font-semibold underline hover:no-underline transition-all"
+                  style={{ color: theme.primaryColor }}
+                >
+                  {config.buttonText}
+                </Link>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  // האזנה להודעות מהקסטומייזר
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return
+      
+      if (event.data.type === "scrollToSection") {
+        const sectionId = event.data.sectionId
+        const element = document.querySelector(`[data-section-id="${sectionId}"]`)
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "start" })
+          // הוספת מסגרת סגולה זמנית
+          element.classList.add("ring-4", "ring-purple-500", "ring-opacity-50")
+          setTimeout(() => {
+            element.classList.remove("ring-4", "ring-purple-500", "ring-opacity-50")
+          }, 2000)
+        }
+      }
+    }
+
+    window.addEventListener("message", handleMessage)
+    return () => window.removeEventListener("message", handleMessage)
+  }, [])
+
+  // פונקציה שמציגה סקשן לפי הסוג שלו
+  const renderSection = (section: HomePageSection) => {
+    if (!isSectionVisible(section.id)) return null
+
+    const sectionComponent = (() => {
+      switch (section.type) {
+        case "hero":
+          return renderHeroSection(section)
+        case "new-arrivals":
+          return renderNewArrivalsSection(section)
+        case "categories":
+          return renderCategoriesSection(section)
+        case "hero-cta":
+          return renderHeroCTASection(section)
+        case "featured-products":
+          return renderFeaturedProductsSection(section)
+        case "about":
+          return renderAboutSection(section)
+        default:
+          return null
+      }
+    })()
+
+    if (!sectionComponent) return null
+
+    // עטיפת הסקשן ב-div עם id ו-hover effect
+    const sectionLabel = sectionLabels[section.type] || section.type
+    
+    // בדיקה אם אנחנו בתוך iframe (תצוגה מקדימה)
+    const isInIframe = typeof window !== 'undefined' && window.self !== window.top
+    
+    const handleSectionClick = (e: React.MouseEvent) => {
+      // רק אם אנחנו בתוך iframe, שלח הודעה לקסטומייזר
+      if (isInIframe) {
+        e.preventDefault()
+        e.stopPropagation()
+        // שליחת הודעה להורה (הקסטומייזר)
+        window.parent.postMessage({
+          type: "selectSection",
+          sectionId: section.id
+        }, window.location.origin)
+      }
+    }
+    
+    return (
+      <div
+        key={section.id}
+        data-section-id={section.id}
+        className={cn(
+          "relative group",
+          isInIframe && "cursor-pointer"
+        )}
+        onClick={handleSectionClick}
+      >
+        {/* Tooltip עם שם הסקשן - מופיע ב-hover */}
+        <div className="absolute top-0 right-0 bg-purple-600 text-white text-xs px-2 py-1 rounded z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+          {sectionLabel}
+        </div>
+        {/* מסגרת סגולה ב-hover - בתוך הגבולות */}
+        <div className="absolute inset-0 border-2 border-purple-500 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-40" />
+        {sectionComponent}
+      </div>
+    )
+  }
+
   // אם החנות לא פורסמה, הצג דף תחזוקה
   if (!shop.isPublished) {
     return (
@@ -192,147 +815,15 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
         theme={theme}
       />
 
-      {/* Hero Section - בסגנון Horizon */}
-      {loading ? (
+      {/* Dynamic Home Page Sections */}
+      {loadingSections ? (
         <section className="relative w-full h-[600px] md:h-[700px] overflow-hidden bg-gray-100">
           <div className="w-full h-full bg-gray-200 animate-pulse" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="text-center space-y-4">
-              <div className="h-16 w-64 bg-white/20 rounded mx-auto" />
-              <div className="h-12 w-32 bg-white/20 rounded mx-auto" />
-            </div>
-          </div>
         </section>
-      ) : featuredProducts.length > 0 ? (
-        <section className="relative w-full h-[600px] md:h-[700px] overflow-hidden bg-gray-100">
-          {featuredProducts[0]?.images?.[0] ? (
-            <div className="relative w-full h-full">
-              <img
-                src={featuredProducts[0].images[0]}
-                alt={featuredProducts[0].name}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-black/30" />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center text-white px-4">
-                  <h1 className="text-4xl md:text-6xl font-bold mb-6 tracking-tight">
-                    פריטים חדשים
-                  </h1>
-                  <Link
-                    href={`/shop/${slug}/products/${featuredProducts[0].slug || featuredProducts[0].id}`}
-                    className="inline-block px-8 py-3 bg-white text-gray-900 font-semibold rounded-sm hover:bg-gray-100 transition-colors"
-                  >
-                    קנה עכשיו
-                  </Link>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
-              <div className="text-center">
-                <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
-                  {shop?.name}
-                </h1>
-                {shop?.description && (
-                  <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-                    {shop.description}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-        </section>
-      ) : null}
-
-      {/* Featured Products Section */}
-      {loading ? (
-        <section className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-12">
-              <div className="h-8 w-48 bg-gray-200 rounded animate-pulse" />
-              <div className="h-4 w-24 bg-gray-200 rounded animate-pulse" />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <Card key={i} className="h-full">
-                  <CardContent className="p-0">
-                    <div className="w-full aspect-square bg-gray-200 rounded-t-lg animate-pulse" />
-                    <div className="p-4 space-y-2">
-                      <div className="h-5 w-3/4 bg-gray-200 rounded animate-pulse" />
-                      <div className="h-4 w-1/2 bg-gray-200 rounded animate-pulse" />
-                      <div className="h-6 w-20 bg-gray-200 rounded animate-pulse" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : featuredProducts.length > 0 ? (
-        <section className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between mb-12">
-              <h2 className="text-3xl font-bold text-gray-900">מוצרים מומלצים</h2>
-              <Link
-                href={`/shop/${slug}/search`}
-                className="text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                צפה בכולם →
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {featuredProducts.map((product) => (
-                <ProductCard
-                  key={product.id}
-                  product={product}
-                  slug={slug}
-                />
-              ))}
-            </div>
-          </div>
-        </section>
-      ) : null}
-
-      {/* All Products Section */}
-      {products.length > featuredProducts.length && (
-        <section className="py-16 bg-gray-50">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {loading ? (
-              <ProductGridSkeleton count={8} />
-            ) : (
-              <>
-                <div className="mb-12">
-                  <h2 className="text-3xl font-bold text-gray-900 mb-2">כל המוצרים</h2>
-                  <p className="text-gray-600">נמצאו {products.length} מוצרים</p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                  {products.map((product) => (
-                    <ProductCard
-                      key={product.id}
-                      product={product}
-                      slug={slug}
-                    />
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* Empty State */}
-      {!loading && products.length === 0 && (
-        <section className="py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center">
-              <div className="bg-white rounded-lg p-12 max-w-md mx-auto">
-                <Package className="w-20 h-20 mx-auto mb-6 text-gray-400" />
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">לא נמצאו מוצרים</h3>
-                <p className="text-gray-600">החנות עדיין לא הוסיפה מוצרים</p>
-              </div>
-            </div>
-          </div>
-        </section>
+      ) : (
+        <>
+          {getSortedSections().map((section) => renderSection(section))}
+        </>
       )}
 
       {/* Newsletter Section */}

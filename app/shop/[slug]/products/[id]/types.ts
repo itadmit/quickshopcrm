@@ -29,6 +29,18 @@ export interface Product {
   }>
 }
 
+export interface ProductAddon {
+  id: string
+  name: string
+  type: "SINGLE_CHOICE" | "MULTIPLE_CHOICE" | "TEXT_INPUT" | "CHECKBOX"
+  required: boolean
+  values: Array<{
+    id: string
+    label: string
+    price: number
+  }>
+}
+
 export interface ProductPageClientProps {
   slug: string
   productId: string
@@ -44,5 +56,6 @@ export interface ProductPageClientProps {
   navigation: any
   isAdmin: boolean
   autoOpenCart: boolean
+  productAddons?: any[]
 }
 

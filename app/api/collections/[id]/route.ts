@@ -3,13 +3,15 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { updateAutomaticCollection } from "@/lib/collection-engine"
 
 const updateCollectionSchema = z.object({
   name: z.string().min(2).optional(),
-  slug: z.string().min(2).regex(/^[a-z0-9-]+$/).optional(),
+  slug: z.string().min(2).regex(/^[\u0590-\u05FFa-zA-Z0-9\-]+$/).optional(), // תומך בעברית
   description: z.string().optional(),
   image: z.string().optional(),
   type: z.enum(["MANUAL", "AUTOMATIC"]).optional(),
+  isPublished: z.boolean().optional(),
   rules: z.any().optional(),
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
@@ -135,14 +137,21 @@ export async function PUT(
         description: data.description,
         image: data.image,
         type: data.type,
+        isPublished: data.isPublished,
         rules: data.rules,
         seoTitle: data.seoTitle,
         seoDescription: data.seoDescription,
       },
     })
 
-    // עדכון מוצרים אם סופקו
-    if (data.productIds !== undefined) {
+    // עדכון מוצרים - ידני או אוטומטי
+    const finalType = data.type ?? existingCollection.type
+    
+    if (finalType === "AUTOMATIC" && data.rules) {
+      // קולקציה אוטומטית - עדכון לפי rules
+      await updateAutomaticCollection(existingCollection.id, existingCollection.shopId, data.rules)
+    } else if (data.productIds !== undefined) {
+      // קולקציה ידנית - עדכון מוצרים שנבחרו
       // מחיקת כל הקשרים הקיימים
       await prisma.productCollection.deleteMany({
         where: { collectionId: existingCollection.id },
@@ -162,6 +171,9 @@ export async function PUT(
           )
         )
       }
+    } else if (data.type === "AUTOMATIC" && existingCollection.rules) {
+      // אם משנים ל-AUTOMATIC אבל לא סופקו rules חדשים, עדכן לפי ה-rules הקיימים
+      await updateAutomaticCollection(existingCollection.id, existingCollection.shopId, existingCollection.rules as any)
     }
 
     // יצירת אירוע

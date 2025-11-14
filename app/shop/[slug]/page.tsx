@@ -24,6 +24,15 @@ interface Product {
   comparePrice: number | null
   images: string[]
   availability: string
+  variants?: Array<{
+    id: string
+    name: string
+    price: number | null
+    comparePrice: number | null
+    inventoryQty: number | null
+    sku: string | null
+    options: Record<string, string>
+  }>
 }
 
 interface ThemeSettings {
@@ -152,6 +161,19 @@ export default async function ShopPage({ params }: { params: { slug: string } })
           comparePrice: true,
           images: true,
           availability: true,
+          variants: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              comparePrice: true,
+              inventoryQty: true,
+              sku: true,
+              option1: true,
+              option2: true,
+              option3: true,
+            },
+          },
         },
         orderBy: {
           createdAt: "desc",
@@ -166,6 +188,19 @@ export default async function ShopPage({ params }: { params: { slug: string } })
         comparePrice: p.comparePrice ? Number(p.comparePrice) : null,
         images: p.images as string[],
         availability: p.availability,
+        variants: p.variants.map((v) => ({
+          id: v.id,
+          name: v.name,
+          price: v.price ? Number(v.price) : null,
+          comparePrice: v.comparePrice ? Number(v.comparePrice) : null,
+          inventoryQty: v.inventoryQty,
+          sku: v.sku,
+          options: {
+            ...(v.option1 ? { option1: v.option1 } : {}),
+            ...(v.option2 ? { option2: v.option2 } : {}),
+            ...(v.option3 ? { option3: v.option3 } : {}),
+          },
+        })),
       }))
     }
   } catch (error) {

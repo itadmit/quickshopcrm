@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { ProductBadges } from "@/components/storefront/ProductBadges"
 import {
   Search,
   Package,
@@ -18,6 +19,7 @@ import { StorefrontHeader } from "@/components/storefront/StorefrontHeader"
 import { useTracking } from "@/components/storefront/TrackingPixelProvider"
 import { trackPageView, trackSearch } from "@/lib/tracking-events"
 import { AdminBar } from "@/components/storefront/AdminBar"
+import { getProductPrice, formatProductPrice, formatComparePrice } from "@/lib/product-price"
 
 interface Shop {
   id: string
@@ -342,11 +344,18 @@ export default function SearchPage() {
                             <Package className="w-12 h-12 text-gray-400" />
                           </div>
                         )}
-                        {product.availability === "OUT_OF_STOCK" && (
-                          <div className="absolute top-2 right-2">
-                            <Badge className="bg-red-500">אזל מהמלאי</Badge>
-                          </div>
-                        )}
+                        <ProductBadges
+                          badges={(product as any).badges || []}
+                          isSoldOut={product.availability === "OUT_OF_STOCK"}
+                          comparePrice={(() => {
+                            const priceInfo = getProductPrice(product)
+                            return priceInfo.comparePrice
+                          })()}
+                          price={(() => {
+                            const priceInfo = getProductPrice(product)
+                            return priceInfo.price
+                          })()}
+                        />
                       </div>
                       <div className="p-4">
                         <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2">
@@ -354,11 +363,11 @@ export default function SearchPage() {
                         </h3>
                         <div className="flex items-center gap-2">
                           <span className="text-lg font-bold text-purple-600">
-                            ₪{product.price.toFixed(2)}
+                            {formatProductPrice(product)}
                           </span>
-                          {product.comparePrice && (
+                          {formatComparePrice(product) && (
                             <span className="text-sm text-gray-500 line-through">
-                              ₪{product.comparePrice.toFixed(2)}
+                              {formatComparePrice(product)}
                             </span>
                           )}
                         </div>

@@ -3,14 +3,16 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { updateAutomaticCollection } from "@/lib/collection-engine"
 
 const createCollectionSchema = z.object({
   shopId: z.string(),
   name: z.string().min(2, "שם האוסף חייב להכיל לפחות 2 תווים"),
-  slug: z.string().min(2).regex(/^[a-z0-9-]+$/).optional(),
+  slug: z.string().min(2).regex(/^[\u0590-\u05FFa-zA-Z0-9\-]+$/).optional(), // תומך בעברית
   description: z.string().optional(),
   image: z.string().optional(),
   type: z.enum(["MANUAL", "AUTOMATIC"]).default("MANUAL"),
+  isPublished: z.boolean().default(true),
   rules: z.any().optional(),
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
@@ -19,10 +21,11 @@ const createCollectionSchema = z.object({
 
 const updateCollectionSchema = z.object({
   name: z.string().min(2).optional(),
-  slug: z.string().min(2).regex(/^[a-z0-9-]+$/).optional(),
+  slug: z.string().min(2).regex(/^[\u0590-\u05FFa-zA-Z0-9\-]+$/).optional(), // תומך בעברית
   description: z.string().optional(),
   image: z.string().optional(),
   type: z.enum(["MANUAL", "AUTOMATIC"]).optional(),
+  isPublished: z.boolean().optional(),
   rules: z.any().optional(),
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
@@ -114,13 +117,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Shop not found" }, { status: 404 })
     }
 
-    // יצירת slug אם לא סופק
+    // יצירת slug אם לא סופק (תומך בעברית)
     let slug = data.slug
     if (!slug) {
       slug = data.name
+        .trim()
         .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "")
+        .replace(/\s+/g, "-") // החלפת רווחים במקפים
+        .replace(/[^\u0590-\u05FFa-zA-Z0-9\-]+/g, "") // שמירה על עברית, אנגלית, מספרים ומקפים
+        .replace(/-+/g, "-") // החלפת מקפים מרובים במקף אחד
+        .replace(/^-+|-+$/g, "") // הסרת מקפים מהתחלה וסוף
     }
 
     // בדיקה אם slug כבר קיים בחנות זו
@@ -144,14 +150,19 @@ export async function POST(req: NextRequest) {
         description: data.description,
         image: data.image,
         type: data.type,
+        isPublished: data.isPublished ?? true, // ברירת מחדל - פורסם
         rules: data.rules,
         seoTitle: data.seoTitle,
         seoDescription: data.seoDescription,
       },
     })
 
-    // הוספת מוצרים אם סופקו
-    if (data.productIds && data.productIds.length > 0) {
+    // הוספת מוצרים - ידני או אוטומטי
+    if (data.type === "AUTOMATIC" && data.rules) {
+      // קולקציה אוטומטית - עדכון לפי rules
+      await updateAutomaticCollection(collection.id, data.shopId, data.rules)
+    } else if (data.productIds && data.productIds.length > 0) {
+      // קולקציה ידנית - הוספת מוצרים שנבחרו
       await Promise.all(
         data.productIds.map((productId, index) =>
           prisma.productCollection.create({

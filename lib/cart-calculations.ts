@@ -24,9 +24,17 @@ export interface EnrichedCartItem {
     inventoryQty?: number | null
   } | null
   price: number // מחיר אחרי הנחת לקוח
-  total: number // מחיר כולל כמות
+  total: number // מחיר כולל כמות + addons
   isGift?: boolean // האם זה מוצר מתנה
   giftDiscountId?: string // ID של ההנחה שגרמה למתנה זו
+  addons?: Array<{
+    addonId: string
+    valueId: string | null
+    label: string
+    price: number
+    quantity: number
+  }> // תוספות שנבחרו
+  addonsTotal?: number // סכום התוספות
 }
 
 /**
@@ -722,7 +730,20 @@ async function calculateCouponDiscount(
  */
 export async function calculateCart(
   shopId: string,
-  cartItems: Array<{ productId: string; variantId?: string | null; quantity: number; isGift?: boolean; giftDiscountId?: string }>,
+  cartItems: Array<{ 
+    productId: string; 
+    variantId?: string | null; 
+    quantity: number; 
+    isGift?: boolean; 
+    giftDiscountId?: string;
+    addons?: Array<{
+      addonId: string;
+      valueId: string | null;
+      label: string;
+      price: number;
+      quantity: number;
+    }>;
+  }>,
   couponCode: string | null = null,
   customerId: string | null = null,
   taxRate: number | null = null,
@@ -847,7 +868,15 @@ export async function calculateCart(
       customerDiscountTotal += discount * item.quantity
     }
 
-    const itemTotal = itemPrice * item.quantity
+    // חישוב מחיר addons
+    let addonsTotal = 0
+    if (item.addons && item.addons.length > 0) {
+      for (const addon of item.addons) {
+        addonsTotal += addon.price * addon.quantity
+      }
+    }
+
+    const itemTotal = (itemPrice * item.quantity) + addonsTotal
     
     // אם זה לא מתנה, נוסיף לסכום הביניים
     if (!item.isGift) {
@@ -879,6 +908,8 @@ export async function calculateCart(
       total: itemTotal,
       isGift: item.isGift,
       giftDiscountId: item.giftDiscountId,
+      addons: item.addons,
+      addonsTotal,
     })
   }
 

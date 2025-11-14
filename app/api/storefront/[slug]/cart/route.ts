@@ -15,6 +15,13 @@ const addToCartSchema = z.object({
   quantity: z.number().int().min(1),
   isGift: z.boolean().optional(),
   giftDiscountId: z.string().optional(),
+  addons: z.array(z.object({
+    addonId: z.string(),
+    valueId: z.string().nullable().optional(),
+    label: z.string(),
+    price: z.number(),
+    quantity: z.number().int().min(1).default(1),
+  })).optional(),
 })
 
 // הפונקציה findCart הוסרה - משתמשים ב-findCart מ-lib/cart-server.ts
@@ -280,10 +287,29 @@ export async function POST(
     console.log('📋 Current items in cart:', items.length)
     console.log('🔍 Current items details:', JSON.stringify(items, null, 2))
     
+    // מציאת פריט קיים - עכשיו גם לוקחים בחשבון addons
     const existingItemIndex = items.findIndex(
-      (item) =>
-        item.productId === data.productId &&
-        (item.variantId === data.variantId || (!item.variantId && !data.variantId))
+      (item) => {
+        const sameProduct = item.productId === data.productId &&
+          (item.variantId === data.variantId || (!item.variantId && !data.variantId))
+        
+        // אם אין addons בשני המקרים - זה אותו פריט
+        if (!item.addons && !data.addons) return sameProduct
+        
+        // אם יש addons רק באחד - זה לא אותו פריט
+        if (!item.addons || !data.addons) return false
+        
+        // השווה addons - אם הם זהים, זה אותו פריט
+        // משתמשים באותה פונקציית השוואה כמו ב-DELETE
+        const itemAddonsStr = JSON.stringify(item.addons.sort((a: any, b: any) => 
+          `${a.addonId}-${a.valueId || ''}`.localeCompare(`${b.addonId}-${b.valueId || ''}`)
+        ))
+        const dataAddonsStr = JSON.stringify(data.addons?.sort((a: any, b: any) => 
+          `${a.addonId}-${a.valueId || ''}`.localeCompare(`${b.addonId}-${b.valueId || ''}`)
+        ))
+        
+        return sameProduct && itemAddonsStr === dataAddonsStr
+      }
     )
 
     console.log('🔎 Looking for existing item:', {
@@ -312,12 +338,14 @@ export async function POST(
         productId: data.productId,
         variantId: data.variantId || null,
         quantity: data.quantity,
+        addons: data.addons,
       })
       items.push({
         productId: data.productId,
         variantId: data.variantId || null,
         quantity: data.quantity,
         ...(data.isGift ? { isGift: true, giftDiscountId: data.giftDiscountId } : {}),
+        ...(data.addons && data.addons.length > 0 ? { addons: data.addons } : {}),
       })
     }
     
@@ -542,11 +570,53 @@ export async function PUT(
 
     // עדכון כמות פריט
     if (body.productId && body.quantity !== undefined) {
-      const itemIndex = items.findIndex(
-        (item) =>
-          item.productId === body.productId &&
+      // Parse addons if provided
+      let addonsToMatch: any[] | null = null
+      if (body.addons) {
+        addonsToMatch = Array.isArray(body.addons) ? body.addons : null
+      }
+      
+      const itemIndex = items.findIndex((item) => {
+        const sameProduct = item.productId === body.productId &&
           (item.variantId === body.variantId || (!item.variantId && !body.variantId))
-      )
+        
+        if (!sameProduct) return false
+        
+        // השוואת addons
+        const itemAddons = item.addons || []
+        const hasItemAddons = itemAddons.length > 0
+        const hasQueryAddons = addonsToMatch && addonsToMatch.length > 0
+        
+        // אם לא צוינו addons בפרמטרים, נעדכן רק פריטים בלי addons
+        if (!hasQueryAddons) {
+          return !hasItemAddons
+        }
+        
+        // אם צוינו addons בפרמטרים, נעדכן רק פריטים עם אותם addons
+        if (!hasItemAddons) {
+          return false
+        }
+        
+        // השוואת addons - אם הם זהים, זה אותו פריט
+        if (!addonsToMatch || itemAddons.length !== addonsToMatch.length) {
+          return false
+        }
+        
+        // נורמליזציה והשוואה
+        const normalizeAddon = (addon: any) => ({
+          addonId: addon.addonId,
+          valueId: addon.valueId || null,
+        })
+        
+        const normalizedItemAddons = itemAddons.map(normalizeAddon).sort((a: any, b: any) => 
+          `${a.addonId}-${a.valueId || ''}`.localeCompare(`${b.addonId}-${b.valueId || ''}`)
+        )
+        const normalizedQueryAddons = addonsToMatch.map(normalizeAddon).sort((a: any, b: any) => 
+          `${a.addonId}-${a.valueId || ''}`.localeCompare(`${b.addonId}-${b.valueId || ''}`)
+        )
+        
+        return JSON.stringify(normalizedItemAddons) === JSON.stringify(normalizedQueryAddons)
+      })
 
       if (itemIndex >= 0) {
         // מונע עדכון או מחיקה של מוצרי מתנה
@@ -836,12 +906,23 @@ export async function DELETE(
     const { searchParams } = new URL(req.url)
     const productId = searchParams.get("productId")
     const variantId = searchParams.get("variantId")
+    const addonsParam = searchParams.get("addons") // JSON string of addons
 
     if (!productId) {
       return NextResponse.json(
         { error: "productId is required" },
         { status: 400 }
       )
+    }
+
+    // Parse addons if provided
+    let addonsToMatch: any[] | null = null
+    if (addonsParam) {
+      try {
+        addonsToMatch = JSON.parse(addonsParam)
+      } catch (e) {
+        console.error("Error parsing addons:", e)
+      }
     }
 
     const cookieStore = await cookies()
@@ -864,7 +945,13 @@ export async function DELETE(
       cartItems: cartItems.length,
       productIdToDelete: productId,
       variantIdToDelete: variantId,
-      items: JSON.stringify(cartItems)
+      addonsToMatch: addonsToMatch,
+      items: cartItems.map((item: any) => ({
+        productId: item.productId,
+        variantId: item.variantId,
+        addons: item.addons,
+        hasAddons: (item.addons || []).length > 0
+      }))
     })
 
     const items = cartItems.filter((item) => {
@@ -877,16 +964,74 @@ export async function DELETE(
       const itemVariantId = item.variantId === "null" ? null : item.variantId
       const queryVariantId = variantId === "null" ? null : variantId
       
-      const shouldRemove = (
+      // בדיקת productId ו-variantId
+      const sameProductAndVariant = (
         item.productId === productId && 
         (itemVariantId === queryVariantId || (!itemVariantId && !queryVariantId))
       )
       
-      console.log('🔍 Item check:', {
+      if (!sameProductAndVariant) {
+        return true // לא אותו מוצר/וריאציה - נשאיר
+      }
+      
+      // השוואת addons
+      const itemAddons = item.addons || []
+      const hasItemAddons = itemAddons.length > 0
+      const hasQueryAddons = addonsToMatch && addonsToMatch.length > 0
+      
+      // אם לא צוינו addons בפרמטרים, נמחק רק פריטים בלי addons
+      if (!hasQueryAddons) {
+        // אם הפריט יש לו addons, נשאיר אותו
+        if (hasItemAddons) {
+          return true // נשאיר - יש addons בפריט אבל לא בפרמטרים
+        }
+        // אם הפריט אין לו addons, נמחק אותו
+        return false // נמחק
+      }
+      
+      // אם צוינו addons בפרמטרים, נמחק רק אם הפריט יש לו את אותם addons
+      if (!hasItemAddons || !addonsToMatch) {
+        return true // נשאיר - אין addons בפריט אבל יש בפרמטרים, או addonsToMatch הוא null
+      }
+      
+      // השוואת addons - אם הם זהים, נמחק
+      if (itemAddons.length !== addonsToMatch.length) {
+        return true // מספר שונה של addons - נשאיר
+      }
+      
+      // השווה addons - אם הם זהים, נמחק
+      // נורמליזציה של addons להשוואה - מוודאים שכל ה-properties קיימים
+      const normalizeAddon = (addon: any) => ({
+        addonId: addon.addonId,
+        valueId: addon.valueId || null,
+        label: addon.label || '',
+        price: addon.price || 0,
+        quantity: addon.quantity || 1
+      })
+      
+      const normalizedItemAddons = itemAddons.map(normalizeAddon).sort((a: any, b: any) => 
+        `${a.addonId}-${a.valueId || ''}`.localeCompare(`${b.addonId}-${b.valueId || ''}`)
+      )
+      const normalizedQueryAddons = addonsToMatch.map(normalizeAddon).sort((a: any, b: any) => 
+        `${a.addonId}-${a.valueId || ''}`.localeCompare(`${b.addonId}-${b.valueId || ''}`)
+      )
+      
+      const itemAddonsStr = JSON.stringify(normalizedItemAddons)
+      const queryAddonsStr = JSON.stringify(normalizedQueryAddons)
+      
+      const shouldRemove = itemAddonsStr === queryAddonsStr
+      
+      console.log('🔍 Item check with addons:', {
         productId: item.productId,
         variantId: item.variantId,
-        itemVariantId,
-        queryVariantId,
+        hasItemAddons,
+        hasQueryAddons,
+        itemAddonsRaw: itemAddons,
+        queryAddonsRaw: addonsToMatch,
+        itemAddonsNormalized: normalizedItemAddons,
+        queryAddonsNormalized: normalizedQueryAddons,
+        itemAddonsStr,
+        queryAddonsStr,
         isGift: item.isGift,
         shouldRemove,
         willKeep: !shouldRemove

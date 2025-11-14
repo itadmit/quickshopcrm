@@ -7,7 +7,7 @@ import { z } from "zod"
 const createProductSchema = z.object({
   shopId: z.string(),
   name: z.string().min(2, "שם המוצר חייב להכיל לפחות 2 תווים"),
-  slug: z.string().min(2).regex(/^[a-z0-9-]+$/).optional(),
+  slug: z.string().min(2).regex(/^[\u0590-\u05FFa-z0-9\-]+$/, "סלאג יכול להכיל רק אותיות עבריות/אנגליות, מספרים ומקפים").optional(),
   description: z.string().optional(),
   sku: z.string().optional(),
   price: z.number().min(0, "מחיר חייב להיות חיובי"),
@@ -17,9 +17,14 @@ const createProductSchema = z.object({
   inventoryEnabled: z.boolean().default(true),
   inventoryQty: z.number().int().default(0),
   lowStockAlert: z.number().int().optional(),
+  trackInventory: z.boolean().default(true),
+  sellWhenSoldOut: z.boolean().default(false),
+  priceByWeight: z.boolean().default(false),
   weight: z.number().optional(),
   dimensions: z.any().optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).default("DRAFT"),
+  scheduledPublishDate: z.union([z.string().datetime(), z.null(), z.literal("")]).optional(),
+  notifyOnPublish: z.boolean().default(false),
   images: z.array(z.string()).default([]),
   video: z.string().optional(),
   minQuantity: z.number().int().optional(),
@@ -29,6 +34,8 @@ const createProductSchema = z.object({
   seoTitle: z.string().optional(),
   seoDescription: z.string().optional(),
   customFields: z.any().optional(),
+  badges: z.any().optional(),
+  addonIds: z.array(z.string()).optional(),
 })
 
 // GET - קבלת כל המוצרים
@@ -44,6 +51,7 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status")
     const search = searchParams.get("search")
     const ids = searchParams.get("ids")
+    const collectionId = searchParams.get("collectionId")
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "20")
 
@@ -65,6 +73,14 @@ export async function GET(req: NextRequest) {
     if (ids) {
       const idsArray = ids.split(",").filter(Boolean)
       where.id = { in: idsArray }
+    }
+
+    if (collectionId) {
+      where.collections = {
+        some: {
+          collectionId: collectionId
+        }
+      }
     }
 
     if (search) {
@@ -97,6 +113,33 @@ export async function GET(req: NextRequest) {
               name: true,
               slug: true,
               domain: true,
+            },
+          },
+          variants: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+            },
+          },
+          options: {
+            select: {
+              id: true,
+              name: true,
+              values: true,
+            },
+            orderBy: {
+              position: 'asc',
+            },
+          },
+          categories: {
+            select: {
+              categoryId: true,
+              category: {
+                select: {
+                  name: true,
+                },
+              },
             },
           },
         },
@@ -157,13 +200,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Shop not found" }, { status: 404 })
     }
 
-    // יצירת slug אם לא סופק
+    // יצירת slug אם לא סופק (supports Hebrew and English)
     let slug = data.slug
     if (!slug) {
       slug = data.name
         .toLowerCase()
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "")
+        .trim()
+        .replace(/\s+/g, "-") // Replace spaces with hyphens
+        .replace(/[^\u0590-\u05FFa-z0-9\-]+/g, "") // Keep Hebrew, English, numbers, and hyphens
+        .replace(/-+/g, "-") // Replace multiple hyphens with single hyphen
+        .replace(/^-+|-+$/g, "") // Remove leading/trailing hyphens
     }
 
     // בדיקה אם slug כבר קיים בחנות זו
@@ -188,6 +234,10 @@ export async function POST(req: NextRequest) {
       productData.availableDate = new Date(productData.availableDate)
     }
 
+    // הסר addonIds מה-productData (הוא לא חלק מהמודל של Product)
+    const addonIds = productData.addonIds
+    delete productData.addonIds
+
     // יצירת מוצר
     const product = await prisma.product.create({
       data: productData,
@@ -200,6 +250,35 @@ export async function POST(req: NextRequest) {
         },
       },
     })
+
+    // עדכון ProductAddons - הוסף את productId ל-productIds של כל addon
+    if (addonIds && Array.isArray(addonIds) && addonIds.length > 0) {
+      try {
+        await Promise.all(
+          addonIds.map(async (addonId: string) => {
+            const addon = await prisma.productAddon.findUnique({
+              where: { id: addonId },
+              select: { productIds: true },
+            })
+
+            if (addon) {
+              // הוסף את productId אם הוא עדיין לא קיים
+              const updatedProductIds = addon.productIds.includes(product.id)
+                ? addon.productIds
+                : [...addon.productIds, product.id]
+
+              await prisma.productAddon.update({
+                where: { id: addonId },
+                data: { productIds: updatedProductIds },
+              })
+            }
+          })
+        )
+      } catch (error) {
+        console.error("Error updating product addons:", error)
+        // לא נכשיל את כל הבקשה בגלל שגיאה ב-addons
+      }
+    }
 
     // יצירת אירוע
     await prisma.shopEvent.create({

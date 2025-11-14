@@ -31,6 +31,13 @@ interface CartItem {
   total: number
   isGift?: boolean
   giftDiscountId?: string
+  addons?: Array<{
+    addonId: string
+    valueId: string | null
+    label: string
+    price: number
+    quantity: number
+  }>
   product: {
     id: string
     name: string
@@ -130,13 +137,13 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
     debouncedUpdateQuantity(productId, variantId, quantity)
   }
 
-  const handleRemoveItem = async (productId: string, variantId: string | null) => {
-    console.log('🗑️ handleRemoveItem called:', { productId, variantId })
+  const handleRemoveItem = async (productId: string, variantId: string | null, addons?: any[]) => {
+    console.log('🗑️ handleRemoveItem called:', { productId, variantId, addons })
     setUpdatingItem(`${productId}-${variantId}`)
     
     try {
       console.log('🚀 Calling removeItemMutation...')
-      const result = await removeItemMutation({ productId, variantId })
+      const result = await removeItemMutation({ productId, variantId, addons })
       console.log('✅ Remove successful:', result)
       
       // המחיקה הצליחה, עכשיו נעדכן את המונה
@@ -269,6 +276,16 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                             {item.variant && (
                               <p className="text-xs text-gray-500 mb-1">{item.variant.name}</p>
                             )}
+                            {(item as any).addons && (item as any).addons.length > 0 && (
+                              <div className="text-xs text-gray-500 mb-1">
+                                {(item as any).addons.map((addon: any, idx: number) => (
+                                  <div key={idx}>
+                                    {addon.label}
+                                    {addon.price > 0 && ` (+₪${addon.price.toFixed(2)})`}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                             <p className="text-xs text-gray-600">
                               ₪{item.price.toFixed(2)}
                             </p>
@@ -279,7 +296,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleRemoveItem(item.productId, item.variantId)}
+                              onClick={() => handleRemoveItem(item.productId, item.variantId, (item as any).addons)}
                               disabled={updatingItem === `${item.productId}-${item.variantId}` || isUpdatingItem}
                               className="p-1 h-7 w-7 text-gray-400 hover:text-red-600 hover:bg-red-50 flex-shrink-0"
                             >

@@ -25,6 +25,14 @@ interface AddToCartParams {
       inventoryQty?: number | null
     }>
   }
+  // תוספות שנבחרו
+  addons?: Array<{
+    addonId: string
+    valueId: string | null
+    label: string
+    price: number
+    quantity: number
+  }>
 }
 
 /**
@@ -58,7 +66,8 @@ export function useAddToCart({ slug, customerId, onSuccess, autoOpenCart = true 
     variantId = null,
     quantity = 1,
     productName = 'המוצר',
-    productData
+    productData,
+    addons
   }: AddToCartParams): Promise<boolean> => {
     // בדיקת מלאי אם יש נתוני מוצר
     if (productData) {
@@ -100,6 +109,7 @@ export function useAddToCart({ slug, customerId, onSuccess, autoOpenCart = true 
         productId,
         variantId: variantId || undefined, // שולח undefined במקום null
         quantity,
+        addons,
       })
 
       // הצגת טוסט רק אם העגלה לא נפתחת אוטומטית

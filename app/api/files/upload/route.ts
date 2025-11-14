@@ -89,7 +89,7 @@ export async function POST(req: NextRequest) {
     
     // המרה ל-WebP אם זו תמונה
     const { buffer: optimizedBuffer, extension } = await convertToWebP(buffer, file.type || '')
-    buffer = optimizedBuffer
+    buffer = Buffer.from(optimizedBuffer)
     
     // החלפת סיומת הקובץ ל-WebP אם הומר
     const originalName = file.name.replace(/\.[^/.]+$/, '') // הסרת הסיומת המקורית

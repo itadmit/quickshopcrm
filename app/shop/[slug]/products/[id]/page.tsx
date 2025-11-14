@@ -10,6 +10,9 @@ export default async function ProductPage({ params }: { params: { slug: string; 
   const { slug, id: productId } = params
   const session = await getServerSession(authOptions)
 
+  // Decode the productId in case it contains encoded characters (e.g., Hebrew)
+  const decodedProductId = decodeURIComponent(productId)
+
   const [shop, product, navigation, isAdmin] = await Promise.all([
     prisma.shop.findFirst({
       where: {
@@ -20,7 +23,7 @@ export default async function ProductPage({ params }: { params: { slug: string; 
 
     prisma.product.findFirst({
       where: {
-        OR: [{ id: productId }, { slug: productId }],
+        OR: [{ id: decodedProductId }, { slug: decodedProductId }],
         shop: {
           slug,
           ...(session?.user?.companyId ? { companyId: session.user.companyId } : { isPublished: true }),
@@ -32,6 +35,16 @@ export default async function ProductPage({ params }: { params: { slug: string; 
         collections: {
           include: {
             collection: true,
+          },
+        },
+        customFieldValues: {
+          include: {
+            definition: true,
+          },
+          where: {
+            definition: {
+              showInStorefront: true,
+            },
           },
         },
       },
@@ -67,7 +80,10 @@ export default async function ProductPage({ params }: { params: { slug: string; 
     notFound()
   }
 
-  const [reviewsData, relatedProducts] = await Promise.all([
+  // Get product category IDs
+  const productCategoryIds = product.collections?.map((pc: any) => pc.collection?.categoryId).filter(Boolean) || []
+
+  const [reviewsData, relatedProducts, productAddons] = await Promise.all([
     prisma.review.findMany({
       where: {
         productId: product.id,
@@ -94,6 +110,24 @@ export default async function ProductPage({ params }: { params: { slug: string; 
         createdAt: 'desc',
       },
     }),
+
+    // טען addons רלוונטיים
+    prisma.productAddon.findMany({
+      where: {
+        shopId: shop.id,
+        OR: [
+          { scope: 'GLOBAL' },
+          { scope: 'PRODUCT', productIds: { has: product.id } },
+          { scope: 'CATEGORY', categoryIds: { hasSome: productCategoryIds } },
+        ],
+      },
+      include: {
+        values: {
+          orderBy: { position: 'asc' },
+        },
+      },
+      orderBy: { position: 'asc' },
+    }),
   ])
 
   const averageRating = reviewsData.length > 0
@@ -109,7 +143,7 @@ export default async function ProductPage({ params }: { params: { slug: string; 
   return (
     <ProductPageClient
       slug={slug}
-      productId={productId}
+      productId={decodedProductId}
       shop={shop}
       product={product as any}
       reviews={reviewsData}
@@ -122,6 +156,7 @@ export default async function ProductPage({ params }: { params: { slug: string; 
       navigation={navigation}
       isAdmin={isAdmin}
       autoOpenCart={autoOpenCart}
+      productAddons={productAddons as any}
     />
   )
 }

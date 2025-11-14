@@ -39,6 +39,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Label } from "@/components/ui/label"
+import { HomePageCustomizer, HomePageSection } from "@/components/customize/HomePageCustomizer"
 
 interface Product {
   id: string
@@ -89,6 +90,8 @@ export default function CustomizePage() {
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
+  const [homePageSections, setHomePageSections] = useState<any[]>([])
+  const [selectedHomeSection, setSelectedHomeSection] = useState<string | null>(null)
 
   // תפריט Customizer
   const customizerSections: CustomizerSection[] = [
@@ -97,6 +100,11 @@ export default function CustomizePage() {
       title: "פריסות",
       icon: Layout,
       children: [
+        {
+          id: "home-layout",
+          title: "דף בית",
+          icon: Home,
+        },
         {
           id: "product-layout",
           title: "דף מוצר",
@@ -140,10 +148,26 @@ export default function CustomizePage() {
       fetchGalleryLayout()
       fetchCategoryLayout()
       fetchProductPageLayout()
+      fetchHomePageLayout()
     } else {
       setLoading(false)
     }
   }, [selectedShop?.slug])
+
+  const fetchHomePageLayout = async () => {
+    if (!selectedShop?.slug) return
+    try {
+      const response = await fetch(`/api/storefront/${selectedShop.slug}/home-page-layout`)
+      if (response.ok) {
+        const data = await response.json()
+        if (data.sections && Array.isArray(data.sections)) {
+          setHomePageSections(data.sections)
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching home page layout:", error)
+    }
+  }
 
   const fetchProductPageLayout = async () => {
     if (!selectedShop?.slug) return
@@ -184,7 +208,10 @@ export default function CustomizePage() {
 
   // בחירה אוטומטית של מוצר/קטגוריה וכניסה להגדרות כשמשנים סוג דף
   useEffect(() => {
-    if (pageType === "product") {
+    if (pageType === "home") {
+      // פתיחת הגדרות דף בית אוטומטית
+      setCurrentSection("home-layout")
+    } else if (pageType === "product") {
       // פתיחת הגדרות דף מוצר אוטומטית
       setCurrentSection("product-layout")
       
@@ -205,9 +232,6 @@ export default function CustomizePage() {
       if (categories.length > 0 && !selectedCategory) {
         setSelectedCategory(categories[0].id)
       }
-    } else if (pageType === "home") {
-      // חזרה לתצוגה הראשית לדף בית
-      setCurrentSection(null)
     }
   }, [pageType, products, categories, selectedProduct, selectedCategory])
 
@@ -344,7 +368,10 @@ export default function CustomizePage() {
     const params = new URLSearchParams()
     
     // הוספת הגדרות מקדימות ל-query params - משתמשים ב-pending אם יש, אחרת בערכים השמורים
-    if (pageType === "product") {
+    if (pageType === "home") {
+      // במצב customize של דף בית
+      params.set("customize", "true")
+    } else if (pageType === "product") {
       const layoutToUse = pendingGalleryLayout || galleryLayout
       params.set("preview_layout", layoutToUse)
       // הוספת edit_layout=true כשאנחנו ב-product-layout section
@@ -492,6 +519,30 @@ export default function CustomizePage() {
 
   const renderSectionContent = (sectionId: string) => {
     switch (sectionId) {
+      case "home-layout":
+        return (
+          <HomePageCustomizer
+            shopSlug={selectedShop?.slug || ""}
+            shopId={selectedShop?.id}
+            initialSections={homePageSections}
+            onSave={async (sections) => {
+              if (!selectedShop?.slug) return
+              
+              const response = await fetch(`/api/storefront/${selectedShop.slug}/home-page-layout`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ sections }),
+              })
+              
+              if (response.ok) {
+                setHomePageSections(sections)
+                // רענון התצוגה המקדימה
+                setPreviewRefreshKey(prev => prev + 1)
+              }
+            }}
+          />
+        )
+      
       case "product-layout":
         return (
           <div className="space-y-4">
@@ -898,6 +949,9 @@ export default function CustomizePage() {
             <span className="font-semibold text-gray-900">התאמה אישית</span>
             <Badge variant="outline" className="text-xs">
               {selectedShop.name}
+            </Badge>
+            <Badge variant="secondary" className="text-xs">
+              תבנית: New York
             </Badge>
           </div>
         </div>

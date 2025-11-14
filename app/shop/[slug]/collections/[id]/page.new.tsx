@@ -46,3 +46,4 @@ export default async function CollectionPage({ params }: { params: { slug: strin
   return <CollectionClient collection={collection} products={products} slug={slug} />
 }
 
+

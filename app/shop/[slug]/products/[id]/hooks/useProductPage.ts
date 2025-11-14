@@ -21,6 +21,13 @@ interface UseProductPageProps {
   initialGalleryLayout: GalleryLayout
   initialProductPageLayout: { elements: ProductPageElement[] } | null
   autoOpenCart: boolean
+  selectedAddons?: Array<{
+    addonId: string
+    valueId: string | null
+    label: string
+    price: number
+    quantity: number
+  }>
 }
 
 export function useProductPage({
@@ -30,6 +37,7 @@ export function useProductPage({
   initialGalleryLayout,
   initialProductPageLayout,
   autoOpenCart: initialAutoOpenCart,
+  selectedAddons = [],
 }: UseProductPageProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -431,16 +439,22 @@ export function useProductPage({
           id: v.id,
           inventoryQty: v.inventoryQty
         }))
-      }
+      },
+      addons: selectedAddons.length > 0 ? selectedAddons : undefined,
     })
 
     if (success) {
+      // חישוב סכום התוספות
+      const addonsTotal = selectedAddons.reduce((sum, addon) => {
+        return sum + (addon.price || 0) * (addon.quantity || 1)
+      }, 0)
+      
       trackAddToCart(trackEvent, {
         id: product.id,
         name: product.name,
         price: currentPrice,
         sku: product.sku || null,
-      }, quantity, selectedVariant || undefined)
+      }, quantity, selectedVariant || undefined, addonsTotal)
       
       if (autoOpenCart && cartOpenCallback) {
         setTimeout(() => {

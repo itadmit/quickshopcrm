@@ -8,6 +8,7 @@ import { useState, useEffect } from "react"
 import { AddToCartButton } from "./AddToCartButton"
 import { useRouter } from "next/navigation"
 import { cn } from "@/lib/utils"
+import { getProductPrice, formatProductPrice, formatComparePrice } from "@/lib/product-price"
 
 interface ProductVariant {
   id: string
@@ -63,8 +64,9 @@ export function ProductCard({
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isClicking, setIsClicking] = useState(false)
   
-  const discountPercentage = product.comparePrice
-    ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
+  const priceInfo = getProductPrice(product)
+  const discountPercentage = priceInfo.comparePrice
+    ? Math.round(((priceInfo.comparePrice - priceInfo.price) / priceInfo.comparePrice) * 100)
     : 0
   
   // Get aspect ratio class
@@ -269,11 +271,11 @@ export function ProductCard({
               </h3>
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-lg font-bold text-gray-900">
-                  ₪{product.price.toFixed(2)}
+                  {formatProductPrice(product)}
                 </span>
-                {product.comparePrice && (
+                {formatComparePrice(product) && (
                   <span className="text-sm text-gray-500 line-through">
-                    ₪{product.comparePrice.toFixed(2)}
+                    {formatComparePrice(product)}
                   </span>
                 )}
               </div>

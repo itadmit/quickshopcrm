@@ -106,7 +106,8 @@ export async function POST(req: NextRequest) {
 
           // יצירת options
           let position = 0
-          for (const [optionName, valuesSet] of optionTypesMap.entries()) {
+          const optionsArray = Array.from(optionTypesMap.entries())
+          for (const [optionName, valuesSet] of optionsArray) {
             const values = Array.from(valuesSet).map(value => ({
               id: value,
               label: value,
@@ -158,4 +159,5 @@ export async function POST(req: NextRequest) {
     )
   }
 }
+
 

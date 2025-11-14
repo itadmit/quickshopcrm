@@ -71,6 +71,22 @@ interface Product {
     slug: string
     domain?: string | null
   }
+  variants?: Array<{
+    id: string
+    name: string
+    price: number | null
+  }>
+  options?: Array<{
+    id: string
+    name: string
+    values: any
+  }>
+  categories?: Array<{
+    categoryId: string
+    category: {
+      name: string
+    }
+  }>
 }
 
 interface Pagination {
@@ -96,11 +112,15 @@ export default function ProductsPage() {
   // Filters
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [categoryFilter, setCategoryFilter] = useState<string>("all")
+  const [collectionFilter, setCollectionFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("createdAt")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [viewMode, setViewMode] = useState<"table" | "grid">("table")
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
+  const [isSearching, setIsSearching] = useState(false)
+  
+  // Collections
+  const [collections, setCollections] = useState<Array<{ id: string; name: string }>>([])
 
   // Import dialog state
   const [importDialogOpen, setImportDialogOpen] = useState(false)
@@ -117,15 +137,55 @@ export default function ProductsPage() {
   useEffect(() => {
     // טעינת הנתונים מיד - לא מחכים ל-selectedShop
     fetchProducts()
-  }, [pagination.page, statusFilter, categoryFilter, sortBy, sortOrder, search, selectedShop?.id])
+  }, [pagination.page, statusFilter, collectionFilter, sortBy, sortOrder, selectedShop?.id])
+
+  // Fetch collections
+  useEffect(() => {
+    if (selectedShop?.id) {
+      fetchCollections()
+    }
+  }, [selectedShop?.id])
+
+  // Debounced search effect
+  useEffect(() => {
+    if (search === "" ) {
+      // אם החיפוש ריק, טען מיד
+      setIsSearching(false)
+      fetchProducts()
+      return
+    }
+    setIsSearching(true)
+    const timer = setTimeout(() => {
+      fetchProducts()
+    }, 600) // 600ms delay for better Hebrew typing experience
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search])
+
+  const fetchCollections = async () => {
+    if (!selectedShop?.id) return
+    
+    try {
+      const collectionsRes = await fetch(`/api/collections?shopId=${selectedShop.id}`)
+
+      if (collectionsRes.ok) {
+        const collectionsData = await collectionsRes.json()
+        setCollections(collectionsData)
+      }
+    } catch (error) {
+      console.error("Error fetching collections:", error)
+    }
+  }
 
   const fetchProducts = async () => {
     setLoading(true)
+    setIsSearching(false)
     try {
       const params = new URLSearchParams({
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
         ...(statusFilter !== "all" && { status: statusFilter }),
+        ...(collectionFilter !== "all" && { collectionId: collectionFilter }),
         ...(search && { search }),
         ...(selectedShop?.id && { shopId: selectedShop.id }),
       })
@@ -443,14 +503,34 @@ export default function ProductsPage() {
                   setSearch(e.target.value)
                   setPagination((prev) => ({ ...prev, page: 1 }))
                 }}
-                className="pr-10"
+                className="pr-10 pl-10"
               />
+              {isSearching && (
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                  <Loader2 className="w-4 h-4 text-[#6f65e2] animate-spin" />
+                </div>
+              )}
             </div>
+
+            {/* Collection Filter */}
+            <Select value={collectionFilter} onValueChange={setCollectionFilter}>
+              <SelectTrigger className="w-[200px] flex-shrink-0">
+                <SelectValue placeholder="כל הקולקציות" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">כל הקולקציות</SelectItem>
+                {collections.map((collection) => (
+                  <SelectItem key={collection.id} value={collection.id}>
+                    {collection.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
             {/* Status Filter */}
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[160px] flex-shrink-0">
-                <SelectValue placeholder="סטטוס" />
+                <SelectValue placeholder="תאריך (חדש לישן)" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">כל המוצרים</SelectItem>
@@ -552,11 +632,10 @@ export default function ProductsPage() {
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">תמונה</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">שם מוצר</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">SKU</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">מחיר</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">מלאי</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">סטטוס</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">עודכן</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">מקט</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">אפשרויות</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">קטגוריות</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">פעולות</th>
                   </tr>
                 </thead>
@@ -605,27 +684,129 @@ export default function ProductsPage() {
                           <div className="text-sm text-gray-500">{product.shop.name}</div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {product.sku || "-"}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm font-medium text-gray-900">
-                          ₪{product.price.toFixed(2)}
-                        </div>
-                        {product.comparePrice && (
-                          <div className="text-sm text-gray-500 line-through">
-                            ₪{product.comparePrice.toFixed(2)}
-                          </div>
+                        {product.variants && product.variants.length > 0 ? (
+                          (() => {
+                            const prices = product.variants
+                              .map(v => v.price)
+                              .filter((p): p is number => p !== null && p !== undefined)
+                            
+                            if (prices.length === 0) {
+                              return (
+                                <div className="text-sm font-medium text-gray-900">
+                                  ₪{product.price.toFixed(2)}
+                                </div>
+                              )
+                            }
+                            
+                            const minPrice = Math.min(...prices)
+                            const maxPrice = Math.max(...prices)
+                            
+                            return (
+                              <div className="text-sm font-medium text-gray-900">
+                                {minPrice === maxPrice 
+                                  ? `₪${minPrice.toFixed(2)}`
+                                  : `₪${minPrice.toFixed(2)} - ₪${maxPrice.toFixed(2)}`
+                                }
+                              </div>
+                            )
+                          })()
+                        ) : (
+                          <>
+                            <div className="text-sm font-medium text-gray-900">
+                              ₪{product.price.toFixed(2)}
+                            </div>
+                            {product.comparePrice && (
+                              <div className="text-sm text-gray-500 line-through">
+                                ₪{product.comparePrice.toFixed(2)}
+                              </div>
+                            )}
+                          </>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {product.inventoryQty}
+                        {product.sku || "-"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {product.options && product.options.length > 0 ? (
+                          <div className="flex flex-col gap-1">
+                            {product.options.map((option: any) => {
+                              let values = '';
+                              
+                              // בדיקה אם values הוא מערך
+                              if (Array.isArray(option.values)) {
+                                values = option.values
+                                  .map((v: any) => {
+                                    if (typeof v === 'string') {
+                                      return v;
+                                    } else if (typeof v === 'object' && v !== null) {
+                                      // הפורמט הרשמי: { id, label, metadata? }
+                                      return v.label || v.value || v.name || v.id || '';
+                                    }
+                                    return '';
+                                  })
+                                  .filter(Boolean)
+                                  .join(', ');
+                              } else if (typeof option.values === 'object' && option.values !== null) {
+                                // אם values הוא אובייקט, נסה להמיר אותו למערך
+                                const valuesArray = Object.values(option.values);
+                                values = valuesArray
+                                  .map((v: any) => {
+                                    if (typeof v === 'string') {
+                                      return v;
+                                    } else if (typeof v === 'object' && v !== null) {
+                                      return v.label || v.value || v.name || v.id || '';
+                                    }
+                                    return '';
+                                  })
+                                  .filter(Boolean)
+                                  .join(', ');
+                              } else if (typeof option.values === 'string') {
+                                // אם זה string, נסה לפרסר אותו כ-JSON
+                                try {
+                                  const parsed = JSON.parse(option.values);
+                                  if (Array.isArray(parsed)) {
+                                    values = parsed
+                                      .map((v: any) => typeof v === 'string' ? v : (v.label || v.value || v.name || v.id || ''))
+                                      .filter(Boolean)
+                                      .join(', ');
+                                  }
+                                } catch {
+                                  values = option.values;
+                                }
+                              }
+                              
+                              return (
+                                <div key={option.id} className="text-xs">
+                                  <span className="font-medium text-gray-700">{option.name}:</span>{' '}
+                                  <span className="text-gray-600">{values || '-'}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : product.variants && product.variants.length > 0 ? (
+                          <span className="text-blue-600">{product.variants.length} אפשרויות</span>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {getStatusBadge(product.status)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {new Date(product.updatedAt).toLocaleDateString("he-IL")}
+                        {product.categories && product.categories.length > 0 ? (
+                          <div className="flex flex-wrap gap-1">
+                            {product.categories.slice(0, 2).map((cat: any) => (
+                              <Badge key={cat.categoryId} variant="outline" className="text-xs">
+                                {cat.category?.name || 'קטגוריה'}
+                              </Badge>
+                            ))}
+                            {product.categories.length > 2 && (
+                              <Badge variant="outline" className="text-xs">
+                                +{product.categories.length - 2}
+                              </Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">-</span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
@@ -698,11 +879,37 @@ export default function ProductsPage() {
                 <div className="p-4">
                   <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xl font-bold">₪{product.price.toFixed(2)}</span>
-                    {product.comparePrice && (
-                      <span className="text-sm text-gray-500 line-through">
-                        ₪{product.comparePrice.toFixed(2)}
-                      </span>
+                    {product.variants && product.variants.length > 0 ? (
+                      (() => {
+                        const prices = product.variants
+                          .map(v => v.price)
+                          .filter((p): p is number => p !== null && p !== undefined)
+                        
+                        if (prices.length === 0) {
+                          return <span className="text-xl font-bold">₪{product.price.toFixed(2)}</span>
+                        }
+                        
+                        const minPrice = Math.min(...prices)
+                        const maxPrice = Math.max(...prices)
+                        
+                        return (
+                          <span className="text-xl font-bold">
+                            {minPrice === maxPrice 
+                              ? `₪${minPrice.toFixed(2)}`
+                              : `₪${minPrice.toFixed(2)} - ₪${maxPrice.toFixed(2)}`
+                            }
+                          </span>
+                        )
+                      })()
+                    ) : (
+                      <>
+                        <span className="text-xl font-bold">₪{product.price.toFixed(2)}</span>
+                        {product.comparePrice && (
+                          <span className="text-sm text-gray-500 line-through">
+                            ₪{product.comparePrice.toFixed(2)}
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                   <div className="flex items-center justify-between text-sm text-gray-600">

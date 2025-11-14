@@ -85,19 +85,23 @@ export function trackAddToCart(
     sku?: string | null
   },
   quantity: number = 1,
-  variantId?: string
+  variantId?: string,
+  addonsTotal?: number
 ) {
+  // המחיר כולל את התוספות אם יש
+  const finalPrice = product.price + (addonsTotal || 0)
+  
   trackEvent("AddToCart", {
     content_name: product.name,
     content_ids: [product.id],
     content_type: "product",
-    value: product.price * quantity,
+    value: finalPrice * quantity,
     currency: "ILS",
     contents: [
       {
         id: product.id,
         name: product.name,
-        price: product.price,
+        price: finalPrice,
         quantity: quantity,
       },
     ],

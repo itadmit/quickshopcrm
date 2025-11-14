@@ -143,7 +143,9 @@ export default function EditCollectionPage() {
         `/api/products?shopId=${selectedShop.id}&search=${encodeURIComponent(query)}&status=PUBLISHED&limit=20`
       )
       if (response.ok) {
-        const products = await response.json()
+        const data = await response.json()
+        // ה-API מחזיר { products: [...], pagination: {...} }
+        const products = data.products || data
         // סינון מוצרים שכבר נבחרו
         const filteredProducts = products.filter(
           (p: Product) => !selectedProducts.some(sp => sp.product.id === p.id)
@@ -263,10 +265,38 @@ export default function EditCollectionPage() {
   }
 
   const generateSlug = (name: string) => {
-    return name
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, "-")
-      .replace(/^-+|-+$/g, "")
+    if (!name) return ""
+    
+    // עבור עברית - לא צריך toLowerCase, רק להחליף רווחים במקפים
+    // עבור אנגלית - להמיר לאותיות קטנות
+    let slug = name.trim()
+    
+    // החלפת רווחים במקפים
+    slug = slug.replace(/\s+/g, "-")
+    
+    // שמירה על עברית, אנגלית (אותיות קטנות), מספרים ומקפים
+    slug = slug.replace(/[^\u0590-\u05FFa-z0-9\-]+/g, "")
+    
+    // החלפת מקפים מרובים במקף אחד
+    slug = slug.replace(/-+/g, "-")
+    
+    // הסרת מקפים מהתחלה וסוף
+    slug = slug.replace(/^-+|-+$/g, "")
+    
+    // המרת אותיות אנגליות לאותיות קטנות (רק אחרי שמירה על עברית)
+    slug = slug.split("").map(char => {
+      // אם זה תו עברי, נשאיר אותו כמו שהוא
+      if (/[\u0590-\u05FF]/.test(char)) {
+        return char
+      }
+      // אם זה אות אנגלית, נמיר לאות קטנה
+      if (/[A-Za-z]/.test(char)) {
+        return char.toLowerCase()
+      }
+      return char
+    }).join("")
+    
+    return slug
   }
 
   const handleSubmit = async () => {

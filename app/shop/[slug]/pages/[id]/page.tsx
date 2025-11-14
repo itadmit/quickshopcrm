@@ -14,6 +14,7 @@ import { StorefrontHeader } from "@/components/storefront/StorefrontHeader"
 import { useShopTheme } from "@/hooks/useShopTheme"
 import { AddToCartButton } from "@/components/storefront/AddToCartButton"
 import { AdminBar } from "@/components/storefront/AdminBar"
+import { getProductPrice, formatProductPrice, formatComparePrice } from "@/lib/product-price"
 
 interface ProductVariant {
   id: string
@@ -310,14 +311,17 @@ export default function StaticPage() {
                             <p className="text-xs sm:text-base text-gray-600 mb-2 sm:mb-4 line-clamp-1 sm:line-clamp-2 hidden sm:block">{product.description}</p>
                           )}
                           <div className="flex items-center gap-1 sm:gap-2 mb-2 sm:mb-4">
-                            {product.comparePrice && product.comparePrice > product.price ? (
-                              <>
-                                <span className="text-base sm:text-2xl font-bold text-gray-900">₪{product.price.toFixed(2)}</span>
-                                <span className="text-xs sm:text-lg text-gray-500 line-through">₪{product.comparePrice.toFixed(2)}</span>
-                              </>
-                            ) : (
-                              <span className="text-base sm:text-2xl font-bold text-gray-900">₪{product.price.toFixed(2)}</span>
-                            )}
+                            {(() => {
+                              const priceInfo = getProductPrice(product)
+                              return priceInfo.comparePrice && priceInfo.comparePrice > priceInfo.price ? (
+                                <>
+                                  <span className="text-base sm:text-2xl font-bold text-gray-900">{formatProductPrice(product)}</span>
+                                  <span className="text-xs sm:text-lg text-gray-500 line-through">{formatComparePrice(product)}</span>
+                                </>
+                              ) : (
+                                <span className="text-base sm:text-2xl font-bold text-gray-900">{formatProductPrice(product)}</span>
+                              )
+                            })()}
                           </div>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-1 sm:gap-2 w-full sm:w-auto">
@@ -374,14 +378,17 @@ export default function StaticPage() {
                           {product.name}
                         </h3>
                         <div className="flex items-center gap-2 mb-3">
-                          {product.comparePrice && product.comparePrice > product.price ? (
-                            <>
-                              <span className="text-lg font-bold text-gray-900">₪{product.price.toFixed(2)}</span>
-                              <span className="text-sm text-gray-500 line-through">₪{product.comparePrice.toFixed(2)}</span>
-                            </>
-                          ) : (
-                            <span className="text-lg font-bold text-gray-900">₪{product.price.toFixed(2)}</span>
-                          )}
+                          {(() => {
+                            const priceInfo = getProductPrice(product)
+                            return priceInfo.comparePrice && priceInfo.comparePrice > priceInfo.price ? (
+                              <>
+                                <span className="text-lg font-bold text-gray-900">{formatProductPrice(product)}</span>
+                                <span className="text-sm text-gray-500 line-through">{formatComparePrice(product)}</span>
+                              </>
+                            ) : (
+                              <span className="text-lg font-bold text-gray-900">{formatProductPrice(product)}</span>
+                            )
+                          })()}
                         </div>
                       </CardContent>
                     </Link>

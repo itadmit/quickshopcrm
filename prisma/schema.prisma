@@ -250,11 +250,13 @@ model Shop {
   Return                   Return[]
   Review                   Review[]
   events                   ShopEvent[]
-  company                  Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company                  Company                   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   StoreCredit              StoreCredit[]
   trackingPixels           TrackingPixel[]
   webhooks                 Webhook[]
   wishlistItems            WishlistItem[]
+  customFieldDefinitions   CustomFieldDefinition[]
+  productAddons            ProductAddon[]
 
   @@index([companyId])
   @@index([slug])
@@ -275,11 +277,16 @@ model Product {
   inventoryEnabled Boolean             @default(true)
   inventoryQty     Int                 @default(0)
   lowStockAlert    Int?
+  trackInventory   Boolean             @default(true)
+  sellWhenSoldOut  Boolean             @default(false)  // המשך מכירה כשאין במלאי
+  priceByWeight    Boolean             @default(false)  // זהו מוצר נמכר לפי משקל (ק"ג)
   weight           Float?
   dimensions       Json?
-  status           ProductStatus       @default(DRAFT)
-  images           String[]
-  video            String?
+  status                ProductStatus       @default(DRAFT)
+  scheduledPublishDate  DateTime?           // תאריך ושעה לפרסום אוטומטי
+  notifyOnPublish       Boolean             @default(false)  // האם לשלוח מייל כשהמוצר מתפרסם
+  images                String[]
+  video                 String?
   minQuantity      Int?
   maxQuantity      Int?
   availability     ProductAvailability @default(IN_STOCK)
@@ -287,6 +294,7 @@ model Product {
   seoTitle         String?
   seoDescription   String?
   customFields     Json?
+  badges           Json?               // מדבקות למוצר (טקסט, צבע, מיקום)
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
   bundles          BundleProduct[]
@@ -299,6 +307,7 @@ model Product {
   shop             Shop                @relation(fields: [shopId], references: [id], onDelete: Cascade)
   reviews          Review[]
   wishlistItems    WishlistItem[]
+  customFieldValues CustomFieldValue[]
 
   @@index([shopId])
   @@index([slug])
@@ -398,6 +407,7 @@ model Collection {
   description    String?
   image          String?
   type           CollectionType      @default(MANUAL)
+  isPublished    Boolean             @default(true)
   rules          Json?
   seoTitle       String?
   seoDescription String?
@@ -408,6 +418,7 @@ model Collection {
 
   @@index([shopId])
   @@index([slug])
+  @@index([isPublished])
   @@map("collections")
 }
 
@@ -512,6 +523,7 @@ model OrderItem {
   quantity  Int
   price     Float
   total     Float
+  addons    Json?           // Add-ons that were selected: [{ addonId, valueId, label, price, quantity }]
   createdAt DateTime        @default(now())
   order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product?        @relation(fields: [productId], references: [id])
@@ -1207,4 +1219,135 @@ enum ReturnStatus {
 enum GiftCondition {
   MIN_ORDER_AMOUNT
   SPECIFIC_PRODUCT
+}
+
+// ===== Custom Fields =====
+
+model CustomFieldDefinition {
+  id          String              @id @default(cuid())
+  shopId      String
+  shop        Shop                @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  
+  // Namespace support (e.g., "custom", "product", "shipping")
+  namespace   String              @default("custom")
+  key         String              // Unique key within namespace (e.g., "ingredients")
+  label       String              // Display label (e.g., "מרכיבים")
+  type        CustomFieldType     // Field type
+  
+  description String?             // Help text
+  required    Boolean             @default(false)
+  
+  // Validation
+  validations Json?               // Type-specific validation rules
+  
+  // Scope: Global or per-category
+  scope       CustomFieldScope    @default(GLOBAL)
+  categoryIds String[]            // Empty = global, populated = specific categories
+  
+  // Display settings
+  showInStorefront Boolean        @default(false)
+  position    Int                 @default(0)
+  
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  
+  values      CustomFieldValue[]
+  
+  @@unique([shopId, namespace, key])
+  @@index([shopId])
+  @@index([shopId, scope])
+  @@map("custom_field_definitions")
+}
+
+model CustomFieldValue {
+  id              String                  @id @default(cuid())
+  productId       String
+  product         Product                 @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  definitionId    String
+  definition      CustomFieldDefinition   @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+  
+  value           String?                 // JSON string for complex values
+  
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  
+  @@unique([productId, definitionId])
+  @@index([productId])
+  @@index([definitionId])
+  @@map("custom_field_values")
+}
+
+enum CustomFieldType {
+  TEXT
+  RICH_TEXT
+  DATE
+  COLOR
+  CHECKBOX
+  NUMBER
+  URL
+  FILE
+}
+
+enum CustomFieldScope {
+  GLOBAL        // Available for all products
+  CATEGORY      // Available only for products in specific categories
+}
+
+// ===== Product Add-ons =====
+
+model ProductAddon {
+  id          String            @id @default(cuid())
+  shopId      String
+  shop        Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  
+  name        String            // שם התוספת (לדוגמה: "רקמה", "אריזת מתנה")
+  type        ProductAddonType  // סוג התוספת
+  required    Boolean           @default(false)  // האם חובה לבחור
+  
+  // Scope: Global or per-product/category
+  scope       ProductAddonScope @default(GLOBAL)
+  productIds  String[]          // רשימת מוצרים (אם scope = PRODUCT)
+  categoryIds String[]          // רשימת קטגוריות (אם scope = CATEGORY)
+  
+  // Display settings
+  position    Int               @default(0)
+  
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  
+  values      ProductAddonValue[]
+  
+  @@index([shopId])
+  @@index([shopId, scope])
+  @@map("product_addons")
+}
+
+model ProductAddonValue {
+  id        String        @id @default(cuid())
+  addonId   String
+  addon     ProductAddon  @relation(fields: [addonId], references: [id], onDelete: Cascade)
+  
+  label     String        // תווית (לדוגמה: "רקמה שם", "קופסת מתנה גדולה")
+  price     Float         // מחיר התוספת
+  position  Int           @default(0)
+  
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  
+  @@index([addonId])
+  @@map("product_addon_values")
+}
+
+enum ProductAddonType {
+  SINGLE_CHOICE     // בחירה אחת מרשימה (radio buttons)
+  MULTIPLE_CHOICE   // בחירה מרובה (checkboxes)
+  TEXT_INPUT        // קלט טקסט חופשי (לדוגמה: טקסט לרקמה)
+  CHECKBOX          // תיבת סימון בודדת (כן/לא)
+}
+
+enum ProductAddonScope {
+  GLOBAL      // זמין לכל המוצרים
+  PRODUCT     // זמין למוצרים ספציפיים
+  CATEGORY    // זמין לקטגוריות ספציפיות
 }

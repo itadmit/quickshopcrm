@@ -17,6 +17,7 @@ import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { ProductGridSkeleton } from "@/components/skeletons/ProductCardSkeleton"
 import { useTracking } from "@/components/storefront/TrackingPixelProvider"
 import { trackPageView, trackRemoveFromWishlist } from "@/lib/tracking-events"
+import { getProductPrice, formatProductPrice, formatComparePrice } from "@/lib/product-price"
 
 interface WishlistItem {
   id: string
@@ -203,7 +204,11 @@ export default function WishlistPage() {
             {wishlistItems.map((item) => {
               const product = item.product
               const variant = item.variant
-              const displayPrice = variant?.price || product.price
+              // אם יש וריאציה, נשתמש במחיר שלה, אחרת נשתמש בפונקציה שמתחשבת בוריאציות
+              const priceInfo = variant?.price !== null && variant?.price !== undefined
+                ? { price: variant.price, comparePrice: variant.comparePrice || product.comparePrice, hasVariants: false }
+                : getProductPrice({ ...product, variants: product.variants || [] })
+              const displayPrice = priceInfo.price
               const displayImage = variant?.image || (product.images && product.images[0])
 
               return (
@@ -239,9 +244,9 @@ export default function WishlistPage() {
                           <span className="text-xl font-bold text-purple-600">
                             ₪{displayPrice.toFixed(2)}
                           </span>
-                          {product.comparePrice && (
+                          {priceInfo.comparePrice && (
                             <span className="text-sm text-gray-500 line-through">
-                              ₪{product.comparePrice.toFixed(2)}
+                              ₪{priceInfo.comparePrice.toFixed(2)}
                             </span>
                           )}
                         </div>

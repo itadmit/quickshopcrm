@@ -45,6 +45,13 @@ interface CartItem {
   quantity: number
   price: number
   total: number
+  addons?: Array<{
+    addonId: string
+    valueId: string | null
+    label: string
+    price: number
+    quantity: number
+  }>
   product: {
     id: string
     name: string
@@ -936,6 +943,16 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                             style={{ color: checkoutColors.textColor, opacity: 0.6 }}
                           >
                             {item.variant.name}
+                          </div>
+                        )}
+                        {(item as any).addons && (item as any).addons.length > 0 && (
+                          <div className="text-xs mt-0.5" style={{ color: checkoutColors.textColor, opacity: 0.6 }}>
+                            {(item as any).addons.map((addon: any, idx: number) => (
+                              <div key={idx}>
+                                {addon.label}
+                                {addon.price > 0 && ` (+₪${addon.price.toFixed(2)})`}
+                              </div>
+                            ))}
                           </div>
                         )}
                       </div>

@@ -104,6 +104,7 @@ async function getCart(slug: string, customerId: string | null) {
           quantity: item.quantity,
           price: item.price,
           total: item.total,
+          addons: (item as any).addons || undefined,
           product: {
             id: item.product.id,
             name: item.product.name,
@@ -253,6 +254,7 @@ export default async function CheckoutPage({
                   quantity: item.quantity,
                   price: item.price,
                   total: item.total,
+                  addons: (item as any).addons || undefined,
                   product: {
                     id: item.product.id,
                     name: item.product.name,

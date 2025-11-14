@@ -20,6 +20,26 @@ async function main() {
 
   console.log('✅ Company created:', demoCompany.name)
 
+  // Create super admin
+  const superAdminPassword = await bcrypt.hash('aA0542284283!!', 10)
+  
+  const superAdmin = await prisma.user.upsert({
+    where: { email: 'itadmit@gmail.com' },
+    update: {
+      password: superAdminPassword,
+      role: 'SUPER_ADMIN',
+    },
+    create: {
+      email: 'itadmit@gmail.com',
+      name: 'Super Admin',
+      password: superAdminPassword,
+      role: 'SUPER_ADMIN',
+      companyId: demoCompany.id,
+    },
+  })
+
+  console.log('✅ Super Admin created:', superAdmin.email)
+
   // Create demo users
   const hashedPassword = await bcrypt.hash('123456', 10)
   
@@ -47,7 +67,7 @@ async function main() {
     },
   })
 
-  console.log('✅ Users created')
+  console.log('✅ Demo users created')
 
   // Create demo notifications
   const notifications = await Promise.all([
@@ -76,6 +96,9 @@ async function main() {
   console.log(`✅ Created ${notifications.length} notifications`)
 
   console.log('🎉 Seed completed successfully!')
+  console.log('\n📧 Super Admin credentials:')
+  console.log('Email: itadmit@gmail.com')
+  console.log('Password: aA0542284283!!')
   console.log('\n📧 Demo credentials:')
   console.log('Email: admin@demo.com')
   console.log('Password: 123456')

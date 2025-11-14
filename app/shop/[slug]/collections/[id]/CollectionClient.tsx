@@ -7,6 +7,8 @@ import Link from "next/link"
 import { useTracking } from "@/components/storefront/TrackingPixelProvider"
 import { trackPageView } from "@/lib/tracking-events"
 import { useEffect } from "react"
+import { ProductBadges } from "@/components/storefront/ProductBadges"
+import { getProductPrice, formatProductPrice, formatComparePrice } from "@/lib/product-price"
 
 interface CollectionClientProps {
   collection: any
@@ -85,11 +87,12 @@ export function CollectionClient({ collection, products, slug }: CollectionClien
                           <Package className="w-12 h-12 text-gray-300" />
                         </div>
                       )}
-                      {product.comparePrice && product.comparePrice > product.price && (
-                        <Badge className="absolute top-2 left-2 bg-red-500">
-                          -{Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)}%
-                        </Badge>
-                      )}
+                      <ProductBadges
+                        badges={product.badges || []}
+                        isSoldOut={product.availability === "OUT_OF_STOCK"}
+                        comparePrice={product.comparePrice}
+                        price={product.price}
+                      />
                     </div>
 
                     <div className="p-4">
@@ -100,13 +103,16 @@ export function CollectionClient({ collection, products, slug }: CollectionClien
                       <div className="flex items-center justify-between">
                         <div className="flex items-baseline gap-2">
                           <span className="text-xl font-bold text-gray-900">
-                            ₪{product.price.toFixed(2)}
+                            {formatProductPrice(product)}
                           </span>
-                          {product.comparePrice && product.comparePrice > product.price && (
-                            <span className="text-sm text-gray-400 line-through">
-                              ₪{product.comparePrice.toFixed(2)}
-                            </span>
-                          )}
+                          {formatComparePrice(product) && (() => {
+                            const priceInfo = getProductPrice(product)
+                            return priceInfo.comparePrice && priceInfo.comparePrice > priceInfo.price ? (
+                              <span className="text-sm text-gray-400 line-through">
+                                {formatComparePrice(product)}
+                              </span>
+                            ) : null
+                          })()}
                         </div>
                       </div>
 
@@ -126,4 +132,5 @@ export function CollectionClient({ collection, products, slug }: CollectionClien
     </div>
   )
 }
+
 

@@ -48,13 +48,31 @@ export async function findCart(
           const customerItems = (cart.items as any[]) || []
           const sessionItems = (sessionCart.items as any[]) || []
           
-          // מיזוג פריטים
+          // מיזוג פריטים - גם לוקח בחשבון addons
           const mergedItems = [...customerItems]
           for (const sessionItem of sessionItems) {
-            const existingIndex = mergedItems.findIndex(
-              item => item.productId === sessionItem.productId && 
-                     item.variantId === sessionItem.variantId
-            )
+            // חיפוש פריט קיים - גם עם addons
+            const existingIndex = mergedItems.findIndex((item) => {
+              const sameProduct = item.productId === sessionItem.productId &&
+                (item.variantId === sessionItem.variantId || (!item.variantId && !sessionItem.variantId))
+              
+              // אם אין addons בשני המקרים - זה אותו פריט
+              if (!item.addons && !sessionItem.addons) return sameProduct
+              
+              // אם יש addons רק באחד - זה לא אותו פריט
+              if (!item.addons || !sessionItem.addons) return false
+              
+              // השווה addons - אם הם זהים, זה אותו פריט
+              const itemAddonsStr = JSON.stringify(item.addons.sort((a: any, b: any) => 
+                `${a.addonId}-${a.valueId || ''}`.localeCompare(`${b.addonId}-${b.valueId || ''}`)
+              ))
+              const sessionAddonsStr = JSON.stringify(sessionItem.addons.sort((a: any, b: any) => 
+                `${a.addonId}-${a.valueId || ''}`.localeCompare(`${b.addonId}-${b.valueId || ''}`)
+              ))
+              
+              return sameProduct && itemAddonsStr === sessionAddonsStr
+            })
+            
             if (existingIndex >= 0) {
               mergedItems[existingIndex].quantity += sessionItem.quantity
             } else {
