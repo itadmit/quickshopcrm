@@ -25,7 +25,7 @@ function AppLayoutContent({ children, title, hideSidebar, hideHeader }: AppLayou
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null)
   const [checkingSubscription, setCheckingSubscription] = useState(true)
 
-  // בדיקת מנוי פעיל
+  // בדיקת מנוי פעיל - אופטימיזציה: רק פעם אחת בטעינה
   useEffect(() => {
     async function checkSubscription() {
       if (!session?.user?.companyId) {
@@ -38,11 +38,6 @@ function AppLayoutContent({ children, title, hideSidebar, hideHeader }: AppLayou
         if (response.ok) {
           const data = await response.json()
           setSubscriptionInfo(data)
-          
-          // אם המנוי לא פעיל ולא אנחנו בדף הגדרות, נציג את מסך החסימה
-          if (!data.isActive && pathname !== "/settings") {
-            // המסך יוצג על ידי הקומפוננטה SubscriptionBlock
-          }
         }
       } catch (error) {
         // שגיאה שקטה
@@ -56,7 +51,8 @@ function AppLayoutContent({ children, title, hideSidebar, hideHeader }: AppLayou
     } else {
       setCheckingSubscription(false)
     }
-  }, [status, session, pathname])
+    // הסרת pathname מה-dependencies - לא צריך לטעון מחדש בכל ניווט
+  }, [status, session])
 
   useEffect(() => {
     // לא לבדוק authentication בדפי הזמנה או רישום

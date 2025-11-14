@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Standalone build - מקטין את גודל ה-build ומאיץ deployment
+  output: 'standalone',
+  
   // Server Actions are enabled by default in Next.js 14
   images: {
     remotePatterns: [

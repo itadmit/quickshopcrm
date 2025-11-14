@@ -9,10 +9,10 @@ export function QueryProvider({ children }: { children: ReactNode }) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            staleTime: 2000, // 2 seconds
-            refetchOnWindowFocus: true, // Sync between tabs
-            retry: 1, // Retry once on failure
-            gcTime: 5 * 60 * 1000, // 5 minutes cache time
+            staleTime: 5 * 60 * 1000, // 5 minutes - נתונים טריים יותר זמן
+            refetchOnWindowFocus: false, // ביטול טעינה מחדש בפוקוס - חוסך requests
+            retry: 1,
+            gcTime: 10 * 60 * 1000, // 10 minutes cache
           },
           mutations: {
             retry: 1,
