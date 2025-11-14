@@ -3,8 +3,8 @@ import { Noto_Sans_Hebrew, Pacifico } from 'next/font/google'
 import './globals.css'
 import { Toaster } from '@/components/ui/toaster'
 import { AuthProvider } from '@/components/providers/AuthProvider'
-import { ShopProvider } from '@/components/providers/ShopProvider'
 import { QueryProvider } from '@/components/providers/QueryProvider'
+import { ConditionalShopProvider } from '@/components/providers/ConditionalShopProvider'
 
 const notoSansHebrew = Noto_Sans_Hebrew({
   subsets: ['hebrew'],
@@ -40,10 +40,10 @@ export default function RootLayout({
       <body className={`${notoSansHebrew.variable} ${pacifico.variable}`}>
         <QueryProvider>
           <AuthProvider>
-            <ShopProvider>
+            <ConditionalShopProvider>
               {children}
               <Toaster />
-            </ShopProvider>
+            </ConditionalShopProvider>
           </AuthProvider>
         </QueryProvider>
       </body>
