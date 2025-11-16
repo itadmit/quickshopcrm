@@ -255,6 +255,12 @@ export async function POST(req: NextRequest) {
 
       console.log("✅ Created order.paid event for order:", order.orderNumber)
       
+      // בדיקה אם צריך לשלוח אוטומטית לחברת משלוחים
+      const { ShippingManager } = await import('@/lib/shipping/manager')
+      ShippingManager.checkAutoSend(order.id, 'order.paid').catch((error) => {
+        console.error('Error checking auto-send shipping:', error)
+      })
+      
       // שליחת מייל אישור תשלום ללקוח
       await sendOrderConfirmationEmail(order.id)
     }

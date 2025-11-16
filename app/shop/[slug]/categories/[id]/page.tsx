@@ -125,7 +125,7 @@ export default function CategoryPage() {
 
   const fetchCategory = async () => {
     try {
-      const response = await fetch(`/api/storefront/${slug}/categories/${categoryId}`)
+      const response = await fetch(`/api/storefront/${slug}/collections/${categoryId}`)
       if (response.ok) {
         const data = await response.json()
         setCategory(data)
@@ -139,7 +139,7 @@ export default function CategoryPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams()
-      params.append("category", categoryId)
+      params.append("collection", categoryId)
       if (filters.availability) {
         params.append("availability", filters.availability)
       }

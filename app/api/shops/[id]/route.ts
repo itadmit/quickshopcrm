@@ -26,6 +26,7 @@ const updateShopSchema = z.object({
   isPublished: z.boolean().optional(),
   settings: z.any().nullable().optional(),
   customerDiscountSettings: z.any().nullable().optional(),
+  paymentMethods: z.any().optional(), // הגדרות שיטות תשלום
 })
 
 // GET - קבלת פרטי חנות
@@ -176,9 +177,25 @@ export async function PUT(
     }
 
     // עדכון החנות
+    const updateData: any = { ...data }
+    
+    // אם יש paymentMethods, נשמור אותם ב-settings
+    if (data.paymentMethods) {
+      const currentSettings = (existingShop.settings as any) || {}
+      updateData.settings = {
+        ...currentSettings,
+        paymentMethods: {
+          ...(currentSettings.paymentMethods || {}),
+          ...data.paymentMethods,
+        },
+      }
+      // הסרת paymentMethods מה-data כדי לא לנסות לשמור אותו ישירות
+      delete updateData.paymentMethods
+    }
+
     const shop = await prisma.shop.update({
       where: { id: params.id },
-      data,
+      data: updateData,
       select: {
         id: true,
         name: true,
@@ -209,6 +226,80 @@ export async function PUT(
     })
 
     return NextResponse.json(shop)
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: error.errors[0].message },
+        { status: 400 }
+      )
+    }
+
+    console.error("Error updating shop:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
+  }
+}
+
+// PATCH - עדכון חלקי של חנות (להגדרות שיטות תשלום)
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // בדיקה שהחנות שייכת לחברה
+    const existingShop = await prisma.shop.findFirst({
+      where: {
+        id: params.id,
+        companyId: session.user.companyId,
+      },
+    })
+
+    if (!existingShop) {
+      return NextResponse.json({ error: "Shop not found" }, { status: 404 })
+    }
+
+    const body = await req.json()
+    const data = updateShopSchema.parse(body)
+
+    // עדכון החנות
+    const updateData: any = {}
+    const currentSettings = (existingShop.settings as any) || {}
+    
+    // אם יש paymentMethods, נשמור אותם ב-settings
+    if (data.paymentMethods) {
+      updateData.settings = {
+        ...currentSettings,
+        paymentMethods: {
+          ...(currentSettings.paymentMethods || {}),
+          ...data.paymentMethods,
+        },
+      }
+    }
+    
+    // אם יש settings (shipping zones, fulfillment location וכו'), נשמור אותם
+    if (body.settings) {
+      updateData.settings = {
+        ...currentSettings,
+        ...body.settings,
+      }
+    }
+
+    // עדכון רק אם יש מה לעדכן
+    if (Object.keys(updateData).length > 0) {
+      await prisma.shop.update({
+        where: { id: params.id },
+        data: updateData,
+      })
+    }
+
+    return NextResponse.json({ success: true })
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

@@ -12,6 +12,8 @@ export interface NavigationItem {
   categoryId?: string
   collectionId?: string
   children?: NavigationItem[]
+  image?: string
+  columnTitle?: string
 }
 
 export interface Navigation {

@@ -171,6 +171,10 @@ export async function POST(req: NextRequest) {
               select: { shopId: true },
             })
             targetShopId = page?.shopId || null
+          } else if (entityType === 'navigations') {
+            // עבור navigations - entityId הוא item.id, אבל אנחנו צריכים את ה-shopId
+            // נשתמש ב-shopId שנשלח ישירות
+            targetShopId = shopId
           }
         } else {
           // entity חדש - נשתמש ב-shopId שנשלח

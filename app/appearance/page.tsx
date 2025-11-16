@@ -32,6 +32,7 @@ import {
   Plus,
   CheckCircle2,
   CreditCard,
+  Mail,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -217,6 +218,11 @@ interface AppearanceSettings {
   thankYouPageTextColor: string
   thankYouPageShowOrderDetails: boolean
   thankYouPageShowContinueShopping: boolean
+  
+  // ===== הגדרות מיילים =====
+  emailSenderName: string
+  emailColor1: string
+  emailColor2: string
 }
 
 const THEMES = [
@@ -231,7 +237,7 @@ export default function AppearancePage() {
   const { selectedShop, loading: shopLoading } = useShop()
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
-  const [activeTab, setActiveTab] = useState<"logo" | "theme" | "header" | "cart" | "topbar" | "category" | "product" | "checkout" | "thankyou">("logo")
+  const [activeTab, setActiveTab] = useState<"logo" | "theme" | "header" | "cart" | "topbar" | "category" | "product" | "checkout" | "thankyou" | "emails">("logo")
   const [pages, setPages] = useState<Array<{ id: string; title: string; slug: string }>>([])
   const [showSuggestions, setShowSuggestions] = useState<{ [key: string]: boolean }>({})
 
@@ -354,6 +360,11 @@ export default function AppearancePage() {
     thankYouPageTextColor: "#111827",
     thankYouPageShowOrderDetails: true,
     thankYouPageShowContinueShopping: true,
+    
+    // הגדרות מיילים
+    emailSenderName: "",
+    emailColor1: "#6f65e2",
+    emailColor2: "#b965e2",
   })
 
   useEffect(() => {
@@ -504,6 +515,11 @@ export default function AppearancePage() {
           thankYouPageTextColor: themeSettings.thankYouPageTextColor || "#111827",
           thankYouPageShowOrderDetails: themeSettings.thankYouPageShowOrderDetails !== undefined ? themeSettings.thankYouPageShowOrderDetails : true,
           thankYouPageShowContinueShopping: themeSettings.thankYouPageShowContinueShopping !== undefined ? themeSettings.thankYouPageShowContinueShopping : true,
+          
+          // הגדרות מיילים
+          emailSenderName: themeSettings.emailSenderName || shop.name || "",
+          emailColor1: themeSettings.emailColor1 || "#6f65e2",
+          emailColor2: themeSettings.emailColor2 || "#b965e2",
         })
       }
     } catch (error) {
@@ -640,6 +656,11 @@ export default function AppearancePage() {
             thankYouPageTextColor: settings.thankYouPageTextColor,
             thankYouPageShowOrderDetails: settings.thankYouPageShowOrderDetails,
             thankYouPageShowContinueShopping: settings.thankYouPageShowContinueShopping,
+            
+            // הגדרות מיילים
+            emailSenderName: settings.emailSenderName,
+            emailColor1: settings.emailColor1,
+            emailColor2: settings.emailColor2,
           },
           settings: {
             cartBehavior: settings.cartBehavior,
@@ -2345,6 +2366,7 @@ export default function AppearancePage() {
     { key: "product", label: "עמוד מוצר", icon: ShoppingBag, divider: false },
     { key: "checkout", label: "עמוד קופה", icon: CreditCard, divider: false },
     { key: "thankyou", label: "דף תודה", icon: CheckCircle2, divider: false },
+    { key: "emails", label: "הגדרות מיילים", icon: Mail, divider: false },
   ]
 
   return (
@@ -3631,6 +3653,112 @@ export default function AppearancePage() {
                 </CardHeader>
                 <CardContent>
                   {renderSectionContent("topbar")}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Emails Tab */}
+            {activeTab === "emails" && (
+              <Card className="shadow-sm">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center">
+                        <Mail className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <CardTitle>הגדרות מיילים</CardTitle>
+                        <CardDescription>התאמה אישית של עיצוב המיילים שנשלחים מהחנות</CardDescription>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="prodify-gradient text-white"
+                    >
+                      <Save className="w-4 h-4 ml-2" />
+                      {saving ? "שומר..." : "שמור שינויים"}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">פרטי השולח</h3>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="emailSenderName">שם השולח</Label>
+                        <Input
+                          id="emailSenderName"
+                          type="text"
+                          value={settings.emailSenderName}
+                          onChange={(e) => updateSettings("emailSenderName", e.target.value)}
+                          placeholder={selectedShop?.name || "שם החנות"}
+                        />
+                        <p className="text-sm text-gray-500">השם שיוצג כשולח המיילים</p>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4 pt-6 border-t">
+                      <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">צבעי גרדיאנט</h3>
+                      <p className="text-sm text-gray-500">הצבעים שישמשו ליצירת הגרדיאנט במיילים (כותרות וכפתורים)</p>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="emailColor1">צבע 1</Label>
+                          <div className="flex gap-3">
+                            <Input
+                              id="emailColor1"
+                              type="color"
+                              value={settings.emailColor1}
+                              onChange={(e) => updateSettings("emailColor1", e.target.value)}
+                              className="w-20 h-10"
+                            />
+                            <Input
+                              type="text"
+                              value={settings.emailColor1}
+                              onChange={(e) => updateSettings("emailColor1", e.target.value)}
+                              className="flex-1"
+                              placeholder="#6f65e2"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="emailColor2">צבע 2</Label>
+                          <div className="flex gap-3">
+                            <Input
+                              id="emailColor2"
+                              type="color"
+                              value={settings.emailColor2}
+                              onChange={(e) => updateSettings("emailColor2", e.target.value)}
+                              className="w-20 h-10"
+                            />
+                            <Input
+                              type="text"
+                              value={settings.emailColor2}
+                              onChange={(e) => updateSettings("emailColor2", e.target.value)}
+                              className="flex-1"
+                              placeholder="#b965e2"
+                            />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* תצוגה מקדימה של הגרדיאנט */}
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                        <p className="text-sm text-gray-600 mb-2">תצוגה מקדימה:</p>
+                        <div
+                          className="h-16 rounded-lg flex items-center justify-center text-white font-semibold text-lg"
+                          style={{
+                            background: `linear-gradient(135deg, ${settings.emailColor1} 0%, ${settings.emailColor2} 100%)`,
+                          }}
+                        >
+                          גרדיאנט מיילים
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
             )}

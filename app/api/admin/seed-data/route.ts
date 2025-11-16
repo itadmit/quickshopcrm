@@ -934,6 +934,238 @@ export async function POST(req: NextRequest) {
 
     console.log(`✅ Created ${pages.length} pages`)
 
+    // Delete existing navigations for clean seed
+    await prisma.navigation.deleteMany({
+      where: { shopId: shop.id },
+    })
+
+    // Create Desktop Navigation with Mega Menu
+    const desktopNavigation = await prisma.navigation.create({
+      data: {
+        shopId: shop.id,
+        name: 'תפריט ראשי למחשב',
+        location: 'DESKTOP',
+        items: [
+          // פריט ראשי עם מגה מניו - מוצרים
+          {
+            id: 'nav-item-1',
+            label: 'מוצרים',
+            type: 'EXTERNAL',
+            url: '#',
+            position: 0,
+            parentId: null,
+            columnTitle: 'קטגוריות פופולריות',
+            children: [
+              {
+                id: 'nav-item-1-1',
+                label: categories[0].name, // נעליים
+                type: 'CATEGORY',
+                url: `/categories/${categories[0].slug}`,
+                position: 0,
+                parentId: 'nav-item-1',
+                categoryId: categories[0].id,
+              },
+              {
+                id: 'nav-item-1-2',
+                label: categories[1].name, // חולצות
+                type: 'CATEGORY',
+                url: `/categories/${categories[1].slug}`,
+                position: 1,
+                parentId: 'nav-item-1',
+                categoryId: categories[1].id,
+              },
+              {
+                id: 'nav-item-1-3',
+                label: categories[2].name, // אביזרים
+                type: 'CATEGORY',
+                url: `/categories/${categories[2].slug}`,
+                position: 2,
+                parentId: 'nav-item-1',
+                categoryId: categories[2].id,
+              },
+              {
+                id: 'nav-item-1-4',
+                label: collections[0].name, // מוצרים מומלצים
+                type: 'COLLECTION',
+                url: `/collections/${collections[0].slug}`,
+                position: 3,
+                parentId: 'nav-item-1',
+                collectionId: collections[0].id,
+              },
+              {
+                id: 'nav-item-1-5',
+                label: collections[1].name, // מבצעים
+                type: 'COLLECTION',
+                url: `/collections/${collections[1].slug}`,
+                position: 4,
+                parentId: 'nav-item-1',
+                collectionId: collections[1].id,
+              },
+              {
+                id: 'nav-item-1-6',
+                label: collections[2].name, // חדש בחנות
+                type: 'COLLECTION',
+                url: `/collections/${collections[2].slug}`,
+                position: 5,
+                parentId: 'nav-item-1',
+                collectionId: collections[2].id,
+              },
+            ],
+          },
+          // פריט ראשי עם מגה מניו - מותגים
+          {
+            id: 'nav-item-2',
+            label: 'מותגים',
+            type: 'EXTERNAL',
+            url: '#',
+            position: 1,
+            parentId: null,
+            columnTitle: 'מותגים מובילים',
+            children: [
+              {
+                id: 'nav-item-2-1',
+                label: 'נייק',
+                type: 'EXTERNAL',
+                url: `/shop/${shop.slug}/search?q=נייק`,
+                position: 0,
+                parentId: 'nav-item-2',
+              },
+              {
+                id: 'nav-item-2-2',
+                label: 'אדידס',
+                type: 'EXTERNAL',
+                url: `/shop/${shop.slug}/search?q=אדידס`,
+                position: 1,
+                parentId: 'nav-item-2',
+              },
+              {
+                id: 'nav-item-2-3',
+                label: 'פומה',
+                type: 'EXTERNAL',
+                url: `/shop/${shop.slug}/search?q=פומה`,
+                position: 2,
+                parentId: 'nav-item-2',
+              },
+            ],
+          },
+          // פריט רגיל - אודות
+          {
+            id: 'nav-item-3',
+            label: pages[0].title, // אודות
+            type: 'PAGE',
+            url: `/pages/${pages[0].slug}`,
+            position: 2,
+            parentId: null,
+            pageId: pages[0].id,
+          },
+          // פריט רגיל - צור קשר
+          {
+            id: 'nav-item-4',
+            label: pages[2].title, // צור קשר
+            type: 'PAGE',
+            url: `/pages/${pages[2].slug}`,
+            position: 3,
+            parentId: null,
+            pageId: pages[2].id,
+          },
+          // פריט רגיל - בלוג
+          {
+            id: 'nav-item-5',
+            label: 'בלוג',
+            type: 'EXTERNAL',
+            url: `/shop/${shop.slug}/blog`,
+            position: 4,
+            parentId: null,
+          },
+        ],
+      },
+    })
+
+    // Create Mobile Navigation (simpler version)
+    const mobileNavigation = await prisma.navigation.create({
+      data: {
+        shopId: shop.id,
+        name: 'תפריט למובייל',
+        location: 'MOBILE',
+        items: [
+          {
+            id: 'mobile-item-1',
+            label: 'מוצרים',
+            type: 'EXTERNAL',
+            url: '#',
+            position: 0,
+            parentId: null,
+            children: [
+              {
+                id: 'mobile-item-1-1',
+                label: categories[0].name,
+                type: 'CATEGORY',
+                url: `/categories/${categories[0].slug}`,
+                position: 0,
+                parentId: 'mobile-item-1',
+                categoryId: categories[0].id,
+              },
+              {
+                id: 'mobile-item-1-2',
+                label: categories[1].name,
+                type: 'CATEGORY',
+                url: `/categories/${categories[1].slug}`,
+                position: 1,
+                parentId: 'mobile-item-1',
+                categoryId: categories[1].id,
+              },
+              {
+                id: 'mobile-item-1-3',
+                label: categories[2].name,
+                type: 'CATEGORY',
+                url: `/categories/${categories[2].slug}`,
+                position: 2,
+                parentId: 'mobile-item-1',
+                categoryId: categories[2].id,
+              },
+            ],
+          },
+          {
+            id: 'mobile-item-2',
+            label: pages[0].title,
+            type: 'PAGE',
+            url: `/pages/${pages[0].slug}`,
+            position: 1,
+            parentId: null,
+            pageId: pages[0].id,
+          },
+          {
+            id: 'mobile-item-3',
+            label: pages[1].title,
+            type: 'PAGE',
+            url: `/pages/${pages[1].slug}`,
+            position: 2,
+            parentId: null,
+            pageId: pages[1].id,
+          },
+          {
+            id: 'mobile-item-4',
+            label: pages[2].title,
+            type: 'PAGE',
+            url: `/pages/${pages[2].slug}`,
+            position: 3,
+            parentId: null,
+            pageId: pages[2].id,
+          },
+          {
+            id: 'mobile-item-5',
+            label: 'בלוג',
+            type: 'EXTERNAL',
+            url: `/shop/${shop.slug}/blog`,
+            position: 4,
+            parentId: null,
+          },
+        ],
+      },
+    })
+
+    console.log(`✅ Created 2 navigations (Desktop with Mega Menu + Mobile)`)
+
     // Delete existing blog for clean seed
     await prisma.blog.deleteMany({
       where: { shopId: shop.id },
@@ -1200,6 +1432,7 @@ export async function POST(req: NextRequest) {
         returns: returns.length,
         abandonedCarts: abandonedCarts.length,
         notifications: notifications.length,
+        navigations: 2,
       }
     })
   } catch (error) {

@@ -25,7 +25,11 @@ import {
   CreditCard,
   Calendar,
   TrendingUp,
-  Save
+  Save,
+  Clock,
+  UserPlus,
+  Send,
+  Truck
 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -38,13 +42,13 @@ import { ShopSettings } from "@/components/ShopSettings"
 export default function SettingsPage() {
   const { toast } = useToast()
   const { data: session } = useSession()
-  const [activeTab, setActiveTab] = useState<"shop" | "general" | "communication" | "security" | "subscription" | "advanced">("shop")
+  const [activeTab, setActiveTab] = useState<"shop" | "shipping" | "general" | "communication" | "security" | "subscription" | "advanced">("shop")
 
   // Check URL params for tab
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const tab = params.get('tab')
-    if (tab && ['shop', 'general', 'communication', 'security', 'subscription', 'advanced'].includes(tab)) {
+    if (tab && ['shop', 'shipping', 'general', 'communication', 'security', 'subscription', 'advanced'].includes(tab)) {
       setActiveTab(tab as any)
     }
   }, [])
@@ -163,6 +167,10 @@ export default function SettingsPage() {
   const [savingGeneral, setSavingGeneral] = useState(false)
   const [savingCommunication, setSavingCommunication] = useState(false)
   const [savingSecurity, setSavingSecurity] = useState(false)
+  const [invitations, setInvitations] = useState<any[]>([])
+  const [loadingInvitations, setLoadingInvitations] = useState(false)
+  const [deletingInvitationId, setDeletingInvitationId] = useState<string | null>(null)
+  const [resendingInvitationId, setResendingInvitationId] = useState<string | null>(null)
 
   const sidebarPermissions = [
     { key: "tasks", label: "משימות", required: false },
@@ -181,6 +189,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (activeTab === "security" && isAdmin) {
       fetchUsers()
+      fetchInvitations()
     }
   }, [activeTab, isAdmin])
 
@@ -248,6 +257,105 @@ export default function SettingsPage() {
         description: "לא ניתן היה לעדכן את ההרשאות",
         variant: "destructive",
       })
+    }
+  }
+
+  const fetchInvitations = async () => {
+    setLoadingInvitations(true)
+    try {
+      const response = await fetch('/api/invitations')
+      if (response.ok) {
+        const invitationsData = await response.json()
+        setInvitations(invitationsData)
+      }
+    } catch (error) {
+      console.error('Error fetching invitations:', error)
+    } finally {
+      setLoadingInvitations(false)
+    }
+  }
+
+  const handleResendInvitation = async (invitationId: string, email: string) => {
+    setResendingInvitationId(invitationId)
+    try {
+      const response = await fetch(`/api/invitations?id=${invitationId}&action=resend`, {
+        method: 'PATCH',
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        
+        // בדיקה אם המייל נשלח
+        if (data.emailSent === false || data.emailError) {
+          toast({
+            title: "ההזמנה עודכנה אבל המייל לא נשלח",
+            description: data.emailError || "לא ניתן לשלוח מייל. אנא בדוק את הגדרות SendGrid בהגדרות המנהל הראשי.",
+            variant: "destructive",
+          })
+        } else {
+          toast({
+            title: "הצלחה",
+            description: `ההזמנה נשלחה שוב ל-${email}`,
+          })
+        }
+        
+        // רענון רשימת ההזמנות כדי לעדכן תאריך תפוגה
+        await fetchInvitations()
+      } else {
+        const error = await response.json()
+        toast({
+          title: "שגיאה",
+          description: error.error || "לא ניתן היה לשלוח את ההזמנה שוב",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Error resending invitation:', error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה בשליחת ההזמנה שוב",
+        variant: "destructive",
+      })
+    } finally {
+      setResendingInvitationId(null)
+    }
+  }
+
+  const handleDeleteInvitation = async (invitationId: string, email: string) => {
+    if (!confirm(`האם אתה בטוח שברצונך למחוק את ההזמנה ל-${email}? פעולה זו בלתי הפיכה!`)) {
+      return
+    }
+
+    setDeletingInvitationId(invitationId)
+    try {
+      const response = await fetch(`/api/invitations?id=${invitationId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        toast({
+          title: "הצלחה",
+          description: "ההזמנה נמחקה בהצלחה",
+        })
+        // רענון רשימת ההזמנות
+        await fetchInvitations()
+      } else {
+        const error = await response.json()
+        toast({
+          title: "שגיאה",
+          description: error.error || "לא ניתן היה למחוק את ההזמנה",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Error deleting invitation:', error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה במחיקת ההזמנה",
+        variant: "destructive",
+      })
+    } finally {
+      setDeletingInvitationId(null)
     }
   }
 
@@ -357,6 +465,7 @@ export default function SettingsPage() {
 
   const tabs = [
     { key: "shop", label: "הגדרות חנות", icon: Store },
+    { key: "shipping", label: "משלוחים", icon: Truck },
     { key: "subscription", label: "מנוי", icon: CreditCard },
     { key: "general", label: "כללי", icon: SettingsIcon },
     { key: "communication", label: "תקשורת", icon: Mail },
@@ -404,6 +513,24 @@ export default function SettingsPage() {
         {/* Shop Settings Tab */}
         {activeTab === "shop" && (
           <ShopSettings />
+        )}
+
+        {/* Shipping Settings Tab */}
+        {activeTab === "shipping" && (
+          <div className="space-y-6">
+            <div className="text-center py-12">
+              <Truck className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">הגדרות משלוחים</h3>
+              <p className="text-sm text-gray-500 mb-4">
+                ניהול מלא של אזורי משלוח, תעריפים ומיקומי מימוש
+              </p>
+              <Link href="/settings/shipping">
+                <Button className="prodify-gradient text-white border-0">
+                  פתח הגדרות משלוחים
+                </Button>
+              </Link>
+            </div>
+          </div>
         )}
 
         {/* Subscription Tab */}
@@ -730,6 +857,136 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
+            {/* Pending Invitations - Only for Admins */}
+            {isAdmin && (
+              <Card className="shadow-sm">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-yellow-100 flex items-center justify-center">
+                      <UserPlus className="w-5 h-5 text-yellow-600" />
+                    </div>
+                    <div>
+                      <CardTitle>הזמנות ממתינות</CardTitle>
+                      <CardDescription>הזמנות שנשלחו וממתינות לאישור</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  {loadingInvitations ? (
+                    <TableSkeleton rows={2} columns={3} />
+                  ) : invitations.filter((inv: any) => inv.status === 'PENDING').length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      אין הזמנות ממתינות
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {invitations
+                        .filter((inv: any) => inv.status === 'PENDING')
+                        .map((invitation: any) => {
+                          const isExpired = new Date(invitation.expiresAt) < new Date()
+                          const daysUntilExpiry = Math.ceil(
+                            (new Date(invitation.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)
+                          )
+
+                          return (
+                            <div key={invitation.id} className="border rounded-lg p-4 bg-yellow-50 border-yellow-200">
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
+                                    <Clock className="w-5 h-5 text-yellow-600" />
+                                  </div>
+                                  <div>
+                                    <h3 className="font-medium text-gray-900">{invitation.name || invitation.email}</h3>
+                                    <p className="text-sm text-gray-500">{invitation.email}</p>
+                                    <p className="text-xs text-gray-400 mt-1">
+                                      {invitation.role === 'MANAGER' ? 'מנהל' : 
+                                       invitation.role === 'INFLUENCER' ? 'משפיען' : 'משתמש'}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <div className="flex items-center gap-2 px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm">
+                                    <Clock className="w-4 h-4" />
+                                    <span>ממתין לאישור</span>
+                                  </div>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                                    onClick={() => handleResendInvitation(invitation.id, invitation.email)}
+                                    disabled={resendingInvitationId === invitation.id}
+                                  >
+                                    {resendingInvitationId === invitation.id ? (
+                                      <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 ml-2"></div>
+                                        שולח...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Send className="w-4 h-4 ml-2" />
+                                        שלח שוב
+                                      </>
+                                    )}
+                                  </Button>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                    onClick={() => handleDeleteInvitation(invitation.id, invitation.email)}
+                                    disabled={deletingInvitationId === invitation.id}
+                                  >
+                                    {deletingInvitationId === invitation.id ? (
+                                      <>
+                                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600 ml-2"></div>
+                                        מוחק...
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Trash2 className="w-4 h-4 ml-2" />
+                                        מחק
+                                      </>
+                                    )}
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="mt-3 pt-3 border-t border-yellow-200">
+                                <div className="flex items-center justify-between text-sm">
+                                  <div className="flex items-center gap-2 text-gray-600">
+                                    <Mail className="w-4 h-4" />
+                                    <span>נשלח על ידי: {invitation.inviter?.name || 'לא ידוע'}</span>
+                                  </div>
+                                  <div className={`flex items-center gap-2 ${isExpired ? 'text-red-600' : daysUntilExpiry <= 2 ? 'text-orange-600' : 'text-gray-600'}`}>
+                                    <Calendar className="w-4 h-4" />
+                                    <span>
+                                      {isExpired 
+                                        ? 'פג תוקף' 
+                                        : daysUntilExpiry === 0 
+                                        ? 'פג היום' 
+                                        : daysUntilExpiry === 1 
+                                        ? 'פג מחר' 
+                                        : `פג בעוד ${daysUntilExpiry} ימים`}
+                                    </span>
+                                  </div>
+                                </div>
+                                <div className="mt-2 text-xs text-gray-500">
+                                  נשלח ב-{new Date(invitation.createdAt).toLocaleDateString('he-IL', {
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
             {/* User Permissions Management - Only for Admins */}
             {isAdmin && (
               <Card className="shadow-sm">
@@ -961,6 +1218,7 @@ export default function SettingsPage() {
                         <li>• 3 פוסטים בבלוג</li>
                         <li>• 3 החזרות</li>
                         <li>• 3 עגלות נטושות</li>
+                        <li>• 2 תפריטים (למחשב ולמובייל) כולל מגה מניו</li>
                       </ul>
                     </div>
                     <Button

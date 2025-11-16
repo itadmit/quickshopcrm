@@ -626,11 +626,413 @@ export async function getPayPlusCredentials(
   const creds = integration.config as any
 
   return {
-    apiKey: creds.apiKey,
-    secretKey: creds.secretKey,
+    apiKey: creds.apiKey || integration.apiKey,
+    secretKey: creds.secretKey || integration.apiSecret,
     terminalUid: creds.terminalUid || creds.terminal_uid,
     cashierUid: creds.cashierUid || creds.cashier_uid,
     paymentPageUid: creds.paymentPageUid || creds.payment_page_uid,
+    useProduction: creds.useProduction || false,
+  }
+}
+
+/**
+ * יצירת Product ב-PayPlus
+ * https://docs.payplus.co.il/reference/post_products-add
+ */
+export async function createPayPlusProduct(
+  credentials: PayPlusCredentials,
+  params: {
+    name: string
+    price: number // באגורות (מספר שלם)
+    currencyCode?: "ILS" | "USD" | "EUR" | "GPB"
+    vatType?: 0 | 1 | 2 // 0=included, 1=not included, 2=exempt
+    description?: string
+    barcode?: string
+  }
+): Promise<PayPlusResponse<{ uid: string }>> {
+  try {
+    const baseUrl = getPayPlusBaseUrl(credentials.useProduction)
+    const response = await fetch(`${baseUrl}/Products/Add`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": credentials.apiKey,
+        "secret-key": credentials.secretKey,
+      },
+      body: JSON.stringify({
+        name: params.name,
+        price: Math.round(params.price), // PayPlus מצפה לאגורות
+        currency_code: params.currencyCode || "ILS",
+        vat_type: params.vatType ?? 0, // 0 = VAT included
+        description: params.description,
+        barcode: params.barcode,
+        valid: true,
+      }),
+    })
+
+    const data = await response.json()
+
+    if (!response.ok || data.results?.status === "error") {
+      return {
+        success: false,
+        error: data.results?.description || data.message || "Failed to create product",
+        results: data.results,
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        uid: data.data?.uid || data.uid,
+      },
+    }
+  } catch (error: any) {
+    console.error("PayPlus createProduct error:", error)
+    return {
+      success: false,
+      error: error.message || "Unknown error creating product",
+    }
+  }
+}
+
+/**
+ * חיפוש Product ב-PayPlus לפי שם
+ * https://docs.payplus.co.il/reference/get_products-view
+ */
+export async function searchPayPlusProduct(
+  credentials: PayPlusCredentials,
+  productName: string
+): Promise<PayPlusResponse<{ uid: string; name: string; price: number } | null>> {
+  try {
+    const baseUrl = getPayPlusBaseUrl(credentials.useProduction)
+    const response = await fetch(`${baseUrl}/Products/View?skip=0&take=500`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": credentials.apiKey,
+        "secret-key": credentials.secretKey,
+      },
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.results?.description || "Failed to search products",
+      }
+    }
+
+    // חיפוש product לפי שם
+    const products = data.data || []
+    const found = products.find((p: any) => p.name === productName)
+
+    if (found) {
+      return {
+        success: true,
+        data: {
+          uid: found.uid,
+          name: found.name,
+          price: found.price,
+        },
+      }
+    }
+
+    return {
+      success: true,
+      data: null,
+    }
+  } catch (error: any) {
+    console.error("PayPlus searchProduct error:", error)
+    return {
+      success: false,
+      error: error.message || "Unknown error searching product",
+    }
+  }
+}
+
+/**
+ * עדכון הוראת קבע קיימת
+ * https://docs.payplus.co.il/reference/post_recurringpayments-update-uid
+ */
+export async function updateRecurringPayment(
+  credentials: PayPlusCredentials,
+  params: {
+    recurringPaymentUid: string
+    customerUid: string
+    cardToken: string
+    cashierUid: string
+    currencyCode?: "ILS" | "USD" | "EUR" | "GPB"
+    instantFirstPayment: boolean
+    recurringType: 0 | 1 | 2
+    recurringRange: number
+    numberOfCharges: number
+    startDate: string
+    items: Array<{
+      productUid: string
+      quantity: number
+      price: number
+      discountType?: "percentage" | "amount"
+      discountValue?: number
+    }>
+    endDate?: string
+    sendCustomerSuccessEmail?: boolean
+    customerFailureEmail?: boolean
+    extraInfo?: string
+  }
+): Promise<PayPlusResponse> {
+  try {
+    const baseUrl = getPayPlusBaseUrl(credentials.useProduction)
+    const response = await fetch(
+      `${baseUrl}/RecurringPayments/Update/${params.recurringPaymentUid}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": credentials.apiKey,
+          "secret-key": credentials.secretKey,
+        },
+        body: JSON.stringify({
+          terminal_uid: credentials.terminalUid,
+          customer_uid: params.customerUid,
+          card_token: params.cardToken,
+          cashier_uid: params.cashierUid,
+          currency_code: params.currencyCode || "ILS",
+          instant_first_payment: params.instantFirstPayment,
+          recurring_type: params.recurringType,
+          recurring_range: params.recurringRange,
+          number_of_charges: params.numberOfCharges,
+          start_date: params.startDate,
+          end_date: params.endDate,
+          items: params.items.map((item) => ({
+            product_uid: item.productUid,
+            quantity: item.quantity,
+            price: item.price,
+            discount_type: item.discountType,
+            discount_value: item.discountValue,
+          })),
+          send_customer_success_email: params.sendCustomerSuccessEmail || false,
+          customer_failure_email: params.customerFailureEmail || false,
+          extra_info: params.extraInfo,
+        }),
+      }
+    )
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.message || data.error || "Failed to update recurring payment",
+        results: data.results,
+      }
+    }
+
+    return {
+      success: true,
+      data: data,
+    }
+  } catch (error: any) {
+    console.error("PayPlus updateRecurringPayment error:", error)
+    return {
+      success: false,
+      error: error.message || "Unknown error updating recurring payment",
+    }
+  }
+}
+
+/**
+ * מחיקת הוראת קבע
+ * https://docs.payplus.co.il/reference/post_recurringpayments-deleterecurring-uid
+ */
+export async function deleteRecurringPayment(
+  credentials: PayPlusCredentials,
+  recurringPaymentUid: string
+): Promise<PayPlusResponse> {
+  try {
+    const baseUrl = getPayPlusBaseUrl(credentials.useProduction)
+    const response = await fetch(
+      `${baseUrl}/RecurringPayments/DeleteRecurring/${recurringPaymentUid}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": credentials.apiKey,
+          "secret-key": credentials.secretKey,
+        },
+        body: JSON.stringify({
+          terminal_uid: credentials.terminalUid,
+        }),
+      }
+    )
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.message || data.error || "Failed to delete recurring payment",
+        results: data.results,
+      }
+    }
+
+    return {
+      success: true,
+      data: data,
+    }
+  } catch (error: any) {
+    console.error("PayPlus deleteRecurringPayment error:", error)
+    return {
+      success: false,
+      error: error.message || "Unknown error deleting recurring payment",
+    }
+  }
+}
+
+/**
+ * הפעלה/כיבוי הוראת קבע (Valid/Invalid)
+ * https://docs.payplus.co.il/reference/post_recurringpayments-uid-valid
+ */
+export async function setRecurringPaymentValid(
+  credentials: PayPlusCredentials,
+  recurringPaymentUid: string,
+  valid: boolean
+): Promise<PayPlusResponse> {
+  try {
+    const baseUrl = getPayPlusBaseUrl(credentials.useProduction)
+    const response = await fetch(
+      `${baseUrl}/RecurringPayments/${recurringPaymentUid}/Valid`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "api-key": credentials.apiKey,
+          "secret-key": credentials.secretKey,
+        },
+        body: JSON.stringify({
+          terminal_uid: credentials.terminalUid,
+          valid: valid,
+        }),
+      }
+    )
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      return {
+        success: false,
+        error: data.message || data.error || "Failed to set recurring payment valid",
+        results: data.results,
+      }
+    }
+
+    return {
+      success: true,
+      data: data,
+    }
+  } catch (error: any) {
+    console.error("PayPlus setRecurringPaymentValid error:", error)
+    return {
+      success: false,
+      error: error.message || "Unknown error setting recurring payment valid",
+    }
+  }
+}
+
+/**
+ * Helper: קבלת תאריך החודש הבא בפורמט YYYY-MM-DD
+ */
+export function getNextMonthDate(): string {
+  const date = new Date()
+  date.setMonth(date.getMonth() + 1)
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
+}
+
+/**
+ * Helper: קבלת תאריך סוף החודש הנוכחי בפורמט YYYY-MM-DD
+ */
+export function getEndOfCurrentMonth(): string {
+  const date = new Date()
+  const year = date.getFullYear()
+  const month = date.getMonth() + 1
+  const lastDay = new Date(year, month, 0).getDate()
+  return `${year}-${String(month).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`
+}
+
+/**
+ * זיכוי לפי Transaction UID
+ * https://docs.payplus.co.il/reference/post_transactions-refundbytransactionuid
+ */
+export async function refundByTransactionUID(
+  credentials: PayPlusCredentials,
+  params: {
+    transactionUid: string
+    amount: number
+    moreInfo?: string
+  }
+): Promise<PayPlusResponse> {
+  try {
+    const baseUrl = getPayPlusBaseUrl(credentials.useProduction)
+
+    const requestBody = {
+      transaction_uid: params.transactionUid,
+      amount: parseFloat(params.amount.toFixed(2)),
+      ...(params.moreInfo && { more_info: params.moreInfo }),
+    }
+
+    console.log("PayPlus refundByTransactionUID - Request:", {
+      transactionUid: params.transactionUid,
+      amount: params.amount,
+    })
+
+    const response = await fetch(`${baseUrl}/Transactions/RefundByTransactionUID`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": credentials.apiKey,
+        "secret-key": credentials.secretKey,
+      },
+      body: JSON.stringify(requestBody),
+    })
+
+    const responseText = await response.text()
+    console.log("PayPlus refundByTransactionUID - Raw response:", responseText)
+
+    let data: any
+    try {
+      data = JSON.parse(responseText)
+    } catch (parseError) {
+      console.error("PayPlus response is not valid JSON:", responseText)
+      return {
+        success: false,
+        error: `PayPlus returned invalid response: ${responseText.substring(0, 200)}`,
+      }
+    }
+
+    if (!response.ok || data.results?.status === "error") {
+      const errorMsg = data.results?.description || data.message || data.error || "Failed to process refund"
+      console.error("PayPlus refundByTransactionUID failed:", errorMsg, data)
+      return {
+        success: false,
+        error: errorMsg,
+        results: data.results,
+      }
+    }
+
+    console.log("PayPlus refundByTransactionUID - Success")
+    return {
+      success: true,
+      data: data.data || data,
+    }
+  } catch (error: any) {
+    console.error("PayPlus refundByTransactionUID error:", error)
+    return {
+      success: false,
+      error: error.message || "Unknown error processing refund",
+    }
   }
 }
 

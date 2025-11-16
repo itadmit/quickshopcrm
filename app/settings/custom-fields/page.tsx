@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useShop } from "@/components/providers/ShopProvider"
 import { AppLayout } from "@/components/AppLayout"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -17,8 +17,6 @@ import {
   Plus,
   Edit2,
   Trash2,
-  Save,
-  X,
   Settings,
   FileText,
   Calendar,
@@ -29,6 +27,7 @@ import {
   FileImage,
   AlertCircle,
 } from "lucide-react"
+import { DataListTable, DataListItem } from "@/components/ui/DataListTable"
 import {
   Dialog,
   DialogContent,
@@ -176,10 +175,6 @@ export default function CustomFieldsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("האם אתה בטוח שברצונך למחוק שדה זה? כל הערכים במוצרים ימחקו גם כן.")) {
-      return
-    }
-
     try {
       setSaving(true)
       const response = await fetch(`/api/custom-fields/${id}`, {
@@ -344,80 +339,51 @@ export default function CustomFieldsPage() {
 
         {/* Fields List */}
         {definitions.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                שדות קיימים ({definitions.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {definitions.map((definition) => {
-                  const Icon = FIELD_TYPE_ICONS[definition.type]
-                  return (
-                    <div
-                      key={definition.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                    >
-                      <div className="flex items-center gap-4 flex-1">
-                        {Icon && <Icon className="w-5 h-5 text-gray-600" />}
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-semibold">{definition.label}</h3>
-                            {definition.required && (
-                              <Badge variant="destructive" className="text-xs">
-                                חובה
-                              </Badge>
-                            )}
-                            {definition.showInStorefront && (
-                              <Badge variant="default" className="text-xs">
-                                מוצג בחנות
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-3 mt-1 text-sm text-gray-600">
-                            <span>
-                              {definition.namespace}.{definition.key}
-                            </span>
-                            <span>•</span>
-                            <span>{FIELD_TYPE_LABELS[definition.type]}</span>
-                            <span>•</span>
-                            <span>
-                              {definition.scope === "GLOBAL"
-                                ? "גלובלי"
-                                : `${definition.categoryIds.length} קטגוריות`}
-                            </span>
-                          </div>
-                          {definition.description && (
-                            <p className="text-sm text-gray-500 mt-1">
-                              {definition.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEdit(definition)}
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDelete(definition.id)}
-                          disabled={saving}
-                        >
-                          <Trash2 className="w-4 h-4 text-red-600" />
-                        </Button>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </CardContent>
-          </Card>
+          <DataListTable
+            title={`שדות קיימים (${definitions.length})`}
+            items={definitions.map((definition): DataListItem => {
+              const Icon = FIELD_TYPE_ICONS[definition.type]
+              const subtitle = (
+                <>
+                  <span>
+                    {definition.namespace}.{definition.key}
+                  </span>
+                  <span>•</span>
+                  <span>{FIELD_TYPE_LABELS[definition.type]}</span>
+                  <span>•</span>
+                  <span>
+                    {definition.scope === "GLOBAL"
+                      ? "גלובלי"
+                      : `${definition.categoryIds.length} קטגוריות`}
+                  </span>
+                </>
+              )
+
+              const badges = []
+              if (definition.required) {
+                badges.push({ label: "חובה", variant: "destructive" as const })
+              }
+              if (definition.showInStorefront) {
+                badges.push({ label: "מוצג בחנות", variant: "default" as const })
+              }
+
+              return {
+                id: definition.id,
+                title: definition.label,
+                subtitle,
+                meta: definition.description,
+                icon: Icon,
+                iconBgColor: "bg-purple-100",
+                iconColor: "text-purple-600",
+                badges: badges.length > 0 ? badges : undefined,
+                originalData: definition,
+              }
+            })}
+            searchPlaceholder="חפש שדות..."
+            onEdit={(item) => handleEdit(item.originalData as CustomFieldDefinition)}
+            onDelete={(item) => handleDelete(item.id)}
+            deleteConfirmMessage="האם אתה בטוח שברצונך למחוק שדה זה? כל הערכים במוצרים ימחקו גם כן."
+          />
         )}
 
         {/* Create/Edit Dialog */}

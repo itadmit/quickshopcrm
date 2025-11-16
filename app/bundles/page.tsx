@@ -17,13 +17,14 @@ interface Bundle {
   name: string
   description: string | null
   price: number
-  discount: number
+  comparePrice: number | null
   isActive: boolean
   products: Array<{
     product: {
       id: string
       name: string
     }
+    quantity: number
   }>
   createdAt: string
 }
@@ -68,7 +69,6 @@ export default function BundlesPage() {
     bundle.name.toLowerCase().includes(search.toLowerCase())
   )
 
-  // הצגת מסך טעינה בזמן שהנתונים נטענים מהשרת
   if (shopLoading) {
     return (
       <AppLayout title="חבילות מוצרים">
@@ -100,10 +100,13 @@ export default function BundlesPage() {
   return (
     <AppLayout title="חבילות מוצרים">
       <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">חבילות מוצרים</h1>
-            <p className="text-gray-600 mt-1">נהל חבילות מוצרים עם הנחות</p>
+            <h1 className="text-2xl font-bold text-gray-900">חבילות מוצרים</h1>
+            <p className="text-gray-600 mt-1">
+              ניהול חבילות מוצרים - מוצרים שמורכבים מכמה מוצרים יחד
+            </p>
           </div>
           <Button
             onClick={() => router.push("/bundles/new")}
@@ -115,28 +118,38 @@ export default function BundlesPage() {
         </div>
 
         {/* Search */}
-        <Card>
-          <CardContent className="pt-6">
-            <div className="relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="חיפוש לפי שם חבילה..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="pr-10"
-              />
-            </div>
-          </CardContent>
-        </Card>
+        <div className="relative">
+          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+          <Input
+            placeholder="חפש חבילות..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pr-10"
+          />
+        </div>
 
         {/* Bundles List */}
         {loading ? (
-          <TableSkeleton rows={5} columns={5} />
+          <TableSkeleton />
         ) : filteredBundles.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
-              <Boxes className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <p className="text-gray-600">אין חבילות מוצרים</p>
+              <Boxes className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                אין חבילות מוצרים
+              </h3>
+              <p className="text-gray-600 mb-4">
+                {search ? "לא נמצאו חבילות התואמות לחיפוש" : "עדיין לא נוצרו חבילות מוצרים"}
+              </p>
+              {!search && (
+                <Button
+                  onClick={() => router.push("/bundles/new")}
+                  className="prodify-gradient text-white"
+                >
+                  <Plus className="w-4 h-4 ml-2" />
+                  צור חבילה ראשונה
+                </Button>
+              )}
             </CardContent>
           </Card>
         ) : (
@@ -165,12 +178,12 @@ export default function BundlesPage() {
                       <span className="text-sm text-gray-600">מחיר:</span>
                       <span className="font-bold text-lg">₪{bundle.price.toFixed(2)}</span>
                     </div>
-                    {bundle.discount > 0 && (
+                    {bundle.comparePrice && bundle.comparePrice > bundle.price && (
                       <div className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">הנחה:</span>
-                        <Badge className="bg-purple-100 text-purple-800">
-                          {bundle.discount}%
-                        </Badge>
+                        <span className="text-sm text-gray-600">מחיר מקורי:</span>
+                        <span className="text-sm text-gray-400 line-through">
+                          ₪{bundle.comparePrice.toFixed(2)}
+                        </span>
                       </div>
                     )}
                   </div>
@@ -182,7 +195,7 @@ export default function BundlesPage() {
                     <div className="flex flex-wrap gap-2">
                       {bundle.products.slice(0, 3).map((item) => (
                         <Badge key={item.product.id} variant="secondary">
-                          {item.product.name}
+                          {item.product.name} (x{item.quantity})
                         </Badge>
                       ))}
                       {bundle.products.length > 3 && (

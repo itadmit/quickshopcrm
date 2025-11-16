@@ -113,7 +113,7 @@ export default function EditCollectionPage() {
       } else {
         toast({
           title: "שגיאה",
-          description: "לא הצלחנו לטעון את הקולקציה",
+          description: "לא הצלחנו לטעון את הקטגוריה",
           variant: "destructive",
         })
         router.push("/collections")
@@ -122,7 +122,7 @@ export default function EditCollectionPage() {
       console.error("Error fetching collection:", error)
       toast({
         title: "שגיאה",
-        description: "אירעה שגיאה בטעינת הקולקציה",
+        description: "אירעה שגיאה בטעינת הקטגוריה",
         variant: "destructive",
       })
       router.push("/collections")
@@ -312,7 +312,7 @@ export default function EditCollectionPage() {
     if (!formData.name.trim()) {
       toast({
         title: "שגיאה",
-        description: "שם הקולקציה הוא חובה",
+        description: "שם הקטגוריה הוא חובה",
         variant: "destructive",
       })
       return
@@ -351,7 +351,7 @@ export default function EditCollectionPage() {
         const updated = await response.json()
         toast({
           title: "הצלחה",
-          description: "הקולקציה עודכנה בהצלחה",
+          description: "הקטגוריה עודכנה בהצלחה",
         })
         
         // אם slug השתנה, נווט לכתובת החדשה
@@ -364,7 +364,7 @@ export default function EditCollectionPage() {
         const error = await response.json()
         toast({
           title: "שגיאה",
-          description: error.error || "אירעה שגיאה בעדכון הקולקציה",
+          description: error.error || "אירעה שגיאה בעדכון הקטגוריה",
           variant: "destructive",
         })
       }
@@ -372,7 +372,7 @@ export default function EditCollectionPage() {
       console.error("Error updating collection:", error)
       toast({
         title: "שגיאה",
-        description: "אירעה שגיאה בעדכון הקולקציה",
+        description: "אירעה שגיאה בעדכון הקטגוריה",
         variant: "destructive",
       })
     } finally {
@@ -382,7 +382,7 @@ export default function EditCollectionPage() {
 
   if (loading) {
     return (
-      <AppLayout title="עריכת קולקציה">
+      <AppLayout title="עריכת קטגוריה">
         <FormSkeleton />
       </AppLayout>
     )
@@ -390,17 +390,17 @@ export default function EditCollectionPage() {
 
   if (!selectedShop) {
     return (
-      <AppLayout title="עריכת קולקציה">
+      <AppLayout title="עריכת קטגוריה">
         <div className="text-center py-12">
           <FolderOpen className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             אין חנות נבחרת
           </h3>
           <p className="text-gray-600 mb-4">
-            יש לבחור חנות מההדר לפני עריכת קולקציה
+            יש לבחור חנות מההדר לפני עריכת קטגוריה
           </p>
           <Button onClick={() => router.push("/collections")}>
-            חזור לרשימת קולקציות
+            חזור לרשימת קטגוריות
           </Button>
         </div>
       </AppLayout>
@@ -408,13 +408,13 @@ export default function EditCollectionPage() {
   }
 
   return (
-    <AppLayout title="עריכת קולקציה">
+    <AppLayout title="עריכת קטגוריה">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">עריכת קולקציה</h1>
+            <h1 className="text-3xl font-bold text-gray-900">עריכת קטגוריה</h1>
             <p className="text-gray-600 mt-1">
-              ערוך קולקציה: <span className="font-semibold">{formData.name}</span>
+              ערוך קטגוריה: <span className="font-semibold">{formData.name}</span>
             </p>
           </div>
           <div className="flex gap-2">
@@ -448,7 +448,7 @@ export default function EditCollectionPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">שם קולקציה *</Label>
+                  <Label htmlFor="name">שם קטגוריה *</Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -458,7 +458,7 @@ export default function EditCollectionPage() {
                         name: e.target.value,
                       }))
                     }}
-                    placeholder="לדוגמה: קולקציית קיץ"
+                    placeholder="לדוגמה: קטגוריית קיץ"
                   />
                 </div>
 
@@ -478,24 +478,24 @@ export default function EditCollectionPage() {
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                    placeholder="תיאור הקולקציה..."
+                    placeholder="תיאור הקטגוריה..."
                     rows={4}
                   />
                 </div>
               </CardContent>
             </Card>
 
-            {/* סוג קולקציה */}
+            {/* סוג קטגוריה */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Filter className="w-5 h-5" />
-                  סוג קולקציה
+                  סוג קטגוריה
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="type">איך מוצרים מתווספים לקולקציה?</Label>
+                  <Label htmlFor="type">איך מוצרים מתווספים לקטגוריה?</Label>
                   <Select
                     value={formData.type}
                     onValueChange={(value: "MANUAL" | "AUTOMATIC") =>
@@ -751,7 +751,7 @@ export default function EditCollectionPage() {
                   <div className="relative">
                     <img
                       src={formData.image}
-                      alt="קולקציה"
+                      alt="קטגוריה"
                       className="w-full h-64 object-cover rounded-lg"
                     />
                     <button

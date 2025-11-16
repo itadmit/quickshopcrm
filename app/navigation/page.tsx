@@ -10,8 +10,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
-import { Save, Menu, Plus, Trash2, GripVertical, Monitor, Smartphone, Layout, ShoppingCart, Copy, AlertCircle, Search, X } from "lucide-react"
+import { Save, Menu, Plus, Trash2, GripVertical, Monitor, Smartphone, Layout, ShoppingCart, Copy, AlertCircle, Search, X, Image as ImageIcon, ChevronDown, ChevronUp } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { NavigationItemEditor } from "@/components/navigation/NavigationItemEditor"
 
 interface NavigationItem {
   id: string
@@ -23,6 +24,8 @@ interface NavigationItem {
   children?: NavigationItem[]
   categoryId?: string
   collectionId?: string
+  image?: string
+  columnTitle?: string
 }
 
 interface Navigation {
@@ -62,6 +65,7 @@ export default function NavigationPage() {
   const [collectionSearchQueries, setCollectionSearchQueries] = useState<Record<string, string>>({})
   const [collectionSearchResults, setCollectionSearchResults] = useState<Record<string, Array<{ id: string; name: string; slug: string }>>>({})
   const [loadingCollections, setLoadingCollections] = useState<Record<string, boolean>>({})
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (selectedShop) {
@@ -282,66 +286,135 @@ export default function NavigationPage() {
   const removeItem = (id: string) => {
     if (!selectedNavigation) return
 
+    // הסרת פריט וגם כל הילדים שלו
+    const removeItemRecursive = (items: NavigationItem[]): NavigationItem[] => {
+      return items
+        .filter((item) => item.id !== id)
+        .map((item) => ({
+          ...item,
+          children: item.children ? removeItemRecursive(item.children) : undefined,
+        }))
+    }
+
     setSelectedNavigation({
       ...selectedNavigation,
-      items: selectedNavigation.items.filter((item) => item.id !== id),
+      items: removeItemRecursive(selectedNavigation.items),
+    })
+  }
+
+  const addChildItem = (parentId: string) => {
+    if (!selectedNavigation) return
+
+    const addChildRecursive = (items: NavigationItem[]): NavigationItem[] => {
+      return items.map((item) => {
+        if (item.id === parentId) {
+          const newChild: NavigationItem = {
+            id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            label: "פריט חדש",
+            type: "PAGE",
+            url: null,
+            position: (item.children?.length || 0),
+            parentId: parentId,
+          }
+          return {
+            ...item,
+            children: [...(item.children || []), newChild],
+          }
+        }
+        return {
+          ...item,
+          children: item.children ? addChildRecursive(item.children) : undefined,
+        }
+      })
+    }
+
+    setSelectedNavigation({
+      ...selectedNavigation,
+      items: addChildRecursive(selectedNavigation.items),
+    })
+  }
+
+  // פונקציה רקורסיבית לעדכון פריט בתפריט (כולל ילדים)
+  const updateItemRecursive = (items: NavigationItem[], id: string, updates: Partial<NavigationItem>): NavigationItem[] => {
+    return items.map((item) => {
+      if (item.id === id) {
+        return { ...item, ...updates }
+      }
+      if (item.children && item.children.length > 0) {
+        return {
+          ...item,
+          children: updateItemRecursive(item.children, id, updates),
+        }
+      }
+      return item
     })
   }
 
   const updateItem = (id: string, updates: Partial<NavigationItem>) => {
     if (!selectedNavigation) return
 
-    const currentItem = selectedNavigation.items.find(item => item.id === id)
-    if (!currentItem) return
+    // חיפוש הפריט (כולל ילדים)
+    const findItem = (items: NavigationItem[]): NavigationItem | null => {
+      for (const item of items) {
+        if (item.id === id) return item
+        if (item.children && item.children.length > 0) {
+          const found = findItem(item.children)
+          if (found) return found
+        }
+      }
+      return null
+    }
+
+    const currentItem = findItem(selectedNavigation.items)
+    if (!currentItem) {
+      console.warn("Item not found:", id)
+      return
+    }
 
     // אם משנים תווית של קטגוריה/קולקציה, עדכן את כל הפריטים מאותו סוג עם אותו ID בכל התפריטים
     if (updates.label && (currentItem.type === "CATEGORY" || currentItem.type === "COLLECTION")) {
       const identifier = currentItem.type === "CATEGORY" ? currentItem.categoryId : currentItem.collectionId
       
       if (identifier) {
-        // עדכון בכל התפריטים
+        // עדכון בכל התפריטים (רקורסיבי)
+        const updateAllItems = (items: NavigationItem[]): NavigationItem[] => {
+          return items.map(item => {
+            let updated = item
+              if (item.type === currentItem.type) {
+                if (currentItem.type === "CATEGORY" && item.categoryId === identifier) {
+                updated = { ...item, label: updates.label! }
+                }
+                if (currentItem.type === "COLLECTION" && item.collectionId === identifier) {
+                updated = { ...item, label: updates.label! }
+              }
+            }
+            if (updated.children && updated.children.length > 0) {
+              updated = { ...updated, children: updateAllItems(updated.children) }
+            }
+            return updated.id === id ? { ...updated, ...updates } : updated
+          })
+        }
+
         setNavigations(prevNavigations => 
           prevNavigations.map(nav => ({
             ...nav,
-            items: nav.items.map(item => {
-              if (item.type === currentItem.type) {
-                if (currentItem.type === "CATEGORY" && item.categoryId === identifier) {
-                  return { ...item, label: updates.label! }
-                }
-                if (currentItem.type === "COLLECTION" && item.collectionId === identifier) {
-                  return { ...item, label: updates.label! }
-                }
-              }
-              return item
-            })
+            items: updateAllItems(nav.items),
           }))
         )
         
         // עדכון התפריט הנוכחי
         setSelectedNavigation({
           ...selectedNavigation,
-          items: selectedNavigation.items.map((item) => {
-            if (item.type === currentItem.type) {
-              if (currentItem.type === "CATEGORY" && item.categoryId === identifier) {
-                return { ...item, ...updates }
-              }
-              if (currentItem.type === "COLLECTION" && item.collectionId === identifier) {
-                return { ...item, ...updates }
-              }
-            }
-            return item.id === id ? { ...item, ...updates } : item
-          }),
+          items: updateAllItems(selectedNavigation.items),
         })
         return
       }
     }
 
-    // עדכון רגיל לפריטים אחרים
+    // עדכון רגיל לפריטים אחרים (כולל ילדים)
     setSelectedNavigation({
       ...selectedNavigation,
-      items: selectedNavigation.items.map((item) =>
-        item.id === id ? { ...item, ...updates } : item
-      ),
+      items: updateItemRecursive(selectedNavigation.items, id, updates),
     })
   }
 
@@ -834,177 +907,46 @@ export default function NavigationPage() {
                       </div>
                     </div>
                   ) : (
-                    selectedNavigation.items.map((item) => (
-                      <div
+                    <div className="space-y-4">
+                      {selectedNavigation && selectedNavigation.items.map((item) => (
+                        <NavigationItemEditor
                         key={item.id}
-                        className="flex items-center gap-4 p-4 border rounded-lg"
-                      >
-                        <GripVertical className="w-5 h-5 text-gray-400" />
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div>
-                            <Label>תווית</Label>
-                            <Input
-                              value={item.label}
-                              onChange={(e) =>
-                                updateItem(item.id, { label: e.target.value })
+                          item={item}
+                          shopId={selectedShop.id}
+                          location={selectedNavigation.location}
+                          onUpdate={updateItem}
+                          onRemove={removeItem}
+                          onAddChild={addChildItem}
+                          pageSearchQueries={pageSearchQueries}
+                          pageSearchResults={pageSearchResults}
+                          loadingPages={loadingPages}
+                          categorySearchQueries={categorySearchQueries}
+                          categorySearchResults={categorySearchResults}
+                          loadingCategories={loadingCategories}
+                          collectionSearchQueries={collectionSearchQueries}
+                          collectionSearchResults={collectionSearchResults}
+                          loadingCollections={loadingCollections}
+                          onPageSearch={(itemId, query) => setPageSearchQueries(prev => ({ ...prev, [itemId]: query }))}
+                          onCategorySearch={(itemId, query) => setCategorySearchQueries(prev => ({ ...prev, [itemId]: query }))}
+                          onCollectionSearch={(itemId, query) => setCollectionSearchQueries(prev => ({ ...prev, [itemId]: query }))}
+                          onSelectPage={selectPage}
+                          onSelectCategory={selectCategory}
+                          onSelectCollection={selectCollection}
+                          expandedItems={expandedItems}
+                          onToggleExpand={(itemId) => {
+                            setExpandedItems(prev => {
+                              const newSet = new Set(prev)
+                              if (newSet.has(itemId)) {
+                                newSet.delete(itemId)
+                              } else {
+                                newSet.add(itemId)
                               }
-                            />
-                          </div>
-                          <div>
-                            <Label>סוג</Label>
-                            <Select
-                              value={item.type}
-                              onValueChange={(value: any) => {
-                                updateItem(item.id, { 
-                                  type: value,
-                                  url: value === "EXTERNAL" ? item.url : null // ניקוי URL כשמשנים סוג
-                                })
-                                // ניקוי תוצאות חיפוש
-                                setPageSearchResults(prev => ({ ...prev, [item.id]: [] }))
-                                setCategorySearchResults(prev => ({ ...prev, [item.id]: [] }))
-                                setCollectionSearchResults(prev => ({ ...prev, [item.id]: [] }))
-                              }}
-                            >
-                              <SelectTrigger>
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="PAGE">דף</SelectItem>
-                                <SelectItem value="CATEGORY">קטגוריה/קולקציה</SelectItem>
-                                <SelectItem value="COLLECTION">קטגוריה/קולקציה</SelectItem>
-                                <SelectItem value="EXTERNAL">קישור חיצוני</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          <div className="relative">
-                            <Label>URL</Label>
-                            <div className="relative">
-                              <Input
-                                value={item.url || ""}
-                                onChange={(e) => {
-                                  updateItem(item.id, { url: e.target.value })
-                                  if (item.type === "PAGE") {
-                                    setPageSearchQueries(prev => ({ ...prev, [item.id]: e.target.value }))
-                                    setCategorySearchResults(prev => ({ ...prev, [item.id]: [] }))
-                                    setCollectionSearchResults(prev => ({ ...prev, [item.id]: [] }))
-                                  } else if (item.type === "CATEGORY") {
-                                    setCategorySearchQueries(prev => ({ ...prev, [item.id]: e.target.value }))
-                                    setPageSearchResults(prev => ({ ...prev, [item.id]: [] }))
-                                    setCollectionSearchResults(prev => ({ ...prev, [item.id]: [] }))
-                                  } else if (item.type === "COLLECTION") {
-                                    setCollectionSearchQueries(prev => ({ ...prev, [item.id]: e.target.value }))
-                                    setPageSearchResults(prev => ({ ...prev, [item.id]: [] }))
-                                    setCategorySearchResults(prev => ({ ...prev, [item.id]: [] }))
-                                  } else {
-                                    setPageSearchResults(prev => ({ ...prev, [item.id]: [] }))
-                                    setCategorySearchResults(prev => ({ ...prev, [item.id]: [] }))
-                                    setCollectionSearchResults(prev => ({ ...prev, [item.id]: [] }))
-                                  }
-                                }}
-                                onFocus={() => {
-                                  if (item.type === "PAGE" && !pageSearchQueries[item.id]) {
-                                    setPageSearchQueries(prev => ({ ...prev, [item.id]: item.url || "" }))
-                                  } else if (item.type === "CATEGORY" && !categorySearchQueries[item.id]) {
-                                    setCategorySearchQueries(prev => ({ ...prev, [item.id]: item.url || "" }))
-                                  } else if (item.type === "COLLECTION" && !collectionSearchQueries[item.id]) {
-                                    setCollectionSearchQueries(prev => ({ ...prev, [item.id]: item.url || "" }))
-                                  }
-                                }}
-                                onBlur={() => {
-                                  // סגירת הרשימה אחרי 200ms כדי לאפשר לחיצה על פריט
-                                  setTimeout(() => {
-                                    setPageSearchResults(prev => ({ ...prev, [item.id]: [] }))
-                                    setCategorySearchResults(prev => ({ ...prev, [item.id]: [] }))
-                                    setCollectionSearchResults(prev => ({ ...prev, [item.id]: [] }))
-                                  }, 200)
-                                }}
-                                placeholder={
-                                  item.type === "PAGE" 
-                                    ? "חפש דף לפי שם או slug..." 
-                                    : item.type === "CATEGORY" || item.type === "COLLECTION"
-                                    ? "חפש קטגוריה/קולקציה לפי שם או slug..."
-                                    : "/page-slug"
-                                }
-                                className={(item.type === "PAGE" || item.type === "CATEGORY" || item.type === "COLLECTION") ? "pr-10" : ""}
-                              />
-                              {(item.type === "PAGE" || item.type === "CATEGORY" || item.type === "COLLECTION") && (
-                                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                              )}
-                            </div>
-                            {/* תוצאות חיפוש דפים */}
-                            {item.type === "PAGE" && pageSearchResults[item.id] && pageSearchResults[item.id].length > 0 && (
-                              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                {pageSearchResults[item.id].map((page) => (
-                                  <button
-                                    key={page.id}
-                                    type="button"
-                                    onClick={() => selectPage(item.id, page)}
-                                    className="w-full text-right px-4 py-2 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
-                                  >
-                                    <div className="font-medium text-sm">{page.title}</div>
-                                    <div className="text-xs text-gray-500">{page.slug}</div>
-                                  </button>
+                              return newSet
+                            })
+                          }}
+                        />
                                 ))}
                               </div>
-                            )}
-                            {item.type === "PAGE" && loadingPages[item.id] && (
-                              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 text-sm text-gray-500 text-center">
-                                מחפש...
-                              </div>
-                            )}
-                            {/* תוצאות חיפוש קטגוריות */}
-                            {item.type === "CATEGORY" && categorySearchResults[item.id] && categorySearchResults[item.id].length > 0 && (
-                              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                {categorySearchResults[item.id].map((category) => (
-                                  <button
-                                    key={category.id}
-                                    type="button"
-                                    onClick={() => selectCategory(item.id, category)}
-                                    className="w-full text-right px-4 py-2 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
-                                  >
-                                    <div className="font-medium text-sm">{category.name}</div>
-                                    <div className="text-xs text-gray-500">{category.slug}</div>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                            {item.type === "CATEGORY" && loadingCategories[item.id] && (
-                              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 text-sm text-gray-500 text-center">
-                                מחפש...
-                              </div>
-                            )}
-                            {/* תוצאות חיפוש קולקציות */}
-                            {item.type === "COLLECTION" && collectionSearchResults[item.id] && collectionSearchResults[item.id].length > 0 && (
-                              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                                {collectionSearchResults[item.id].map((collection) => (
-                                  <button
-                                    key={collection.id}
-                                    type="button"
-                                    onClick={() => selectCollection(item.id, collection)}
-                                    className="w-full text-right px-4 py-2 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
-                                  >
-                                    <div className="font-medium text-sm">{collection.name}</div>
-                                    <div className="text-xs text-gray-500">{collection.slug}</div>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                            {item.type === "COLLECTION" && loadingCollections[item.id] && (
-                              <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-2 text-sm text-gray-500 text-center">
-                                מחפש...
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => removeItem(item.id)}
-                        >
-                          <Trash2 className="w-4 h-4 text-red-500" />
-                        </Button>
-                      </div>
-                    ))
                   )}
                 </CardContent>
               </Card>

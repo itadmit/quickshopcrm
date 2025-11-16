@@ -351,8 +351,18 @@ export function MediaPicker({
   }
 
   const handleDone = () => {
-    onSelect(Array.from(selected))
-    onOpenChange(false)
+    const selectedArray = Array.from(selected)
+    console.log("MediaPicker handleDone:", { selectedArray, selectedSize: selected.size })
+    if (selectedArray.length > 0) {
+      onSelect(selectedArray)
+      onOpenChange(false)
+    } else {
+      toast({
+        title: "שגיאה",
+        description: "אנא בחר תמונה",
+        variant: "destructive",
+      })
+    }
   }
 
   return (

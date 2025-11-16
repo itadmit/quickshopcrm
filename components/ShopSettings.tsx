@@ -1109,51 +1109,13 @@ export function ShopSettings() {
                 <CreditCard className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <CardTitle>תשלום</CardTitle>
-                <CardDescription>הגדרות תשלום ומע"מ</CardDescription>
+                <CardTitle>מע"מ</CardTitle>
+                <CardDescription>הגדרות מע"מ</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div>
-                <Label>שיטות תשלום</Label>
-                <div className="mt-2 space-y-3">
-                  {["אשראי", "העברה בנקאית", "מזומן בהזמנה"].map((method) => (
-                    <div key={method} className="flex items-center space-x-2 space-x-reverse">
-                      <Checkbox
-                        id={method}
-                        checked={shopData.paymentMethods.includes(method)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            updateShopData("paymentMethods", [...shopData.paymentMethods, method])
-                          } else {
-                            updateShopData("paymentMethods", shopData.paymentMethods.filter((m) => m !== method))
-                          }
-                        }}
-                      />
-                      <Label htmlFor={method} className="cursor-pointer">
-                        {method}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="currency">מטבע</Label>
-                <Select value={shopData.currency} onValueChange={(value) => updateShopData("currency", value)}>
-                  <SelectTrigger className="h-10 text-sm">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="ILS">₪ שקל ישראלי</SelectItem>
-                    <SelectItem value="USD">$ דולר אמריקאי</SelectItem>
-                    <SelectItem value="EUR">€ יורו</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div>
                 <div className="flex items-center space-x-2 space-x-reverse mb-2">
                   <Checkbox

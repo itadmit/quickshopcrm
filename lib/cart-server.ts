@@ -16,6 +16,8 @@ export async function findCart(
 ) {
   let cart = null
 
+  console.log(`[findCart] Looking for cart: shopId=${shopId}, customerId=${customerId || 'none'}, sessionId=${sessionId || 'none'}`)
+
   // אם יש customerId - זו העדיפות הראשונה
   if (customerId) {
     cart = await prisma.cart.findFirst({
@@ -25,6 +27,8 @@ export async function findCart(
         expiresAt: { gt: new Date() } 
       },
     })
+    
+    console.log(`[findCart] Customer cart found:`, cart ? { id: cart.id, itemsCount: (cart.items as any[]).length } : 'NOT FOUND')
     
     // אם יש גם session cart - נמזג אותו
     if (sessionId) {
@@ -105,6 +109,8 @@ export async function findCart(
       },
     })
     
+    console.log(`[findCart] Session cart found:`, cart ? { id: cart.id, itemsCount: (cart.items as any[]).length } : 'NOT FOUND')
+    
     if (cart) {
       return cart
     }
@@ -112,6 +118,7 @@ export async function findCart(
   
   // אין customerId ואין sessionId - מחזירים null
   // לא מחזירים עגלה של משתמש אחר (זה היה גורם לבעיה בגלישה בסתר)
+  console.log(`[findCart] No cart found - returning null`)
   return null
 }
 

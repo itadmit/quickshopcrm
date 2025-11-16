@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useShop } from "@/components/providers/ShopProvider"
 import { AppLayout } from "@/components/AppLayout"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -20,6 +20,7 @@ import {
   AlertCircle,
   ShoppingBag,
 } from "lucide-react"
+import { DataListTable, DataListItem } from "@/components/ui/DataListTable"
 import {
   Dialog,
   DialogContent,
@@ -185,10 +186,6 @@ export default function ProductAddonsPage() {
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("האם אתה בטוח שברצונך למחוק תוספת זו?")) {
-      return
-    }
-
     try {
       setSaving(true)
       const response = await fetch(`/api/product-addons/${id}`, {
@@ -393,85 +390,66 @@ export default function ProductAddonsPage() {
 
         {/* Addons List */}
         {addons.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                תוספות קיימות ({addons.length})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                {addons.map((addon) => (
-                  <div
-                    key={addon.id}
-                    className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50"
-                  >
-                    <div className="flex items-center gap-4 flex-1">
-                      <ShoppingBag className="w-5 h-5 text-gray-600" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="font-semibold">{addon.name}</h3>
-                          {addon.required && (
-                            <Badge variant="destructive" className="text-xs">
-                              חובה
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-3 mt-1 text-sm text-gray-600">
-                          <span>{ADDON_TYPE_LABELS[addon.type]}</span>
-                          <span>•</span>
-                          <span>
-                            {addon.scope === "GLOBAL"
-                              ? "גלובלי"
-                              : addon.scope === "PRODUCT"
-                              ? `${addon.productIds.length} מוצרים`
-                              : `${addon.categoryIds.length} קטגוריות`}
-                          </span>
-                          {addon.values.length > 0 && (
-                            <>
-                              <span>•</span>
-                              <span>{addon.values.length} אפשרויות</span>
-                            </>
-                          )}
-                        </div>
-                        {addon.values.length > 0 && (
-                          <div className="flex gap-2 mt-2 flex-wrap">
-                            {addon.values.slice(0, 3).map((value) => (
-                              <Badge key={value.id} variant="outline" className="text-xs">
-                                {value.label} (+₪{value.price})
-                              </Badge>
-                            ))}
-                            {addon.values.length > 3 && (
-                              <Badge variant="outline" className="text-xs">
-                                +{addon.values.length - 3} עוד
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleEdit(addon)}
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleDelete(addon.id)}
-                        disabled={saving}
-                      >
-                        <Trash2 className="w-4 h-4 text-red-600" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+          <DataListTable
+            title={`תוספות קיימות (${addons.length})`}
+            items={addons.map((addon): DataListItem => {
+              const subtitle = (
+                <>
+                  <span>{ADDON_TYPE_LABELS[addon.type]}</span>
+                  <span>•</span>
+                  <span>
+                    {addon.scope === "GLOBAL"
+                      ? "גלובלי"
+                      : addon.scope === "PRODUCT"
+                      ? `${addon.productIds.length} מוצרים`
+                      : `${addon.categoryIds.length} קטגוריות`}
+                  </span>
+                  {addon.values.length > 0 && (
+                    <>
+                      <span>•</span>
+                      <span>{addon.values.length} אפשרויות</span>
+                    </>
+                  )}
+                </>
+              )
+
+              const meta = addon.values.length > 0 && (
+                <div className="flex gap-2 flex-wrap">
+                  {addon.values.slice(0, 3).map((value) => (
+                    <Badge key={value.id} variant="outline" className="text-xs">
+                      {value.label} (+₪{value.price})
+                    </Badge>
+                  ))}
+                  {addon.values.length > 3 && (
+                    <Badge variant="outline" className="text-xs">
+                      +{addon.values.length - 3} עוד
+                    </Badge>
+                  )}
+                </div>
+              )
+
+              const badges = []
+              if (addon.required) {
+                badges.push({ label: "חובה", variant: "destructive" as const })
+              }
+
+              return {
+                id: addon.id,
+                title: addon.name,
+                subtitle,
+                meta,
+                icon: ShoppingBag,
+                iconBgColor: "bg-purple-100",
+                iconColor: "text-purple-600",
+                badges: badges.length > 0 ? badges : undefined,
+                originalData: addon,
+              }
+            })}
+            searchPlaceholder="חפש תוספות..."
+            onEdit={(item) => handleEdit(item.originalData as ProductAddon)}
+            onDelete={(item) => handleDelete(item.id)}
+            deleteConfirmMessage="האם אתה בטוח שברצונך למחוק תוספת זו?"
+          />
         )}
 
         {/* Create/Edit Dialog */}

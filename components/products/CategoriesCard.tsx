@@ -6,40 +6,37 @@ import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { FolderTree, ChevronRight, ChevronDown, Plus } from "lucide-react"
-import { useState, useEffect, useMemo } from "react"
+import { FolderTree, Plus, Sparkles } from "lucide-react"
+import { useState, useEffect, useMemo, useCallback } from "react"
 import { useToast } from "@/components/ui/use-toast"
+import { Badge } from "@/components/ui/badge"
 
 interface Category {
   id: string
   name: string
   slug: string
-  parentId: string | null
-  children?: Category[]
+  type?: "MANUAL" | "AUTOMATIC"
 }
 
 interface CategoriesCardProps {
   selectedCategories: string[]
   onChange: (categoryIds: string[]) => void
   shopId: string
+  productId?: string // אופציונלי - אם יש, נבדוק קטגוריות אוטומטיות
+  refreshTrigger?: string | number // אופציונלי - אם משתנה, נבדוק מחדש קטגוריות אוטומטיות
 }
 
-export function CategoriesCard({ selectedCategories, onChange, shopId }: CategoriesCardProps) {
+export function CategoriesCard({ selectedCategories, onChange, shopId, productId, refreshTrigger }: CategoriesCardProps) {
   const { toast } = useToast()
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set())
   const [newCategoryName, setNewCategoryName] = useState("")
-  const [newCategoryParent, setNewCategoryParent] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
-
-  useEffect(() => {
-    fetchCategories()
-  }, [shopId])
+  const [automaticCollections, setAutomaticCollections] = useState<string[]>([])
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`/api/categories?shopId=${shopId}`)
+      const response = await fetch(`/api/collections?shopId=${shopId}`)
       if (response.ok) {
         const data = await response.json()
         setCategories(data)
@@ -51,41 +48,39 @@ export function CategoriesCard({ selectedCategories, onChange, shopId }: Categor
     }
   }
 
-  const buildCategoryTree = (cats: Category[]): Category[] => {
-    const categoryMap = new Map<string, Category>()
-    const rootCategories: Category[] = []
-
-    // יצירת מפה של כל הקטגוריות
-    cats.forEach(cat => {
-      categoryMap.set(cat.id, { ...cat, children: [] })
-    })
-
-    // בניית העץ
-    cats.forEach(cat => {
-      const category = categoryMap.get(cat.id)!
-      if (cat.parentId && categoryMap.has(cat.parentId)) {
-        const parent = categoryMap.get(cat.parentId)!
-        if (!parent.children) parent.children = []
-        parent.children.push(category)
-      } else {
-        rootCategories.push(category)
+  const fetchAutomaticCollections = useCallback(async () => {
+    if (!productId) return
+    
+    try {
+      const response = await fetch(`/api/products/${productId}/automatic-collections`)
+      if (response.ok) {
+        const data = await response.json()
+        setAutomaticCollections(data.automaticCollections?.map((c: any) => c.id) || [])
       }
-    })
-
-    return rootCategories
-  }
-
-  const categoryTree = useMemo(() => buildCategoryTree(categories), [categories])
-
-  const toggleExpand = (categoryId: string) => {
-    const newExpanded = new Set(expandedCategories)
-    if (newExpanded.has(categoryId)) {
-      newExpanded.delete(categoryId)
-    } else {
-      newExpanded.add(categoryId)
+    } catch (error) {
+      console.error("Error fetching automatic collections:", error)
     }
-    setExpandedCategories(newExpanded)
-  }
+  }, [productId])
+
+  useEffect(() => {
+    fetchCategories()
+  }, [shopId])
+
+  useEffect(() => {
+    if (!productId) return
+    
+    // Debounce כדי למנוע קריאות API מיותרות
+    const timer = setTimeout(() => {
+      fetchAutomaticCollections()
+    }, 500) // 500ms delay
+    
+    return () => clearTimeout(timer)
+  }, [productId, refreshTrigger, fetchAutomaticCollections])
+
+  // Collections לא תומכים בהיררכיה, אז פשוט נציג אותם כרשימה שטוחה
+  const categoryTree = useMemo(() => categories, [categories])
+
+  // Collections לא תומכים בהיררכיה, אז לא צריך expand/collapse
 
   const toggleCategory = (categoryId: string) => {
     if (selectedCategories.includes(categoryId)) {
@@ -106,13 +101,13 @@ export function CategoriesCard({ selectedCategories, onChange, shopId }: Categor
     }
 
     try {
-      const response = await fetch("/api/categories", {
+      const response = await fetch("/api/collections", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           shopId,
           name: newCategoryName,
-          parentId: newCategoryParent,
+          type: "MANUAL",
         }),
       })
 
@@ -123,7 +118,6 @@ export function CategoriesCard({ selectedCategories, onChange, shopId }: Categor
           description: "הקטגוריה נוצרה בהצלחה",
         })
         setNewCategoryName("")
-        setNewCategoryParent(null)
         setDialogOpen(false)
         await fetchCategories()
       } else {
@@ -144,51 +138,44 @@ export function CategoriesCard({ selectedCategories, onChange, shopId }: Categor
     }
   }
 
-  const renderCategory = (category: Category, level: number = 0) => {
-    const hasChildren = category.children && category.children.length > 0
-    const isExpanded = expandedCategories.has(category.id)
+  const renderCategory = (category: Category) => {
     const isSelected = selectedCategories.includes(category.id)
+    const isAutomatic = category.type === "AUTOMATIC"
+    const isInAutomatic = productId && automaticCollections.includes(category.id)
 
     return (
       <div key={category.id}>
-        <div
-          className="flex items-center gap-2 py-2 hover:bg-gray-50 rounded px-2"
-          style={{ paddingLeft: `${level * 20 + 8}px` }}
-        >
-          {hasChildren ? (
-            <button
-              onClick={() => toggleExpand(category.id)}
-              className="p-0.5 hover:bg-gray-200 rounded"
-            >
-              {isExpanded ? (
-                <ChevronDown className="w-4 h-4 text-gray-600" />
-              ) : (
-                <ChevronRight className="w-4 h-4 text-gray-600" />
-              )}
-            </button>
-          ) : (
+        <div className="flex items-center gap-2 py-2 hover:bg-gray-50 rounded px-2">
+          {isAutomatic ? (
             <div className="w-5" />
+          ) : (
+            <Checkbox
+              id={`category-${category.id}`}
+              checked={isSelected}
+              onCheckedChange={() => toggleCategory(category.id)}
+            />
           )}
           
-          <Checkbox
-            id={`category-${category.id}`}
-            checked={isSelected}
-            onCheckedChange={() => toggleCategory(category.id)}
-          />
-          
           <Label
-            htmlFor={`category-${category.id}`}
-            className="flex-1 cursor-pointer"
+            htmlFor={isAutomatic ? undefined : `category-${category.id}`}
+            className={`flex-1 ${isAutomatic ? '' : 'cursor-pointer'}`}
           >
-            {category.name}
+            <div className="flex items-center gap-2">
+              <span>{category.name}</span>
+              {isAutomatic && (
+                <Badge variant="outline" className="text-xs">
+                  <Sparkles className="w-3 h-3 ml-1" />
+                  אוטומטי
+                </Badge>
+              )}
+              {isInAutomatic && (
+                <Badge variant="default" className="text-xs bg-green-100 text-green-800 border-green-300">
+                  בקטגוריה זו
+                </Badge>
+              )}
+            </div>
           </Label>
         </div>
-
-        {hasChildren && isExpanded && (
-          <div>
-            {category.children!.map(child => renderCategory(child, level + 1))}
-          </div>
-        )}
       </div>
     )
   }
@@ -222,24 +209,6 @@ export function CategoriesCard({ selectedCategories, onChange, shopId }: Categor
                     placeholder="לדוגמה: חולצות"
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="parentCategory">קטגוריית אב (אופציונלי)</Label>
-                  <select
-                    id="parentCategory"
-                    value={newCategoryParent || ""}
-                    onChange={(e) => setNewCategoryParent(e.target.value || null)}
-                    className="w-full border rounded-md px-3 py-2"
-                  >
-                    <option value="">ללא קטגוריית אב</option>
-                    {categories
-                      .filter(cat => !cat.parentId)
-                      .map(cat => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                  </select>
-                </div>
                 <Button onClick={handleCreateCategory} className="w-full">
                   צור קטגוריה
                 </Button>
@@ -258,6 +227,14 @@ export function CategoriesCard({ selectedCategories, onChange, shopId }: Categor
         ) : (
           <div className="space-y-1 max-h-96 overflow-y-auto">
             {categoryTree.map(category => renderCategory(category))}
+            {productId && automaticCollections.length > 0 && (
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-xs text-gray-500 mb-2">
+                  <Sparkles className="w-3 h-3 inline ml-1" />
+                  המוצר נמצא בקטגוריות אוטומטיות לפי התנאים שהגדרת
+                </p>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

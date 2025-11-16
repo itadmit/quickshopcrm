@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { sendEmail } from "@/lib/email"
+import { sendEmail, getEmailTemplate, getShopEmailSettings } from "@/lib/email"
 
 // POST - שליחת אימייל שחזור עגלה
 export async function POST(
@@ -46,19 +46,29 @@ export async function POST(
     const cartUrl = `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/shop/${shopSlug}/cart`
 
     try {
+      const emailSettings = await getShopEmailSettings(cart.shop.id)
+      const gradient = `linear-gradient(135deg, ${emailSettings.color1} 0%, ${emailSettings.color2} 100%)`
+      
       await sendEmail({
         to: cart.customer.email,
         subject: `השלמת הקנייה שלך ב-${cart.shop.name}`,
-        html: `
-          <div dir="rtl">
+        shopId: cart.shop.id, // העברת shopId כדי להשתמש בשם השולח מההגדרות
+        html: getEmailTemplate({
+          title: "השלם את הקנייה שלך",
+          content: `
             <h2>שלום ${cart.customer.firstName || ""},</h2>
             <p>שמנו לב שהשארת עגלת קניות ב-${cart.shop.name}.</p>
             <p>אנחנו כאן כדי לעזור לך להשלים את הקנייה!</p>
-            <a href="${cartUrl}" style="display: inline-block; padding: 12px 24px; background: #6f65e2; color: white; text-decoration: none; border-radius: 6px; margin-top: 16px;">
-              השלם את הקנייה
-            </a>
-          </div>
-        `,
+            <div style="text-align: center; margin: 20px 0;">
+              <a href="${cartUrl}" style="display: inline-block; padding: 12px 24px; background: ${gradient}; color: white; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                השלם את הקנייה
+              </a>
+            </div>
+          `,
+          color1: emailSettings.color1,
+          color2: emailSettings.color2,
+          senderName: emailSettings.senderName,
+        }),
       })
       console.log(`✅ Cart recovery email sent to ${cart.customer.email}`)
     } catch (emailError: any) {

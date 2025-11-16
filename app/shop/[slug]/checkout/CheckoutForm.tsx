@@ -1,21 +1,15 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog"
 import { CheckoutHeader } from "@/components/storefront/CheckoutHeader"
 import { useShopTheme } from "@/hooks/useShopTheme"
 import { useTracking } from "@/components/storefront/TrackingPixelProvider"
@@ -23,21 +17,17 @@ import {
   trackPageView,
   trackAddPaymentInfo,
   trackPurchase,
-  trackLogin,
-  trackSignUp,
 } from "@/lib/tracking-events"
 import {
   CreditCard,
   Truck,
-  Lock,
-  LogIn,
-  UserPlus,
   Mail,
   User,
   Phone,
   X,
+  Lock,
 } from "lucide-react"
-import { useEffect } from "react"
+import Link from "next/link"
 
 interface CartItem {
   productId: string
@@ -52,6 +42,8 @@ interface CartItem {
     price: number
     quantity: number
   }>
+  bundleId?: string
+  bundleName?: string
   product: {
     id: string
     name: string
@@ -82,6 +74,18 @@ interface Shop {
   name: string
   description: string | null
   logo: string | null
+  hasPaymentProvider?: boolean // האם יש ספק תשלום פעיל
+  paymentMethods?: {
+    bankTransfer?: {
+      enabled: boolean
+      instructions?: string
+    }
+    cash?: {
+      enabled: boolean
+      minOrderEnabled?: boolean
+      minOrderAmount?: number | null
+    }
+  }
   shippingSettings?: {
     enabled: boolean
     options?: {
@@ -136,24 +140,6 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
   const { theme } = useShopTheme(slug)
   const { trackEvent } = useTracking()
   const [processing, setProcessing] = useState(false)
-  const [loginOpen, setLoginOpen] = useState(false)
-  const [registerOpen, setRegisterOpen] = useState(false)
-  const [loginLoading, setLoginLoading] = useState(false)
-  const [registerLoading, setRegisterLoading] = useState(false)
-  
-  const [loginData, setLoginData] = useState({
-    email: "",
-    password: "",
-  })
-  
-  const [registerData, setRegisterData] = useState({
-    email: "",
-    password: "",
-    confirmPassword: "",
-    firstName: "",
-    lastName: "",
-    phone: "",
-  })
   
   // אתחול customFields values
   const initialCustomFields: Record<string, any> = {}
@@ -167,6 +153,23 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
     }
   })
 
+  // קביעת שיטת תשלום ברירת מחדל - לפי מה שמופעל
+  const bankTransferEnabled = shop.paymentMethods?.bankTransfer?.enabled === true
+  const cashEnabled = shop.paymentMethods?.cash?.enabled === true
+  
+  // בדיקה אם יש לפחות שיטת תשלום אחת מופעלת
+  const hasAnyPaymentMethod = shop.hasPaymentProvider || bankTransferEnabled || cashEnabled
+  
+  // קביעת ברירת מחדל - לפי סדר עדיפות: כרטיס אשראי > העברה בנקאית > מזומן
+  let defaultPaymentMethod: "credit_card" | "bank_transfer" | "cash" | null = null
+  if (shop.hasPaymentProvider) {
+    defaultPaymentMethod = "credit_card"
+  } else if (bankTransferEnabled) {
+    defaultPaymentMethod = "bank_transfer"
+  } else if (cashEnabled) {
+    defaultPaymentMethod = "cash"
+  }
+
   const [formData, setFormData] = useState({
     email: customerData?.email || "",
     phone: customerData?.phone || "",
@@ -178,10 +181,14 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
     zip: "",
     orderNotes: "",
     newsletter: shop.checkoutSettings?.newsletterDefaultChecked !== false,
-    paymentMethod: "credit_card" as "credit_card" | "bank_transfer" | "cash",
+    createAccount: false, // האם הלקוח רוצה להרשם לחשבון
+    saveDetails: false, // האם הלקוח רוצה לשמור פרטים לפעם הבאה
+    paymentMethod: defaultPaymentMethod || ("bank_transfer" as "credit_card" | "bank_transfer" | "cash"),
     deliveryMethod: "shipping" as "shipping" | "pickup",
     customFields: initialCustomFields,
+    selectedAddressId: "",
   })
+  const [savedAddresses, setSavedAddresses] = useState<any[]>([])
 
   // חישוב משלוח דינמי - מתעדכן כשמשתנה formData
   const shippingCost = useMemo(() => {
@@ -223,9 +230,63 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
 
   // PageView event - רק פעם אחת כשהעמוד נטען
   useEffect(() => {
+    // בדיקה כדי למנוע שליחה כפולה ב-React Strict Mode
+    const pageViewKey = `pageview_${slug}_checkout`
+    if (sessionStorage.getItem(pageViewKey)) {
+      return // כבר שלחנו PageView לעמוד הזה
+    }
+    
     trackPageView(trackEvent, `/shop/${slug}/checkout`, "תשלום")
+    sessionStorage.setItem(pageViewKey, "true")
+    
+    // ניקוי אחרי 5 שניות (למקרה של ניווט מהיר)
+    setTimeout(() => {
+      sessionStorage.removeItem(pageViewKey)
+    }, 5000)
+    
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [slug]) // רק כשהעמוד משתנה, לא trackEvent
+
+  // טעינת כתובות שמורות
+  useEffect(() => {
+    const loadAddresses = async () => {
+      if (!customerData?.id) return
+
+      try {
+        const token = localStorage.getItem(`storefront_token_${slug}`)
+        if (!token) return
+
+        const response = await fetch(`/api/storefront/${slug}/account/addresses`, {
+          headers: {
+            "x-customer-token": token,
+          },
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          setSavedAddresses(data.addresses || [])
+          
+          // אם יש כתובת אחת, נבחר אותה אוטומטית
+          if (data.addresses && data.addresses.length === 1) {
+            const addr = data.addresses[0]
+            setFormData((prev) => ({
+              ...prev,
+              selectedAddressId: addr.id,
+              firstName: addr.firstName || prev.firstName,
+              lastName: addr.lastName || prev.lastName,
+              address: addr.address || "",
+              city: addr.city || "",
+              zip: addr.zip || "",
+            }))
+          }
+        }
+      } catch (error) {
+        console.error("Error loading addresses:", error)
+      }
+    }
+
+    loadAddresses()
+  }, [customerData?.id, slug])
 
   // עדכון פרטי הלקוח אחרי התחברות/הרשמה
   const updateCustomerData = (customer: any) => {
@@ -238,134 +299,31 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
     }))
   }
 
-  // טיפול בהתחברות
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setLoginLoading(true)
-
-    try {
-      const response = await fetch(`/api/storefront/${slug}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(loginData),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        localStorage.setItem(`storefront_token_${slug}`, data.token)
-        localStorage.setItem(`storefront_customer_${slug}`, JSON.stringify(data.customer))
-        
-        trackLogin(trackEvent, "email")
-        updateCustomerData(data.customer)
-        
-        toast({
-          title: "הצלחה",
-          description: "התחברת בהצלחה",
-        })
-        setLoginOpen(false)
-        setLoginData({ email: "", password: "" })
-        window.location.reload() // רענון כדי לטעון את פרטי הלקוח
-      } else {
-        const error = await response.json()
-        toast({
-          title: "שגיאה",
-          description: error.error || "אימייל או סיסמה לא נכונים",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      console.error("Error logging in:", error)
-      toast({
-        title: "שגיאה",
-        description: "אירעה שגיאה בהתחברות",
-        variant: "destructive",
-      })
-    } finally {
-      setLoginLoading(false)
-    }
-  }
-
-  // טיפול בהרשמה
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (registerData.password !== registerData.confirmPassword) {
-      toast({
-        title: "שגיאה",
-        description: "הסיסמאות לא תואמות",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (registerData.password.length < 6) {
-      toast({
-        title: "שגיאה",
-        description: "סיסמה חייבת להכיל לפחות 6 תווים",
-        variant: "destructive",
-      })
-      return
-    }
-
-    setRegisterLoading(true)
-
-    try {
-      const response = await fetch(`/api/storefront/${slug}/auth/register`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: registerData.email,
-          password: registerData.password,
-          firstName: registerData.firstName,
-          lastName: registerData.lastName,
-          phone: registerData.phone,
-        }),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        localStorage.setItem(`storefront_token_${slug}`, data.token)
-        localStorage.setItem(`storefront_customer_${slug}`, JSON.stringify(data.customer))
-        
-        trackSignUp(trackEvent, "email")
-        updateCustomerData(data.customer)
-        
-        toast({
-          title: "הצלחה",
-          description: "נרשמת והתחברת בהצלחה!",
-        })
-        setRegisterOpen(false)
-        setRegisterData({
-          email: "",
-          password: "",
-          confirmPassword: "",
-          firstName: "",
-          lastName: "",
-          phone: "",
-        })
-        window.location.reload() // רענון כדי לטעון את פרטי הלקוח
-      } else {
-        const error = await response.json()
-        toast({
-          title: "שגיאה",
-          description: error.error || "אירעה שגיאה בהרשמה",
-          variant: "destructive",
-        })
-      }
-    } catch (error) {
-      console.error("Error registering:", error)
-      toast({
-        title: "שגיאה",
-        description: "אירעה שגיאה בהרשמה",
-        variant: "destructive",
-      })
-    } finally {
-      setRegisterLoading(false)
-    }
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // בדיקה אם נבחר "כרטיס אשראי" אבל אין ספק תשלום
+    if (formData.paymentMethod === "credit_card" && !shop.hasPaymentProvider) {
+      toast({
+        title: "שגיאה",
+        description: "אין ספק תשלום מוגדר. אנא בחר שיטת תשלום אחרת",
+        variant: "destructive",
+      })
+      return
+    }
+    
+    // בדיקת סכום מינימום למזומן
+    if (formData.paymentMethod === "cash" && shop.paymentMethods?.cash?.minOrderEnabled && shop.paymentMethods?.cash?.minOrderAmount) {
+      if (finalTotal < shop.paymentMethods.cash.minOrderAmount) {
+        toast({
+          title: "שגיאה",
+          description: `סכום מינימום להזמנה במזומן הוא ₪${shop.paymentMethods.cash.minOrderAmount}. סכום ההזמנה הנוכחי הוא ₪${finalTotal.toFixed(2)}`,
+          variant: "destructive",
+        })
+        return
+      }
+    }
     
     setProcessing(true)
     try {
@@ -386,6 +344,8 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
           companyName: formData.companyName || undefined,
           orderNotes: formData.orderNotes || undefined,
           newsletter: formData.newsletter,
+          createAccount: formData.createAccount,
+          saveDetails: formData.saveDetails,
           shippingAddress: formData.deliveryMethod === "shipping" ? {
             firstName: formData.firstName,
             lastName: formData.lastName,
@@ -422,9 +382,20 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
         })
         
         // אם זה תשלום בכרטיס אשראי, redirect ל-payment gateway
-        if (formData.paymentMethod === "credit_card" && order.paymentUrl) {
-          window.location.href = order.paymentUrl
-          return
+        if (formData.paymentMethod === "credit_card") {
+          if (order.paymentUrl) {
+            window.location.href = order.paymentUrl
+            return
+          } else {
+            // אם אין paymentUrl, זה אומר שאין ספק תשלום - נציג שגיאה
+            toast({
+              title: "שגיאה",
+              description: "אין ספק תשלום מוגדר. אנא בחר שיטת תשלום אחרת או פנה לתמיכה",
+              variant: "destructive",
+            })
+            setProcessing(false)
+            return
+          }
         }
         
         // אחרת, redirect לדף אישור
@@ -533,6 +504,44 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                         </Label>
                       </div>
                     )}
+
+                    {/* Create Account Checkbox - רק אם הלקוח לא מחובר */}
+                    {!customerData?.id && (
+                      <div className="flex items-center space-x-2 space-x-reverse mt-2">
+                        <Checkbox
+                          id="createAccount"
+                          checked={formData.createAccount}
+                          onCheckedChange={(checked) =>
+                            setFormData((prev) => ({ ...prev, createAccount: checked === true, saveDetails: checked === true ? false : prev.saveDetails }))
+                          }
+                        />
+                        <Label 
+                          htmlFor="createAccount" 
+                          className="text-sm text-gray-700 cursor-pointer"
+                        >
+                          צור חשבון כדי לעקוב אחרי הזמנות ולשמור פרטים לפעם הבאה
+                        </Label>
+                      </div>
+                    )}
+
+                    {/* Save Details Checkbox - רק אם הלקוח לא מחובר ולא בחר createAccount */}
+                    {!customerData?.id && !formData.createAccount && (
+                      <div className="flex items-center space-x-2 space-x-reverse mt-2">
+                        <Checkbox
+                          id="saveDetails"
+                          checked={formData.saveDetails}
+                          onCheckedChange={(checked) =>
+                            setFormData((prev) => ({ ...prev, saveDetails: checked === true }))
+                          }
+                        />
+                        <Label 
+                          htmlFor="saveDetails" 
+                          className="text-sm text-gray-700 cursor-pointer"
+                        >
+                          שמור פרטים לפעם הבאה (ללא יצירת חשבון)
+                        </Label>
+                      </div>
+                    )}
                   </div>
                   
                   <div>
@@ -554,21 +563,19 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                   {!customerData && (
                     <div className="text-sm text-gray-600 pt-2">
                       יש לך חשבון?{" "}
-                      <button
-                        type="button"
-                        onClick={() => setLoginOpen(true)}
+                      <Link
+                        href={`/shop/${slug}/login`}
                         className="text-blue-600 hover:underline"
                       >
                         התחבר
-                      </button>
+                      </Link>
                       {" "}כדי למלא את הפרטים אוטומטית או{" "}
-                      <button
-                        type="button"
-                        onClick={() => setRegisterOpen(true)}
+                      <Link
+                        href={`/shop/${slug}/register`}
                         className="text-blue-600 hover:underline"
                       >
                         הירשם לחשבון חדש
-                      </button>
+                      </Link>
                     </div>
                   )}
                   
@@ -768,6 +775,46 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                     כתובת משלוח
                   </h2>
                 <div className="space-y-4">
+                  {savedAddresses.length > 0 && customerData?.id && (
+                    <div>
+                      <Label htmlFor="selectAddress" className="text-sm font-medium text-gray-700">
+                        בחר כתובת שמורה
+                      </Label>
+                      <Select
+                        value={formData.selectedAddressId}
+                        onValueChange={(value) => {
+                          if (value === "new") {
+                            setFormData((prev) => ({ ...prev, selectedAddressId: "", address: "", city: "", zip: "" }))
+                          } else {
+                            const selectedAddr = savedAddresses.find((addr) => addr.id === value)
+                            if (selectedAddr) {
+                              setFormData((prev) => ({
+                                ...prev,
+                                selectedAddressId: value,
+                                firstName: selectedAddr.firstName || prev.firstName,
+                                lastName: selectedAddr.lastName || prev.lastName,
+                                address: selectedAddr.address || "",
+                                city: selectedAddr.city || "",
+                                zip: selectedAddr.zip || "",
+                              }))
+                            }
+                          }
+                        }}
+                      >
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="בחר כתובת או הוסף חדשה" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="new">הוסף כתובת חדשה</SelectItem>
+                          {savedAddresses.map((addr) => (
+                            <SelectItem key={addr.id} value={addr.id}>
+                              {addr.firstName} {addr.lastName} - {addr.address}, {addr.city} {addr.zip}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <div>
                     <Label htmlFor="address" className="text-sm font-medium text-gray-700">
                       כתובת *
@@ -775,7 +822,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                     <Input
                       id="address"
                       value={formData.address}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value }))}
+                      onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value, selectedAddressId: "" }))}
                       required
                       className="mt-1"
                     />
@@ -788,7 +835,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                       <Input
                         id="city"
                         value={formData.city}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, city: e.target.value }))}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, city: e.target.value, selectedAddressId: "" }))}
                         required
                         className="mt-1"
                       />
@@ -800,7 +847,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                       <Input
                         id="zip"
                         value={formData.zip}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, zip: e.target.value }))}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, zip: e.target.value, selectedAddressId: "" }))}
                         required
                         className="mt-1"
                       />
@@ -845,38 +892,68 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                   <CreditCard className="w-5 h-5" />
                   שיטת תשלום
                 </h2>
-                <RadioGroup
-                  value={formData.paymentMethod}
-                  onValueChange={(value: any) => {
-                    setFormData((prev) => ({ ...prev, paymentMethod: value }))
-                    // AddPaymentInfo event
-                    trackAddPaymentInfo(trackEvent, value, finalTotal)
-                  }}
-                  className="space-y-3"
-                >
-                  <div className="flex items-center space-x-2 space-x-reverse border border-gray-200 rounded-lg p-4 hover:border-gray-300 cursor-pointer">
-                    <RadioGroupItem value="credit_card" id="credit_card" />
-                    <Label htmlFor="credit_card" className="cursor-pointer flex-1">
-                      <div className="font-medium">כרטיס אשראי</div>
-                      <div className="text-sm text-gray-500">תשלום מאובטח בכרטיס אשראי</div>
-                    </Label>
-                    <Lock className="w-5 h-5 text-gray-400" />
+                {!hasAnyPaymentMethod ? (
+                  <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p className="text-sm text-yellow-800">
+                      אין שיטות תשלום זמינות. אנא הגדר שיטת תשלום בהגדרות האינטגרציות.
+                    </p>
                   </div>
-                  <div className="flex items-center space-x-2 space-x-reverse border border-gray-200 rounded-lg p-4 hover:border-gray-300 cursor-pointer">
-                    <RadioGroupItem value="bank_transfer" id="bank_transfer" />
-                    <Label htmlFor="bank_transfer" className="cursor-pointer flex-1">
-                      <div className="font-medium">העברה בנקאית</div>
-                      <div className="text-sm text-gray-500">העברת כסף ישירות לחשבון הבנק</div>
-                    </Label>
-                  </div>
-                  <div className="flex items-center space-x-2 space-x-reverse border border-gray-200 rounded-lg p-4 hover:border-gray-300 cursor-pointer">
-                    <RadioGroupItem value="cash" id="cash" />
-                    <Label htmlFor="cash" className="cursor-pointer flex-1">
-                      <div className="font-medium">מזומן בהזמנה</div>
-                      <div className="text-sm text-gray-500">תשלום במזומן בעת המשלוח</div>
-                    </Label>
-                  </div>
-                </RadioGroup>
+                ) : (
+                  <RadioGroup
+                    value={formData.paymentMethod}
+                    onValueChange={(value: any) => {
+                      setFormData((prev) => ({ ...prev, paymentMethod: value }))
+                      // AddPaymentInfo event
+                      trackAddPaymentInfo(trackEvent, value, finalTotal)
+                    }}
+                    className="space-y-3"
+                  >
+                    {shop.hasPaymentProvider && (
+                      <div className="flex items-center space-x-2 space-x-reverse border border-gray-200 rounded-lg p-4 hover:border-gray-300 cursor-pointer">    
+                        <RadioGroupItem value="credit_card" id="credit_card" />
+                        <Label htmlFor="credit_card" className="cursor-pointer flex-1">                                                                           
+                          <div className="font-medium">כרטיס אשראי</div>
+                          <div className="text-sm text-gray-500">תשלום מאובטח בכרטיס אשראי</div>                                                                  
+                        </Label>
+                        <Lock className="w-5 h-5 text-gray-400" />
+                      </div>
+                    )}
+                    {bankTransferEnabled && (
+                      <div className="space-y-2">
+                        <div className="flex items-center space-x-2 space-x-reverse border border-gray-200 rounded-lg p-4 hover:border-gray-300 cursor-pointer">      
+                          <RadioGroupItem value="bank_transfer" id="bank_transfer" />
+                          <Label htmlFor="bank_transfer" className="cursor-pointer flex-1">                                                                           
+                            <div className="font-medium">העברה בנקאית</div>
+                            <div className="text-sm text-gray-500">העברת כסף ישירות לחשבון הבנק</div>                                                                 
+                          </Label>
+                        </div>
+                        {shop.paymentMethods?.bankTransfer?.instructions && (
+                          <div className="mr-6 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                              {shop.paymentMethods.bankTransfer.instructions}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    {cashEnabled && (
+                      <div className="flex items-center space-x-2 space-x-reverse border border-gray-200 rounded-lg p-4 hover:border-gray-300 cursor-pointer">      
+                        <RadioGroupItem value="cash" id="cash" />
+                        <Label htmlFor="cash" className="cursor-pointer flex-1">
+                          <div className="font-medium">מזומן בהזמנה</div>
+                          <div className="text-sm text-gray-500">
+                            תשלום במזומן בעת המשלוח
+                            {shop.paymentMethods?.cash?.minOrderEnabled && shop.paymentMethods?.cash?.minOrderAmount && (
+                              <span className="block mt-1 text-xs text-gray-600">
+                                (מינימום הזמנה: ₪{shop.paymentMethods.cash.minOrderAmount})
+                              </span>
+                            )}
+                          </div>                                                                      
+                        </Label>
+                      </div>
+                    )}
+                  </RadioGroup>
+                )}
               </div>
               </div>
             </div>
@@ -937,6 +1014,14 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                         >
                           {item.product.name}
                         </div>
+                        {(item as any).bundleName && (
+                          <div 
+                            className="text-xs mt-0.5 font-medium"
+                            style={{ color: '#9333ea' }}
+                          >
+                            חלק מחבילה: {(item as any).bundleName}
+                          </div>
+                        )}
                         {item.variant && (
                           <div 
                             className="text-xs mt-0.5"
@@ -1089,9 +1174,11 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                   className="w-full mt-6 text-white rounded-lg font-semibold"
                   style={{ backgroundColor: checkoutColors.primaryColor }}
                   size="lg"
-                  disabled={processing}
+                  disabled={processing || !hasAnyPaymentMethod || (formData.paymentMethod === "credit_card" && !shop.hasPaymentProvider)}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.opacity = "0.9"
+                    if (!processing && !(formData.paymentMethod === "credit_card" && !shop.hasPaymentProvider)) {
+                      e.currentTarget.style.opacity = "0.9"
+                    }
                   }}
                   onMouseLeave={(e) => {
                     e.currentTarget.style.opacity = "1"
@@ -1099,6 +1186,18 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                 >
                   {processing ? "מעבד..." : `שלם ₪${finalTotal.toFixed(2)}`}
                 </Button>
+                
+                {formData.paymentMethod === "credit_card" && !shop.hasPaymentProvider && (
+                  <p className="text-sm text-red-600 text-center mt-2">
+                    אין ספק תשלום מוגדר. אנא בחר שיטת תשלום אחרת
+                  </p>
+                )}
+                
+                {!hasAnyPaymentMethod && (
+                  <p className="text-sm text-yellow-600 text-center mt-2">
+                    אין שיטות תשלום זמינות. אנא הגדר שיטת תשלום בהגדרות האינטגרציות
+                  </p>
+                )}
                 
                 <p className="text-xs text-gray-500 text-center mt-4 flex items-center justify-center gap-1">
                   <Lock className="w-3 h-3" />
@@ -1132,200 +1231,6 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
         )}
       </div>
 
-      {/* Login Modal */}
-      <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>התחברות</DialogTitle>
-            <DialogDescription>
-              התחבר לחשבון שלך כדי למלא את הפרטים אוטומטית
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="login-email">אימייל</Label>
-              <div className="relative">
-                <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  id="login-email"
-                  type="email"
-                  value={loginData.email}
-                  onChange={(e) => setLoginData((prev) => ({ ...prev, email: e.target.value }))}
-                  placeholder="your@email.com"
-                  className="pr-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="login-password">סיסמה</Label>
-              <div className="relative">
-                <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  id="login-password"
-                  type="password"
-                  value={loginData.password}
-                  onChange={(e) => setLoginData((prev) => ({ ...prev, password: e.target.value }))}
-                  placeholder="••••••••"
-                  className="pr-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full"
-              style={{ backgroundColor: checkoutColors.primaryColor }}
-              disabled={loginLoading}
-            >
-              <LogIn className="w-4 h-4 ml-2" />
-              {loginLoading ? "מתחבר..." : "התחבר"}
-            </Button>
-          </form>
-
-          <div className="text-center text-sm text-gray-600">
-            אין לך חשבון?{" "}
-            <button
-              type="button"
-              onClick={() => {
-                setLoginOpen(false)
-                setRegisterOpen(true)
-              }}
-              className="text-blue-600 hover:underline"
-            >
-              הירשם כאן
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Register Modal */}
-      <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
-        <DialogContent className="sm:max-w-md" dir="rtl">
-          <DialogHeader>
-            <DialogTitle>הרשמה</DialogTitle>
-            <DialogDescription>
-              צור חשבון חדש והתחבר אוטומטית
-            </DialogDescription>
-          </DialogHeader>
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="register-firstName">שם פרטי</Label>
-                <div className="relative">
-                  <User className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                  <Input
-                    id="register-firstName"
-                    value={registerData.firstName}
-                    onChange={(e) => setRegisterData((prev) => ({ ...prev, firstName: e.target.value }))}
-                    placeholder="שם פרטי"
-                    className="pr-10"
-                  />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="register-lastName">שם משפחה</Label>
-                <Input
-                  id="register-lastName"
-                  value={registerData.lastName}
-                  onChange={(e) => setRegisterData((prev) => ({ ...prev, lastName: e.target.value }))}
-                  placeholder="שם משפחה"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="register-email">אימייל *</Label>
-              <div className="relative">
-                <Mail className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  id="register-email"
-                  type="email"
-                  value={registerData.email}
-                  onChange={(e) => setRegisterData((prev) => ({ ...prev, email: e.target.value }))}
-                  placeholder="your@email.com"
-                  className="pr-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="register-phone">טלפון</Label>
-              <div className="relative">
-                <Phone className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  id="register-phone"
-                  type="tel"
-                  value={registerData.phone}
-                  onChange={(e) => setRegisterData((prev) => ({ ...prev, phone: e.target.value }))}
-                  placeholder="050-1234567"
-                  className="pr-10"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="register-password">סיסמה *</Label>
-              <div className="relative">
-                <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  id="register-password"
-                  type="password"
-                  value={registerData.password}
-                  onChange={(e) => setRegisterData((prev) => ({ ...prev, password: e.target.value }))}
-                  placeholder="לפחות 6 תווים"
-                  className="pr-10"
-                  required
-                  minLength={6}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="register-confirmPassword">אימות סיסמה *</Label>
-              <div className="relative">
-                <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  id="register-confirmPassword"
-                  type="password"
-                  value={registerData.confirmPassword}
-                  onChange={(e) => setRegisterData((prev) => ({ ...prev, confirmPassword: e.target.value }))}
-                  placeholder="הזן סיסמה שוב"
-                  className="pr-10"
-                  required
-                />
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              className="w-full"
-              style={{ backgroundColor: checkoutColors.primaryColor }}
-              disabled={registerLoading}
-            >
-              <UserPlus className="w-4 h-4 ml-2" />
-              {registerLoading ? "נרשם..." : "הירשם והתחבר"}
-            </Button>
-          </form>
-
-          <div className="text-center text-sm text-gray-600">
-            כבר יש לך חשבון?{" "}
-            <button
-              type="button"
-              onClick={() => {
-                setRegisterOpen(false)
-                setLoginOpen(true)
-              }}
-              className="text-blue-600 hover:underline"
-            >
-              התחבר כאן
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   )
 }

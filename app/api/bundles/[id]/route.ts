@@ -6,20 +6,23 @@ import { z } from "zod"
 
 const updateBundleSchema = z.object({
   name: z.string().min(1).optional(),
-  description: z.string().optional(),
+  description: z.string().optional().nullable(),
   price: z.number().min(0).optional(),
-  comparePrice: z.number().optional(),
+  comparePrice: z.number().min(0).optional().nullable(),
+  image: z.string().optional().nullable(),
   isActive: z.boolean().optional(),
-  products: z.array(
-    z.object({
-      productId: z.string(),
-      quantity: z.number().int().min(1),
-      position: z.number().int(),
-    })
-  ).optional(),
+  products: z
+    .array(
+      z.object({
+        productId: z.string(),
+        quantity: z.number().int().min(1),
+        position: z.number().int().default(0),
+      })
+    )
+    .optional(),
 })
 
-// GET - קבלת חבילה
+// GET - קבלת חבילה ספציפית
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -27,7 +30,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.companyId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "לא מאומת" }, { status: 401 })
     }
 
     const bundle = await prisma.bundle.findFirst({
@@ -40,7 +43,14 @@ export async function GET(
       include: {
         products: {
           include: {
-            product: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                images: true,
+              },
+            },
           },
           orderBy: {
             position: "asc",
@@ -50,28 +60,28 @@ export async function GET(
     })
 
     if (!bundle) {
-      return NextResponse.json({ error: "Bundle not found" }, { status: 404 })
+      return NextResponse.json({ error: "חבילה לא נמצאה" }, { status: 404 })
     }
 
     return NextResponse.json(bundle)
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error fetching bundle:", error)
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "שגיאה בקבלת חבילה", details: error.message },
       { status: 500 }
     )
   }
 }
 
-// PUT - עדכון חבילה
-export async function PUT(
+// PATCH - עדכון חבילה
+export async function PATCH(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.companyId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "לא מאומת" }, { status: 401 })
     }
 
     const existingBundle = await prisma.bundle.findFirst({
@@ -84,13 +94,13 @@ export async function PUT(
     })
 
     if (!existingBundle) {
-      return NextResponse.json({ error: "Bundle not found" }, { status: 404 })
+      return NextResponse.json({ error: "חבילה לא נמצאה" }, { status: 404 })
     }
 
     const body = await req.json()
     const data = updateBundleSchema.parse(body)
 
-    // עדכון חבילה
+    // עדכון החבילה
     const bundle = await prisma.bundle.update({
       where: { id: params.id },
       data: {
@@ -98,18 +108,31 @@ export async function PUT(
         ...(data.description !== undefined && { description: data.description }),
         ...(data.price !== undefined && { price: data.price }),
         ...(data.comparePrice !== undefined && { comparePrice: data.comparePrice }),
+        ...(data.image !== undefined && { image: data.image }),
         ...(data.isActive !== undefined && { isActive: data.isActive }),
+      },
+      include: {
+        products: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
       },
     })
 
-    // עדכון מוצרים אם ניתנו
+    // עדכון מוצרים אם סופקו
     if (data.products) {
       // מחיקת מוצרים קיימים
       await prisma.bundleProduct.deleteMany({
         where: { bundleId: params.id },
       })
 
-      // הוספת מוצרים חדשים
+      // יצירת מוצרים חדשים
       await prisma.bundleProduct.createMany({
         data: data.products.map((p) => ({
           bundleId: params.id,
@@ -120,6 +143,7 @@ export async function PUT(
       })
     }
 
+    // יצירת אירוע
     await prisma.shopEvent.create({
       data: {
         shopId: bundle.shopId,
@@ -128,23 +152,40 @@ export async function PUT(
         entityId: bundle.id,
         payload: {
           bundleId: bundle.id,
-          changes: data,
+          name: bundle.name,
         },
         userId: session.user.id,
       },
     })
 
-    return NextResponse.json(bundle)
-  } catch (error) {
+    // טעינה מחדש עם המוצרים המעודכנים
+    const updatedBundle = await prisma.bundle.findUnique({
+      where: { id: params.id },
+      include: {
+        products: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    })
+
+    return NextResponse.json(updatedBundle)
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: "נתונים לא תקינים", details: error.errors },
         { status: 400 }
       )
     }
     console.error("Error updating bundle:", error)
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "שגיאה בעדכון חבילה", details: error.message },
       { status: 500 }
     )
   }
@@ -158,7 +199,7 @@ export async function DELETE(
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.companyId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "לא מאומת" }, { status: 401 })
     }
 
     const bundle = await prisma.bundle.findFirst({
@@ -171,13 +212,14 @@ export async function DELETE(
     })
 
     if (!bundle) {
-      return NextResponse.json({ error: "Bundle not found" }, { status: 404 })
+      return NextResponse.json({ error: "חבילה לא נמצאה" }, { status: 404 })
     }
 
     await prisma.bundle.delete({
       where: { id: params.id },
     })
 
+    // יצירת אירוע
     await prisma.shopEvent.create({
       data: {
         shopId: bundle.shopId,
@@ -186,16 +228,17 @@ export async function DELETE(
         entityId: bundle.id,
         payload: {
           bundleId: bundle.id,
+          name: bundle.name,
         },
         userId: session.user.id,
       },
     })
 
-    return NextResponse.json({ success: true })
-  } catch (error) {
+    return NextResponse.json({ success: true, message: "חבילה נמחקה בהצלחה" })
+  } catch (error: any) {
     console.error("Error deleting bundle:", error)
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "שגיאה במחיקת חבילה", details: error.message },
       { status: 500 }
     )
   }

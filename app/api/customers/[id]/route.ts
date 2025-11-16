@@ -169,3 +169,59 @@ export async function PUT(
   }
 }
 
+// DELETE - מחיקת לקוח
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    // בדיקה שהלקוח שייך לחברה
+    const customer = await prisma.customer.findFirst({
+      where: {
+        id: params.id,
+        shop: {
+          companyId: session.user.companyId,
+        },
+      },
+    })
+
+    if (!customer) {
+      return NextResponse.json({ error: "Customer not found" }, { status: 404 })
+    }
+
+    // מחיקת הלקוח
+    await prisma.customer.delete({
+      where: { id: params.id },
+    })
+
+    // יצירת אירוע
+    await prisma.shopEvent.create({
+      data: {
+        shopId: customer.shopId,
+        type: "customer.deleted",
+        entityType: "customer",
+        entityId: customer.id,
+        payload: {
+          customerId: customer.id,
+          email: customer.email,
+          deletedBy: session.user.id,
+        },
+        userId: session.user.id,
+      },
+    })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error("Error deleting customer:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
+  }
+}
+

@@ -71,10 +71,10 @@ export default function CustomizePage() {
   const { selectedShop, loading: shopLoading } = useShop()
   
   // זיהוי אוטומטי של הדף הנוכחי מ-query params
-  const initialPageType = (searchParams.get("page") as PageType) || "home"
+  const initialPageType = searchParams.get("page") as PageType | null
   const initialPageId = searchParams.get("id") || ""
   
-  const [pageType, setPageType] = useState<PageType>(initialPageType)
+  const [pageType, setPageType] = useState<PageType | null>(initialPageType || null)
   const [selectedCategory, setSelectedCategory] = useState<string>(initialPageType === "category" ? initialPageId : "")
   const [selectedProduct, setSelectedProduct] = useState<string>(initialPageType === "product" ? initialPageId : "")
   const [previewMode, setPreviewMode] = useState<"desktop" | "mobile">("desktop")
@@ -208,6 +208,8 @@ export default function CustomizePage() {
 
   // בחירה אוטומטית של מוצר/קטגוריה וכניסה להגדרות כשמשנים סוג דף
   useEffect(() => {
+    if (!pageType) return // אם לא נבחר pageType, לא עושים כלום
+    
     if (pageType === "home") {
       // פתיחת הגדרות דף בית אוטומטית
       setCurrentSection("home-layout")
@@ -215,13 +217,15 @@ export default function CustomizePage() {
       // פתיחת הגדרות דף מוצר אוטומטית
       setCurrentSection("product-layout")
       
-      // בחירת מוצר אם אין אחד נבחר
+      // בחירת מוצר אם אין אחד נבחר - קודם מוצר עם תמונה, אחרת הראשון
       if (products.length > 0 && !selectedProduct) {
         const productWithImages = products.find(
           (product) => product.images && Array.isArray(product.images) && product.images.length > 0
         )
         if (productWithImages) {
           setSelectedProduct(productWithImages.id)
+        } else if (products[0]) {
+          setSelectedProduct(products[0].id)
         }
       }
     } else if (pageType === "category") {
@@ -234,6 +238,46 @@ export default function CustomizePage() {
       }
     }
   }, [pageType, products, categories, selectedProduct, selectedCategory])
+  
+  // פונקציה לבחירת סוג דף
+  const handlePageTypeSelect = (type: PageType) => {
+    // אם זה אותו pageType, לא עושים כלום
+    if (pageType === type) return
+    
+    setPageType(type)
+    
+    if (type === "home") {
+      setCurrentSection("home-layout")
+      // עדכון URL
+      router.push(`/customize?page=home`, { scroll: false })
+    } else if (type === "product") {
+      setCurrentSection("product-layout")
+      // בחירת מוצר - קודם עם תמונה, אחרת הראשון
+      if (products.length > 0) {
+        const productWithImages = products.find(
+          (product) => product.images && Array.isArray(product.images) && product.images.length > 0
+        )
+        const productToSelect = productWithImages || products[0]
+        if (productToSelect) {
+          setSelectedProduct(productToSelect.id)
+          router.push(`/customize?page=product&id=${productToSelect.id}`, { scroll: false })
+        } else {
+          router.push(`/customize?page=product`, { scroll: false })
+        }
+      } else {
+        router.push(`/customize?page=product`, { scroll: false })
+      }
+    } else if (type === "category") {
+      setCurrentSection("category-layout")
+      // בחירת קטגוריה ראשונה
+      if (categories.length > 0) {
+        setSelectedCategory(categories[0].id)
+        router.push(`/customize?page=category&id=${categories[0].id}`, { scroll: false })
+      } else {
+        router.push(`/customize?page=category`, { scroll: false })
+      }
+    }
+  }
 
   const fetchProducts = async () => {
     if (!selectedShop?.slug) return
@@ -362,7 +406,7 @@ export default function CustomizePage() {
 
   // בניית URL לתצוגה מקדימה עם query params לעדכון בזמן אמת
   const getPreviewUrl = () => {
-    if (!selectedShop?.slug) return ""
+    if (!selectedShop?.slug || !pageType) return ""
     
     const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
     const params = new URLSearchParams()
@@ -420,6 +464,8 @@ export default function CustomizePage() {
   const [newElementType, setNewElementType] = useState<ProductPageElementType>("custom-text")
   const [newElementConfig, setNewElementConfig] = useState<Record<string, any>>({})
   const [editingElementId, setEditingElementId] = useState<string | null>(null)
+  const [showSaveTemplateDialog, setShowSaveTemplateDialog] = useState(false)
+  const [templateName, setTemplateName] = useState("")
 
   const defaultElements: ProductPageElement[] = [
     { id: "gallery", type: "product-gallery", visible: true, position: 0 },
@@ -956,83 +1002,113 @@ export default function CustomizePage() {
           </div>
         </div>
         
-        <div className="flex items-center gap-4">
-          {/* בחירת סוג דף */}
-          <Select value={pageType} onValueChange={(value) => setPageType(value as PageType)}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="home">
-                <div className="flex items-center gap-2">
-                  <Home className="w-4 h-4" />
-                  <span>דף בית</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="category">
-                <div className="flex items-center gap-2">
-                  <FolderOpen className="w-4 h-4" />
-                  <span>דף קטגוריה</span>
-                </div>
-              </SelectItem>
-              <SelectItem value="product">
-                <div className="flex items-center gap-2">
-                  <Package className="w-4 h-4" />
-                  <span>דף מוצר</span>
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* בחירת קטגוריה/מוצר */}
-          {pageType === "category" && (
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="בחר קטגוריה" />
+        {pageType && (
+          <div className="flex items-center gap-4">
+            {/* כפתור חזרה למסך הראשי */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setPageType(null)
+                setCurrentSection(null)
+                router.push('/customize')
+              }}
+              className="flex items-center gap-2"
+            >
+              <ChevronRight className="w-4 h-4" />
+              חזור
+            </Button>
+            
+            {/* בחירת סוג דף */}
+            <Select 
+              value={pageType || ""} 
+              onValueChange={(value) => {
+                if (value) {
+                  handlePageTypeSelect(value as PageType)
+                }
+              }}
+            >
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="בחר דף" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.id}>
-                    {cat.name}
-                  </SelectItem>
-                ))}
+                <SelectItem value="home">
+                  <div className="flex items-center gap-2">
+                    <Home className="w-4 h-4" />
+                    <span>דף בית</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="category">
+                  <div className="flex items-center gap-2">
+                    <FolderOpen className="w-4 h-4" />
+                    <span>דף קטגוריה</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="product">
+                  <div className="flex items-center gap-2">
+                    <Package className="w-4 h-4" />
+                    <span>דף מוצר</span>
+                  </div>
+                </SelectItem>
               </SelectContent>
             </Select>
-          )}
 
-          {pageType === "product" && (
-            <Select value={selectedProduct} onValueChange={setSelectedProduct}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="בחר מוצר" />
-              </SelectTrigger>
-              <SelectContent>
-                {products.map((prod) => (
-                  <SelectItem key={prod.id} value={prod.id}>
-                    {prod.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
+            {/* בחירת קטגוריה/מוצר */}
+            {pageType === "category" && (
+              <Select value={selectedCategory} onValueChange={(value) => {
+                setSelectedCategory(value)
+                router.push(`/customize?page=category&id=${value}`)
+              }}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="בחר קטגוריה" />
+                </SelectTrigger>
+                <SelectContent>
+                  {categories.map((cat) => (
+                    <SelectItem key={cat.id} value={cat.id}>
+                      {cat.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
 
-          {/* תצוגה מקדימה */}
-          <div className="flex items-center gap-2 border rounded-lg p-1">
-            <Button
-              variant={previewMode === "desktop" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setPreviewMode("desktop")}
-            >
-              <Monitor className="w-4 h-4" />
-            </Button>
-            <Button
-              variant={previewMode === "mobile" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setPreviewMode("mobile")}
-            >
-              <Smartphone className="w-4 h-4" />
-            </Button>
+            {pageType === "product" && (
+              <Select value={selectedProduct} onValueChange={(value) => {
+                setSelectedProduct(value)
+                router.push(`/customize?page=product&id=${value}`)
+              }}>
+                <SelectTrigger className="w-48">
+                  <SelectValue placeholder="בחר מוצר" />
+                </SelectTrigger>
+                <SelectContent>
+                  {products.map((prod) => (
+                    <SelectItem key={prod.id} value={prod.id}>
+                      {prod.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            {/* תצוגה מקדימה */}
+            <div className="flex items-center gap-2 border rounded-lg p-1">
+              <Button
+                variant={previewMode === "desktop" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setPreviewMode("desktop")}
+              >
+                <Monitor className="w-4 h-4" />
+              </Button>
+              <Button
+                variant={previewMode === "mobile" ? "default" : "ghost"}
+                size="sm"
+                onClick={() => setPreviewMode("mobile")}
+              >
+                <Smartphone className="w-4 h-4" />
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Main Content - Sidebar + Preview */}
@@ -1045,7 +1121,14 @@ export default function CustomizePage() {
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => setCurrentSection(null)}
+                onClick={() => {
+                  setCurrentSection(null)
+                  // אם אין pageType, חזור למסך הראשי
+                  if (!pageType) {
+                    setPageType(null)
+                    router.push('/customize', { scroll: false })
+                  }
+                }}
                 className="flex items-center gap-2"
               >
                 <ChevronRight className="w-4 h-4" />
@@ -1055,8 +1138,24 @@ export default function CustomizePage() {
               <div className="w-10" /> {/* Spacer */}
             </div>
           ) : (
-            <div className="h-14 border-b border-gray-200 flex items-center justify-center px-4">
-              <span className="font-semibold text-gray-900">התאמה אישית</span>
+            <div className="h-14 border-b border-gray-200 flex items-center justify-between px-4">
+              {pageType && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setPageType(null)
+                    setCurrentSection(null)
+                    router.push('/customize', { scroll: false })
+                  }}
+                  className="flex items-center gap-2"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                  חזור
+                </Button>
+              )}
+              <span className="font-semibold text-gray-900 flex-1 text-center">התאמה אישית</span>
+              {pageType && <div className="w-20" />} {/* Spacer */}
             </div>
           )}
 
@@ -1065,8 +1164,39 @@ export default function CustomizePage() {
             {currentSection ? (
               <>
                 {renderSectionContent(currentSection)}
-                {/* כפתור שמור */}
-                {hasUnsavedChanges && (
+                {/* כפתורי שמירה */}
+                {currentSection === "product-layout" && (
+                  <div className="mt-6 pt-4 border-t border-gray-200 space-y-2">
+                    {hasUnsavedChanges && (
+                      <Button 
+                        onClick={saveAllChanges}
+                        disabled={saving}
+                        className="w-full"
+                      >
+                        {saving ? (
+                          <>
+                            <span className="animate-spin mr-2">⏳</span>
+                            שומר...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="w-4 h-4 ml-2" />
+                            שמור שינויים
+                          </>
+                        )}
+                      </Button>
+                    )}
+                    <Button 
+                      onClick={() => setShowSaveTemplateDialog(true)}
+                      variant="outline"
+                      className="w-full"
+                    >
+                      <FileText className="w-4 h-4 ml-2" />
+                      שמור תבנית בשם
+                    </Button>
+                  </div>
+                )}
+                {currentSection !== "product-layout" && hasUnsavedChanges && (
                   <div className="mt-6 pt-4 border-t border-gray-200">
                     <Button 
                       onClick={saveAllChanges}
@@ -1088,6 +1218,68 @@ export default function CustomizePage() {
                   </div>
                 )}
               </>
+            ) : !pageType ? (
+              // מסך בחירה ראשי
+              <div className="space-y-6 p-6">
+                <div>
+                  <h2 className="text-xl font-bold text-gray-900 mb-2">בחר דף לעריכה</h2>
+                  <p className="text-sm text-gray-500">בחר איזה דף תרצה להתאים אישית</p>
+                </div>
+                
+                <div className="space-y-3">
+                  <button
+                    onClick={() => handlePageTypeSelect("home")}
+                    className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all text-right"
+                  >
+                    <div className="p-3 bg-purple-100 rounded-lg">
+                      <Home className="w-6 h-6 text-purple-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">דף בית</h3>
+                      <p className="text-sm text-gray-500">ערוך את עמוד הבית של החנות</p>
+                    </div>
+                    <ChevronLeft className="w-5 h-5 text-gray-400" />
+                  </button>
+                  
+                  <button
+                    onClick={() => handlePageTypeSelect("product")}
+                    disabled={products.length === 0}
+                    className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all text-right disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="p-3 bg-blue-100 rounded-lg">
+                      <Package className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">דף מוצר</h3>
+                      <p className="text-sm text-gray-500">
+                        {products.length > 0 
+                          ? `ערוך את עמוד המוצר (${products.length} מוצרים זמינים)`
+                          : "אין מוצרים עדיין"}
+                      </p>
+                    </div>
+                    <ChevronLeft className="w-5 h-5 text-gray-400" />
+                  </button>
+                  
+                  <button
+                    onClick={() => handlePageTypeSelect("category")}
+                    disabled={categories.length === 0}
+                    className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all text-right disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <div className="p-3 bg-green-100 rounded-lg">
+                      <FolderOpen className="w-6 h-6 text-green-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">דף קטגוריה</h3>
+                      <p className="text-sm text-gray-500">
+                        {categories.length > 0
+                          ? `ערוך את עמוד הקטגוריה (${categories.length} קטגוריות זמינות)`
+                          : "אין עדיין קטגוריות"}
+                      </p>
+                    </div>
+                    <ChevronLeft className="w-5 h-5 text-gray-400" />
+                  </button>
+                </div>
+              </div>
             ) : (
               <div className="space-y-2">
                 {customizerSections.map((section) => (
@@ -1131,7 +1323,15 @@ export default function CustomizePage() {
 
         {/* Preview Area */}
         <div className="flex-1 flex flex-col bg-gray-100">
-          {previewUrl ? (
+          {!pageType ? (
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <Palette className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">בחר דף לעריכה</h3>
+                <p className="text-gray-500">בחר דף מהסיידבר כדי להתחיל בעריכה</p>
+              </div>
+            </div>
+          ) : previewUrl ? (
             <iframe
               key={`${previewUrl}-${previewRefreshKey}`} // key משתנה כדי לכפות רענון כשהשינויים משתנים
               src={previewUrl}
@@ -1147,12 +1347,12 @@ export default function CustomizePage() {
           ) : (
             <div className="flex-1 flex items-center justify-center">
               <div className="text-center">
-                <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <Palette className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-600">
-                  {pageType === "category" && !selectedCategory
-                    ? "אנא בחרו קטגוריה"
-                    : pageType === "product" && !selectedProduct
-                    ? "אנא בחרו מוצר"
+                  {pageType === "category" && categories.length === 0
+                    ? "אין עדיין קטגוריות"
+                    : pageType === "product" && products.length === 0
+                    ? "אין מוצרים עדיין"
                     : "טוען תצוגה מקדימה..."}
                 </p>
               </div>
@@ -1357,6 +1557,73 @@ export default function CustomizePage() {
               }}
             >
               {editingElementId ? "עדכן" : "הוסף"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog לשמירת תבנית */}
+      <Dialog open={showSaveTemplateDialog} onOpenChange={setShowSaveTemplateDialog}>
+        <DialogContent dir="rtl">
+          <DialogHeader>
+            <DialogTitle>שמור תבנית בשם</DialogTitle>
+            <DialogDescription>
+              שמור את עיצוב עמוד המוצר הנוכחי כתבנית שתוכל להשתמש בה במוצרים אחרים
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div>
+              <Label htmlFor="template-name">שם התבנית *</Label>
+              <Input
+                id="template-name"
+                value={templateName}
+                onChange={(e) => setTemplateName(e.target.value)}
+                placeholder="למשל: ראייבן"
+                className="mt-2"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowSaveTemplateDialog(false)
+              setTemplateName("")
+            }}>
+              ביטול
+            </Button>
+            <Button 
+              onClick={async () => {
+                if (!templateName.trim() || !selectedShop?.slug) return
+                if (elements.length === 0) {
+                  alert("יש להוסיף לפחות אלמנט אחד לתבנית")
+                  return
+                }
+                
+                try {
+                  const response = await fetch(`/api/storefront/${selectedShop.slug}/product-page-templates`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      name: templateName.trim(),
+                      elements: elements.sort((a, b) => a.position - b.position),
+                      isActive: true,
+                    }),
+                  })
+                  
+                  if (response.ok) {
+                    setShowSaveTemplateDialog(false)
+                    setTemplateName("")
+                    // אפשר להוסיף toast כאן
+                  } else {
+                    alert("שגיאה בשמירת התבנית")
+                  }
+                } catch (error) {
+                  console.error("Error saving template:", error)
+                  alert("שגיאה בשמירת התבנית")
+                }
+              }}
+              disabled={!templateName.trim()}
+            >
+              שמור
             </Button>
           </DialogFooter>
         </DialogContent>

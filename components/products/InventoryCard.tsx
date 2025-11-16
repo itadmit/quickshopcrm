@@ -16,6 +16,8 @@ interface InventoryData {
   trackInventory: boolean
   sellWhenSoldOut: boolean
   priceByWeight: boolean
+  showPricePer100ml: boolean
+  pricePer100ml: string
 }
 
 interface InventoryCardProps {
@@ -137,20 +139,36 @@ export function InventoryCard({ data, onChange, hidden = false }: InventoryCardP
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="space-y-0.5">
-              <Label htmlFor="trackInventory" className="cursor-pointer">
-                האם לרשום מחיר ל-100 מ״ל
-              </Label>
-              <p className="text-xs text-gray-500">
-                הלקוחות יראו גם כשהמלאי אפס את המחיר
-              </p>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label htmlFor="showPricePer100ml" className="cursor-pointer">
+                  האם לרשום מחיר ל-100 מ״ל
+                </Label>
+                <p className="text-xs text-gray-500">
+                  הלקוחות יראו את המחיר ל-100 מ״ל לצד המחיר הרגיל
+                </p>
+              </div>
+              <Switch
+                id="showPricePer100ml"
+                checked={data.showPricePer100ml}
+                onCheckedChange={(checked) => onChange({ showPricePer100ml: checked as boolean })}
+              />
             </div>
-            <Switch
-              id="trackInventory"
-              checked={data.trackInventory}
-              onCheckedChange={(checked) => onChange({ trackInventory: checked as boolean })}
-            />
+            {data.showPricePer100ml && (
+              <div className="space-y-2 pr-4">
+                <Label htmlFor="pricePer100ml">מחיר ל-100 מ״ל (₪)</Label>
+                <Input
+                  id="pricePer100ml"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={data.pricePer100ml}
+                  onChange={(e) => onChange({ pricePer100ml: e.target.value })}
+                  placeholder="0.00"
+                />
+              </div>
+            )}
           </div>
         </div>
       </CardContent>

@@ -30,6 +30,8 @@ interface Return {
   order: {
     id: string
     orderNumber: string
+    total?: number
+    transactionId?: string | null
   }
   customerId: string
   customer: {
@@ -82,9 +84,13 @@ export default function ReturnDetailPage() {
       if (response.ok) {
         const data = await response.json()
         setReturnItem(data)
+        
+        // ברירת מחדל: אם אין סכום החזר, נציב את מחיר ההזמנה
+        const defaultRefundAmount = data.refundAmount || (data.order?.total || 0)
+        
         setFormData({
           status: data.status,
-          refundAmount: data.refundAmount?.toString() || "",
+          refundAmount: defaultRefundAmount.toString(),
           refundMethod: data.refundMethod || "",
           notes: data.notes || "",
         })
@@ -355,6 +361,9 @@ export default function ReturnDetailPage() {
                     onChange={(e) => setFormData((prev) => ({ ...prev, refundAmount: e.target.value }))}
                     placeholder="0.00"
                   />
+                  <p className="text-xs text-gray-500">
+                    ברירת מחדל: ₪{returnItem.order?.total?.toFixed(2) || "0.00"} (מחיר ההזמנה)
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="refundMethod">שיטת החזר</Label>
@@ -372,6 +381,13 @@ export default function ReturnDetailPage() {
                       <SelectItem value="STORE_CREDIT">אשראי בחנות</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-gray-500">
+                    {formData.refundMethod === "ORIGINAL_PAYMENT" && returnItem.order?.transactionId
+                      ? "הזיכוי יבוצע אוטומטית דרך PayPlus (אם מוגדר)"
+                      : formData.refundMethod === "STORE_CREDIT"
+                      ? "הזיכוי יועבר לאשראי בחנות"
+                      : ""}
+                  </p>
                 </div>
               </CardContent>
             </Card>

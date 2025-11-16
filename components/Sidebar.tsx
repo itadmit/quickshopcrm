@@ -36,6 +36,8 @@ import {
   Mail,
   Sliders,
   Plus,
+  Ruler,
+  Edit,
 } from "lucide-react"
 
 const menuItems = [
@@ -53,12 +55,13 @@ const salesItems = [
   { icon: ShoppingCart, label: "הזמנות", href: "/orders", permission: "orders" },
   { icon: Users, label: "לקוחות", href: "/customers", permission: "customers" },
   { icon: Warehouse, label: "מלאי", href: "/inventory", permission: "inventory" },
+  { icon: Edit, label: "עריכה מהירה", href: "/products/bulk-edit", permission: "products" },
 ]
 
 const marketingItems = [
   { icon: Tag, label: "הנחות", href: "/discounts", permission: "discounts" },
   { icon: Tag, label: "קופונים", href: "/coupons", permission: "coupons" },
-  { icon: FolderOpen, label: "קולקציות", href: "/collections", permission: "collections" },
+  { icon: FolderOpen, label: "קטגוריות", href: "/collections", permission: "collections" },
   { icon: Gift, label: "כרטיסי מתנה", href: "/gift-cards", permission: "gift_cards" },
   { icon: ShoppingBag, label: "עגלות נטושות", href: "/abandoned-carts", permission: "abandoned_carts" },
 ]
@@ -78,7 +81,9 @@ const customerServiceItems = [
 ]
 
 const productItems = [
-  { icon: Boxes, label: "חבילות מוצרים", href: "/bundles", permission: "bundles" },
+  { icon: Ruler, label: "טבלת מידות", href: "/size-charts", permission: "products" },
+  { icon: Sliders, label: "שדות מותאמים", href: "/settings/custom-fields", permission: "settings" },
+  { icon: Plus, label: "תוספות למוצרים", href: "/settings/product-addons", permission: "settings" },
 ]
 
 const systemItems = [
@@ -91,14 +96,13 @@ const systemItems = [
 const settingsItems = [
   { icon: Settings, label: "הגדרות", href: "/settings", permission: "settings" },
   { icon: Plug, label: "אינטגרציות", href: "/settings/integrations", permission: "integrations" },
-  { icon: Sliders, label: "שדות מותאמים", href: "/settings/custom-fields", permission: "settings" },
-  { icon: Plus, label: "תוספות למוצרים", href: "/settings/product-addons", permission: "settings" },
 ]
 
 const superAdminItems = [
-  { icon: Shield, label: "הגדרות PayPlus", href: "/admin/payplus", permission: "super_admin" },
+  { icon: Shield, label: "הגדרות PayPlus", href: "/admin", permission: "super_admin" },
   { icon: Mail, label: "הגדרות SendGrid", href: "/admin/sendgrid", permission: "super_admin" },
   { icon: DollarSign, label: "גביית עמלות", href: "/admin/commissions", permission: "super_admin" },
+  { icon: Plug, label: "ניהול תוספים", href: "/admin/plugins", permission: "super_admin" },
 ]
 
 export function Sidebar() {
@@ -108,6 +112,7 @@ export function Sidebar() {
   const [permissions, setPermissions] = useState<Record<string, boolean>>({})
   const [loadingPermissions, setLoadingPermissions] = useState(true)
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null)
+  const [pluginMenuItems, setPluginMenuItems] = useState<any[]>([])
 
   useEffect(() => {
     // נחכה שה-session יטען לפני שנבצע fetch
@@ -115,6 +120,7 @@ export function Sidebar() {
       fetchPermissions()
       fetchUnreadCount()
       fetchSubscriptionInfo()
+      fetchActivePlugins()
     }
   }, [status])
 
@@ -125,8 +131,28 @@ export function Sidebar() {
     const interval = setInterval(() => {
       fetchUnreadCount()
       fetchSubscriptionInfo()
+      fetchActivePlugins() // עדכון תוספים כל 30 שניות
     }, 30000)
     return () => clearInterval(interval)
+  }, [status])
+
+  // האזנה ל-events של עדכון תוספים
+  useEffect(() => {
+    if (status !== 'authenticated') return
+
+    const handlePluginUpdate = () => {
+      fetchActivePlugins()
+    }
+
+    // האזנה ל-custom event
+    window.addEventListener('plugin-updated', handlePluginUpdate)
+    // האזנה גם ל-navigation events (כשעוברים בין דפים)
+    window.addEventListener('focus', handlePluginUpdate)
+
+    return () => {
+      window.removeEventListener('plugin-updated', handlePluginUpdate)
+      window.removeEventListener('focus', handlePluginUpdate)
+    }
   }, [status])
 
   const fetchSubscriptionInfo = async () => {
@@ -171,7 +197,6 @@ export function Sidebar() {
           reviews: true,
           returns: true,
           store_credits: true,
-          bundles: true,
           analytics: true,
           webhooks: true,
           settings: true,
@@ -200,7 +225,6 @@ export function Sidebar() {
         reviews: true,
         returns: true,
         store_credits: true,
-        bundles: true,
         analytics: true,
         webhooks: true,
         settings: true,
@@ -222,6 +246,25 @@ export function Sidebar() {
       }
     } catch (error) {
       console.error('Error fetching notifications count:', error)
+    }
+  }
+
+  const fetchActivePlugins = async () => {
+    try {
+      const response = await fetch('/api/plugins')
+      if (response.ok) {
+        const plugins = await response.json()
+        // מסננים רק תוספים פעילים שיש להם menuItem
+        const menuItems = plugins
+          .filter((p: any) => p.isActive && p.isInstalled && p.metadata?.menuItem)
+          .map((p: any) => ({
+            ...p.metadata.menuItem,
+            pluginSlug: p.slug,
+          }))
+        setPluginMenuItems(menuItems)
+      }
+    } catch (error) {
+      console.error('Error fetching active plugins:', error)
     }
   }
 
@@ -468,6 +511,29 @@ export function Sidebar() {
                     )}
                   >
                     <Icon className="w-5 h-5 flex-shrink-0" />
+                    <span>{item.label}</span>
+                  </Link>
+                )
+              })}
+            {/* תוספים עם menuItem */}
+            {pluginMenuItems
+              .filter((item: any) => item.section === 'productItems' && hasPermission(item.permission))
+              .map((item: any) => {
+                // מציאת האייקון לפי שם
+                const IconComponent = item.icon === 'Boxes' ? Boxes : Boxes
+                const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                return (
+                  <Link
+                    key={`plugin-${item.pluginSlug}`}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                      isActive
+                        ? "bg-purple-100 text-purple-700"
+                        : "text-gray-700 hover:bg-gray-200"
+                    )}
+                  >
+                    <IconComponent className="w-5 h-5 flex-shrink-0" />
                     <span>{item.label}</span>
                   </Link>
                 )

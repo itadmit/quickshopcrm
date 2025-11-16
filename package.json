@@ -20,7 +20,9 @@
     "redis:start": "redis-server --daemonize yes",
     "redis:stop": "redis-cli shutdown",
     "redis:check": "redis-cli ping",
-    "remove-gift-items": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/remove-gift-items-from-cart.ts"
+    "remove-gift-items": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/remove-gift-items-from-cart.ts",
+    "seed:bundles": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/seed-bundles-example.ts",
+    "download:image": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/download-product-image.ts"
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
@@ -69,6 +71,7 @@
     "tailwind-merge": "^2.2.0",
     "tailwindcss-animate": "^1.0.7",
     "use-debounce": "^10.0.6",
+    "xml2js": "^0.6.2",
     "zod": "^3.22.4"
   },
   "devDependencies": {
@@ -80,6 +83,7 @@
     "@types/nodemailer": "^6.4.14",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/xml2js": "^0.4.14",
     "autoprefixer": "^10.0.1",
     "eslint": "^8",
     "eslint-config-next": "14.0.4",

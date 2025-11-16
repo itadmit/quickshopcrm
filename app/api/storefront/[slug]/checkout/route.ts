@@ -14,6 +14,8 @@ const checkoutSchema = z.object({
   companyName: z.string().nullable().optional(),
   orderNotes: z.string().nullable().optional(),
   newsletter: z.boolean().optional(),
+  createAccount: z.boolean().optional(), // האם הלקוח בחר להרשם לחשבון
+  saveDetails: z.boolean().optional(), // האם הלקוח בחר לשמור פרטים לפעם הבאה
   shippingAddress: z.any().nullable().optional(),
   billingAddress: z.any().nullable().optional(),
   paymentMethod: z.string().optional(),
@@ -75,6 +77,50 @@ export async function POST(
       shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
       null // shipping - נחשב למטה
     )
+
+    // בדיקה אם נבחר "כרטיס אשראי" אבל אין ספק תשלום פעיל - לפני יצירת ההזמנה!
+    if (data.paymentMethod === "credit_card") {
+      // בדיקה אם יש אינטגרציה עם PayPlus
+      const payplusIntegration = await prisma.integration.findFirst({
+        where: {
+          companyId: shop.companyId,
+          type: "PAYPLUS",
+          isActive: true,
+        },
+        select: {
+          id: true,
+          apiKey: true,
+          apiSecret: true,
+        },
+      })
+
+      // בדיקה אם יש אינטגרציה עם PayPal
+      const paypalIntegration = await prisma.integration.findFirst({
+        where: {
+          companyId: shop.companyId,
+          type: "PAYPAL",
+          isActive: true,
+        },
+        select: {
+          id: true,
+          apiKey: true,
+          apiSecret: true,
+        },
+      })
+
+      // בדיקה אם יש ספק תשלום פעיל
+      const hasPaymentProvider = !!(
+        (payplusIntegration && payplusIntegration.apiKey && payplusIntegration.apiSecret) ||
+        (paypalIntegration && paypalIntegration.apiKey && paypalIntegration.apiSecret)
+      )
+
+      if (!hasPaymentProvider) {
+        return NextResponse.json(
+          { error: "אין ספק תשלום מוגדר. אנא בחר שיטת תשלום אחרת" },
+          { status: 400 }
+        )
+      }
+    }
 
     // בניית orderItems מהחישוב המרכזי
     // אנחנו חייבים לאמת שה-variantId קיים בדאטאבייס לפני שאנחנו מוסיפים אותו
@@ -201,6 +247,64 @@ export async function POST(
       total = finalPrice + shipping
     }
 
+    // יצירת או מציאת לקוח רק אם הלקוח בחר להרשם או לשמור פרטים
+    let finalCustomerId = data.customerId || customerId || null
+    
+    // אם הלקוח לא מחובר ולא בחר להרשם/לשמור פרטים, לא יוצרים לקוח
+    if (!finalCustomerId && (data.createAccount || data.saveDetails)) {
+      // חיפוש לקוח קיים לפי אימייל
+      const existingCustomer = await prisma.customer.findFirst({
+        where: {
+          shopId: shop.id,
+          email: data.customerEmail.toLowerCase(),
+        },
+      })
+
+      if (existingCustomer) {
+        finalCustomerId = existingCustomer.id
+        // עדכון פרטי הלקוח אם יש מידע חדש
+        await prisma.customer.update({
+          where: { id: existingCustomer.id },
+          data: {
+            firstName: data.customerName.split(" ")[0] || existingCustomer.firstName,
+            lastName: data.customerName.split(" ").slice(1).join(" ") || existingCustomer.lastName,
+            phone: data.customerPhone || existingCustomer.phone,
+          },
+        })
+      } else if (data.createAccount) {
+        // יצירת לקוח חדש רק אם הלקוח בחר להרשם
+        const newCustomer = await prisma.customer.create({
+          data: {
+            shopId: shop.id,
+            email: data.customerEmail.toLowerCase(),
+            firstName: data.customerName.split(" ")[0] || null,
+            lastName: data.customerName.split(" ").slice(1).join(" ") || null,
+            phone: data.customerPhone || null,
+            emailVerified: false, // לא מאומת כי לא עבר דרך magic link או הרשמה
+            password: null, // אין סיסמה - נוצר מהזמנה (יכול להגדיר סיסמה אחר כך)
+            isSubscribed: data.newsletter || false,
+          },
+        })
+        finalCustomerId = newCustomer.id
+
+        // יצירת אירוע
+        await prisma.shopEvent.create({
+          data: {
+            shopId: shop.id,
+            type: "customer.registered",
+            entityType: "customer",
+            entityId: newCustomer.id,
+            payload: {
+              customerId: newCustomer.id,
+              email: newCustomer.email,
+              method: "checkout",
+            },
+          },
+        })
+      }
+      // אם רק saveDetails (בלי createAccount), לא יוצרים לקוח חדש - רק משתמשים בקיים אם יש
+    }
+
     // יצירת מספר הזמנה (מתחיל מ-1000 לכל חנות)
     const orderCount = await prisma.order.count({
       where: { shopId: shop.id },
@@ -212,7 +316,7 @@ export async function POST(
       data: {
         shopId: shop.id,
         orderNumber,
-        customerId: data.customerId,
+        customerId: finalCustomerId,
         customerName: data.customerName,
         customerEmail: data.customerEmail,
         customerPhone: data.customerPhone,
@@ -318,6 +422,12 @@ export async function POST(
         },
         userId: data.customerId || undefined,
       },
+    })
+    
+    // בדיקה אם צריך לשלוח אוטומטית לחברת משלוחים
+    const { ShippingManager } = await import('@/lib/shipping/manager')
+    ShippingManager.checkAutoSend(order.id, 'order.created').catch((error) => {
+      console.error('Error checking auto-send shipping:', error)
     })
     
     // יצירת אירוע payment.initiated

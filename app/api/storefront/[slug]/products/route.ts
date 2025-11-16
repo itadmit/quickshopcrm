@@ -36,7 +36,6 @@ export async function GET(
     }
 
     const { searchParams } = new URL(req.url)
-    const category = searchParams.get("category")
     const collection = searchParams.get("collection")
     const search = searchParams.get("search")
     const minPrice = searchParams.get("minPrice")
@@ -64,18 +63,7 @@ export async function GET(
       ]
     }
 
-    // קטגוריה
-    if (category) {
-      where.categories = {
-        some: {
-          category: {
-            slug: category,
-          },
-        },
-      }
-    }
-
-    // אוסף
+    // קטגוריה (collections)
     if (collection) {
       where.collections = {
         some: {

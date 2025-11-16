@@ -6,7 +6,10 @@ import { AppLayout } from "@/components/AppLayout"
 import { Button } from "@/components/ui/button"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { ProductFormSkeleton } from "@/components/skeletons/ProductFormSkeleton"
-import { Save, Eye, ExternalLink } from "lucide-react"
+import { Save, Eye, ExternalLink, Layout } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Label } from "@/components/ui/label"
 import { getShopProductUrl } from "@/lib/utils"
 
 // Import all the shared components
@@ -89,6 +92,8 @@ export default function EditProductPage() {
     trackInventory: true,
     sellWhenSoldOut: false,
     priceByWeight: false,
+    showPricePer100ml: false,
+    pricePer100ml: "",
     weight: "",
     dimensions: {
       length: "",
@@ -107,10 +112,12 @@ export default function EditProductPage() {
     tags: [] as string[],
     categories: [] as string[],
     badges: [] as any[],
+    pageTemplateId: "",
   })
 
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({})
   const [productAddonIds, setProductAddonIds] = useState<string[]>([])
+  const [templates, setTemplates] = useState<Array<{ id: string; name: string }>>([])
   
   // Variants state
   const [hasVariants, setHasVariants] = useState(false)
@@ -176,6 +183,8 @@ export default function EditProductPage() {
           trackInventory: data.trackInventory ?? true,
           sellWhenSoldOut: data.sellWhenSoldOut ?? false,
           priceByWeight: data.priceByWeight ?? false,
+          showPricePer100ml: data.showPricePer100ml ?? false,
+          pricePer100ml: data.pricePer100ml?.toString() || "",
           weight: data.weight?.toString() || "",
           dimensions: {
             length: data.dimensions?.length?.toString() || "",
@@ -194,7 +203,17 @@ export default function EditProductPage() {
           tags: data.tags?.map((t: any) => t.name) || [],
           categories: data.categories?.map((c: any) => c.category.id) || [],
           badges: data.badges || [],
+          pageTemplateId: data.pageTemplateId || "",
         })
+        
+        // טעינת תבניות זמינות
+        if (data.shop?.slug) {
+          const templatesRes = await fetch(`/api/storefront/${data.shop.slug}/product-page-templates`)
+          if (templatesRes.ok) {
+            const templatesData = await templatesRes.json()
+            setTemplates(templatesData.templates || [])
+          }
+        }
 
         // Fetch options and variants
         const [optionsRes, variantsRes] = await Promise.all([
@@ -337,6 +356,8 @@ export default function EditProductPage() {
         trackInventory: formData.trackInventory,
         sellWhenSoldOut: formData.sellWhenSoldOut,
         priceByWeight: formData.priceByWeight,
+        showPricePer100ml: formData.showPricePer100ml,
+        pricePer100ml: formData.pricePer100ml ? parseFloat(formData.pricePer100ml) : null,
         weight: formData.weight ? parseFloat(formData.weight) : null,
         dimensions: {
           length: formData.dimensions.length || null,
@@ -357,6 +378,7 @@ export default function EditProductPage() {
         customFields: customFieldValues,
         badges: formData.badges.length > 0 ? formData.badges : null,
         addonIds: productAddonIds,
+        pageTemplateId: formData.pageTemplateId || null,
         hasVariants,
         options: hasVariants ? options : [],
         variants: hasVariants ? variants : [],
@@ -495,6 +517,8 @@ export default function EditProductPage() {
                 trackInventory: formData.trackInventory,
                 sellWhenSoldOut: formData.sellWhenSoldOut,
                 priceByWeight: formData.priceByWeight,
+                showPricePer100ml: formData.showPricePer100ml,
+                pricePer100ml: formData.pricePer100ml,
               }}
               onChange={(data) => setFormData(prev => ({ ...prev, ...data as any }))}
               hidden={hasVariants}
@@ -545,6 +569,8 @@ export default function EditProductPage() {
               selectedCategories={formData.categories}
               onChange={(categories) => setFormData(prev => ({ ...prev, categories }))}
               shopId={product.shopId}
+              productId={product.id}
+              refreshTrigger={`${formData.name}-${formData.price}-${formData.status}-${formData.availability}-${formData.tags.join(',')}`}
             />
 
             {/* Product Details */}
@@ -589,6 +615,52 @@ export default function EditProductPage() {
               }}
               onChange={(data) => setFormData(prev => ({ ...prev, ...data }))}
             />
+
+            {/* Page Template */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Layout className="w-4 h-4" />
+                  תבנית עמוד מוצר
+                </CardTitle>
+                <CardDescription>
+                  בחר תבנית עיצוב ספציפית למוצר זה
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Label>תבנית</Label>
+                  <Select
+                    value={formData.pageTemplateId || undefined}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, pageTemplateId: value === "none" ? "" : value }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="בחר תבנית (אופציונלי)" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">ללא תבנית (ברירת מחדל)</SelectItem>
+                      {templates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formData.pageTemplateId && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      ניתן ליצור תבניות חדשות ב-{" "}
+                      <button
+                        type="button"
+                        onClick={() => window.open(`/customize?page=product&id=${product?.id}`, '_blank')}
+                        className="text-purple-600 hover:underline"
+                      >
+                        התאמה אישית
+                      </button>
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>

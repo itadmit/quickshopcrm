@@ -2,6 +2,48 @@ import sgMail from '@sendgrid/mail'
 import { prisma } from './prisma'
 
 /**
+ * Get email settings from shop theme settings
+ */
+export async function getShopEmailSettings(shopId: string): Promise<{
+  senderName: string
+  color1: string
+  color2: string
+}> {
+  try {
+    const shop = await prisma.shop.findUnique({
+      where: { id: shopId },
+      select: {
+        name: true,
+        themeSettings: true,
+      },
+    })
+
+    if (!shop) {
+      return {
+        senderName: 'Quick Shop',
+        color1: '#6f65e2',
+        color2: '#b965e2',
+      }
+    }
+
+    const themeSettings = (shop.themeSettings as any) || {}
+    
+    return {
+      senderName: themeSettings.emailSenderName || shop.name || 'Quick Shop',
+      color1: themeSettings.emailColor1 || '#6f65e2',
+      color2: themeSettings.emailColor2 || '#b965e2',
+    }
+  } catch (error) {
+    console.error('Error fetching shop email settings:', error)
+    return {
+      senderName: 'Quick Shop',
+      color1: '#6f65e2',
+      color2: '#b965e2',
+    }
+  }
+}
+
+/**
  * Get SendGrid settings from database
  */
 async function getSendGridSettings() {
@@ -43,6 +85,7 @@ export async function sendEmail({
   text,
   from,
   attachments,
+  shopId,
 }: {
   to: string | string[]
   subject: string
@@ -54,6 +97,7 @@ export async function sendEmail({
     content: Buffer | string
     contentType?: string
   }>
+  shopId?: string // אם מועבר, נשתמש בשם השולח מההגדרות של החנות
 }): Promise<void> {
   // Get SendGrid settings - required!
   const sendgridSettings = await getSendGridSettings()
@@ -68,6 +112,19 @@ export async function sendEmail({
     // Parse 'from' parameter or use SendGrid settings
     let fromEmail = sendgridSettings.fromEmail
     let fromName = sendgridSettings.fromName
+    
+    // אם יש shopId, נשתמש בשם השולח מההגדרות של החנות
+    if (shopId) {
+      try {
+        const emailSettings = await getShopEmailSettings(shopId)
+        if (emailSettings.senderName) {
+          fromName = emailSettings.senderName
+        }
+      } catch (error) {
+        console.warn('Failed to get shop email settings, using default:', error)
+        // נמשיך עם ברירת המחדל
+      }
+    }
     
     if (from) {
       // Parse "Name <email@example.com>" format
@@ -198,12 +255,21 @@ function getNestedValue(obj: any, path: string): any {
 export function getEmailTemplate({
   title,
   content,
-  footer = 'הודעה זו נשלחה אוטומטית מ-Quick Shop',
+  footer,
+  color1 = '#6f65e2',
+  color2 = '#b965e2',
+  senderName = 'Quick Shop',
 }: {
   title: string
   content: string
   footer?: string
+  color1?: string
+  color2?: string
+  senderName?: string
 }): string {
+  const gradient = `linear-gradient(135deg, ${color1} 0%, ${color2} 100%)`
+  const defaultFooter = footer || `הודעה זו נשלחה אוטומטית מ-${senderName}`
+  
   return `
 <!DOCTYPE html>
 <html dir="rtl" lang="he">
@@ -234,7 +300,7 @@ export function getEmailTemplate({
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
     .header {
-      background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%);
+      background: ${gradient};
       padding: 30px 20px;
       text-align: center;
       color: white;
@@ -270,7 +336,7 @@ export function getEmailTemplate({
     .button {
       display: inline-block;
       padding: 12px 30px;
-      background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%);
+      background: ${gradient};
       color: white !important;
       text-decoration: none;
       border-radius: 5px;
@@ -291,8 +357,8 @@ export function getEmailTemplate({
       ${content}
     </div>
     <div class="footer">
-      <p>${footer}</p>
-      <p>Quick Shop © ${new Date().getFullYear()}</p>
+      <p>${defaultFooter}</p>
+      <p>${senderName} © ${new Date().getFullYear()}</p>
     </div>
   </div>
 </body>

@@ -17,10 +17,12 @@ import { useRouter } from "next/navigation"
 import { SlideOutCart } from "./SlideOutCart"
 import { SearchDialog } from "./SearchDialog"
 import { GiftVariantModalHandler } from "./GiftVariantModalHandler"
+import { MegaMenu } from "./MegaMenu"
 import { useShopTheme } from "@/hooks/useShopTheme"
 import { useCart } from "@/hooks/useCart"
 import { useNavigation } from "@/hooks/useNavigation"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody } from "@/components/ui/sheet"
+import { cn } from "@/lib/utils"
 
 interface Shop {
   id: string
@@ -38,6 +40,8 @@ interface NavigationItem {
   categoryId?: string
   collectionId?: string
   children?: NavigationItem[]
+  image?: string
+  columnTitle?: string
 }
 
 interface Navigation {
@@ -119,11 +123,13 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [customerId, setCustomerId] = useState<string | null>(null)
+  const [customerName, setCustomerName] = useState<string | null>(null)
   const [cartOpen, setCartOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
   const [messageWraps, setMessageWraps] = useState(false)
   const messageRef = useRef<HTMLDivElement>(null)
+  const [expandedMobileItems, setExpandedMobileItems] = useState<Set<string>>(new Set())
   
   // שימוש ב-hook לטעינת ניווט - HEADER לדסקטופ, MOBILE למובייל
   const { navigation: desktopNavigation } = useNavigation(slug, "HEADER", initialNavigation)
@@ -240,15 +246,50 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // ריצה פעם אחת בלבד בעת mount
   
-  useEffect(() => {
+  const loadCustomerData = () => {
     const customerData = localStorage.getItem(`storefront_customer_${slug}`)
     if (customerData) {
       try {
         const parsed = JSON.parse(customerData)
         setCustomerId(parsed.id)
+        // שמירת שם הלקוח להצגה בהדר
+        if (parsed.firstName) {
+          setCustomerName(parsed.firstName)
+        } else {
+          setCustomerName(null)
+        }
       } catch (error) {
         console.error("Error parsing customer data:", error)
+        setCustomerId(null)
+        setCustomerName(null)
       }
+    } else {
+      setCustomerId(null)
+      setCustomerName(null)
+    }
+  }
+
+  useEffect(() => {
+    loadCustomerData()
+
+    // האזנה לשינויים ב-localStorage (כשהלקוח מתחבר/יוצא)
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === `storefront_customer_${slug}` || e.key === `storefront_token_${slug}`) {
+        loadCustomerData()
+      }
+    }
+
+    // האזנה גם לשינויים מקומיים (באותו tab)
+    const handleCustomStorageChange = () => {
+      loadCustomerData()
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+    window.addEventListener('customerDataChanged', handleCustomStorageChange)
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange)
+      window.removeEventListener('customerDataChanged', handleCustomStorageChange)
     }
   }, [slug])
 
@@ -262,73 +303,36 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
   const renderNavigationItem = (item: NavigationItem, index: number) => {
     const hasChildren = item.children && item.children.length > 0
 
-      if (item.type === "link") {
-        return (
-          <Link
-            key={index}
-            href={item.url || "#"}
-            className="text-gray-700 hover:text-gray-900 transition-colors text-sm font-medium"
-          >
-            {item.label}
-          </Link>
-        )
-      } else if (item.type === "page") {
-        // שימוש ב-pageSlug אם קיים, אחרת ב-pageId (תאימות לאחור)
-        const pageIdentifier = item.pageSlug || item.pageId
-        return (
-          <Link
-            key={index}
-            href={`/shop/${slug}/pages/${pageIdentifier}`}
-            className="text-gray-700 hover:text-gray-900 transition-colors text-sm font-medium"
-          >
-            {item.label}
-          </Link>
-        )
-      } else if (item.type === "category") {
-        return (
-          <Link
-            key={index}
-            href={`/shop/${slug}/categories/${item.categoryId}`}
-            className="text-gray-700 hover:text-gray-900 transition-colors text-sm font-medium"
-          >
-            {item.label}
-          </Link>
-        )
-      } else if (item.type === "collection") {
-        return (
-          <Link
-            key={index}
-            href={`/shop/${slug}/collections/${item.collectionId}`}
-            className="text-gray-700 hover:text-gray-900 transition-colors text-sm font-medium"
-          >
-            {item.label}
-          </Link>
-        )
-      }
-    return null
-  }
+    // אם יש ילדים, נציג מגה מניו
+    if (hasChildren) {
+      return (
+        <MegaMenu
+          key={index}
+          item={item}
+          slug={slug}
+        />
+      )
+    }
 
-  // פונקציה נפרדת לתפריט מובייל עם סגנון שונה
-  const renderMobileNavigationItem = (item: NavigationItem, index: number) => {
-    const linkClassName = "block px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-gray-50 transition-colors rounded-lg text-base font-medium"
-    
+    // פריטים רגילים ללא ילדים
     if (item.type === "link") {
       return (
         <Link
           key={index}
           href={item.url || "#"}
-          className={linkClassName}
+          className="text-gray-700 hover:text-gray-900 transition-colors text-sm font-medium"
         >
           {item.label}
         </Link>
       )
     } else if (item.type === "page") {
+      // שימוש ב-pageSlug אם קיים, אחרת ב-pageId (תאימות לאחור)
       const pageIdentifier = item.pageSlug || item.pageId
       return (
         <Link
           key={index}
           href={`/shop/${slug}/pages/${pageIdentifier}`}
-          className={linkClassName}
+          className="text-gray-700 hover:text-gray-900 transition-colors text-sm font-medium"
         >
           {item.label}
         </Link>
@@ -338,7 +342,7 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
         <Link
           key={index}
           href={`/shop/${slug}/categories/${item.categoryId}`}
-          className={linkClassName}
+          className="text-gray-700 hover:text-gray-900 transition-colors text-sm font-medium"
         >
           {item.label}
         </Link>
@@ -348,7 +352,120 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
         <Link
           key={index}
           href={`/shop/${slug}/collections/${item.collectionId}`}
+          className="text-gray-700 hover:text-gray-900 transition-colors text-sm font-medium"
+        >
+          {item.label}
+        </Link>
+      )
+    }
+    return null
+  }
+
+  // פונקציה נפרדת לתפריט מובייל עם סגנון שונה ותמיכה במגה מניו
+  const renderMobileNavigationItem = (item: NavigationItem, index: number, parentPath: string[] = []) => {
+    const linkClassName = "block px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-gray-50 transition-colors rounded-lg text-base font-medium"
+    const hasChildren = item.children && item.children.length > 0
+    const itemPath = [...parentPath, index.toString()]
+    const itemKey = itemPath.join("-")
+    const isExpanded = expandedMobileItems.has(itemKey)
+
+    const getItemUrl = () => {
+      if (item.type === "page") {
+        const pageIdentifier = item.pageSlug || item.pageId
+        return `/shop/${slug}/pages/${pageIdentifier}`
+      } else if (item.type === "category") {
+        return `/shop/${slug}/categories/${item.categoryId}`
+      } else if (item.type === "collection") {
+        return `/shop/${slug}/collections/${item.collectionId}`
+      } else if (item.type === "link") {
+        return item.url || "#"
+      }
+      return "#"
+    }
+
+    const toggleExpanded = () => {
+      setExpandedMobileItems((prev) => {
+        const newSet = new Set(prev)
+        if (newSet.has(itemKey)) {
+          newSet.delete(itemKey)
+        } else {
+          newSet.add(itemKey)
+        }
+        return newSet
+      })
+    }
+
+    // אם יש ילדים, נציג accordion
+    if (hasChildren) {
+      return (
+        <div key={itemKey} className="border-b border-gray-100 last:border-b-0">
+          <button
+            onClick={toggleExpanded}
+            className="w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-gray-50 transition-colors rounded-lg text-base font-medium"
+          >
+            <span>{item.label}</span>
+            <ChevronDown
+              className={cn(
+                "w-4 h-4 transition-transform duration-200",
+                isExpanded && "rotate-180"
+              )}
+            />
+          </button>
+          {isExpanded && (
+            <div className="pr-4 pb-2 space-y-1">
+              {item.children!.map((childItem, childIndex) => (
+                <div key={childIndex}>
+                  {renderMobileNavigationItem(childItem, childIndex, itemPath)}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // פריטים רגילים ללא ילדים
+    if (item.type === "link") {
+      return (
+        <Link
+          key={itemKey}
+          href={item.url || "#"}
           className={linkClassName}
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          {item.label}
+        </Link>
+      )
+    } else if (item.type === "page") {
+      const pageIdentifier = item.pageSlug || item.pageId
+      return (
+        <Link
+          key={itemKey}
+          href={`/shop/${slug}/pages/${pageIdentifier}`}
+          className={linkClassName}
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          {item.label}
+        </Link>
+      )
+    } else if (item.type === "category") {
+      return (
+        <Link
+          key={itemKey}
+          href={`/shop/${slug}/categories/${item.categoryId}`}
+          className={linkClassName}
+          onClick={() => setMobileMenuOpen(false)}
+        >
+          {item.label}
+        </Link>
+      )
+    } else if (item.type === "collection") {
+      return (
+        <Link
+          key={itemKey}
+          href={`/shop/${slug}/collections/${item.collectionId}`}
+          className={linkClassName}
+          onClick={() => setMobileMenuOpen(false)}
         >
           {item.label}
         </Link>
@@ -688,7 +805,11 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
       {mounted ? (
         <Link href={customerId ? `/shop/${slug}/account` : `/shop/${slug}/login`}>
           <Button variant="ghost" size="sm" className="p-2">
-            <User className="w-5 h-5 text-gray-700" />
+            {customerName ? (
+              <span className="text-sm text-gray-700 mr-2">שלום, {customerName}</span>
+            ) : (
+              <User className="w-5 h-5 text-gray-700" />
+            )}
           </Button>
         </Link>
       ) : (
@@ -903,13 +1024,20 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
               {mounted && (theme.mobileSideMenuShowAuthLinks !== false) && (
                 <div className="p-4 border-t space-y-2">
                   {customerId ? (
-                    <Link
-                      href={`/shop/${slug}/account`}
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="block px-3 py-2 text-gray-700 hover:text-purple-600 transition-colors rounded-lg hover:bg-gray-50"
-                    >
-                      חשבון שלי
-                    </Link>
+                    <>
+                      {customerName && (
+                        <div className="px-3 py-2 text-gray-700 font-medium">
+                          שלום, {customerName}
+                        </div>
+                      )}
+                      <Link
+                        href={`/shop/${slug}/account`}
+                        onClick={() => setMobileMenuOpen(false)}
+                        className="block px-3 py-2 text-gray-700 hover:text-purple-600 transition-colors rounded-lg hover:bg-gray-50"
+                      >
+                        חשבון שלי
+                      </Link>
+                    </>
                   ) : (
                     <>
                       <Link

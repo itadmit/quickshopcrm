@@ -160,7 +160,7 @@ export default function InfluencerDashboard() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">סך הכנסות</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">
-                    ₪{stats.totalRevenue.toFixed(2)}
+                    ₪{(stats.totalRevenue || 0).toFixed(2)}
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
@@ -192,7 +192,7 @@ export default function InfluencerDashboard() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">ממוצע הזמנה</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">
-                    ₪{stats.averageOrderValue.toFixed(2)}
+                    ₪{(stats.averageOrderValue || 0).toFixed(2)}
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
@@ -208,7 +208,7 @@ export default function InfluencerDashboard() {
                 <div>
                   <p className="text-sm font-medium text-gray-600">סך הנחות</p>
                   <p className="text-2xl font-bold text-gray-900 mt-1">
-                    ₪{stats.totalDiscount.toFixed(2)}
+                    ₪{(stats.totalDiscount || 0).toFixed(2)}
                   </p>
                 </div>
                 <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
@@ -228,7 +228,7 @@ export default function InfluencerDashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {stats.coupons.length === 0 ? (
+            {!stats.coupons || stats.coupons.length === 0 ? (
               <p className="text-gray-500 text-center py-8">
                 עדיין אין לך קופונים משוייכים
               </p>
@@ -323,7 +323,7 @@ export default function InfluencerDashboard() {
         </Card>
 
         {/* Top Products */}
-        {stats.topProducts.length > 0 && (
+        {stats.topProducts && stats.topProducts.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -355,7 +355,7 @@ export default function InfluencerDashboard() {
                     </div>
                     <div className="text-left">
                       <p className="font-bold text-gray-900">
-                        ₪{product.revenue.toFixed(2)}
+                        ₪{(product.revenue || 0).toFixed(2)}
                       </p>
                       <p className="text-xs text-gray-500">הכנסות</p>
                     </div>
@@ -367,7 +367,7 @@ export default function InfluencerDashboard() {
         )}
 
         {/* Recent Orders */}
-        {stats.orders.length > 0 && (
+        {stats.orders && stats.orders.length > 0 && (
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -413,10 +413,10 @@ export default function InfluencerDashboard() {
                           <Badge variant="outline">{order.couponCode}</Badge>
                         </td>
                         <td className="py-3 px-4 text-sm font-semibold">
-                          ₪{order.total.toFixed(2)}
+                          ₪{(order.total || 0).toFixed(2)}
                         </td>
                         <td className="py-3 px-4 text-sm text-green-600">
-                          -₪{order.discount.toFixed(2)}
+                          -₪{(order.discount || 0).toFixed(2)}
                         </td>
                         <td className="py-3 px-4 text-sm text-gray-600">
                           {new Date(order.createdAt).toLocaleDateString("he-IL")}

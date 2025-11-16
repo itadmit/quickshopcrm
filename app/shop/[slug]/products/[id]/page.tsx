@@ -80,8 +80,85 @@ export default async function ProductPage({ params }: { params: { slug: string; 
     notFound()
   }
 
-  // Get product category IDs
+  // Get product category IDs and collection IDs
   const productCategoryIds = product.collections?.map((pc: any) => pc.collection?.categoryId).filter(Boolean) || []
+  const productCollectionIds = product.collections?.map((pc: any) => pc.collection?.id).filter(Boolean) || []
+
+  // טעינת תבנית עמוד מוצר - עדיפות: תבנית ספציפית למוצר > ברירת מחדל
+  let productPageTemplate: { elements: any } | null = null
+  
+  // אם יש תבנית ספציפית למוצר
+  if ((product as any).pageTemplateId) {
+    const template = await (prisma as any).productPageTemplate.findUnique({
+      where: { id: (product as any).pageTemplateId },
+      select: { elements: true },
+    })
+    if (template) {
+      productPageTemplate = { elements: template.elements }
+    }
+  }
+  
+  // אם אין תבנית ספציפית, נשתמש בתבנית ברירת מחדל
+  if (!productPageTemplate) {
+    const defaultTemplate = await (prisma as any).productPageTemplate.findFirst({
+      where: {
+        shopId: shop.id,
+        isActive: true,
+        isDefault: true,
+      },
+      select: { elements: true },
+    })
+    if (defaultTemplate) {
+      productPageTemplate = { elements: defaultTemplate.elements }
+    }
+  }
+
+  // בדיקה אם התוסף bundle-products פעיל
+  const bundlePlugin = await (prisma as any).plugin.findFirst({
+    where: {
+      slug: 'bundle-products',
+      isActive: true,
+      isInstalled: true,
+      OR: [
+        { shopId: shop.id },
+        { companyId: shop.companyId },
+        { shopId: null, companyId: null },
+      ],
+    },
+  })
+
+  // טעינת bundles שמכילים את המוצר הזה (רק אם התוסף פעיל)
+  const bundlesContainingProduct = bundlePlugin ? await prisma.bundle.findMany({
+    where: {
+      shopId: shop.id,
+      isActive: true,
+      products: {
+        some: {
+          productId: product.id,
+        },
+      },
+    },
+    include: {
+      products: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+              images: true,
+            },
+          },
+        },
+        orderBy: {
+          position: 'asc',
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  }) : []
 
   const [reviewsData, relatedProducts, productAddons] = await Promise.all([
     prisma.review.findMany({
@@ -136,7 +213,12 @@ export default async function ProductPage({ params }: { params: { slug: string; 
 
   const themeSettings = (shop.themeSettings as any) || {}
   const galleryLayout = themeSettings.productGalleryLayout || 'standard'
-  const productPageLayout = themeSettings.productPageLayout || null
+  
+  // עדיפות: תבנית מ-DB > תבנית מ-themeSettings > null
+  const productPageLayout = productPageTemplate?.elements 
+    ? { elements: productPageTemplate.elements as any }
+    : themeSettings.productPageLayout || null
+    
   const settings = (shop.settings as any) || {}
   const autoOpenCart = settings.autoOpenCartAfterAdd !== false
 
@@ -157,6 +239,7 @@ export default async function ProductPage({ params }: { params: { slug: string; 
       isAdmin={isAdmin}
       autoOpenCart={autoOpenCart}
       productAddons={productAddons as any}
+      bundles={bundlesContainingProduct as any}
     />
   )
 }

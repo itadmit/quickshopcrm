@@ -16,6 +16,29 @@ import { ShoppingCart, Plus, Minus, X, Package } from "lucide-react"
 import Link from "next/link"
 import { useAddToCart } from "@/hooks/useAddToCart"
 
+const popularColors: Record<string, string> = {
+  'שחור': '#000000',
+  'לבן': '#FFFFFF',
+  'אדום': '#FF0000',
+  'כחול': '#0000FF',
+  'ירוק': '#00FF00',
+  'צהוב': '#FFFF00',
+  'כתום': '#FFA500',
+  'סגול': '#800080',
+  'ורוד': '#FFC0CB',
+  'חום': '#8B4513',
+  'אפור': '#808080',
+  'זהב': '#FFD700',
+  'כסף': '#C0C0C0',
+  'תכלת': '#00FFFF',
+  'ורד': '#FF69B4',
+  'שמנת': '#FFFDD0',
+  'בז\'': '#F5F5DC',
+  'חאקי': '#F0E68C',
+  'טורקיז': '#40E0D0',
+  'אפרסק': '#FFDAB9',
+}
+
 interface ProductVariant {
   id: string
   name: string
@@ -330,49 +353,81 @@ export function QuickAddModal({
             </div>
 
             {/* אפשרויות (Variants) */}
-            {optionTypes.map((optionType) => (
-              <div key={optionType} className="space-y-2">
-                <Label className="text-sm font-medium">
-                  {optionType === "Size" ? "מידה" : 
-                   optionType === "Color" ? "צבע" : 
-                   optionType}
-                </Label>
-                <div className="flex flex-wrap gap-2">
-                  {getOptionValues(optionType).map((value) => {
-                    const isSelected = selectedOptions[optionType] === value
-                    
-                    // בדיקה האם האפשרות זמינה
-                    const isAvailable = product.variants?.some((v) => {
-                      const variantOptions = getVariantOptions(v)
-                      const matchesCurrentSelections = Object.entries(selectedOptions)
-                        .filter(([key]) => key !== optionType)
-                        .every(([key, val]) => variantOptions[key] === val)
+            {optionTypes.map((optionType) => {
+              const isColorOption = optionType === "Color" || optionType === "צבע"
+              
+              return (
+                <div key={optionType} className="space-y-2">
+                  <Label className="text-sm font-medium">
+                    {optionType === "Size" ? "מידה" : 
+                     optionType === "Color" ? "צבע" : 
+                     optionType}
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {getOptionValues(optionType).map((value) => {
+                      const isSelected = selectedOptions[optionType] === value
                       
-                      const matchesThisOption = variantOptions[optionType] === value
-                      const hasStock = v.inventoryQty === null || v.inventoryQty === undefined || v.inventoryQty > 0
-                      
-                      return matchesCurrentSelections && matchesThisOption && hasStock
-                    })
+                      // בדיקה האם האפשרות זמינה
+                      const isAvailable = product.variants?.some((v) => {
+                        const variantOptions = getVariantOptions(v)
+                        const matchesCurrentSelections = Object.entries(selectedOptions)
+                          .filter(([key]) => key !== optionType)
+                          .every(([key, val]) => variantOptions[key] === val)
+                        
+                        const matchesThisOption = variantOptions[optionType] === value
+                        const hasStock = v.inventoryQty === null || v.inventoryQty === undefined || v.inventoryQty > 0
+                        
+                        return matchesCurrentSelections && matchesThisOption && hasStock
+                      })
 
-                    return (
-                      <Button
-                        key={value}
-                        variant={isSelected ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => handleOptionSelect(optionType, value)}
-                        disabled={!isAvailable}
-                        className={`
-                          ${isSelected ? "ring-2 ring-offset-2" : ""}
-                          ${!isAvailable ? "opacity-50 cursor-not-allowed" : ""}
-                        `}
-                      >
-                        {value}
-                      </Button>
-                    )
-                  })}
+                      // קביעת קוד הצבע
+                      const colorCode = isColorOption ? popularColors[value] : undefined
+
+                      // אם זה צבע, הצג עיגול
+                      if (isColorOption && colorCode) {
+                        return (
+                          <button
+                            key={value}
+                            onClick={() => handleOptionSelect(optionType, value)}
+                            disabled={!isAvailable}
+                            className={`relative w-10 h-10 rounded-full border-2 transition-all ${
+                              isSelected
+                                ? "ring-2 ring-offset-2"
+                                : isAvailable
+                                ? "border-gray-300 hover:border-gray-400"
+                                : "border-gray-200 opacity-50 cursor-not-allowed"
+                            }`}
+                            style={{
+                              backgroundColor: colorCode,
+                              borderColor: isSelected ? undefined : undefined,
+                              ringColor: isSelected ? undefined : undefined,
+                            }}
+                            title={value}
+                          />
+                        )
+                      }
+
+                      // אחרת, הצג כפתור רגיל
+                      return (
+                        <Button
+                          key={value}
+                          variant={isSelected ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleOptionSelect(optionType, value)}
+                          disabled={!isAvailable}
+                          className={`
+                            ${isSelected ? "ring-2 ring-offset-2" : ""}
+                            ${!isAvailable ? "opacity-50 cursor-not-allowed" : ""}
+                          `}
+                        >
+                          {value}
+                        </Button>
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
 
             {/* מלאי */}
             {currentInventory !== undefined && currentInventory !== null && (

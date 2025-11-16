@@ -148,7 +148,9 @@ export function useShopTheme(slug: string) {
       setLoading(true)
       
       const shop = contextShop || await (async () => {
-        const response = await fetch(`/api/storefront/${slug}/info?t=${Date.now()}`)
+        const response = await fetch(`/api/storefront/${slug}/info?t=${Date.now()}`, {
+          cache: 'no-store'
+        })
         return response.ok ? await response.json() : null
       })()
       

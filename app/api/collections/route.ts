@@ -55,7 +55,15 @@ export async function GET(req: NextRequest) {
 
     const collections = await prisma.collection.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        image: true,
+        type: true,
+        isPublished: true,
+        createdAt: true,
         _count: {
           select: {
             products: true,

@@ -26,7 +26,8 @@ import {
   Archive,
   Command,
   Megaphone,
-  Ticket
+  Ticket,
+  Plug
 } from "lucide-react"
 import { useShop } from "@/components/providers/ShopProvider"
 import { Input } from "@/components/ui/input"
@@ -247,6 +248,7 @@ interface SearchResults {
   products: SearchResult[]
   orders: SearchResult[]
   customers: SearchResult[]
+  plugins: SearchResult[]
 }
 
 export function GlobalSearch() {
@@ -258,6 +260,7 @@ export function GlobalSearch() {
     products: [],
     orders: [],
     customers: [],
+    plugins: [],
   })
   const [filteredQuickLinks, setFilteredQuickLinks] = useState(quickLinks)
   const [loading, setLoading] = useState(false)
@@ -268,7 +271,7 @@ export function GlobalSearch() {
   // חיפוש בזמן אמת
   const performSearch = useCallback(async (searchQuery: string) => {
     if (searchQuery.length < 1) {
-      setResults({ products: [], orders: [], customers: [] })
+      setResults({ products: [], orders: [], customers: [], plugins: [] })
       setLoading(false)
       return
     }
@@ -292,15 +295,15 @@ export function GlobalSearch() {
           customers: data.customers?.length || 0,
           data
         })
-        setResults(data || { products: [], orders: [], customers: [] })
+        setResults(data || { products: [], orders: [], customers: [], plugins: [] })
       } else {
         const errorText = await response.text()
         console.error('Search response not ok:', response.status, errorText)
-        setResults({ products: [], orders: [], customers: [] })
+        setResults({ products: [], orders: [], customers: [], plugins: [] })
       }
     } catch (error) {
       console.error("Search error:", error)
-      setResults({ products: [], orders: [], customers: [] })
+        setResults({ products: [], orders: [], customers: [], plugins: [] })
     } finally {
       setLoading(false)
     }
@@ -357,7 +360,8 @@ export function GlobalSearch() {
           filteredQuickLinks.length + 
           results.products.length + 
           results.orders.length + 
-          results.customers.length
+          results.customers.length +
+          results.plugins.length
 
         if (e.key === "ArrowDown") {
           setSelectedIndex(prev => (prev + 1) % totalResults)
@@ -424,6 +428,15 @@ export function GlobalSearch() {
     // Check customers
     if (index < currentIndex + results.customers.length) {
       router.push(results.customers[index - currentIndex].url)
+      setIsOpen(false)
+      setQuery("")
+      return
+    }
+    currentIndex += results.customers.length
+
+    // Check plugins
+    if (index < currentIndex + results.plugins.length) {
+      router.push(results.plugins[index - currentIndex].url)
       setIsOpen(false)
       setQuery("")
       return
@@ -501,6 +514,8 @@ export function GlobalSearch() {
         return ShoppingCart
       case 'customer':
         return Users
+      case 'plugin':
+        return Plug
       default:
         return FileText
     }
@@ -510,7 +525,8 @@ export function GlobalSearch() {
     filteredQuickLinks.length +
     results.products.length +
     results.orders.length +
-    results.customers.length
+    results.customers.length +
+    results.plugins.length
 
   return (
     <div className="relative" ref={searchRef}>
@@ -519,17 +535,17 @@ export function GlobalSearch() {
         <Input
           ref={inputRef}
           type="search"
-          placeholder="חיפוש מוצרים, הזמנות, לקוחות... (Ctrl+K)"
-          className="pr-11 pl-20 h-11 text-base"
+          placeholder="חיפוש מוצרים, הזמנות, לקוחות, תוספים... (Ctrl+K)"
+          className="pr-11 pl-20 h-11 text-sm"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsOpen(true)}
         />
         <div className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
-          <kbd className="px-2 py-1 text-xs bg-gray-100 border border-gray-200 rounded flex items-center">
+          <kbd className="px-2 py-1 text-xs bg-gray-100 border border-gray-200 rounded flex items-center justify-center h-5">
             <Command className="w-3 h-3" />
           </kbd>
-          <kbd className="px-2 py-1 text-xs bg-gray-100 border border-gray-200 rounded">K</kbd>
+          <kbd className="px-2 py-1 text-xs bg-gray-100 border border-gray-200 rounded flex items-center justify-center h-5">K</kbd>
         </div>
       </div>
 
@@ -619,6 +635,23 @@ export function GlobalSearch() {
               </div>
             )}
 
+            {/* Plugins */}
+            {results.plugins.length > 0 && (
+              <div>
+                <div className="px-5 py-3 text-xs font-bold text-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 border-b border-gray-200">
+                  תוספים
+                </div>
+                {results.plugins.map((result, idx) => (
+                  <ResultItem
+                    key={result.id}
+                    result={result}
+                    index={filteredQuickLinks.length + results.products.length + results.orders.length + results.customers.length + idx}
+                    icon={getIcon(result.type)}
+                  />
+                ))}
+              </div>
+            )}
+
             {/* Empty state - show quick links */}
             {!query && totalResults === 0 && (
               <div className="px-5 py-12 text-center text-gray-500">
@@ -626,7 +659,7 @@ export function GlobalSearch() {
                   <Search className="w-8 h-8 text-[#6f65e2]" />
                 </div>
                 <p className="text-base font-medium text-gray-700">התחל להקליד כדי לחפש</p>
-                <p className="text-sm text-gray-500 mt-1">מוצרים, הזמנות, לקוחות, דפים ועוד</p>
+                <p className="text-sm text-gray-500 mt-1">מוצרים, הזמנות, לקוחות, תוספים, דפים ועוד</p>
               </div>
             )}
           </div>

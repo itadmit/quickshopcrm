@@ -16,6 +16,29 @@ import { Gift, Plus, Minus, Package, Sparkles, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 
+const popularColors: Record<string, string> = {
+  'שחור': '#000000',
+  'לבן': '#FFFFFF',
+  'אדום': '#FF0000',
+  'כחול': '#0000FF',
+  'ירוק': '#00FF00',
+  'צהוב': '#FFFF00',
+  'כתום': '#FFA500',
+  'סגול': '#800080',
+  'ורוד': '#FFC0CB',
+  'חום': '#8B4513',
+  'אפור': '#808080',
+  'זהב': '#FFD700',
+  'כסף': '#C0C0C0',
+  'תכלת': '#00FFFF',
+  'ורד': '#FF69B4',
+  'שמנת': '#FFFDD0',
+  'בז\'': '#F5F5DC',
+  'חאקי': '#F0E68C',
+  'טורקיז': '#40E0D0',
+  'אפרסק': '#FFDAB9',
+}
+
 interface ProductVariant {
   id: string
   name: string
@@ -333,6 +356,8 @@ export function GiftProductModal({
             <div className="space-y-2.5">
               {optionTypes.map((optionType) => {
                 const isOptionSelected = selectedOptions[optionType] !== undefined
+                const isColorOption = optionType === "Color" || optionType === "צבע"
+                
                 return (
                   <div key={optionType}>
                     <Label className="block text-sm font-semibold text-gray-900 mb-2 text-center">
@@ -380,6 +405,34 @@ export function GiftProductModal({
                           })
                         })()
 
+                        // קביעת קוד הצבע
+                        const colorCode = isColorOption ? popularColors[value] : undefined
+
+                        // אם זה צבע, הצג עיגול
+                        if (isColorOption && colorCode) {
+                          return (
+                            <button
+                              key={value}
+                              onClick={() => handleOptionSelect(optionType, value)}
+                              disabled={!isAvailable}
+                              className={`relative w-10 h-10 rounded-full border-2 transition-all ${
+                                isSelected
+                                  ? "ring-2 ring-offset-2"
+                                  : isAvailable
+                                  ? "border-gray-300 hover:border-gray-400"
+                                  : "border-gray-200 opacity-50 cursor-not-allowed"
+                              }`}
+                              style={{
+                                backgroundColor: colorCode,
+                                borderColor: isSelected ? "#9333ea" : undefined,
+                                ringColor: isSelected ? "#9333ea" : undefined,
+                              }}
+                              title={value}
+                            />
+                          )
+                        }
+
+                        // אחרת, הצג כפתור רגיל
                         return (
                           <button
                             key={value}

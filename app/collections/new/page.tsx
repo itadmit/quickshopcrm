@@ -224,14 +224,14 @@ export default function NewCollectionPage() {
       if (response.ok) {
         toast({
           title: "הצלחה",
-          description: "הקולקציה נוספה לתפריט בהצלחה",
+          description: "הקטגוריה נוספה לתפריט בהצלחה",
         })
         setSelectedNavigationId("")
       } else {
         const error = await response.json()
         toast({
           title: "שגיאה",
-          description: error.error || "לא הצלחנו להוסיף את הקולקציה לתפריט",
+          description: error.error || "לא הצלחנו להוסיף את הקטגוריה לתפריט",
           variant: "destructive",
         })
       }
@@ -239,7 +239,7 @@ export default function NewCollectionPage() {
       console.error("Error adding collection to menu:", error)
       toast({
         title: "שגיאה",
-        description: "אירעה שגיאה בהוספת הקולקציה לתפריט",
+        description: "אירעה שגיאה בהוספת הקטגוריה לתפריט",
         variant: "destructive",
       })
     }
@@ -390,7 +390,7 @@ export default function NewCollectionPage() {
     if (!formData.name.trim()) {
       toast({
         title: "שגיאה",
-        description: "שם הקולקציה הוא חובה",
+        description: "שם הקטגוריה הוא חובה",
         variant: "destructive",
       })
       return
@@ -430,10 +430,10 @@ export default function NewCollectionPage() {
         const collection = await response.json()
         toast({
           title: "הצלחה",
-          description: "הקולקציה נוצרה בהצלחה",
+          description: "הקטגוריה נוצרה בהצלחה",
         })
         
-        // אם נבחר תפריט, נוסיף את הקולקציה לתפריט
+        // אם נבחר תפריט, נוסיף את הקטגוריה לתפריט
         if (selectedNavigationId) {
           await addCollectionToMenu(collection.id, collection.slug)
         }
@@ -443,7 +443,7 @@ export default function NewCollectionPage() {
         const error = await response.json()
         toast({
           title: "שגיאה",
-          description: error.error || "אירעה שגיאה ביצירת הקולקציה",
+          description: error.error || "אירעה שגיאה ביצירת הקטגוריה",
           variant: "destructive",
         })
       }
@@ -451,7 +451,7 @@ export default function NewCollectionPage() {
       console.error("Error creating collection:", error)
       toast({
         title: "שגיאה",
-        description: "אירעה שגיאה ביצירת הקולקציה",
+        description: "אירעה שגיאה ביצירת הקטגוריה",
         variant: "destructive",
       })
     } finally {
@@ -461,17 +461,17 @@ export default function NewCollectionPage() {
 
   if (!selectedShop) {
     return (
-      <AppLayout title="קולקציה חדשה">
+      <AppLayout title="קטגוריה חדשה">
         <div className="text-center py-12">
           <FolderOpen className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             אין חנות נבחרת
           </h3>
           <p className="text-gray-600 mb-4">
-            יש לבחור חנות מההדר לפני יצירת קולקציה
+            יש לבחור חנות מההדר לפני יצירת קטגוריה
           </p>
           <Button onClick={() => router.push("/collections")}>
-            חזור לרשימת קולקציות
+            חזור לרשימת קטגוריות
           </Button>
         </div>
       </AppLayout>
@@ -479,13 +479,13 @@ export default function NewCollectionPage() {
   }
 
   return (
-    <AppLayout title="קולקציה חדשה">
+    <AppLayout title="קטגוריה חדשה">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">קולקציה חדשה</h1>
+            <h1 className="text-3xl font-bold text-gray-900">קטגוריה חדשה</h1>
             <p className="text-gray-600 mt-1">
-              צור קולקציה חדשה לחנות: <span className="font-semibold">{selectedShop.name}</span>
+              צור קטגוריה חדשה לחנות: <span className="font-semibold">{selectedShop.name}</span>
             </p>
           </div>
           <div className="flex gap-2">
@@ -502,7 +502,7 @@ export default function NewCollectionPage() {
               className="prodify-gradient text-white"
             >
               <Save className="w-4 h-4 ml-2" />
-              {saving ? "שומר..." : "שמור קולקציה"}
+              {saving ? "שומר..." : "שמור קטגוריה"}
             </Button>
           </div>
         </div>
@@ -518,7 +518,7 @@ export default function NewCollectionPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">שם קולקציה *</Label>
+                  <Label htmlFor="name">שם קטגוריה *</Label>
                   <Input
                     id="name"
                     value={formData.name}
@@ -531,7 +531,7 @@ export default function NewCollectionPage() {
                         slug: slugManuallyEdited ? prev.slug : generateSlug(newName),
                       }))
                     }}
-                    placeholder="לדוגמה: קולקציית קיץ"
+                    placeholder="לדוגמה: קטגוריית קיץ"
                   />
                 </div>
 
@@ -544,10 +544,10 @@ export default function NewCollectionPage() {
                       setSlugManuallyEdited(true)
                       setFormData((prev) => ({ ...prev, slug: e.target.value }))
                     }}
-                    placeholder="קולקציית-קיץ או summer-collection"
+                    placeholder="קטגוריית-קיץ או summer-category"
                   />
                   <p className="text-xs text-gray-500">
-                    כתובת ה-URL של הקולקציה. תמיכה בעברית ואנגלית.
+                    כתובת ה-URL של הקטגוריה. תמיכה בעברית ואנגלית.
                   </p>
                 </div>
 
@@ -557,7 +557,7 @@ export default function NewCollectionPage() {
                     id="description"
                     value={formData.description}
                     onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                    placeholder="תיאור הקולקציה..."
+                    placeholder="תיאור הקטגוריה..."
                     rows={4}
                   />
                 </div>
@@ -565,17 +565,17 @@ export default function NewCollectionPage() {
               </CardContent>
             </Card>
 
-            {/* סוג קולקציה */}
+            {/* סוג קטגוריה */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Filter className="w-5 h-5" />
-                  סוג קולקציה
+                  סוג קטגוריה
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="type">איך מוצרים מתווספים לקולקציה?</Label>
+                  <Label htmlFor="type">איך מוצרים מתווספים לקטגוריה?</Label>
                   <Select
                     value={formData.type}
                     onValueChange={(value: "MANUAL" | "AUTOMATIC") =>
@@ -929,10 +929,10 @@ export default function NewCollectionPage() {
                 {formData.image ? (
                   <div className="relative">
                     <img
-                      src={formData.image}
-                      alt="קולקציה"
-                      className="w-full h-48 object-cover rounded-lg"
-                    />
+                    src={formData.image}
+                    alt="קטגוריה"
+                    className="w-full h-48 object-cover rounded-lg"
+                  />
                     <button
                       onClick={() => setFormData((prev) => ({ ...prev, image: "" }))}
                       className="absolute top-2 left-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
@@ -1003,7 +1003,7 @@ export default function NewCollectionPage() {
                   </Button>
                 </div>
                 <p className="text-xs text-gray-500">
-                  לאחר שמירת הקולקציה, תוכל להוסיף אותה לתפריט
+                  לאחר שמירת הקטגוריה, תוכל להוסיף אותה לתפריט
                 </p>
               </CardContent>
             </Card>
@@ -1016,7 +1016,7 @@ export default function NewCollectionPage() {
           <DialogHeader>
             <DialogTitle>הוסף לתפריט</DialogTitle>
             <DialogDescription>
-              בחר לאיזה תפריט להוסיף את הקולקציה. הקולקציה תתווסף בסוף התפריט.
+              בחר לאיזה תפריט להוסיף את הקטגוריה. הקטגוריה תתווסף בסוף התפריט.
             </DialogDescription>
           </DialogHeader>
           

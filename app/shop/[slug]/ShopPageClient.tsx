@@ -758,12 +758,16 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
         )}
         onClick={handleSectionClick}
       >
-        {/* Tooltip עם שם הסקשן - מופיע ב-hover */}
-        <div className="absolute top-0 right-0 bg-purple-600 text-white text-xs px-2 py-1 rounded z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-          {sectionLabel}
-        </div>
-        {/* מסגרת סגולה ב-hover - בתוך הגבולות */}
-        <div className="absolute inset-0 border-2 border-purple-500 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-40" />
+        {/* Tooltip עם שם הסקשן - מופיע ב-hover רק בקסטומייזר */}
+        {isInIframe && (
+          <div className="absolute top-0 right-0 bg-purple-600 text-white text-xs px-2 py-1 rounded z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+            {sectionLabel}
+          </div>
+        )}
+        {/* מסגרת סגולה ב-hover - רק בקסטומייזר */}
+        {isInIframe && (
+          <div className="absolute inset-0 border-2 border-purple-500 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-40" />
+        )}
         {sectionComponent}
       </div>
     )

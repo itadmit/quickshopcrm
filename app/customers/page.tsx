@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -17,6 +18,12 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -24,7 +31,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
-import { Users, Search, Eye, Calendar, ShoppingBag, TrendingUp, UserPlus } from "lucide-react"
+import { Users, Search, Eye, Calendar, ShoppingBag, TrendingUp, UserPlus, MoreVertical, Trash2 } from "lucide-react"
 import { CustomersSkeleton } from "@/components/skeletons/CustomersSkeleton"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
@@ -60,6 +67,8 @@ export default function CustomersPage() {
   const [tierFilter, setTierFilter] = useState<string>("all")
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [selectedCustomers, setSelectedCustomers] = useState<string[]>([])
+  const [isDeleting, setIsDeleting] = useState(false)
   
   // State for add customer dialog
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -133,6 +142,86 @@ export default function CustomersPage() {
       return `${customer.firstName || ""} ${customer.lastName || ""}`.trim()
     }
     return customer.email.split("@")[0]
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedCustomers.length === customers.length) {
+      setSelectedCustomers([])
+    } else {
+      setSelectedCustomers(customers.map(c => c.id))
+    }
+  }
+
+  const toggleSelectCustomer = (customerId: string) => {
+    setSelectedCustomers(prev =>
+      prev.includes(customerId)
+        ? prev.filter(id => id !== customerId)
+        : [...prev, customerId]
+    )
+  }
+
+  const handleBulkDelete = async () => {
+    const count = selectedCustomers.length
+    if (!confirm(`האם אתה בטוח שברצונך למחוק ${count} לקוחות?`)) {
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      for (const customerId of selectedCustomers) {
+        await fetch(`/api/customers/${customerId}`, {
+          method: 'DELETE',
+        })
+      }
+      setSelectedCustomers([])
+      fetchCustomers()
+      toast({
+        title: "הצלחה",
+        description: `נמחקו ${count} לקוחות בהצלחה`,
+      })
+    } catch (error) {
+      console.error('Error deleting customers:', error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה במחיקת הלקוחות",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleDeleteCustomer = async (customerId: string) => {
+    if (!confirm('האם אתה בטוח שברצונך למחוק לקוח זה?')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/customers/${customerId}`, {
+        method: 'DELETE',
+      })
+
+      if (response.ok) {
+        fetchCustomers()
+        toast({
+          title: "הצלחה",
+          description: "הלקוח נמחק בהצלחה",
+        })
+      } else {
+        toast({
+          title: "שגיאה",
+          description: "אירעה שגיאה במחיקת הלקוח",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error('Error deleting customer:', error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה במחיקת הלקוח",
+        variant: "destructive",
+      })
+    }
   }
 
   const handleCreateCustomer = async (e: React.FormEvent) => {
@@ -222,7 +311,18 @@ export default function CustomersPage() {
             <h1 className="text-3xl font-bold text-gray-900">לקוחות</h1>
             <p className="text-gray-600 mt-1">נהל ועקוב אחר כל הלקוחות שלך</p>
           </div>
-          {isAdmin && (
+          <div className="flex items-center gap-2">
+            {selectedCustomers.length > 0 && (
+              <Button
+                variant="destructive"
+                onClick={handleBulkDelete}
+                disabled={isDeleting}
+              >
+                <Trash2 className="w-4 h-4 ml-2" />
+                מחק {selectedCustomers.length} נבחרו
+              </Button>
+            )}
+            {isAdmin && (
             <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="prodify-gradient text-white">
@@ -349,7 +449,8 @@ export default function CustomersPage() {
                 </form>
               </DialogContent>
             </Dialog>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Filters */}
@@ -404,6 +505,12 @@ export default function CustomersPage() {
                 <table className="w-full">
                   <thead className="bg-gray-50 border-b">
                     <tr>
+                      <th className="px-4 py-3 text-right">
+                        <Checkbox
+                          checked={selectedCustomers.length === customers.length && customers.length > 0}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </th>
                       <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                         לקוח
                       </th>
@@ -433,6 +540,12 @@ export default function CustomersPage() {
                   <tbody className="bg-white divide-y divide-gray-200">
                     {customers.map((customer) => (
                       <tr key={customer.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-4">
+                          <Checkbox
+                            checked={selectedCustomers.includes(customer.id)}
+                            onCheckedChange={() => toggleSelectCustomer(customer.id)}
+                          />
+                        </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
                             <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
@@ -484,15 +597,26 @@ export default function CustomersPage() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => router.push(`/customers/${customer.id}`)}
-                            className="text-purple-600 hover:text-purple-700"
-                          >
-                            <Eye className="w-4 h-4 ml-1" />
-                            צפה
-                          </Button>
+                          <DropdownMenu dir="rtl">
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => router.push(`/customers/${customer.id}`)}>
+                                <Eye className="w-4 h-4 ml-2" />
+                                צפה
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleDeleteCustomer(customer.id)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4 ml-2" />
+                                מחיקה
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </td>
                       </tr>
                     ))}

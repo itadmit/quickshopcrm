@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     const shopId = searchParams.get("shopId")
 
     if (!query || query.length < 1) {
-      return NextResponse.json({ products: [], orders: [], customers: [] })
+      return NextResponse.json({ products: [], orders: [], customers: [], plugins: [] })
     }
 
     console.log('Global search - query:', query, 'shopId:', shopId, 'companyId:', session.user.companyId)
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     }
 
     // חיפוש במקביל בכל הישויות
-    const [products, orders, customers] = await Promise.all([
+    const [products, orders, customers, plugins] = await Promise.all([
       // מוצרים
       prisma.product.findMany({
         where: {
@@ -127,6 +127,34 @@ export async function GET(req: NextRequest) {
           createdAt: 'desc',
         },
       }),
+      // תוספים
+      prisma.plugin.findMany({
+        where: {
+          companyId: session.user.companyId,
+          OR: [
+            { name: { contains: query, mode: "insensitive" } },
+            { description: { contains: query, mode: "insensitive" } },
+            { slug: { contains: query, mode: "insensitive" } },
+          ],
+        },
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          description: true,
+          icon: true,
+          type: true,
+          category: true,
+          isActive: true,
+          isInstalled: true,
+          isFree: true,
+          price: true,
+        },
+        take: 5,
+        orderBy: {
+          displayOrder: 'asc',
+        },
+      }),
     ])
 
     console.log('Search results:', {
@@ -170,6 +198,18 @@ export async function GET(req: NextRequest) {
         url: `/customers/${c.id}`,
         shopName: c.shop.name,
       })),
+      plugins: plugins.map(pl => ({
+        type: 'plugin',
+        id: pl.id,
+        title: pl.name,
+        subtitle: pl.description || '',
+        meta: pl.isFree ? 'חינמי' : `₪${pl.price?.toFixed(2) || '0'}/חודש`,
+        url: `/settings/plugins`,
+        icon: pl.icon,
+        category: pl.category,
+        isActive: pl.isActive,
+        isInstalled: pl.isInstalled,
+      })),
     }
 
     return NextResponse.json(results)
@@ -182,7 +222,8 @@ export async function GET(req: NextRequest) {
         details: error.message,
         products: [],
         orders: [],
-        customers: []
+        customers: [],
+        plugins: []
       },
       { status: 500 }
     )

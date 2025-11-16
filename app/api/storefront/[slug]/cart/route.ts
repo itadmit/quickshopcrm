@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 export const revalidate = 0
 
 const addToCartSchema = z.object({
-  productId: z.string(),
+  productId: z.string().optional(),
   variantId: z.string().nullable().optional(),
   quantity: z.number().int().min(1),
   isGift: z.boolean().optional(),
@@ -22,6 +22,9 @@ const addToCartSchema = z.object({
     price: z.number(),
     quantity: z.number().int().min(1).default(1),
   })).optional(),
+  bundleId: z.string().optional(), // תמיכה בחבילות
+}).refine((data) => data.productId || data.bundleId, {
+  message: "חייב לספק productId או bundleId",
 })
 
 // הפונקציה findCart הוסרה - משתמשים ב-findCart מ-lib/cart-server.ts
@@ -234,6 +237,112 @@ export async function POST(
     const customerId = req.headers.get("x-customer-id") || null
     
     console.log('👤 Customer ID:', customerId)
+
+    // טיפול בחבילה (bundle)
+    if (data.bundleId) {
+      const bundle = await prisma.bundle.findFirst({
+        where: {
+          id: data.bundleId,
+          shopId: shop.id,
+          isActive: true,
+        },
+        include: {
+          products: {
+            include: {
+              product: {
+                include: {
+                  variants: true,
+                },
+              },
+            },
+          },
+        },
+      })
+
+      if (!bundle) {
+        return NextResponse.json({ error: "Bundle not found" }, { status: 404 })
+      }
+
+      // בדיקת מלאי לכל המוצרים בחבילה
+      for (const bundleProduct of bundle.products) {
+        const product = bundleProduct.product
+        const requiredQuantity = bundleProduct.quantity * data.quantity
+
+        if (product.inventoryQty !== null && product.inventoryQty < requiredQuantity) {
+          return NextResponse.json(
+            { error: `Insufficient inventory for ${product.name}` },
+            { status: 400 }
+          )
+        }
+      }
+
+      // הוספת כל המוצרים מהחבילה לעגלה
+      const cookieStore = await cookies()
+      let sessionId = cookieStore.get("cart_session")?.value
+
+      if (!sessionId) {
+        sessionId = `cart_${Date.now()}_${Math.random().toString(36).substring(7)}`
+        cookieStore.set("cart_session", sessionId, {
+          maxAge: 60 * 60 * 24 * 30, // 30 days
+          httpOnly: true,
+          sameSite: "lax",
+        })
+      }
+
+      let cart = await findCart(shop.id, sessionId, customerId)
+      const items = cart ? (cart.items as any[]) : []
+
+      // הוספת כל המוצרים מהחבילה
+      for (const bundleProduct of bundle.products) {
+        const itemKey = `bundle-${bundle.id}-${bundleProduct.productId}`
+        const existingItemIndex = items.findIndex(
+          (item: any) => item.bundleId === bundle.id && item.productId === bundleProduct.productId
+        )
+
+        if (existingItemIndex >= 0) {
+          items[existingItemIndex].quantity += bundleProduct.quantity * data.quantity
+        } else {
+          items.push({
+            productId: bundleProduct.productId,
+            variantId: null,
+            quantity: bundleProduct.quantity * data.quantity,
+            bundleId: bundle.id,
+            bundleName: bundle.name,
+          })
+        }
+      }
+
+      const expiresAt = new Date()
+      expiresAt.setDate(expiresAt.getDate() + 30)
+
+      if (cart) {
+        await prisma.cart.update({
+          where: { id: cart.id },
+          data: {
+            items,
+            expiresAt,
+            ...(customerId && !cart.customerId ? { customerId } : {}),
+          },
+        })
+      } else {
+        await prisma.cart.create({
+          data: {
+            shopId: shop.id,
+            sessionId,
+            customerId,
+            items,
+            expiresAt,
+          },
+        })
+      }
+
+      return NextResponse.json({ success: true, message: "Bundle added to cart" })
+    }
+
+    // טיפול במוצר רגיל (קוד קיים)
+    if (!data.productId) {
+      return NextResponse.json({ error: "Product ID is required" }, { status: 400 })
+    }
 
     // בדיקת מוצר
     const product = await prisma.product.findFirst({

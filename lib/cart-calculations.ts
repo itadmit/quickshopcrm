@@ -35,6 +35,9 @@ export interface EnrichedCartItem {
     quantity: number
   }> // תוספות שנבחרו
   addonsTotal?: number // סכום התוספות
+  bundleId?: string // ID של החבילה (אם זה חלק מ-bundle)
+  bundleName?: string // שם החבילה
+  bundlePrice?: number // מחיר החבילה (לחישוב נכון)
 }
 
 /**
@@ -580,7 +583,8 @@ async function calculateCouponDiscount(
   shopId: string,
   couponCode: string | null,
   enrichedItems: EnrichedCartItem[],
-  subtotal: number
+  subtotal: number,
+  customerId?: string | null
 ): Promise<{ discount: number; status?: { isValid: boolean; reason?: string; minOrderRequired?: number } }> {
   if (!couponCode) {
     return { discount: 0 }
@@ -653,6 +657,22 @@ async function calculateCouponDiscount(
       return { 
         discount: 0,
         status: { isValid: false, reason: 'הקופון לא תקף לקטגוריות בעגלה' }
+      }
+    }
+  }
+
+  // בדיקת לקוחות ספציפיים - אם יש applicableCustomers, הקופון תקף רק ללקוחות מחוברים
+  if (coupon.applicableCustomers && Array.isArray(coupon.applicableCustomers) && coupon.applicableCustomers.length > 0) {
+    if (!customerId) {
+      return { 
+        discount: 0,
+        status: { isValid: false, reason: 'קופון זה מיועד ללקוחות מחוברים בלבד. אנא התחבר לחשבון שלך' }
+      }
+    }
+    if (!coupon.applicableCustomers.includes(customerId)) {
+      return { 
+        discount: 0,
+        status: { isValid: false, reason: 'קופון זה לא תקף לחשבון שלך' }
       }
     }
   }
@@ -743,6 +763,8 @@ export async function calculateCart(
       price: number;
       quantity: number;
     }>;
+    bundleId?: string; // תמיכה ב-bundles
+    bundleName?: string;
   }>,
   couponCode: string | null = null,
   customerId: string | null = null,
@@ -830,12 +852,57 @@ export async function calculateCart(
     customer = customerData
   }
 
+  // טעינת bundles אם יש פריטים עם bundleId
+  const bundleIds = Array.from(new Set(
+    cartItems
+      .map(item => (item as any).bundleId)
+      .filter((id): id is string => id !== null && id !== undefined)
+  ))
+  
+  const bundlesMap = new Map()
+  if (bundleIds.length > 0) {
+    const bundles = await prisma.bundle.findMany({
+      where: {
+        id: { in: bundleIds },
+        shopId,
+      },
+      include: {
+        products: {
+          include: {
+            product: true,
+          },
+        },
+      },
+    })
+    
+    for (const bundle of bundles) {
+      bundlesMap.set(bundle.id, bundle)
+    }
+  }
+
+  // קיבוץ פריטים לפי bundleId
+  const itemsByBundle = new Map<string, typeof cartItems>()
+  const regularItems: typeof cartItems = []
+  
+  for (const item of cartItems) {
+    const bundleId = (item as any).bundleId
+    if (bundleId) {
+      if (!itemsByBundle.has(bundleId)) {
+        itemsByBundle.set(bundleId, [])
+      }
+      itemsByBundle.get(bundleId)!.push(item)
+    } else {
+      regularItems.push(item)
+    }
+  }
+
   // בניית enrichedItems וחישוב subtotal
   const enrichedItems: EnrichedCartItem[] = []
   let subtotal = 0
   let customerDiscountTotal = 0
 
-  for (const item of cartItems) {
+  // טיפול בפריטים רגילים (לא bundles)
+  for (const item of regularItems) {
     const product = productsMap.get(item.productId)
     
     if (!product) {
@@ -913,6 +980,194 @@ export async function calculateCart(
     })
   }
 
+  // טיפול ב-bundles
+  for (const [bundleId, bundleItems] of itemsByBundle.entries()) {
+    const bundle = bundlesMap.get(bundleId)
+    if (!bundle) {
+      // אם ה-bundle לא נמצא, נטפל בפריטים כרגיל
+      for (const item of bundleItems) {
+        const product = productsMap.get(item.productId)
+        if (!product) continue
+        
+        const variant = item.variantId ? variantsMap.get(item.variantId) : null
+        const basePrice = item.isGift ? 0 : (variant?.price || product.price)
+        let itemPrice = basePrice
+
+        if (!item.isGift && customerId && customer && customerDiscountSettings) {
+          const discount = calculateCustomerDiscountSync(
+            customerDiscountSettings as any,
+            customer,
+            basePrice
+          )
+          itemPrice = basePrice - discount
+          customerDiscountTotal += discount * item.quantity
+        }
+
+        let addonsTotal = 0
+        if (item.addons && item.addons.length > 0) {
+          for (const addon of item.addons) {
+            addonsTotal += addon.price * addon.quantity
+          }
+        }
+
+        const itemTotal = (itemPrice * item.quantity) + addonsTotal
+        if (!item.isGift) {
+          subtotal += itemTotal
+        }
+
+        enrichedItems.push({
+          productId: item.productId,
+          variantId: item.variantId || null,
+          quantity: item.quantity,
+          product: {
+            id: product.id,
+            name: product.name,
+            price: product.price,
+            comparePrice: product.comparePrice,
+            images: product.images || [],
+            sku: product.sku,
+          },
+          variant: variant ? {
+            id: variant.id,
+            name: variant.name,
+            price: variant.price ?? 0,
+            sku: variant.sku,
+            inventoryQty: variant.inventoryQty,
+          } : null,
+          price: itemPrice,
+          total: itemTotal,
+          isGift: item.isGift,
+          giftDiscountId: item.giftDiscountId,
+          addons: item.addons,
+          addonsTotal,
+        })
+      }
+      continue
+    }
+
+    // חישוב כמות bundles (מספר פעמים שה-bundle נוסף)
+    // נבדוק כמה פעמים ה-bundle נוסף לפי היחס בין הכמויות
+    // אם bundle מכיל מוצר A x2 ומוצר B x1, ואנחנו רואים A x4 ו-B x2, אז bundleQuantity = 2
+    const bundleProductQuantities = bundle.products.map(bp => bp.quantity)
+    const cartItemQuantities = bundleItems.map(item => item.quantity)
+    
+    // נחשב את היחס - כמה פעמים ה-bundle נוסף
+    let bundleQuantity = 1
+    if (bundleProductQuantities.length > 0 && cartItemQuantities.length > 0) {
+      // נבדוק את היחס בין הכמויות
+      const ratios = bundleItems.map((item, idx) => {
+        const bundleProduct = bundle.products.find(bp => bp.productId === item.productId)
+        if (!bundleProduct) return 0
+        return item.quantity / bundleProduct.quantity
+      })
+      bundleQuantity = Math.max(...ratios.filter(r => r > 0))
+    }
+    
+    const bundleTotalPrice = bundle.price * bundleQuantity
+
+    // חישוב המחיר המקורי של כל המוצרים בחבילה (ללא הנחה)
+    let originalBundlePrice = 0
+    for (const bundleProduct of bundle.products) {
+      const product = productsMap.get(bundleProduct.productId)
+      if (product) {
+        originalBundlePrice += product.price * bundleProduct.quantity * bundleQuantity
+      }
+    }
+
+    // חישוב הנחה על ה-bundle
+    const bundleDiscount = Math.max(0, originalBundlePrice - bundleTotalPrice)
+
+    // חישוב הנחת לקוח על ה-bundle (אם יש)
+    let bundlePriceAfterCustomerDiscount = bundleTotalPrice
+    if (customerId && customer && customerDiscountSettings) {
+      const customerDiscount = calculateCustomerDiscountSync(
+        customerDiscountSettings as any,
+        customer,
+        bundleTotalPrice
+      )
+      bundlePriceAfterCustomerDiscount = bundleTotalPrice - customerDiscount
+      customerDiscountTotal += customerDiscount
+    }
+
+    // חישוב סכום כולל של addons ב-bundle
+    let bundleAddonsTotal = 0
+    for (const item of bundleItems) {
+      if (item.addons && item.addons.length > 0) {
+        for (const addon of item.addons) {
+          bundleAddonsTotal += addon.price * addon.quantity
+        }
+      }
+    }
+
+    // חישוב מחיר לכל מוצר בחבילה - נשתמש במחיר המקורי של המוצר
+    // אבל נחלק את ההנחה של ה-bundle פרופורציונלית
+    const totalOriginalPrice = bundleItems.reduce((sum, item) => {
+      const product = productsMap.get(item.productId)
+      if (!product) return sum
+      const variant = item.variantId ? variantsMap.get(item.variantId) : null
+      const basePrice = variant?.price || product.price
+      return sum + (basePrice * item.quantity)
+    }, 0)
+
+    // הוספת כל המוצרים מהחבילה
+    for (const item of bundleItems) {
+      const product = productsMap.get(item.productId)
+      if (!product) continue
+
+      const variant = item.variantId ? variantsMap.get(item.variantId) : null
+      const basePrice = variant?.price || product.price
+      
+      // חישוב מחיר addons לפריט זה
+      let itemAddonsTotal = 0
+      if (item.addons && item.addons.length > 0) {
+        for (const addon of item.addons) {
+          itemAddonsTotal += addon.price * addon.quantity
+        }
+      }
+
+      // חישוב הנחה פרופורציונלית על הפריט הזה
+      const itemOriginalTotal = basePrice * item.quantity
+      const itemDiscountRatio = totalOriginalPrice > 0 ? itemOriginalTotal / totalOriginalPrice : 0
+      const itemBundleDiscount = bundleDiscount * itemDiscountRatio
+      
+      // מחיר הפריט = מחיר מקורי - הנחת bundle + addons
+      const itemPrice = basePrice - (itemBundleDiscount / item.quantity)
+      const itemTotal = (itemPrice * item.quantity) + itemAddonsTotal
+
+      subtotal += itemTotal
+
+      enrichedItems.push({
+        productId: item.productId,
+        variantId: item.variantId || null,
+        quantity: item.quantity,
+        product: {
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          comparePrice: product.comparePrice,
+          images: product.images || [],
+          sku: product.sku,
+        },
+        variant: variant ? {
+          id: variant.id,
+          name: variant.name,
+          price: variant.price ?? 0,
+          sku: variant.sku,
+          inventoryQty: variant.inventoryQty,
+        } : null,
+        price: itemPrice,
+        total: itemTotal,
+        isGift: item.isGift,
+        giftDiscountId: item.giftDiscountId,
+        addons: item.addons,
+        addonsTotal: itemAddonsTotal,
+        bundleId: bundle.id,
+        bundleName: bundle.name,
+        bundlePrice: bundle.price,
+      })
+    }
+  }
+
   // הוספת מוצרי מתנה לעגלה
   const { giftItems, giftsRequiringVariantSelection } = await addGiftItemsToCart(
     shopId,
@@ -939,7 +1194,8 @@ export async function calculateCart(
     shopId,
     couponCode,
     enrichedItems,
-    subtotal
+    subtotal,
+    customerId
   )
 
   // חישוב מע"מ

@@ -59,6 +59,8 @@ export default function NewProductPage() {
     trackInventory: true,
     sellWhenSoldOut: false,
     priceByWeight: false,
+    showPricePer100ml: false,
+    pricePer100ml: "",
     weight: "",
     dimensions: {
       length: "",
@@ -197,6 +199,8 @@ export default function NewProductPage() {
         trackInventory: formData.trackInventory,
         sellWhenSoldOut: formData.sellWhenSoldOut,
         priceByWeight: formData.priceByWeight,
+        showPricePer100ml: formData.showPricePer100ml,
+        pricePer100ml: formData.pricePer100ml ? parseFloat(formData.pricePer100ml) : null,
         weight: formData.weight ? parseFloat(formData.weight) : null,
         dimensions: {
           length: formData.dimensions.length || null,
@@ -346,6 +350,8 @@ export default function NewProductPage() {
                 trackInventory: formData.trackInventory,
                 sellWhenSoldOut: formData.sellWhenSoldOut,
                 priceByWeight: formData.priceByWeight,
+                showPricePer100ml: formData.showPricePer100ml,
+                pricePer100ml: formData.pricePer100ml,
               }}
               onChange={(data) => setFormData(prev => ({ ...prev, ...data as any }))}
               hidden={hasVariants}

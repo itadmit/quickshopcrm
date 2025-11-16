@@ -4,7 +4,7 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { AlertCircle, ChevronRight, Heart, MoreVertical, ShoppingCart, Loader2, Star } from "lucide-react"
+import { AlertCircle, ChevronRight, Heart, MoreVertical, ShoppingCart, Loader2, Star, Ruler } from "lucide-react"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { ProductCard } from "@/components/storefront/ProductCard"
 import { ProductPageElement, ProductPageElementType } from "@/components/storefront/ProductPageLayoutDesigner"
@@ -12,6 +12,29 @@ import { EditableProductElement } from "@/components/storefront/EditableProductE
 import { ProductGallery } from "./ProductGallery"
 import { Product, GalleryLayout } from "../types"
 import { cn } from "@/lib/utils"
+
+const popularColors: Record<string, string> = {
+  'שחור': '#000000',
+  'לבן': '#FFFFFF',
+  'אדום': '#FF0000',
+  'כחול': '#0000FF',
+  'ירוק': '#00FF00',
+  'צהוב': '#FFFF00',
+  'כתום': '#FFA500',
+  'סגול': '#800080',
+  'ורוד': '#FFC0CB',
+  'חום': '#8B4513',
+  'אפור': '#808080',
+  'זהב': '#FFD700',
+  'כסף': '#C0C0C0',
+  'תכלת': '#00FFFF',
+  'ורד': '#FF69B4',
+  'שמנת': '#FFFDD0',
+  'בז\'': '#F5F5DC',
+  'חאקי': '#F0E68C',
+  'טורקיז': '#40E0D0',
+  'אפרסק': '#FFDAB9',
+}
 
 interface ProductElementsProps {
   product: Product
@@ -43,6 +66,9 @@ interface ProductElementsProps {
   setShowReviews: (show: boolean) => void
   relatedProducts: any[]
   currentPrice: number
+  sizeChart?: any
+  onShowSizeChart?: () => void
+  hasBundles?: boolean // האם יש bundles למוצר הזה
 }
 
 export function ProductElements({
@@ -75,6 +101,9 @@ export function ProductElements({
   setShowReviews,
   relatedProducts,
   currentPrice,
+  sizeChart,
+  onShowSizeChart,
+  hasBundles = false,
 }: ProductElementsProps) {
   const router = useRouter()
   const { toast } = useToast()
@@ -170,16 +199,36 @@ export function ProductElements({
             : "1rem",
           color: element.config?.style?.comparePriceColor || undefined,
         }
+        
+        // הצגת מחיר ל-100 מ״ל (אם הוגדר)
+        const pricePer100ml = product.showPricePer100ml && product.pricePer100ml ? product.pricePer100ml : null
+        
         return (
-          <div key={element.id} className="flex items-baseline gap-4 mb-6" style={elementStyle}>
-            {product.comparePrice && (
-              <span className="line-through text-gray-500" style={comparePriceStyle}>
-                ₪{product.comparePrice.toFixed(2)}
+          <div key={element.id} style={elementStyle}>
+            <div className="flex items-baseline gap-4 mb-2">
+              {product.comparePrice && (
+                <span className="line-through text-gray-500" style={comparePriceStyle}>
+                  ₪{product.comparePrice.toFixed(2)}
+                </span>
+              )}
+              <span className="text-3xl font-bold" style={priceStyle}>
+                ₪{currentPrice.toFixed(2)}
               </span>
+            </div>
+            {pricePer100ml !== null && (
+              <div className="text-sm text-gray-600 mb-2">
+                ₪{pricePer100ml.toFixed(2)} ל-100 מ״ל
+              </div>
             )}
-            <span className="text-3xl font-bold" style={priceStyle}>
-              ₪{currentPrice.toFixed(2)}
-            </span>
+            {sizeChart && onShowSizeChart && (
+              <button
+                onClick={onShowSizeChart}
+                className="flex items-center gap-1 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <Ruler className="w-4 h-4" />
+                <span>טבלת מידות</span>
+              </button>
+            )}
           </div>
         )
 
@@ -198,6 +247,8 @@ export function ProductElements({
           <div key={element.id} className="space-y-4" style={elementStyle}>
             {product.options.map((option) => {
               const isOptionSelected = selectedOptionValues[option.id] !== undefined
+              const isColorOption = option.type === "color" || option.name === "Color" || option.name === "צבע"
+              
               return (
                 <div key={option.id}>
                   <label className="block text-sm font-semibold text-gray-900 mb-3" style={elementStyle}>
@@ -208,6 +259,70 @@ export function ProductElements({
                       const valueId = typeof value === 'object' ? value.id : value
                       const valueLabel = typeof value === 'object' ? value.label : value
                       const isSelected = selectedOptionValues[option.id] === valueId
+                      
+                      // קביעת קוד הצבע
+                      let colorCode: string | undefined = undefined
+                      if (isColorOption) {
+                        // נסה לקבל מהמטא-דאטה
+                        if (typeof value === 'object' && value.metadata?.color) {
+                          colorCode = value.metadata.color
+                        } else {
+                          // נסה לחפש ב-popularColors לפי התווית
+                          colorCode = popularColors[valueLabel]
+                        }
+                      }
+                      
+                      // בדיקה אם זה דפוס
+                      const isPattern = option.type === "pattern" || (typeof value === 'object' && value.metadata?.pattern)
+                      const patternStyle = typeof value === 'object' && value.metadata?.pattern ? value.metadata.pattern : undefined
+                      const patternBackgroundSize = typeof value === 'object' && value.metadata?.backgroundSize ? value.metadata.backgroundSize : '12px 12px'
+                      const patternBackgroundPosition = typeof value === 'object' && value.metadata?.backgroundPosition ? value.metadata.backgroundPosition : '0 0'
+                      
+                      // אם זה צבע, הצג עיגול
+                      if (isColorOption && colorCode && !isPattern) {
+                        return (
+                          <button
+                            key={valueId}
+                            onClick={() => setSelectedOptionValues({ ...selectedOptionValues, [option.id]: valueId })}
+                            className={`relative w-10 h-10 rounded-full border-2 transition-all ${
+                              isSelected
+                                ? "ring-2 ring-offset-2"
+                                : "border-gray-300 hover:border-gray-400"
+                            }`}
+                            style={{
+                              backgroundColor: colorCode,
+                              borderColor: isSelected ? theme.primaryColor : undefined,
+                              ringColor: isSelected ? theme.primaryColor : undefined,
+                            }}
+                            title={valueLabel}
+                          />
+                        )
+                      }
+                      
+                      // אם זה דפוס, הצג עם דפוס CSS
+                      if (isPattern && patternStyle) {
+                        return (
+                          <button
+                            key={valueId}
+                            onClick={() => setSelectedOptionValues({ ...selectedOptionValues, [option.id]: valueId })}
+                            className={`relative w-10 h-10 rounded-full border-2 transition-all overflow-hidden ${
+                              isSelected
+                                ? "ring-2 ring-offset-2"
+                                : "border-gray-300 hover:border-gray-400"
+                            }`}
+                            style={{
+                              borderColor: isSelected ? theme.primaryColor : undefined,
+                              ringColor: isSelected ? theme.primaryColor : undefined,
+                              backgroundImage: patternStyle,
+                              backgroundSize: patternBackgroundSize,
+                              backgroundPosition: patternBackgroundPosition,
+                            }}
+                            title={valueLabel}
+                          />
+                        )
+                      }
+                      
+                      // אחרת, הצג כפתור רגיל
                       return (
                         <button
                           key={valueId}

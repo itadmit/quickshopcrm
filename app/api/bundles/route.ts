@@ -6,32 +6,92 @@ import { z } from "zod"
 
 const createBundleSchema = z.object({
   shopId: z.string(),
-  name: z.string().min(1, "שם החבילה הוא חובה"),
+  name: z.string().min(1),
   description: z.string().optional(),
-  price: z.number().min(0, "מחיר חייב להיות חיובי"),
-  comparePrice: z.number().optional(),
+  price: z.number().min(0),
+  comparePrice: z.number().min(0).optional().nullable(),
+  image: z.string().optional().nullable(),
   isActive: z.boolean().default(true),
   products: z.array(
     z.object({
       productId: z.string(),
       quantity: z.number().int().min(1),
-      position: z.number().int(),
+      position: z.number().int().default(0),
     })
   ),
 })
 
-// POST - יצירת חבילת מוצרים
+// GET - קבלת כל החבילות
+export async function GET(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: "לא מאומת" }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const shopId = searchParams.get("shopId")
+
+    if (!shopId) {
+      return NextResponse.json({ error: "נא לספק shopId" }, { status: 400 })
+    }
+
+    // בדיקה שהחנות שייכת לחברה
+    const shop = await prisma.shop.findFirst({
+      where: {
+        id: shopId,
+        companyId: session.user.companyId,
+      },
+    })
+
+    if (!shop) {
+      return NextResponse.json({ error: "חנות לא נמצאה" }, { status: 404 })
+    }
+
+    const bundles = await prisma.bundle.findMany({
+      where: { shopId },
+      include: {
+        products: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: {
+            position: "asc",
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    })
+
+    return NextResponse.json(bundles)
+  } catch (error: any) {
+    console.error("Error fetching bundles:", error)
+    return NextResponse.json(
+      { error: "שגיאה בקבלת חבילות", details: error.message },
+      { status: 500 }
+    )
+  }
+}
+
+// POST - יצירת חבילה חדשה
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.companyId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      return NextResponse.json({ error: "לא מאומת" }, { status: 401 })
     }
 
     const body = await req.json()
     const data = createBundleSchema.parse(body)
 
-    // בדיקה שהחנות שייכת למשתמש
+    // בדיקה שהחנות שייכת לחברה
     const shop = await prisma.shop.findFirst({
       where: {
         id: data.shopId,
@@ -40,26 +100,36 @@ export async function POST(req: NextRequest) {
     })
 
     if (!shop) {
-      return NextResponse.json({ error: "Shop not found" }, { status: 404 })
+      return NextResponse.json({ error: "חנות לא נמצאה" }, { status: 404 })
     }
 
-    // יצירת חבילה
+    // יצירת החבילה
     const bundle = await prisma.bundle.create({
       data: {
         shopId: data.shopId,
         name: data.name,
-        description: data.description,
+        description: data.description || null,
         price: data.price,
-        comparePrice: data.comparePrice,
+        comparePrice: data.comparePrice || null,
+        image: data.image || null,
         isActive: data.isActive,
         products: {
-          create: data.products,
+          create: data.products.map((p) => ({
+            productId: p.productId,
+            quantity: p.quantity,
+            position: p.position,
+          })),
         },
       },
       include: {
         products: {
           include: {
-            product: true,
+            product: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
           },
         },
       },
@@ -68,7 +138,7 @@ export async function POST(req: NextRequest) {
     // יצירת אירוע
     await prisma.shopEvent.create({
       data: {
-        shopId: data.shopId,
+        shopId: bundle.shopId,
         type: "bundle.created",
         entityType: "bundle",
         entityId: bundle.id,
@@ -81,17 +151,18 @@ export async function POST(req: NextRequest) {
     })
 
     return NextResponse.json(bundle, { status: 201 })
-  } catch (error) {
+  } catch (error: any) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: error.errors[0].message },
+        { error: "נתונים לא תקינים", details: error.errors },
         { status: 400 }
       )
     }
     console.error("Error creating bundle:", error)
     return NextResponse.json(
-      { error: "Internal server error" },
+      { error: "שגיאה ביצירת חבילה", details: error.message },
       { status: 500 }
     )
   }
 }
+

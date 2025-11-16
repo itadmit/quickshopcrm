@@ -9,7 +9,11 @@ const createReturnSchema = z.object({
   orderId: z.string(),
   customerId: z.string(),
   reason: z.string().min(1, "סיבת ההחזרה היא חובה"),
-  items: z.any(), // JSON structure for return items
+  items: z.array(z.object({
+    orderItemId: z.string(),
+    quantity: z.number().int().positive("כמות חייבת להיות מספר חיובי"),
+    reason: z.string().optional(),
+  })).min(1, "חייב לבחור לפחות פריט אחד להחזרה"),
   notes: z.string().optional(),
 })
 
@@ -111,10 +115,67 @@ export async function POST(req: NextRequest) {
         },
         customerId: data.customerId,
       },
+      include: {
+        items: true,
+      },
     })
 
     if (!order) {
       return NextResponse.json({ error: "Order not found" }, { status: 404 })
+    }
+
+    // בדיקה שההזמנה שולמה (לא ניתן להחזיר הזמנה שלא שולמה)
+    if (order.paymentStatus !== "PAID") {
+      return NextResponse.json(
+        { error: "לא ניתן להחזיר הזמנה שלא שולמה" },
+        { status: 400 }
+      )
+    }
+
+    // בדיקה שהפריטים להחזרה תואמים להזמנה
+    for (const returnItem of data.items) {
+      const orderItem = order.items.find((item) => item.id === returnItem.orderItemId)
+      
+      if (!orderItem) {
+        return NextResponse.json(
+          { error: `פריט ${returnItem.orderItemId} לא נמצא בהזמנה` },
+          { status: 400 }
+        )
+      }
+
+      // בדיקה שהכמות להחזרה לא עולה על הכמות שהוזמנה
+      if (returnItem.quantity > orderItem.quantity) {
+        return NextResponse.json(
+          { error: `כמות להחזרה (${returnItem.quantity}) גדולה מכמות שהוזמנה (${orderItem.quantity})` },
+          { status: 400 }
+        )
+      }
+
+      // בדיקה כמה כבר הוחזר מהפריט הזה
+      const allReturns = await prisma.return.findMany({
+        where: {
+          orderId: order.id,
+          status: {
+            in: ["APPROVED", "COMPLETED"],
+          },
+        },
+      })
+
+      let totalReturnedQty = 0
+      for (const ret of allReturns) {
+        const retItems = ret.items as Array<{ orderItemId: string; quantity: number }>
+        const retItem = retItems.find((item) => item.orderItemId === returnItem.orderItemId)
+        if (retItem) {
+          totalReturnedQty += retItem.quantity
+        }
+      }
+
+      if (totalReturnedQty + returnItem.quantity > orderItem.quantity) {
+        return NextResponse.json(
+          { error: `סה"כ כמות מוחזרת (${totalReturnedQty + returnItem.quantity}) גדולה מכמות שהוזמנה (${orderItem.quantity})` },
+          { status: 400 }
+        )
+      }
     }
 
     // יצירת ההחזרה

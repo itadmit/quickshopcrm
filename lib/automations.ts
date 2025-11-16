@@ -202,6 +202,7 @@ async function executeSendEmail(
   await sendEmail({
     to: recipientEmail,
     subject: parsedSubject,
+    shopId: shopId, // העברת shopId כדי להשתמש בשם השולח מההגדרות
     html: parsedBody,
   })
   

@@ -56,18 +56,18 @@ export default function CollectionsPage() {
       }
     } catch (error) {
       console.error("Error fetching collections:", error)
-      toast({
-        title: "שגיאה",
-        description: "לא הצלחנו לטעון את הקולקציות",
-        variant: "destructive",
-      })
+        toast({
+          title: "שגיאה",
+          description: "לא הצלחנו לטעון את הקטגוריות",
+          variant: "destructive",
+        })
     } finally {
       setLoading(false)
     }
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm("האם אתה בטוח שברצונך למחוק את הקולקציה?")) return
+    if (!confirm("האם אתה בטוח שברצונך למחוק את הקטגוריה?")) return
 
     try {
       const response = await fetch(`/api/collections/${id}`, {
@@ -77,13 +77,13 @@ export default function CollectionsPage() {
       if (response.ok) {
         toast({
           title: "הצלחה",
-          description: "הקולקציה נמחקה בהצלחה",
+          description: "הקטגוריה נמחקה בהצלחה",
         })
         fetchCollections()
       } else {
         toast({
           title: "שגיאה",
-          description: "לא הצלחנו למחוק את הקולקציה",
+          description: "לא הצלחנו למחוק את הקטגוריה",
           variant: "destructive",
         })
       }
@@ -91,7 +91,7 @@ export default function CollectionsPage() {
       console.error("Error deleting collection:", error)
       toast({
         title: "שגיאה",
-        description: "אירעה שגיאה במחיקת הקולקציה",
+        description: "אירעה שגיאה במחיקת הקטגוריה",
         variant: "destructive",
       })
     }
@@ -104,7 +104,7 @@ export default function CollectionsPage() {
   // הצגת skeleton רק בזמן טעינה ראשונית
   if (loading) {
     return (
-      <AppLayout title="קולקציות">
+      <AppLayout title="קטגוריות">
         <CollectionsSkeleton />
       </AppLayout>
     )
@@ -112,14 +112,14 @@ export default function CollectionsPage() {
 
   if (!selectedShop) {
     return (
-      <AppLayout title="קולקציות">
+      <AppLayout title="קטגוריות">
         <div className="text-center py-12">
           <FolderOpen className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             אין חנות נבחרת
           </h3>
           <p className="text-gray-600">
-            יש לבחור חנות מההדר לפני ניהול קולקציות
+            יש לבחור חנות מההדר לפני ניהול קטגוריות
           </p>
         </div>
       </AppLayout>
@@ -127,20 +127,20 @@ export default function CollectionsPage() {
   }
 
   return (
-    <AppLayout title="קולקציות">
+    <AppLayout title="קטגוריות">
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">קולקציות</h1>
-            <p className="text-gray-600 mt-1">נהל את כל הקולקציות</p>
+            <h1 className="text-3xl font-bold text-gray-900">קטגוריות</h1>
+            <p className="text-gray-600 mt-1">נהל את כל הקטגוריות</p>
           </div>
           <Button
             onClick={() => router.push("/collections/new")}
             className="prodify-gradient text-white"
           >
             <Plus className="w-4 h-4 ml-2" />
-            קולקציה חדשה
+            קטגוריה חדשה
           </Button>
         </div>
 
@@ -167,16 +167,16 @@ export default function CollectionsPage() {
             <CardContent className="pt-6">
               <div className="text-center py-12">
                 <FolderOpen className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                <h3 className="text-lg font-semibold mb-2 prodify-gradient-text">אין קולקציות</h3>
+                <h3 className="text-lg font-semibold mb-2 prodify-gradient-text">אין קטגוריות</h3>
                 <p className="text-gray-600 mb-4">
-                  התחל ליצור את הקולקציה הראשונה שלך
+                  התחל ליצור את הקטגוריה הראשונה שלך
                 </p>
                 <Button
                   onClick={() => router.push("/collections/new")}
                   className="prodify-gradient text-white"
                 >
                   <Plus className="w-4 h-4 ml-2" />
-                  צור קולקציה חדשה
+                  צור קטגוריה חדשה
                 </Button>
               </div>
             </CardContent>

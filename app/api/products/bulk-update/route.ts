@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
             continue
           }
 
-          // הפרדת עדכון קטגוריה מעדכונים רגילים
+          // הפרדת עדכון קטגוריה (collections) מעדכונים רגילים
           const { category, ...otherChanges } = update.changes as any
           
           // עדכון המוצר (ללא קטגוריה)
@@ -65,27 +65,28 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          // עדכון קטגוריה אם קיים
+          // עדכון קטגוריה (collections) אם קיים
           if (category !== undefined) {
             // מחיקת כל הקטגוריות הקיימות של המוצר
-            await prisma.productCategory.deleteMany({
+            await prisma.productCollection.deleteMany({
               where: { productId: update.productId },
             })
 
             // אם יש קטגוריה חדשה, חיפוש לפי שם ויצירת קישור
             if (category && category !== "") {
-              const categoryRecord = await prisma.category.findFirst({
+              const collectionRecord = await prisma.collection.findFirst({
                 where: {
                   name: category,
                   shopId: product.shopId,
                 },
               })
 
-              if (categoryRecord) {
-                await prisma.productCategory.create({
+              if (collectionRecord) {
+                await prisma.productCollection.create({
                   data: {
                     productId: update.productId,
-                    categoryId: categoryRecord.id,
+                    collectionId: collectionRecord.id,
+                    position: 0,
                   },
                 })
               }

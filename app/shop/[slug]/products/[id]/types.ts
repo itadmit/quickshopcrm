@@ -41,6 +41,27 @@ export interface ProductAddon {
   }>
 }
 
+export interface Bundle {
+  id: string
+  name: string
+  description: string | null
+  price: number
+  comparePrice: number | null
+  image: string | null
+  isActive: boolean
+  products: Array<{
+    productId: string
+    quantity: number
+    position: number
+    product: {
+      id: string
+      name: string
+      price: number
+      images: string[]
+    }
+  }>
+}
+
 export interface ProductPageClientProps {
   slug: string
   productId: string
@@ -57,5 +78,6 @@ export interface ProductPageClientProps {
   isAdmin: boolean
   autoOpenCart: boolean
   productAddons?: any[]
+  bundles?: Bundle[]
 }
 

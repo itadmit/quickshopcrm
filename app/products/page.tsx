@@ -51,6 +51,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { getShopProductUrl } from "@/lib/utils"
+import { formatProductPrice, formatComparePrice } from "@/lib/product-price"
 
 interface Product {
   id: string
@@ -685,43 +686,13 @@ export default function ProductsPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {product.variants && product.variants.length > 0 ? (
-                          (() => {
-                            const prices = product.variants
-                              .map(v => v.price)
-                              .filter((p): p is number => p !== null && p !== undefined)
-                            
-                            if (prices.length === 0) {
-                              return (
-                                <div className="text-sm font-medium text-gray-900">
-                                  ₪{product.price.toFixed(2)}
-                                </div>
-                              )
-                            }
-                            
-                            const minPrice = Math.min(...prices)
-                            const maxPrice = Math.max(...prices)
-                            
-                            return (
-                              <div className="text-sm font-medium text-gray-900">
-                                {minPrice === maxPrice 
-                                  ? `₪${minPrice.toFixed(2)}`
-                                  : `₪${minPrice.toFixed(2)} - ₪${maxPrice.toFixed(2)}`
-                                }
-                              </div>
-                            )
-                          })()
-                        ) : (
-                          <>
-                            <div className="text-sm font-medium text-gray-900">
-                              ₪{product.price.toFixed(2)}
-                            </div>
-                            {product.comparePrice && (
-                              <div className="text-sm text-gray-500 line-through">
-                                ₪{product.comparePrice.toFixed(2)}
-                              </div>
-                            )}
-                          </>
+                        <div className="text-sm font-medium text-gray-900">
+                          {formatProductPrice(product as any)}
+                        </div>
+                        {formatComparePrice(product as any) && (
+                          <div className="text-sm text-gray-500 line-through">
+                            {formatComparePrice(product as any)}
+                          </div>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -879,37 +850,11 @@ export default function ProductsPage() {
                 <div className="p-4">
                   <h3 className="font-semibold text-lg mb-2">{product.name}</h3>
                   <div className="flex items-center justify-between mb-2">
-                    {product.variants && product.variants.length > 0 ? (
-                      (() => {
-                        const prices = product.variants
-                          .map(v => v.price)
-                          .filter((p): p is number => p !== null && p !== undefined)
-                        
-                        if (prices.length === 0) {
-                          return <span className="text-xl font-bold">₪{product.price.toFixed(2)}</span>
-                        }
-                        
-                        const minPrice = Math.min(...prices)
-                        const maxPrice = Math.max(...prices)
-                        
-                        return (
-                          <span className="text-xl font-bold">
-                            {minPrice === maxPrice 
-                              ? `₪${minPrice.toFixed(2)}`
-                              : `₪${minPrice.toFixed(2)} - ₪${maxPrice.toFixed(2)}`
-                            }
-                          </span>
-                        )
-                      })()
-                    ) : (
-                      <>
-                        <span className="text-xl font-bold">₪{product.price.toFixed(2)}</span>
-                        {product.comparePrice && (
-                          <span className="text-sm text-gray-500 line-through">
-                            ₪{product.comparePrice.toFixed(2)}
-                          </span>
-                        )}
-                      </>
+                    <span className="text-xl font-bold">{formatProductPrice(product as any)}</span>
+                    {formatComparePrice(product as any) && (
+                      <span className="text-sm text-gray-500 line-through">
+                        {formatComparePrice(product as any)}
+                      </span>
                     )}
                   </div>
                   <div className="flex items-center justify-between text-sm text-gray-600">

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
-import { Bell, ChevronDown, Settings, LogOut, User, ExternalLink, UserPlus } from "lucide-react"
+import { Bell, ChevronDown, Settings, LogOut, User, ExternalLink, UserPlus, Plug } from "lucide-react"
 import { useShop } from "@/components/providers/ShopProvider"
 import Link from "next/link"
 import {
@@ -61,18 +61,25 @@ export function Header({ title }: HeaderProps) {
 
   return (
     <header className="h-16 border-b border-gray-200 bg-white flex items-center justify-between px-6 sticky top-0 z-50">
-      <div className="flex items-center gap-4">
-        {title && (
-          <h1 className="text-2xl font-bold text-gray-900">{title}</h1>
-        )}
-      </div>
-
       {/* Global Search - Center */}
       <div className="flex-1 max-w-2xl mx-8">
         <GlobalSearch />
       </div>
 
       <div className="flex items-center gap-4">
+        {/* Marketplace Link */}
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2"
+          asChild
+        >
+          <Link href="/settings/plugins">
+            <Plug className="w-4 h-4" />
+            <span>מרקטפלייס</span>
+          </Link>
+        </Button>
+
         {/* View Store Button */}
         {selectedShop && (
           <Button

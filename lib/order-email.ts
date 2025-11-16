@@ -1,4 +1,4 @@
-import { sendEmail, getEmailTemplate } from "./email"
+import { sendEmail, getEmailTemplate, getShopEmailSettings } from "./email"
 import { prisma } from "./prisma"
 
 /**
@@ -120,13 +120,19 @@ export async function sendOrderConfirmationEmail(orderId: string) {
       <p>תודה שקנית אצלנו!</p>
     `
 
+    const emailSettings = await getShopEmailSettings(order.shop.id)
+    
     await sendEmail({
       to: order.customerEmail,
       subject: `אישור הזמנה ותשלום #${order.orderNumber} - ${order.shop.name}`,
+      shopId: order.shop.id, // העברת shopId כדי להשתמש בשם השולח מההגדרות
       html: getEmailTemplate({
         title: `אישור הזמנה #${order.orderNumber}`,
         content: emailContent,
-        footer: `הודעה זו נשלחה מ-${order.shop.name}`,
+        footer: `הודעה זו נשלחה מ-${emailSettings.senderName}`,
+        color1: emailSettings.color1,
+        color2: emailSettings.color2,
+        senderName: emailSettings.senderName,
       }),
     })
     

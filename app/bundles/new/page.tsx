@@ -4,32 +4,40 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useShop } from "@/components/providers/ShopProvider"
 import { AppLayout } from "@/components/AppLayout"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Badge } from "@/components/ui/badge"
+import { Switch } from "@/components/ui/switch"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
-import { FormSkeleton } from "@/components/skeletons/FormSkeleton"
-import { Save, Boxes, Package, DollarSign, X, Plus } from "lucide-react"
+import { ArrowRight, Save, Plus, X, Package } from "lucide-react"
+import Link from "next/link"
+import { getProductPrice, formatProductPrice } from "@/lib/product-price"
 
 interface Product {
   id: string
   name: string
   price: number
+  variants?: Array<{
+    id: string
+    price: number | null
+  }>
 }
 
 export default function NewBundlePage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
-  const [loading, setLoading] = useState(true)
+  const { selectedShop, loading: shopLoading } = useShop()
+  const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
-  const [selectedProducts, setSelectedProducts] = useState<Array<{ productId: string; quantity: number }>>([])
-  
+  const [selectedProducts, setSelectedProducts] = useState<Array<{
+    productId: string
+    quantity: number
+    position: number
+  }>>([])
+
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -61,38 +69,43 @@ export default function NewBundlePage() {
     }
   }
 
-  const addProduct = (productId: string) => {
-    if (!selectedProducts.find((p) => p.productId === productId)) {
-      setSelectedProducts([...selectedProducts, { productId, quantity: 1 }])
-    }
-  }
-
-  const removeProduct = (productId: string) => {
-    setSelectedProducts(selectedProducts.filter((p) => p.productId !== productId))
-  }
-
-  const updateQuantity = (productId: string, quantity: number) => {
-    setSelectedProducts(
-      selectedProducts.map((p) =>
-        p.productId === productId ? { ...p, quantity } : p
-      )
-    )
-  }
-
-  const handleSubmit = async () => {
-    if (!selectedShop) {
+  const handleAddProduct = (productId: string) => {
+    if (selectedProducts.find(p => p.productId === productId)) {
       toast({
         title: "שגיאה",
-        description: "יש לבחור חנות מההדר",
+        description: "המוצר כבר קיים בחבילה",
         variant: "destructive",
       })
       return
     }
 
-    if (!formData.name.trim()) {
+    setSelectedProducts([
+      ...selectedProducts,
+      {
+        productId,
+        quantity: 1,
+        position: selectedProducts.length,
+      },
+    ])
+  }
+
+  const handleRemoveProduct = (index: number) => {
+    setSelectedProducts(selectedProducts.filter((_, i) => i !== index))
+  }
+
+  const handleUpdateQuantity = (index: number, quantity: number) => {
+    const updated = [...selectedProducts]
+    updated[index].quantity = quantity
+    setSelectedProducts(updated)
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!selectedShop) {
       toast({
         title: "שגיאה",
-        description: "שם החבילה הוא חובה",
+        description: "יש לבחור חנות",
         variant: "destructive",
       })
       return
@@ -101,55 +114,39 @@ export default function NewBundlePage() {
     if (selectedProducts.length === 0) {
       toast({
         title: "שגיאה",
-        description: "יש לבחור לפחות מוצר אחד",
-        variant: "destructive",
-      })
-      return
-    }
-
-    if (!formData.price || parseFloat(formData.price) < 0) {
-      toast({
-        title: "שגיאה",
-        description: "מחיר חייב להיות מספר חיובי",
+        description: "יש להוסיף לפחות מוצר אחד לחבילה",
         variant: "destructive",
       })
       return
     }
 
     setSaving(true)
-
     try {
-      const payload: any = {
-        shopId: selectedShop.id,
-        name: formData.name.trim(),
-        description: formData.description || undefined,
-        price: parseFloat(formData.price),
-        comparePrice: formData.comparePrice ? parseFloat(formData.comparePrice) : undefined,
-        isActive: formData.isActive,
-        products: selectedProducts.map((p, index) => ({
-          productId: p.productId,
-          quantity: p.quantity,
-          position: index,
-        })),
-      }
-
       const response = await fetch("/api/bundles", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          shopId: selectedShop.id,
+          name: formData.name,
+          description: formData.description || null,
+          price: parseFloat(formData.price),
+          comparePrice: formData.comparePrice ? parseFloat(formData.comparePrice) : null,
+          isActive: formData.isActive,
+          products: selectedProducts,
+        }),
       })
 
       if (response.ok) {
         toast({
           title: "הצלחה",
-          description: "חבילת המוצרים נוצרה בהצלחה",
+          description: "החבילה נוצרה בהצלחה",
         })
         router.push("/bundles")
       } else {
         const error = await response.json()
         toast({
           title: "שגיאה",
-          description: error.error || "אירעה שגיאה ביצירת חבילת המוצרים",
+          description: error.error || "לא ניתן ליצור את החבילה",
           variant: "destructive",
         })
       }
@@ -157,7 +154,7 @@ export default function NewBundlePage() {
       console.error("Error creating bundle:", error)
       toast({
         title: "שגיאה",
-        description: "אירעה שגיאה ביצירת חבילת המוצרים",
+        description: "אירעה שגיאה ביצירת החבילה",
         variant: "destructive",
       })
     } finally {
@@ -165,224 +162,205 @@ export default function NewBundlePage() {
     }
   }
 
-  if (loading) {
+  if (shopLoading || loading) {
     return (
       <AppLayout title="חבילה חדשה">
-        <FormSkeleton />
+        <div className="text-center py-12">
+          <Package className="w-16 h-16 mx-auto text-gray-400 mb-4 animate-pulse" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">טוען נתונים...</h3>
+        </div>
       </AppLayout>
     )
   }
 
   if (!selectedShop) {
     return (
-      <AppLayout title="חבילת מוצרים חדשה">
+      <AppLayout title="חבילה חדשה">
         <div className="text-center py-12">
-          <Boxes className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            אין חנות נבחרת
-          </h3>
-          <p className="text-gray-600 mb-4">
-            יש לבחור חנות מההדר לפני יצירת חבילת מוצרים
-          </p>
-          <Button onClick={() => router.push("/bundles")}>
-            חזור לרשימת חבילות
-          </Button>
+          <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">אין חנות נבחרת</h3>
+          <p className="text-gray-600">יש לבחור חנות מההדר</p>
         </div>
       </AppLayout>
     )
   }
 
   return (
-    <AppLayout title="חבילת מוצרים חדשה">
+    <AppLayout title="חבילה חדשה">
       <div className="space-y-6">
+        {/* Header */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">חבילת מוצרים חדשה</h1>
-            <p className="text-gray-600 mt-1">
-              צור חבילת מוצרים עם הנחה
-            </p>
+            <h1 className="text-2xl font-bold text-gray-900">חבילה חדשה</h1>
+            <p className="text-gray-600 mt-1">צור חבילת מוצרים חדשה</p>
           </div>
-          <div className="flex gap-2">
+          <Button variant="outline" onClick={() => router.push("/bundles")}>
+            <ArrowRight className="w-4 h-4 ml-2 rotate-180" />
+            חזור
+          </Button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Basic Info */}
+          <Card>
+            <CardHeader>
+              <CardTitle>מידע בסיסי</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="name">שם החבילה *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description">תיאור</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  rows={3}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="price">מחיר *</Label>
+                  <Input
+                    id="price"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.price}
+                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div>
+                  <Label htmlFor="comparePrice">מחיר מקורי (להשוואה)</Label>
+                  <Input
+                    id="comparePrice"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.comparePrice}
+                    onChange={(e) => setFormData({ ...formData, comparePrice: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="isActive"
+                  checked={formData.isActive}
+                  onCheckedChange={(checked) => setFormData({ ...formData, isActive: checked })}
+                />
+                <Label htmlFor="isActive">חבילה פעילה</Label>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Products */}
+          <Card>
+            <CardHeader>
+              <CardTitle>מוצרים בחבילה</CardTitle>
+              <CardDescription>הוסף מוצרים לחבילה וקבע כמות לכל מוצר</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Selected Products */}
+              {selectedProducts.length > 0 && (
+                <div className="space-y-2">
+                  <Label>מוצרים נבחרים ({selectedProducts.length})</Label>
+                  {selectedProducts.map((item, index) => {
+                    const product = products.find(p => p.id === item.productId)
+                    return (
+                      <div key={index} className="flex items-center gap-2 p-3 border rounded-lg">
+                        <div className="flex-1">
+                          <p className="font-medium">{product?.name || "מוצר לא נמצא"}</p>
+                          <p className="text-sm text-gray-600">
+                            {product ? formatProductPrice(product) : "₪0.00"}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Label className="text-sm">כמות:</Label>
+                          <Input
+                            type="number"
+                            min="1"
+                            value={item.quantity}
+                            onChange={(e) => handleUpdateQuantity(index, parseInt(e.target.value) || 1)}
+                            className="w-20"
+                          />
+                        </div>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveProduct(index)}
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Available Products */}
+              <div className="space-y-2">
+                <Label>הוסף מוצר</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                  {products
+                    .filter(p => !selectedProducts.find(sp => sp.productId === p.id))
+                    .map((product) => (
+                      <Button
+                        key={product.id}
+                        type="button"
+                        variant="outline"
+                        className="justify-start"
+                        onClick={() => handleAddProduct(product.id)}
+                      >
+                        <Plus className="w-4 h-4 ml-2" />
+                        {product.name} - {formatProductPrice(product)}
+                      </Button>
+                    ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Actions */}
+          <div className="flex gap-3">
             <Button
-              variant="outline"
-              onClick={() => router.push("/bundles")}
-              disabled={saving}
-            >
-              ביטול
-            </Button>
-            <Button
-              onClick={handleSubmit}
+              type="submit"
               disabled={saving}
               className="prodify-gradient text-white"
             >
-              <Save className="w-4 h-4 ml-2" />
-              {saving ? "שומר..." : "שמור"}
+              {saving ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white ml-2"></div>
+                  שומר...
+                </>
+              ) : (
+                <>
+                  <Save className="w-4 h-4 ml-2" />
+                  שמור חבילה
+                </>
+              )}
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => router.push("/bundles")}
+            >
+              ביטול
             </Button>
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Boxes className="w-5 h-5" />
-                  פרטי חבילה
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">שם חבילה *</Label>
-                  <Input
-                    id="name"
-                    value={formData.name}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
-                    placeholder="לדוגמה: חבילת מתחילים"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">תיאור</Label>
-                  <Textarea
-                    id="description"
-                    value={formData.description}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
-                    placeholder="תיאור החבילה..."
-                    rows={4}
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="price">מחיר *</Label>
-                    <div className="relative">
-                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">₪</span>
-                      <Input
-                        id="price"
-                        type="number"
-                        step="0.01"
-                        value={formData.price}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
-                        placeholder="0.00"
-                        className="pr-10"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="comparePrice">מחיר מקורי (להשוואה)</Label>
-                    <div className="relative">
-                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">₪</span>
-                      <Input
-                        id="comparePrice"
-                        type="number"
-                        step="0.01"
-                        value={formData.comparePrice}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, comparePrice: e.target.value }))}
-                        placeholder="0.00"
-                        className="pr-10"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center space-x-2 space-x-reverse">
-                  <Checkbox
-                    id="isActive"
-                    checked={formData.isActive}
-                    onCheckedChange={(checked) =>
-                      setFormData((prev) => ({ ...prev, isActive: checked as boolean }))
-                    }
-                  />
-                  <Label htmlFor="isActive" className="cursor-pointer">
-                    חבילה פעילה
-                  </Label>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Package className="w-5 h-5" />
-                  מוצרים בחבילה
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {selectedProducts.length > 0 && (
-                  <div className="space-y-2 mb-4">
-                    {selectedProducts.map((item) => {
-                      const product = products.find((p) => p.id === item.productId)
-                      return (
-                        <div
-                          key={item.productId}
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                        >
-                          <div className="flex-1">
-                            <p className="font-medium">{product?.name}</p>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Input
-                                type="number"
-                                min="1"
-                                value={item.quantity}
-                                onChange={(e) =>
-                                  updateQuantity(item.productId, parseInt(e.target.value) || 1)
-                                }
-                                className="w-20"
-                              />
-                              <span className="text-sm text-gray-600">כמות</span>
-                            </div>
-                          </div>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeProduct(item.productId)}
-                          >
-                            <X className="w-4 h-4 text-red-500" />
-                          </Button>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )}
-
-                <div>
-                  <Label>הוסף מוצר</Label>
-                  <div className="grid grid-cols-2 gap-2 mt-2">
-                    {products
-                      .filter((p) => !selectedProducts.find((sp) => sp.productId === p.id))
-                      .map((product) => (
-                        <Button
-                          key={product.id}
-                          variant="outline"
-                          onClick={() => addProduct(product.id)}
-                          className="justify-start"
-                        >
-                          <Plus className="w-4 h-4 ml-2" />
-                          {product.name}
-                        </Button>
-                      ))}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          <div className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>מידע</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 text-sm text-gray-600">
-                <p>
-                  חבילת מוצרים מאפשרת למכור מספר מוצרים יחד במחיר מיוחד.
-                </p>
-                <p>
-                  הלקוח יקבל הנחה על רכישת כל המוצרים יחד.
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
+        </form>
       </div>
     </AppLayout>
   )

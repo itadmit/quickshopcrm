@@ -19,6 +19,7 @@ import {
   Trash2,
   Pencil,
   Palette,
+  Ruler,
 } from "lucide-react"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { StorefrontHeader } from "@/components/storefront/StorefrontHeader"
@@ -40,6 +41,30 @@ import { ProductElements } from "./components/ProductElements"
 import { Product, ProductPageClientProps, GalleryLayout } from "./types"
 import { ProductAddonsSelector } from "./components/ProductAddonsSelector"
 import { ProductCustomFields } from "./components/ProductCustomFields"
+import { BundleSelector } from "./components/BundleSelector"
+
+const popularColors: Record<string, string> = {
+  'שחור': '#000000',
+  'לבן': '#FFFFFF',
+  'אדום': '#FF0000',
+  'כחול': '#0000FF',
+  'ירוק': '#00FF00',
+  'צהוב': '#FFFF00',
+  'כתום': '#FFA500',
+  'סגול': '#800080',
+  'ורוד': '#FFC0CB',
+  'חום': '#8B4513',
+  'אפור': '#808080',
+  'זהב': '#FFD700',
+  'כסף': '#C0C0C0',
+  'תכלת': '#00FFFF',
+  'ורד': '#FF69B4',
+  'שמנת': '#FFFDD0',
+  'בז\'': '#F5F5DC',
+  'חאקי': '#F0E68C',
+  'טורקיז': '#40E0D0',
+  'אפרסק': '#FFDAB9',
+}
 
 export function ProductPageClient({
   slug,
@@ -57,6 +82,7 @@ export function ProductPageClient({
   isAdmin,
   autoOpenCart: initialAutoOpenCart,
   productAddons = [],
+  bundles = [],
 }: ProductPageClientProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -105,6 +131,8 @@ export function ProductPageClient({
   const [isDeleting, setIsDeleting] = useState(false)
   const [isDuplicating, setIsDuplicating] = useState(false)
   const [showDesigner, setShowDesigner] = useState(false)
+  const [showSizeChart, setShowSizeChart] = useState(false)
+  const [sizeChart, setSizeChart] = useState<any>(null)
 
   // שימוש ב-hook המרכזי לניהול state ולוגיקה
   const {
@@ -135,6 +163,7 @@ export function ProductPageClient({
     handleAddToCart,
     saveProductPageLayout,
     saveGalleryLayout,
+    customerId,
   } = useProductPage({
     slug,
     productId,
@@ -144,6 +173,25 @@ export function ProductPageClient({
     autoOpenCart: initialAutoOpenCart,
     selectedAddons,
   })
+
+  // טעינת טבלת מידות
+  useEffect(() => {
+    const fetchSizeChart = async () => {
+      if (!slug || !productId) return
+      try {
+        const response = await fetch(`/api/storefront/${slug}/size-charts?productId=${productId}`)
+        if (response.ok) {
+          const data = await response.json()
+          if (data && data.length > 0) {
+            setSizeChart(data[0]) // ניקח את הראשון
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching size chart:", error)
+      }
+    }
+    fetchSizeChart()
+  }, [slug, productId])
 
   // פונקציות לניהול layout
   const moveElement = (elementId: string, direction: "up" | "down") => {
@@ -323,12 +371,15 @@ export function ProductPageClient({
     slug,
     productId,
     theme,
+    hasBundles: bundles && bundles.length > 0, // האם יש bundles
     averageRating,
     totalReviews,
     showReviews,
     setShowReviews,
     relatedProducts,
     currentPrice,
+    sizeChart,
+    onShowSizeChart: () => setShowSizeChart(true),
   })
 
   // פונקציה לרינדור כוכבים לביקורות
@@ -486,7 +537,90 @@ export function ProductPageClient({
           )}>
             {otherElements
               .sort((a, b) => a.position - b.position)
-              .map((element) => {
+              .map((element, index, array) => {
+                // בדיקה אם יש variants בעמוד
+                const hasVariants = otherElements.some(el => el.type === "product-variants")
+                
+                // הוסף bundles אחרי variants (אם יש variants)
+                if (hasVariants && element.type === "product-variants" && bundles && bundles.length > 0) {
+                  // בדיקה אם זה ה-variants האחרון (אם יש כמה)
+                  const isLastVariantsElement = !array[index + 1] || array[index + 1].type !== "product-variants"
+                  
+                  if (isLastVariantsElement) {
+                    return (
+                      <div key="bundles-after-variants">
+                        {renderElement(element)}
+                        {/* Bundle Selector */}
+                        <div className="mt-6">
+                          <BundleSelector
+                            bundles={bundles}
+                            productId={product.id}
+                            productPrice={currentPrice}
+                            slug={slug}
+                            customerId={customerId}
+                            onCartUpdate={fetchCartCount}
+                            theme={theme}
+                          />
+                        </div>
+                      </div>
+                    )
+                  }
+                }
+                
+                // אם אין variants אבל יש bundles, נוסיף את ה-bundle selector אחרי description או price
+                if (!hasVariants && bundles && bundles.length > 0) {
+                  const hasDescription = otherElements.some(el => el.type === "product-description")
+                  
+                  // אם יש description, נוסיף אחרי description
+                  if (hasDescription && element.type === "product-description") {
+                    const isLastDescriptionElement = !array[index + 1] || array[index + 1].type !== "product-description"
+                    
+                    if (isLastDescriptionElement) {
+                      return (
+                        <div key="bundles-after-description">
+                          {renderElement(element)}
+                          {/* Bundle Selector */}
+                          <div className="mt-6">
+                            <BundleSelector
+                              bundles={bundles}
+                              productId={product.id}
+                              productPrice={currentPrice}
+                              slug={slug}
+                              customerId={customerId}
+                              onCartUpdate={fetchCartCount}
+                              theme={theme}
+                            />
+                          </div>
+                        </div>
+                      )
+                    }
+                  }
+                  
+                  // אם אין description, נוסיף אחרי price
+                  if (!hasDescription && element.type === "product-price") {
+                    const isLastPriceElement = !array[index + 1] || array[index + 1].type !== "product-price"
+                    
+                    if (isLastPriceElement) {
+                      return (
+                        <div key="bundles-after-price">
+                          {renderElement(element)}
+                          {/* Bundle Selector */}
+                          <div className="mt-6">
+                            <BundleSelector
+                              bundles={bundles}
+                              productId={product.id}
+                              productPrice={currentPrice}
+                              slug={slug}
+                              customerId={customerId}
+                              onCartUpdate={fetchCartCount}
+                              theme={theme}
+                            />
+                          </div>
+                        </div>
+                      )
+                    }
+                  }
+                }
                 // הוסף את התוספות אחרי variants (position 4) ולפני quantity (position 5)
                 if (element.position === 5 && element.type === "product-quantity" && productAddons && productAddons.length > 0) {
                   return (
@@ -700,6 +834,8 @@ export function ProductPageClient({
                     const optionName = option.name === "Size" ? "מידה" : 
                                       option.name === "Color" ? "צבע" : 
                                       option.name
+                    const isColorOption = option.type === "color" || option.name === "Color" || option.name === "צבע"
+                    
                     return (
                       <div key={option.id}>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -766,6 +902,75 @@ export function ProductPageClient({
                               })
                             }
                             
+                            // קביעת קוד הצבע
+                            let colorCode: string | undefined = undefined
+                            if (isColorOption) {
+                              // נסה לקבל מהמטא-דאטה
+                              if (typeof value === 'object' && value.metadata?.color) {
+                                colorCode = value.metadata.color
+                              } else {
+                                // נסה לחפש ב-popularColors לפי התווית
+                                colorCode = popularColors[valueLabel]
+                              }
+                            }
+                            
+                            // בדיקה אם זה דפוס
+                            const isPattern = option.type === "pattern" || (typeof value === 'object' && value.metadata?.pattern)
+                            const patternStyle = typeof value === 'object' && value.metadata?.pattern ? value.metadata.pattern : undefined
+                            const patternBackgroundSize = typeof value === 'object' && value.metadata?.backgroundSize ? value.metadata.backgroundSize : '12px 12px'
+                            const patternBackgroundPosition = typeof value === 'object' && value.metadata?.backgroundPosition ? value.metadata.backgroundPosition : '0 0'
+                            
+                            // אם זה צבע, הצג עיגול
+                            if (isColorOption && colorCode && !isPattern) {
+                              return (
+                                <button
+                                  key={valueId}
+                                  onClick={() => setSelectedOptionValues({ ...selectedOptionValues, [option.id]: valueId })}
+                                  disabled={!isAvailable}
+                                  className={`relative w-10 h-10 rounded-full border-2 transition-all ${
+                                    isSelected
+                                      ? "ring-2 ring-offset-2"
+                                      : isAvailable
+                                      ? "border-gray-300 hover:border-gray-400"
+                                      : "border-gray-200 opacity-50 cursor-not-allowed"
+                                  }`}
+                                  style={{
+                                    backgroundColor: colorCode,
+                                    borderColor: isSelected ? theme.primaryColor : undefined,
+                                    ringColor: isSelected ? theme.primaryColor : undefined,
+                                  }}
+                                  title={valueLabel}
+                                />
+                              )
+                            }
+                            
+                            // אם זה דפוס, הצג עם דפוס CSS
+                            if (isPattern && patternStyle) {
+                              return (
+                                <button
+                                  key={valueId}
+                                  onClick={() => setSelectedOptionValues({ ...selectedOptionValues, [option.id]: valueId })}
+                                  disabled={!isAvailable}
+                                  className={`relative w-10 h-10 rounded-full border-2 transition-all overflow-hidden ${
+                                    isSelected
+                                      ? "ring-2 ring-offset-2"
+                                      : isAvailable
+                                      ? "border-gray-300 hover:border-gray-400"
+                                      : "border-gray-200 opacity-50 cursor-not-allowed"
+                                  }`}
+                                  style={{
+                                    borderColor: isSelected ? theme.primaryColor : undefined,
+                                    ringColor: isSelected ? theme.primaryColor : undefined,
+                                    backgroundImage: patternStyle,
+                                    backgroundSize: patternBackgroundSize,
+                                    backgroundPosition: patternBackgroundPosition,
+                                  }}
+                                  title={valueLabel}
+                                />
+                              )
+                            }
+                            
+                            // אחרת, הצג כפתור רגיל
                             return (
                               <button
                                 key={valueId}
@@ -1061,6 +1266,34 @@ export function ProductPageClient({
 
       {/* Admin Bar */}
       <AdminBar slug={slug} pageType="product" productSlug={productId} />
+
+      {/* Size Chart Modal */}
+      {sizeChart && (
+        <Dialog open={showSizeChart} onOpenChange={setShowSizeChart}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" dir="rtl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Ruler className="w-5 h-5" />
+                {sizeChart.name}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="mt-4">
+              {sizeChart.imageUrl ? (
+                <img
+                  src={sizeChart.imageUrl}
+                  alt={sizeChart.name}
+                  className="w-full h-auto rounded-lg"
+                />
+              ) : sizeChart.content ? (
+                <div
+                  className="prose prose-sm max-w-none"
+                  dangerouslySetInnerHTML={{ __html: sizeChart.content }}
+                />
+              ) : null}
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   )
 }

@@ -132,10 +132,22 @@ export function InvitePeopleDialog({ triggerButton, open: controlledOpen, onOpen
       })
 
       if (response.ok) {
-        toast({
-          title: "ההזמנה נשלחה!",
-          description: `הזמנה נשלחה ל-${email}`,
-        })
+        const data = await response.json()
+        
+        // בדיקה אם המייל נשלח
+        if (data.emailSent === false || data.emailError) {
+          toast({
+            title: "ההזמנה נוצרה אבל המייל לא נשלח",
+            description: data.emailError || "לא ניתן לשלוח מייל. אנא בדוק את הגדרות SendGrid בהגדרות המנהל הראשי.",
+            variant: "destructive",
+          })
+        } else {
+          toast({
+            title: "ההזמנה נשלחה!",
+            description: `הזמנה נשלחה ל-${email}`,
+          })
+        }
+        
         setOpen(false)
         setEmail("")
         setName("")
