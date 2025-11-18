@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { useSession } from "next-auth/react"
+import dynamic from "next/dynamic"
 import { useShop } from "@/components/providers/ShopProvider"
 import { AppLayout } from "@/components/AppLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -23,7 +24,21 @@ import {
   Mail,
 } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import AutomationFlowBuilder from "@/components/AutomationFlowBuilder"
+
+// Dynamic import עם loading state לספרייה הכבדה
+const AutomationFlowBuilder = dynamic(() => import("@/components/AutomationFlowBuilder"), {
+  loading: () => (
+    <Card>
+      <CardContent className="p-8">
+        <div className="flex items-center justify-center">
+          <Workflow className="w-6 h-6 animate-spin text-gray-400" />
+          <span className="mr-2 text-gray-500">טוען בונה זרימה...</span>
+        </div>
+      </CardContent>
+    </Card>
+  ),
+  ssr: false,
+})
 
 export default function NewAutomationPage() {
   const router = useRouter()

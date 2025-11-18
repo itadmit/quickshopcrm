@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
+import dynamic from "next/dynamic"
 import { useShop } from "@/components/providers/ShopProvider"
 import { AppLayout } from "@/components/AppLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -21,8 +22,22 @@ import {
   CheckCircle2,
   XCircle,
 } from "lucide-react"
-import AutomationFlowBuilder from "@/components/AutomationFlowBuilder"
 import { Badge } from "@/components/ui/badge"
+
+// Dynamic import לספרייה הכבדה
+const AutomationFlowBuilder = dynamic(() => import("@/components/AutomationFlowBuilder"), {
+  loading: () => (
+    <Card>
+      <CardContent className="p-8">
+        <div className="flex items-center justify-center">
+          <Workflow className="w-6 h-6 animate-spin text-gray-400" />
+          <span className="mr-2 text-gray-500">טוען בונה זרימה...</span>
+        </div>
+      </CardContent>
+    </Card>
+  ),
+  ssr: false,
+})
 
 export default function EditAutomationPage() {
   const router = useRouter()
