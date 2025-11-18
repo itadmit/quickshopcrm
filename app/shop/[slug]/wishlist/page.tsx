@@ -29,6 +29,14 @@ interface WishlistItem {
     comparePrice: number | null
     images: string[]
     availability: string
+    variants?: Array<{
+      id: string
+      name: string
+      price: number | null
+      comparePrice: number | null
+      inventoryQty: number | null
+      sku: string | null
+    }>
   }
   variant: {
     id: string
@@ -159,6 +167,20 @@ export default function WishlistPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50" dir="rtl">
+        {/* Header */}
+        <header className="bg-white shadow-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Link href={`/shop/${slug}`} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
+                  <ChevronRight className="w-5 h-5" />
+                  חזרה לחנות
+                </Link>
+              </div>
+              <h1 className="text-2xl font-bold text-gray-900">רשימת משאלות</h1>
+            </div>
+          </div>
+        </header>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <ProductGridSkeleton count={4} />
         </div>

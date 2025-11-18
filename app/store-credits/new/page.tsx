@@ -107,14 +107,14 @@ export default function NewStoreCreditPage() {
       if (response.ok) {
         toast({
           title: "הצלחה",
-          description: "אשראי בחנות נוצר בהצלחה",
+          description: "קרדיט בחנות נוצר בהצלחה",
         })
         router.push("/store-credits")
       } else {
         const error = await response.json()
         toast({
           title: "שגיאה",
-          description: error.error || "אירעה שגיאה ביצירת אשראי בחנות",
+          description: error.error || "אירעה שגיאה ביצירת קרדיט בחנות",
           variant: "destructive",
         })
       }
@@ -122,7 +122,7 @@ export default function NewStoreCreditPage() {
       console.error("Error creating store credit:", error)
       toast({
         title: "שגיאה",
-        description: "אירעה שגיאה ביצירת אשראי בחנות",
+        description: "אירעה שגיאה ביצירת קרדיט בחנות",
         variant: "destructive",
       })
     } finally {
@@ -132,7 +132,7 @@ export default function NewStoreCreditPage() {
 
   if (loading) {
     return (
-      <AppLayout title="אשראי בחנות חדש">
+      <AppLayout title="קרדיט בחנות חדש">
         <FormSkeleton />
       </AppLayout>
     )
@@ -140,17 +140,17 @@ export default function NewStoreCreditPage() {
 
   if (!selectedShop) {
     return (
-      <AppLayout title="אשראי בחנות חדש">
+      <AppLayout title="קרדיט בחנות חדש">
         <div className="text-center py-12">
           <CreditCard className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             אין חנות נבחרת
           </h3>
           <p className="text-gray-600 mb-4">
-            יש לבחור חנות מההדר לפני יצירת אשראי בחנות
+            יש לבחור חנות מההדר לפני יצירת קרדיט בחנות
           </p>
           <Button onClick={() => router.push("/store-credits")}>
-            חזור לרשימת אשראי בחנות
+            חזור לרשימת קרדיט בחנות
           </Button>
         </div>
       </AppLayout>
@@ -158,13 +158,13 @@ export default function NewStoreCreditPage() {
   }
 
   return (
-    <AppLayout title="אשראי בחנות חדש">
+    <AppLayout title="קרדיט בחנות חדש">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">אשראי בחנות חדש</h1>
+            <h1 className="text-3xl font-bold text-gray-900">קרדיט בחנות חדש</h1>
             <p className="text-gray-600 mt-1">
-              הענק אשראי בחנות ללקוח
+              הענק קרדיט בחנות ללקוח
             </p>
           </div>
           <div className="flex gap-2">
@@ -192,7 +192,7 @@ export default function NewStoreCreditPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="w-5 h-5" />
-                  פרטי אשראי בחנות
+                  פרטי קרדיט בחנות
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -252,7 +252,7 @@ export default function NewStoreCreditPage() {
                     id="notes"
                     value={formData.notes}
                     onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
-                    placeholder="סיבה להענקת האשראי..."
+                    placeholder="סיבה להענקת הקרדיט..."
                     rows={4}
                   />
                 </div>
@@ -267,13 +267,13 @@ export default function NewStoreCreditPage() {
               </CardHeader>
               <CardContent className="space-y-4 text-sm text-gray-600">
                 <p>
-                  אשראי בחנות מאפשר ללקוח להשתמש בכסף בחנות שלך.
+                  קרדיט בחנות מאפשר ללקוח להשתמש בכסף בחנות שלך.
                 </p>
                 <p>
-                  הלקוח יוכל להשתמש באשראי בתשלום על הזמנות.
+                  הלקוח יוכל להשתמש בקרדיט בתשלום על הזמנות.
                 </p>
                 <p>
-                  אם יש כבר אשראי ללקוח, הסכום יתווסף ליתרה הקיימת.
+                  אם יש כבר קרדיט ללקוח, הסכום יתווסף ליתרה הקיימת.
                 </p>
               </CardContent>
             </Card>

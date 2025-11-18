@@ -32,7 +32,23 @@ export async function GET(
       include: {
         order: {
           include: {
-            items: true,
+            items: {
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    images: true,
+                  },
+                },
+                variant: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
           },
         },
         customer: {
@@ -119,7 +135,7 @@ export async function PUT(
         oldStatus !== "APPROVED" &&
         oldStatus !== "COMPLETED"
       ) {
-      const returnItems = existingReturn.items as Array<{
+        const returnItems = existingReturn.items as Array<{
         orderItemId: string
         quantity: number
         reason?: string
@@ -198,6 +214,7 @@ export async function PUT(
           const product = await tx.product.findUnique({
             where: { id: orderItem.productId },
             select: {
+              id: true,
               shopId: true,
               inventoryEnabled: true,
               inventoryQty: true,
@@ -236,6 +253,7 @@ export async function PUT(
           }
         }
       }
+      }
 
       // יצירת אירוע עדכון החזרה
       await tx.shopEvent.create({
@@ -258,6 +276,106 @@ export async function PUT(
     })
 
     const returnRequest = result
+
+    // שליחת מייל ללקוח אם החזרה אושרה או הושלמה
+    if (
+      (newStatus === "APPROVED" || newStatus === "COMPLETED") &&
+      oldStatus !== "APPROVED" &&
+      oldStatus !== "COMPLETED"
+    ) {
+      // שליחת מייל אישור החזרה (מחוץ ל-transaction כי זה external API)
+      const { sendReturnApprovalEmail } = await import("@/lib/order-email")
+      await sendReturnApprovalEmail(params.id).catch((error) => {
+        console.error("Error sending return approval email:", error)
+        // לא נכשל את כל התהליך אם שליחת המייל נכשלה
+      })
+    }
+
+    // יצירת/עדכון קרדיט בחנות אם נבחר קרדיט בחנות
+    if (
+      returnRequest.refundAmount &&
+      returnRequest.refundAmount > 0 &&
+      returnRequest.refundMethod === "STORE_CREDIT"
+    ) {
+      try {
+        // בדיקה אם יש כבר קרדיט ללקוח
+        const existingCredit = await prisma.storeCredit.findFirst({
+          where: {
+            shopId: returnRequest.shopId,
+            customerId: existingReturn.customerId,
+          },
+        })
+
+        let creditId: string
+        
+        if (existingCredit) {
+          // עדכון יתרה קיימת
+          const updatedCredit = await prisma.storeCredit.update({
+            where: { id: existingCredit.id },
+            data: {
+              balance: existingCredit.balance + returnRequest.refundAmount,
+            },
+          })
+
+          // יצירת transaction
+          await prisma.storeCreditTransaction.create({
+            data: {
+              storeCreditId: existingCredit.id,
+              orderId: existingReturn.orderId,
+              amount: returnRequest.refundAmount,
+              type: "CHARGE",
+            },
+          })
+
+          creditId = updatedCredit.id
+          console.log(`✅ Store credit updated for customer ${existingReturn.customerId}, new balance: ${updatedCredit.balance}`)
+        } else {
+          // יצירת קרדיט חדש
+          const newCredit = await prisma.storeCredit.create({
+            data: {
+              shopId: returnRequest.shopId,
+              customerId: existingReturn.customerId,
+              amount: returnRequest.refundAmount,
+              balance: returnRequest.refundAmount,
+              reason: `החזרה #${returnRequest.id.slice(-6)} - הזמנה ${existingReturn.order.orderNumber}`,
+            },
+          })
+
+          // יצירת transaction
+          await prisma.storeCreditTransaction.create({
+            data: {
+              storeCreditId: newCredit.id,
+              orderId: existingReturn.orderId,
+              amount: returnRequest.refundAmount,
+              type: "CREDIT",
+            },
+          })
+
+          creditId = newCredit.id
+          console.log(`✅ New store credit created for customer ${existingReturn.customerId}, amount: ${returnRequest.refundAmount}`)
+        }
+
+        // יצירת אירוע
+        await prisma.shopEvent.create({
+          data: {
+            shopId: returnRequest.shopId,
+            type: "store_credit.created",
+            entityType: "store_credit",
+            entityId: creditId,
+            payload: {
+              returnId: returnRequest.id,
+              orderId: existingReturn.order.id,
+              amount: returnRequest.refundAmount,
+              customerId: existingReturn.customerId,
+            },
+            userId: session.user.id,
+          },
+        })
+      } catch (error) {
+        console.error("Error creating/updating store credit:", error)
+        // לא נכשל את כל התהליך אם יצירת הקרדיט נכשלה
+      }
+    }
 
     // זיכוי דרך PayPlus (מחוץ ל-transaction כי זה external API)
     if (

@@ -37,6 +37,7 @@ const createProductSchema = z.object({
   seoDescription: z.string().optional(),
   customFields: z.any().optional(),
   badges: z.any().optional(),
+  categories: z.array(z.string()).optional(),
   addonIds: z.array(z.string()).optional(),
 })
 
@@ -122,6 +123,7 @@ export async function GET(req: NextRequest) {
               id: true,
               name: true,
               price: true,
+              comparePrice: true,
             },
           },
           options: {
@@ -236,9 +238,11 @@ export async function POST(req: NextRequest) {
       productData.availableDate = new Date(productData.availableDate)
     }
 
-    // הסר addonIds מה-productData (הוא לא חלק מהמודל של Product)
+    // הסר addonIds ו-categories מה-productData (הם לא חלק מהמודל של Product)
     const addonIds = productData.addonIds
+    const categories = productData.categories
     delete productData.addonIds
+    delete productData.categories
 
     // יצירת מוצר
     const product = await prisma.product.create({
@@ -252,6 +256,26 @@ export async function POST(req: NextRequest) {
         },
       },
     })
+
+    // שמירת קטגוריות (collections)
+    if (categories && Array.isArray(categories) && categories.length > 0) {
+      try {
+        await Promise.all(
+          categories.map(async (collectionId: string) => {
+            await prisma.productCollection.create({
+              data: {
+                productId: product.id,
+                collectionId: collectionId,
+                position: 0,
+              },
+            })
+          })
+        )
+      } catch (error) {
+        console.error("Error creating product collections:", error)
+        // לא נכשיל את כל הבקשה בגלל שגיאה בקטגוריות
+      }
+    }
 
     // עדכון ProductAddons - הוסף את productId ל-productIds של כל addon
     if (addonIds && Array.isArray(addonIds) && addonIds.length > 0) {

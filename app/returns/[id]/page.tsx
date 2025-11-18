@@ -32,6 +32,19 @@ interface Return {
     orderNumber: string
     total?: number
     transactionId?: string | null
+    items?: Array<{
+      id: string
+      name: string
+      product?: {
+        id: string
+        name: string
+        images: string[]
+      }
+      variant?: {
+        id: string
+        name: string
+      }
+    }>
   }
   customerId: string
   customer: {
@@ -291,13 +304,46 @@ export default function ReturnDetailPage() {
                   <Label>פריטים להחזרה</Label>
                   <div className="mt-2 space-y-2">
                     {Array.isArray(returnItem.items) && returnItem.items.length > 0 ? (
-                      returnItem.items.map((item: any, index: number) => (
-                        <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                          <p className="text-sm">
-                            כמות: {item.quantity} | סיבה: {item.reason}
-                          </p>
-                        </div>
-                      ))
+                      returnItem.items.map((item: any, index: number) => {
+                        // מציאת הפריט בהזמנה לפי orderItemId
+                        const orderItem = returnItem.order?.items?.find(
+                          (oi: any) => oi.id === item.orderItemId
+                        )
+                        
+                        return (
+                          <div key={index} className="p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-start gap-3">
+                              {orderItem?.product?.images?.[0] && (
+                                <img
+                                  src={orderItem.product.images[0]}
+                                  alt={orderItem.product.name || "מוצר"}
+                                  className="w-16 h-16 object-cover rounded-lg flex-shrink-0"
+                                />
+                              )}
+                              <div className="flex-1">
+                                <p className="font-medium text-gray-900">
+                                  {orderItem?.product?.name || "מוצר לא נמצא"}
+                                </p>
+                                {orderItem?.variant && (
+                                  <p className="text-sm text-gray-600 mt-0.5">
+                                    {orderItem.variant.name}
+                                  </p>
+                                )}
+                                <div className="mt-2 space-y-1">
+                                  <p className="text-sm text-gray-700">
+                                    <span className="font-medium">כמות:</span> {item.quantity}
+                                  </p>
+                                  {item.reason && (
+                                    <p className="text-sm text-gray-700">
+                                      <span className="font-medium">סיבה:</span> {item.reason}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )
+                      })
                     ) : (
                       <p className="text-sm text-gray-500">אין פרטי פריטים</p>
                     )}
@@ -378,14 +424,14 @@ export default function ReturnDetailPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="ORIGINAL_PAYMENT">שיטת תשלום מקורית</SelectItem>
-                      <SelectItem value="STORE_CREDIT">אשראי בחנות</SelectItem>
+                      <SelectItem value="STORE_CREDIT">קרדיט בחנות</SelectItem>
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-gray-500">
                     {formData.refundMethod === "ORIGINAL_PAYMENT" && returnItem.order?.transactionId
                       ? "הזיכוי יבוצע אוטומטית דרך PayPlus (אם מוגדר)"
                       : formData.refundMethod === "STORE_CREDIT"
-                      ? "הזיכוי יועבר לאשראי בחנות"
+                      ? "הזיכוי יועבר לקרדיט בחנות"
                       : ""}
                   </p>
                 </div>

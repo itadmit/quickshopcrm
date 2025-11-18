@@ -11,7 +11,8 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
-import { Save, Tag, Percent, DollarSign, Calendar, Users, UserCheck } from "lucide-react"
+import { Save, Tag, Percent, DollarSign, Calendar, Users, UserCheck, Search, X, Gift } from "lucide-react"
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 
 export default function NewCouponPage() {
   const router = useRouter()
@@ -20,13 +21,26 @@ export default function NewCouponPage() {
   const [saving, setSaving] = useState(false)
   const [influencers, setInfluencers] = useState<Array<{ id: string; name: string; email: string }>>([])
   
+  // State עבור חיפוש מוצרים למתנה
+  const [giftProductSearch, setGiftProductSearch] = useState("")
+  const [giftProductSearchResults, setGiftProductSearchResults] = useState<Array<{ id: string; name: string; price: number; images?: string[] }>>([])
+  const [searchingGiftProduct, setSearchingGiftProduct] = useState(false)
+  const [giftProductVariants, setGiftProductVariants] = useState<Array<{ id: string; name: string; price: number | null }>>([])
+  
+  // State עבור חיפוש מוצר נדרש
+  const [requiredProductSearch, setRequiredProductSearch] = useState("")
+  const [requiredProductSearchResults, setRequiredProductSearchResults] = useState<Array<{ id: string; name: string; price: number; images?: string[] }>>([])
+  const [searchingRequiredProduct, setSearchingRequiredProduct] = useState(false)
+  
   const [formData, setFormData] = useState({
     code: "",
-    type: "PERCENTAGE" as "PERCENTAGE" | "FIXED" | "BUY_X_GET_Y" | "VOLUME_DISCOUNT" | "NTH_ITEM_DISCOUNT",
+    type: "PERCENTAGE" as "PERCENTAGE" | "FIXED" | "BUY_X_GET_Y" | "BUY_X_PAY_Y" | "VOLUME_DISCOUNT" | "NTH_ITEM_DISCOUNT",
     value: "",
     buyQuantity: "",
     getQuantity: "",
     getDiscount: "",
+    payQuantity: "", // עבור BUY_X_PAY_Y
+    payAmount: "", // עבור BUY_X_PAY_Y: סכום קבוע לשלם
     nthItem: "",
     volumeRules: [] as Array<{ quantity: number; discount: number }>,
     minOrder: "",
@@ -38,6 +52,15 @@ export default function NewCouponPage() {
     isActive: true,
     canCombine: false,
     influencerId: "",
+    // שדות להפעלת מתנה אוטומטית
+    giftProductId: "",
+    giftVariantId: "",
+    giftCondition: "MIN_ORDER_AMOUNT" as "MIN_ORDER_AMOUNT" | "SPECIFIC_PRODUCT",
+    giftConditionProductId: "",
+    giftConditionAmount: "",
+    // שדות להפעלת הנחת לקוח רשום
+    enableCustomerDiscount: false,
+    customerDiscountPercent: "",
   })
 
   // Fetch influencers on mount
@@ -55,6 +78,76 @@ export default function NewCouponPage() {
     }
     fetchInfluencers()
   }, [])
+
+  // חיפוש מוצר מתנה
+  const searchGiftProduct = async (query: string) => {
+    if (!selectedShop || !query.trim()) {
+      setGiftProductSearchResults([])
+      return
+    }
+
+    setSearchingGiftProduct(true)
+    try {
+      const response = await fetch(
+        `/api/products?shopId=${selectedShop.id}&search=${encodeURIComponent(query)}&status=PUBLISHED&limit=20`
+      )
+      if (response.ok) {
+        const data = await response.json()
+        setGiftProductSearchResults(data.products || [])
+      }
+    } catch (error) {
+      console.error("Error searching gift products:", error)
+    } finally {
+      setSearchingGiftProduct(false)
+    }
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (giftProductSearch) {
+        searchGiftProduct(giftProductSearch)
+      } else {
+        setGiftProductSearchResults([])
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [giftProductSearch, selectedShop])
+
+  // חיפוש מוצר נדרש
+  const searchRequiredProduct = async (query: string) => {
+    if (!selectedShop || !query.trim()) {
+      setRequiredProductSearchResults([])
+      return
+    }
+
+    setSearchingRequiredProduct(true)
+    try {
+      const response = await fetch(
+        `/api/products?shopId=${selectedShop.id}&search=${encodeURIComponent(query)}&status=PUBLISHED&limit=20`
+      )
+      if (response.ok) {
+        const data = await response.json()
+        setRequiredProductSearchResults(data.products || [])
+      }
+    } catch (error) {
+      console.error("Error searching required products:", error)
+    } finally {
+      setSearchingRequiredProduct(false)
+    }
+  }
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (requiredProductSearch) {
+        searchRequiredProduct(requiredProductSearch)
+      } else {
+        setRequiredProductSearchResults([])
+      }
+    }, 300)
+
+    return () => clearTimeout(timer)
+  }, [requiredProductSearch, selectedShop])
 
   const handleSubmit = async () => {
     if (!selectedShop) {
@@ -94,6 +187,42 @@ export default function NewCouponPage() {
         })
         return
       }
+    } else if (formData.type === "BUY_X_PAY_Y") {
+      if (!formData.buyQuantity) {
+        toast({
+          title: "שגיאה",
+          description: "יש למלא את מספר הפריטים לקנות",
+          variant: "destructive",
+        })
+        return
+      }
+      // צריך או payAmount או payQuantity
+      if (!formData.payAmount && !formData.payQuantity) {
+        toast({
+          title: "שגיאה",
+          description: "יש למלא או 'שלם על (Y)' או 'סכום קבוע לשלם'",
+          variant: "destructive",
+        })
+        return
+      }
+      // אם יש payQuantity, צריך לבדוק שהוא קטן מ-buyQuantity
+      if (formData.payQuantity && parseInt(formData.payQuantity) >= parseInt(formData.buyQuantity)) {
+        toast({
+          title: "שגיאה",
+          description: "מספר הפריטים לשלם חייב להיות קטן ממספר הפריטים לקנות",
+          variant: "destructive",
+        })
+        return
+      }
+      // אם יש payAmount, צריך לבדוק שהוא חיובי
+      if (formData.payAmount && parseFloat(formData.payAmount) <= 0) {
+        toast({
+          title: "שגיאה",
+          description: "סכום קבוע לשלם חייב להיות חיובי",
+          variant: "destructive",
+        })
+        return
+      }
     } else if (formData.type === "NTH_ITEM_DISCOUNT") {
       if (!formData.nthItem || !formData.value) {
         toast({
@@ -112,10 +241,12 @@ export default function NewCouponPage() {
         shopId: selectedShop.id,
         code: formData.code || undefined,
         type: formData.type,
-        value: formData.value ? parseFloat(formData.value) : (formData.type === "BUY_X_GET_Y" ? parseFloat(formData.buyQuantity || "0") : 0),
+        value: formData.value ? parseFloat(formData.value) : (formData.type === "BUY_X_GET_Y" || formData.type === "BUY_X_PAY_Y" ? parseFloat(formData.buyQuantity || "0") : 0),
         buyQuantity: formData.buyQuantity ? parseInt(formData.buyQuantity) : undefined,
         getQuantity: formData.getQuantity ? parseInt(formData.getQuantity) : undefined,
         getDiscount: formData.getDiscount ? parseFloat(formData.getDiscount) : undefined,
+        payQuantity: formData.payQuantity ? parseInt(formData.payQuantity) : undefined,
+        payAmount: formData.payAmount ? parseFloat(formData.payAmount) : undefined,
         nthItem: formData.nthItem ? parseInt(formData.nthItem) : undefined,
         volumeRules: formData.volumeRules && formData.volumeRules.length > 0 ? formData.volumeRules : undefined,
         minOrder: formData.minOrder ? parseFloat(formData.minOrder) : undefined,
@@ -130,6 +261,15 @@ export default function NewCouponPage() {
         applicableCustomers: [],
         canCombine: formData.canCombine,
         influencerId: formData.influencerId || undefined,
+        // שדות להפעלת מתנה אוטומטית
+        giftProductId: formData.giftProductId || undefined,
+        giftVariantId: formData.giftVariantId || undefined,
+        giftCondition: formData.giftProductId ? formData.giftCondition : undefined,
+        giftConditionProductId: formData.giftConditionProductId || undefined,
+        giftConditionAmount: formData.giftConditionAmount ? parseFloat(formData.giftConditionAmount) : undefined,
+        // שדות להפעלת הנחת לקוח רשום
+        enableCustomerDiscount: formData.enableCustomerDiscount,
+        customerDiscountPercent: formData.customerDiscountPercent ? parseFloat(formData.customerDiscountPercent) : undefined,
       }
 
       const response = await fetch("/api/coupons", {
@@ -254,6 +394,7 @@ export default function NewCouponPage() {
                       <SelectItem value="PERCENTAGE">אחוז הנחה</SelectItem>
                       <SelectItem value="FIXED">סכום קבוע</SelectItem>
                       <SelectItem value="BUY_X_GET_Y">קנה X קבל Y</SelectItem>
+                      <SelectItem value="BUY_X_PAY_Y">קנה X שלם על Y</SelectItem>
                       <SelectItem value="VOLUME_DISCOUNT">הנחת כמות</SelectItem>
                       <SelectItem value="NTH_ITEM_DISCOUNT">הנחה על מוצר N</SelectItem>
                     </SelectContent>
@@ -341,6 +482,73 @@ export default function NewCouponPage() {
                     <p className="text-sm text-gray-600">
                       לדוגמה: קנה 2 קבל 1 בחינם = קנה 2, קבל 1, הנחה 100%
                     </p>
+                  </div>
+                )}
+
+                {/* BUY_X_PAY_Y */}
+                {formData.type === "BUY_X_PAY_Y" && (
+                  <div className="space-y-4 p-4 bg-purple-50 rounded-lg">
+                    <div className="space-y-2">
+                      <Label htmlFor="buyQuantity">קנה (X) *</Label>
+                      <Input
+                        id="buyQuantity"
+                        type="number"
+                        value={formData.buyQuantity}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, buyQuantity: e.target.value }))}
+                        placeholder="2"
+                      />
+                    </div>
+                    
+                    <div className="space-y-4 border-t pt-4">
+                      <p className="text-sm font-medium text-gray-700">בחר אחת מהאפשרויות:</p>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="payQuantity">אפשרות 1: שלם על (Y) פריטים</Label>
+                        <Input
+                          id="payQuantity"
+                          type="number"
+                          value={formData.payQuantity}
+                          onChange={(e) => {
+                            setFormData((prev) => ({ 
+                              ...prev, 
+                              payQuantity: e.target.value,
+                              payAmount: "" // נקה את payAmount אם מזינים payQuantity
+                            }))
+                          }}
+                          placeholder="1"
+                        />
+                        <p className="text-xs text-gray-500">
+                          לדוגמה: קנה 2, שלם על 1 = הנחה של 100% על הפריט השני
+                        </p>
+                      </div>
+                      
+                      <div className="text-center text-sm text-gray-400">או</div>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="payAmount">אפשרות 2: סכום קבוע לשלם (₪)</Label>
+                        <div className="relative">
+                          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">₪</span>
+                          <Input
+                            id="payAmount"
+                            type="number"
+                            step="0.01"
+                            value={formData.payAmount}
+                            onChange={(e) => {
+                              setFormData((prev) => ({ 
+                                ...prev, 
+                                payAmount: e.target.value,
+                                payQuantity: "" // נקה את payQuantity אם מזינים payAmount
+                              }))
+                            }}
+                            placeholder="55"
+                            className="pr-10"
+                          />
+                        </div>
+                        <p className="text-xs text-gray-500">
+                          לדוגמה: קנה 2 פריטים ב-55₪ = לא משנה מה המחיר של הפריטים, ישלם 55₪ על 2 פריטים
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -474,6 +682,291 @@ export default function NewCouponPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Gift Product */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Gift className="w-5 h-5" />
+                  מתנה אוטומטית
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>הפעל מתנה אוטומטית</Label>
+                  <p className="text-sm text-gray-500">
+                    מוצר מתנה יתווסף אוטומטית לעגלה כאשר הקופון מוחל
+                  </p>
+                </div>
+
+                {/* בחירת מוצר מתנה */}
+                <div className="space-y-2">
+                  <Label htmlFor="giftProductId">מוצר מתנה (אופציונלי)</Label>
+                  
+                  {/* שדה חיפוש */}
+                  <div className="relative">
+                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      placeholder="חפש מוצר מתנה..."
+                      value={giftProductSearch}
+                      onChange={(e) => setGiftProductSearch(e.target.value)}
+                      className="pr-10"
+                      onFocus={() => {
+                        if (giftProductSearch && giftProductSearchResults.length === 0) {
+                          searchGiftProduct(giftProductSearch)
+                        }
+                      }}
+                    />
+                  </div>
+
+                  {/* רשימת תוצאות חיפוש */}
+                  {giftProductSearch && (
+                    <div className="border rounded-lg max-h-60 overflow-y-auto">
+                      {searchingGiftProduct ? (
+                        <div className="p-4 text-center text-sm text-gray-500">מחפש...</div>
+                      ) : giftProductSearchResults.length > 0 ? (
+                        <div className="p-2 space-y-1">
+                          {giftProductSearchResults.map((product) => (
+                            <div
+                              key={product.id}
+                              onClick={() => {
+                                setFormData((prev) => ({ ...prev, giftProductId: product.id, giftVariantId: "" }))
+                                setGiftProductSearch("")
+                                setGiftProductSearchResults([])
+                                // טעינת וריאציות של המוצר
+                                if (selectedShop) {
+                                  fetch(`/api/products/${product.id}`)
+                                    .then(res => res.json())
+                                    .then(data => setGiftProductVariants(data.variants || []))
+                                    .catch(err => console.error("Error fetching product variants:", err))
+                                }
+                              }}
+                              className={`p-2 rounded cursor-pointer hover:bg-gray-100 transition-colors flex items-center gap-3 ${
+                                formData.giftProductId === product.id ? "bg-blue-50 border border-blue-200" : ""
+                              }`}
+                            >
+                              {product.images && product.images.length > 0 && (
+                                <img 
+                                  src={product.images[0]} 
+                                  alt={product.name}
+                                  className="w-12 h-12 object-cover rounded"
+                                />
+                              )}
+                              <div className="flex-1">
+                                <div className="font-medium text-sm">{product.name}</div>
+                                <div className="text-xs text-gray-500">₪{product.price}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-4 text-center text-sm text-gray-500">לא נמצאו מוצרים</div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* מוצר נבחר */}
+                  {formData.giftProductId && !giftProductSearch && (
+                    <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-center gap-3 flex-1">
+                        {(() => {
+                          const selectedProduct = giftProductSearchResults.find(p => p.id === formData.giftProductId)
+                          return selectedProduct?.images && selectedProduct.images.length > 0 && (
+                            <img 
+                              src={selectedProduct.images[0]} 
+                              alt={selectedProduct.name}
+                              className="w-12 h-12 object-cover rounded"
+                            />
+                          )
+                        })()}
+                        <div>
+                          <div className="font-medium text-sm">
+                            {giftProductSearchResults.find(p => p.id === formData.giftProductId)?.name || "מוצר נבחר"}
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            ₪{giftProductSearchResults.find(p => p.id === formData.giftProductId)?.price || 0}
+                          </div>
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setFormData((prev) => ({ ...prev, giftProductId: "", giftVariantId: "" }))
+                          setGiftProductVariants([])
+                        }}
+                        className="text-red-600 hover:text-red-700"
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                </div>
+
+                {/* בחירת וריאציה אם יש */}
+                {giftProductVariants.length > 0 && (
+                  <div className="space-y-2">
+                    <Label htmlFor="giftVariantId">וריאציה (אופציונלי)</Label>
+                    <Select
+                      value={formData.giftVariantId || undefined}
+                      onValueChange={(value) => setFormData((prev) => ({ ...prev, giftVariantId: value || "" }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="בחר וריאציה (אופציונלי)" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {giftProductVariants.map((variant) => (
+                          <SelectItem key={variant.id} value={variant.id}>
+                            {variant.name} {variant.price ? `(${variant.price}₪)` : ""}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* תנאי המתנה */}
+                {formData.giftProductId && (
+                  <>
+                    <div className="space-y-2">
+                      <Label>תנאי לקבלת המתנה *</Label>
+                      <RadioGroup
+                        value={formData.giftCondition}
+                        onValueChange={(value) => setFormData((prev) => ({ ...prev, giftCondition: value as "MIN_ORDER_AMOUNT" | "SPECIFIC_PRODUCT" }))}
+                      >
+                        <div className="flex items-center gap-3 flex-row-reverse">
+                          <Label htmlFor="min-amount" className="cursor-pointer flex-1 text-right">קנייה מעל סכום</Label>
+                          <RadioGroupItem value="MIN_ORDER_AMOUNT" id="min-amount" />
+                        </div>
+                        <div className="flex items-center gap-3 flex-row-reverse">
+                          <Label htmlFor="specific-product" className="cursor-pointer flex-1 text-right">קניית מוצר מסוים</Label>
+                          <RadioGroupItem value="SPECIFIC_PRODUCT" id="specific-product" />
+                        </div>
+                      </RadioGroup>
+                    </div>
+
+                    {/* סכום מינימלי */}
+                    {formData.giftCondition === "MIN_ORDER_AMOUNT" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="giftConditionAmount">סכום מינימלי (₪) *</Label>
+                        <Input
+                          id="giftConditionAmount"
+                          type="number"
+                          step="0.01"
+                          value={formData.giftConditionAmount}
+                          onChange={(e) => setFormData((prev) => ({ ...prev, giftConditionAmount: e.target.value }))}
+                          placeholder="100"
+                        />
+                      </div>
+                    )}
+
+                    {/* מוצר מסוים */}
+                    {formData.giftCondition === "SPECIFIC_PRODUCT" && (
+                      <div className="space-y-2">
+                        <Label htmlFor="giftConditionProductId">מוצר נדרש *</Label>
+                        
+                        {/* שדה חיפוש */}
+                        <div className="relative">
+                          <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                          <Input
+                            placeholder="חפש מוצר נדרש..."
+                            value={requiredProductSearch}
+                            onChange={(e) => setRequiredProductSearch(e.target.value)}
+                            className="pr-10"
+                            onFocus={() => {
+                              if (requiredProductSearch && requiredProductSearchResults.length === 0) {
+                                searchRequiredProduct(requiredProductSearch)
+                              }
+                            }}
+                          />
+                        </div>
+
+                        {/* רשימת תוצאות חיפוש */}
+                        {requiredProductSearch && (
+                          <div className="border rounded-lg max-h-60 overflow-y-auto">
+                            {searchingRequiredProduct ? (
+                              <div className="p-4 text-center text-sm text-gray-500">מחפש...</div>
+                            ) : requiredProductSearchResults.length > 0 ? (
+                              <div className="p-2 space-y-1">
+                                {requiredProductSearchResults
+                                  .filter(p => p.id !== formData.giftProductId)
+                                  .map((product) => (
+                                    <div
+                                      key={product.id}
+                                      onClick={() => {
+                                        setFormData((prev) => ({ ...prev, giftConditionProductId: product.id }))
+                                        setRequiredProductSearch("")
+                                        setRequiredProductSearchResults([])
+                                      }}
+                                      className={`p-2 rounded cursor-pointer hover:bg-gray-100 transition-colors flex items-center gap-3 ${
+                                        formData.giftConditionProductId === product.id ? "bg-blue-50 border border-blue-200" : ""
+                                      }`}
+                                    >
+                                      {product.images && product.images.length > 0 && (
+                                        <img 
+                                          src={product.images[0]} 
+                                          alt={product.name}
+                                          className="w-12 h-12 object-cover rounded"
+                                        />
+                                      )}
+                                      <div className="flex-1">
+                                        <div className="font-medium text-sm">{product.name}</div>
+                                        <div className="text-xs text-gray-500">₪{product.price}</div>
+                                      </div>
+                                    </div>
+                                  ))}
+                              </div>
+                            ) : (
+                              <div className="p-4 text-center text-sm text-gray-500">לא נמצאו מוצרים</div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* מוצר נבחר */}
+                        {formData.giftConditionProductId && !requiredProductSearch && (
+                          <div className="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <div className="flex items-center gap-3 flex-1">
+                              {(() => {
+                                const selectedProduct = requiredProductSearchResults.find(p => p.id === formData.giftConditionProductId)
+                                return selectedProduct?.images && selectedProduct.images.length > 0 && (
+                                  <img 
+                                    src={selectedProduct.images[0]} 
+                                    alt={selectedProduct.name}
+                                    className="w-12 h-12 object-cover rounded"
+                                  />
+                                )
+                              })()}
+                              <div>
+                                <div className="font-medium text-sm">
+                                  {requiredProductSearchResults.find(p => p.id === formData.giftConditionProductId)?.name || "מוצר נבחר"}
+                                </div>
+                                <div className="text-xs text-gray-600">
+                                  ₪{requiredProductSearchResults.find(p => p.id === formData.giftConditionProductId)?.price || 0}
+                                </div>
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setFormData((prev) => ({ ...prev, giftConditionProductId: "" }))
+                                setRequiredProductSearch("")
+                                setRequiredProductSearchResults([])
+                              }}
+                              className="text-red-600 hover:text-red-700"
+                            >
+                              <X className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </div>
 
           {/* Sidebar */}
@@ -545,6 +1038,53 @@ export default function NewCouponPage() {
                     ניתן לשילוב עם הנחות אחרות
                   </Label>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Customer Discount */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Percent className="w-5 h-5" />
+                  הנחת לקוח רשום
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center space-x-2 space-x-reverse">
+                  <Checkbox
+                    id="enableCustomerDiscount"
+                    checked={formData.enableCustomerDiscount}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({ ...prev, enableCustomerDiscount: checked as boolean }))
+                    }
+                  />
+                  <Label htmlFor="enableCustomerDiscount" className="cursor-pointer">
+                    הפעל הנחה אוטומטית ללקוח רשום
+                  </Label>
+                </div>
+
+                {formData.enableCustomerDiscount && (
+                  <div className="space-y-2">
+                    <Label htmlFor="customerDiscountPercent">אחוז הנחה ללקוח רשום (%)</Label>
+                    <div className="relative">
+                      <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500">%</span>
+                      <Input
+                        id="customerDiscountPercent"
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        max="100"
+                        value={formData.customerDiscountPercent}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, customerDiscountPercent: e.target.value }))}
+                        placeholder="5"
+                        className="pr-10"
+                      />
+                    </div>
+                    <p className="text-sm text-gray-500">
+                      לדוגמה: 5 = לקוח רשום יקבל 5% הנחה נוספת
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

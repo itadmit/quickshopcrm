@@ -201,7 +201,7 @@ export default function EditProductPage() {
           seoTitle: data.seoTitle || "",
           seoDescription: data.seoDescription || "",
           tags: data.tags?.map((t: any) => t.name) || [],
-          categories: data.categories?.map((c: any) => c.category.id) || [],
+          categories: data.collections?.map((c: any) => c.collectionId) || [],
           badges: data.badges || [],
           pageTemplateId: data.pageTemplateId || "",
         })
@@ -379,9 +379,6 @@ export default function EditProductPage() {
         badges: formData.badges.length > 0 ? formData.badges : null,
         addonIds: productAddonIds,
         pageTemplateId: formData.pageTemplateId || null,
-        hasVariants,
-        options: hasVariants ? options : [],
-        variants: hasVariants ? variants : [],
       }
 
       const response = await fetch(`/api/products/${product.id}`, {

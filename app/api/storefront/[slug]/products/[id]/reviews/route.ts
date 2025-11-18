@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { isReviewsPluginActive, getReviewsPluginConfig } from "@/lib/plugins/reviews-helper"
 
 // GET - קבלת ביקורות למוצר
 export async function GET(
@@ -58,6 +59,8 @@ export async function GET(
           title: true,
           comment: true,
           images: true,
+          videos: true,
+          tags: true,
           isVerified: true,
           helpfulCount: true,
           createdAt: true,
@@ -116,7 +119,7 @@ export async function POST(
 ) {
   try {
     const body = await req.json()
-    const { rating, title, comment, images, customerId } = body
+    const { rating, title, comment, images, videos, tags, customerId } = body
 
     if (!rating || rating < 1 || rating > 5) {
       return NextResponse.json(
@@ -137,6 +140,16 @@ export async function POST(
       return NextResponse.json({ error: "Shop not found" }, { status: 404 })
     }
 
+    // בדיקה אם תוסף הביקורות פעיל
+    const isActive = await isReviewsPluginActive(shop.id, shop.companyId)
+    
+    if (!isActive) {
+      return NextResponse.json({ error: "Reviews plugin is not active" }, { status: 403 })
+    }
+
+    // קבלת הגדרות התוסף
+    const config = await getReviewsPluginConfig(shop.id, shop.companyId)
+
     // בדיקה שהמוצר קיים - נסה לפי ID או slug
     const product = await prisma.product.findFirst({
       where: {
@@ -153,7 +166,60 @@ export async function POST(
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
 
-    // יצירת ביקורת (ממתינה לאישור)
+    // בדיקת הגדרות התוסף
+    const allowVideos = config.allowVideos !== false
+    const allowImages = config.allowImages !== false
+    const maxImages = config.maxImages || 5
+    const maxVideos = config.maxVideos || 1
+
+    // בדיקת מגבלות
+    if (videos && videos.length > 0 && (!allowVideos || videos.length > maxVideos)) {
+      return NextResponse.json(
+        { error: `Maximum ${maxVideos} video${maxVideos > 1 ? 's' : ''} allowed` },
+        { status: 400 }
+      )
+    }
+
+    if (images && images.length > 0 && (!allowImages || images.length > maxImages)) {
+      return NextResponse.json(
+        { error: `Maximum ${maxImages} image${maxImages > 1 ? 's' : ''} allowed` },
+        { status: 400 }
+      )
+    }
+
+    // אימות רכישה אוטומטי אם מופעל
+    let verifiedOrderId: string | null = null
+    let isVerified = false
+
+    if (config.verifyPurchase && customerId) {
+      const order = await prisma.order.findFirst({
+        where: {
+          shopId: shop.id,
+          customerId: customerId,
+          status: {
+            in: ["COMPLETED", "FULFILLED"],
+          },
+          items: {
+            some: {
+              productId: product.id,
+            },
+          },
+        },
+        select: { id: true },
+        orderBy: { createdAt: "desc" },
+      })
+
+      if (order) {
+        verifiedOrderId = order.id
+        isVerified = true
+      }
+    } else if (customerId) {
+      // אם אין אימות רכישה אבל יש customerId, נסמן כלקוח רשום
+      isVerified = true
+    }
+
+    // יצירת ביקורת (ממתינה לאישור אם requireApproval = true)
+    const requireApproval = config.requireApproval !== false
     const review = await prisma.review.create({
       data: {
         shopId: shop.id,
@@ -162,9 +228,12 @@ export async function POST(
         rating,
         title: title || null,
         comment: comment || null,
-        images: images || [],
-        isApproved: false, // דורש אישור מנהל
-        isVerified: customerId ? true : false, // אם יש customerId, זה לקוח רשום
+        images: allowImages ? (images || []) : [],
+        videos: allowVideos ? (videos || []) : [],
+        tags: tags || [],
+        isApproved: !requireApproval, // אם לא דורש אישור, מאשרים אוטומטית
+        isVerified,
+        verifiedOrderId,
       },
     })
 

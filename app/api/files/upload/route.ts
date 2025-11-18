@@ -20,8 +20,14 @@ async function convertToWebP(buffer: Buffer, mimeType: string): Promise<{ buffer
   // בדיקה אם זה קובץ תמונה
   const isImage = mimeType?.startsWith('image/')
   
+  // אם זה וידאו או קובץ אחר, נחזיר את הקובץ כמו שהוא
   if (!isImage) {
-    // אם זה לא תמונה, נחזיר את הקובץ כמו שהוא
+    if (mimeType?.startsWith('video/')) {
+      // עבור וידאו, נשמור את הסיומת המקורית
+      const videoExt = mimeType.split('/')[1] || 'mp4'
+      return { buffer, extension: videoExt }
+    }
+    // אם זה לא תמונה ולא וידאו, נחזיר את הקובץ כמו שהוא
     const ext = mimeType === 'application/pdf' ? 'pdf' : 'file'
     return { buffer, extension: ext }
   }
@@ -175,6 +181,18 @@ export async function POST(req: NextRequest) {
             // עבור navigations - entityId הוא item.id, אבל אנחנו צריכים את ה-shopId
             // נשתמש ב-shopId שנשלח ישירות
             targetShopId = shopId
+          } else if (entityType === 'reviews') {
+            // עבור reviews - entityId הוא productId, נמצא את ה-shopId דרך המוצר
+            const product = await prisma.product.findFirst({
+              where: {
+                OR: [
+                  { id: entityId },
+                  { slug: entityId }
+                ]
+              },
+              select: { shopId: true },
+            })
+            targetShopId = product?.shopId || null
           }
         } else {
           // entity חדש - נשתמש ב-shopId שנשלח
@@ -199,7 +217,10 @@ export async function POST(req: NextRequest) {
       
       // העלאה ל-S3
       const s3Key = generateS3Key(shopSlug, finalEntityType, finalIdentifier, sanitizedFileName)
-      const finalMimeType = extension === 'webp' ? 'image/webp' : (file.type || 'application/octet-stream')
+      // שמירת mimeType המקורי עבור וידאו, או WebP עבור תמונות
+      const finalMimeType = extension === 'webp' 
+        ? 'image/webp' 
+        : (file.type || 'application/octet-stream')
       filePath = await uploadToS3(buffer, s3Key, finalMimeType)
     } else {
       // שמירה מקומית (fallback)
@@ -217,7 +238,10 @@ export async function POST(req: NextRequest) {
     }
 
     // שמירת הקובץ במסד הנתונים
-    const finalMimeType = extension === 'webp' ? 'image/webp' : (file.type || null)
+    // שמירת mimeType המקורי עבור וידאו, או WebP עבור תמונות
+    const finalMimeType = extension === 'webp' 
+      ? 'image/webp' 
+      : (file.type || null)
     const fileRecord = await prisma.file.create({
       data: {
         companyId: session.user.companyId,

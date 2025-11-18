@@ -104,8 +104,8 @@ export async function GET(req: NextRequest) {
     let end: Date | null = null
     
     if (needsDates) {
-      start = new Date(startDate)
-      end = new Date(endDate)
+      start = new Date(startDate || Date.now())
+      end = new Date(endDate || Date.now())
       
       // בדיקה שהתאריכים תקינים
       if (isNaN(start.getTime()) || isNaN(end.getTime())) {
@@ -838,7 +838,7 @@ async function getShippingReport(
     where: {
       shopId,
       createdAt: { gte: start, lte: end },
-      fulfillmentStatus: { in: ["SHIPPED", "FULFILLED", "PARTIAL"] },
+      fulfillmentStatus: { in: ["FULFILLED", "PARTIAL"] },
     },
     include: {
       customer: true,

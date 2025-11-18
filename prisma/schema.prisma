@@ -51,6 +51,8 @@ model User {
   invitation      Invitation?      @relation("InvitedUser")
   notifications   Notification[]
   permissions     UserPermission[]
+  reviewReplies   ReviewReply[]
+  productAnswers  ProductAnswer[]
   company         Company          @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
   @@index([companyId])
@@ -251,6 +253,10 @@ model Shop {
   products                 Product[]
   Return                   Return[]
   Review                   Review[]
+  reviewReplies            ReviewReply[]
+  productQuestions         ProductQuestion[]
+  productAnswers           ProductAnswer[]
+  reviewTagDefinitions     ReviewTagDefinition[]
   events                   ShopEvent[]
   company                  Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
   StoreCredit              StoreCredit[]
@@ -315,6 +321,7 @@ model Product {
   variants             ProductVariant[]
   shop                 Shop                 @relation(fields: [shopId], references: [id], onDelete: Cascade)
   reviews              Review[]
+  productQuestions     ProductQuestion[]
   wishlistItems        WishlistItem[]
   customFieldValues    CustomFieldValue[]
   pageTemplate         ProductPageTemplate? @relation(fields: [pageTemplateId], references: [id], onDelete: SetNull)
@@ -465,33 +472,36 @@ model ProductCollection {
 }
 
 model Customer {
-  id            String         @id @default(cuid())
-  shopId        String
-  email         String
-  password      String?
-  firstName     String?
-  lastName      String?
-  phone         String?
-  dateOfBirth   DateTime?
-  addresses     Json?
-  totalSpent    Float          @default(0)
-  orderCount    Int            @default(0)
-  tier          CustomerTier   @default(REGULAR)
-  tags          String[]
-  notes         String?
-  isSubscribed  Boolean        @default(false)
-  emailVerified Boolean        @default(false)
-  lastLoginAt   DateTime?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  blogComments  BlogComment[]
-  carts         Cart[]
-  shop          Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  orders        Order[]
-  Return        Return[]
-  reviews       Review[]
-  storeCredits  StoreCredit[]
-  wishlistItems WishlistItem[]
+  id               String            @id @default(cuid())
+  shopId           String
+  email            String
+  password         String?
+  firstName        String?
+  lastName         String?
+  phone            String?
+  dateOfBirth      DateTime?
+  addresses        Json?
+  totalSpent       Float             @default(0)
+  orderCount       Int               @default(0)
+  tier             CustomerTier      @default(REGULAR)
+  tags             String[]
+  notes            String?
+  isSubscribed     Boolean           @default(false)
+  emailVerified    Boolean           @default(false)
+  lastLoginAt      DateTime?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  blogComments     BlogComment[]
+  carts            Cart[]
+  shop             Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orders           Order[]
+  Return           Return[]
+  reviews          Review[]
+  reviewReplies    ReviewReply[]
+  productQuestions ProductQuestion[]
+  productAnswers   ProductAnswer[]
+  storeCredits     StoreCredit[]
+  wishlistItems    WishlistItem[]
 
   @@index([shopId])
   @@index([email])
@@ -499,51 +509,51 @@ model Customer {
 }
 
 model Order {
-  id                      String                   @id @default(cuid())
-  shopId                  String
-  orderNumber             String
-  customerId              String?
-  status                  OrderStatus              @default(PENDING)
-  paymentStatus           PaymentStatus            @default(PENDING)
-  fulfillmentStatus       FulfillmentStatus        @default(UNFULFILLED)
-  customerName            String
-  customerEmail           String
-  customerPhone           String?
-  shippingAddress         Json
-  billingAddress          Json?
-  subtotal                Float
-  shipping                Float
-  tax                     Float
-  discount                Float                    @default(0)
-  total                   Float
-  paymentMethod           String?
-  transactionId           String?
-  paidAt                  DateTime?
-  shippingMethod          String?
-  trackingNumber          String?
-  shippedAt               DateTime?
-  deliveredAt             DateTime?
-  notes                   String?
-  couponCode              String?
-  createdAt               DateTime                 @default(now())
-  updatedAt               DateTime                 @updatedAt
-  customFields            Json?
-  paymentLink             String?
-  
+  id                String            @id @default(cuid())
+  shopId            String
+  orderNumber       String
+  customerId        String?
+  status            OrderStatus       @default(PENDING)
+  paymentStatus     PaymentStatus     @default(PENDING)
+  fulfillmentStatus FulfillmentStatus @default(UNFULFILLED)
+  customerName      String
+  customerEmail     String
+  customerPhone     String?
+  shippingAddress   Json
+  billingAddress    Json?
+  subtotal          Float
+  shipping          Float
+  tax               Float
+  discount          Float             @default(0)
+  total             Float
+  paymentMethod     String?
+  transactionId     String?
+  paidAt            DateTime?
+  shippingMethod    String?
+  trackingNumber    String?
+  shippedAt         DateTime?
+  deliveredAt       DateTime?
+  notes             String?
+  couponCode        String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  customFields      Json?
+  paymentLink       String?
+
   // מידע על משלוח לחברת משלוחים
-  shippingProvider         String?   // שם החברה (focus, dhl, וכו')
-  shippingProviderId       String?   // ID של האינטגרציה
-  shippingTrackingNumber   String?   // מספר מעקב מהחברה
-  shippingLabelUrl         String?   // URL לתווית משלוח (אם שמור ב-S3)
-  shippingLabelS3Key       String?   // S3 key לתווית (אם שמור ב-S3)
-  shippingSentAt           DateTime? // מתי נשלח לחברת המשלוחים
-  shippingStatus           String?   // סטטוס המשלוח (pending, sent, in_transit, delivered, cancelled, failed)
-  shippingStatusUpdatedAt  DateTime? // מתי עודכן הסטטוס לאחרונה
-  shippingData             Json?     // מידע נוסף מהחברה (shipment_id, response, וכו')
-  shippingError            String?   // שגיאה אחרונה (אם נכשל)
-  shippingRetryCount       Int       @default(0) // מספר ניסיונות שליחה
-  shippingLastRetryAt      DateTime? // מתי ניסו לשלוח בפעם האחרונה
-  
+  shippingProvider        String? // שם החברה (focus, dhl, וכו')
+  shippingProviderId      String? // ID של האינטגרציה
+  shippingTrackingNumber  String? // מספר מעקב מהחברה
+  shippingLabelUrl        String? // URL לתווית משלוח (אם שמור ב-S3)
+  shippingLabelS3Key      String? // S3 key לתווית (אם שמור ב-S3)
+  shippingSentAt          DateTime? // מתי נשלח לחברת המשלוחים
+  shippingStatus          String? // סטטוס המשלוח (pending, sent, in_transit, delivered, cancelled, failed)
+  shippingStatusUpdatedAt DateTime? // מתי עודכן הסטטוס לאחרונה
+  shippingData            Json? // מידע נוסף מהחברה (shipment_id, response, וכו')
+  shippingError           String? // שגיאה אחרונה (אם נכשל)
+  shippingRetryCount      Int       @default(0) // מספר ניסיונות שליחה
+  shippingLastRetryAt     DateTime? // מתי ניסו לשלוח בפעם האחרונה
+
   giftCardTransactions    GiftCardTransaction[]
   items                   OrderItem[]
   customer                Customer?                @relation(fields: [customerId], references: [id])
@@ -551,6 +561,7 @@ model Order {
   returns                 Return[]
   storeCreditTransactions StoreCreditTransaction[]
   shippingLogs            ShippingLog[]
+  verifiedReviews         Review[]
 
   @@unique([shopId, orderNumber])
   @@index([shopId])
@@ -583,19 +594,19 @@ model OrderItem {
 }
 
 model ShippingLog {
-  id              String   @id @default(cuid())
-  orderId         String
-  provider        String   // focus, dhl, וכו'
-  action          String   // create, cancel, get_label, get_status
-  status          String   // success, failed, pending
-  requestData     Json?    // מה שנשלח
-  responseData    Json?    // מה שהתקבל
-  error           String?  // שגיאה (אם נכשל)
-  durationMs      Int?     // כמה זמן לקח
-  retryAttempt    Int      @default(0) // מספר ניסיון
-  createdAt       DateTime @default(now())
-  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  
+  id           String   @id @default(cuid())
+  orderId      String
+  provider     String // focus, dhl, וכו'
+  action       String // create, cancel, get_label, get_status
+  status       String // success, failed, pending
+  requestData  Json? // מה שנשלח
+  responseData Json? // מה שהתקבל
+  error        String? // שגיאה (אם נכשל)
+  durationMs   Int? // כמה זמן לקח
+  retryAttempt Int      @default(0) // מספר ניסיון
+  createdAt    DateTime @default(now())
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
   @@index([orderId])
   @@index([provider])
   @@index([status])
@@ -627,33 +638,44 @@ model Cart {
 }
 
 model Coupon {
-  id                   String       @id @default(cuid())
-  shopId               String
-  code                 String       @unique
-  type                 DiscountType
-  value                Float
-  buyQuantity          Int?
-  getQuantity          Int?
-  getDiscount          Float?
-  nthItem              Int?
-  volumeRules          Json?
-  minOrder             Float?
-  maxDiscount          Float?
-  maxUses              Int?
-  usesPerCustomer      Int?         @default(1)
-  usedCount            Int          @default(0)
-  startDate            DateTime?
-  endDate              DateTime?
-  isActive             Boolean      @default(true)
-  applicableProducts   String[]
-  applicableCategories String[]
-  applicableCustomers  String[]
-  canCombine           Boolean      @default(false)
-  influencerId         String?
-  createdAt            DateTime     @default(now())
-  updatedAt            DateTime     @default(now())
-  influencer           User?        @relation(fields: [influencerId], references: [id])
-  shop                 Shop         @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  id                      String         @id @default(cuid())
+  shopId                  String
+  code                    String         @unique
+  type                    DiscountType
+  value                   Float
+  buyQuantity             Int?
+  getQuantity             Int?
+  getDiscount             Float?
+  payQuantity             Int? // עבור BUY_X_PAY_Y: כמה פריטים משלמים עליהם
+  payAmount               Float? // עבור BUY_X_PAY_Y: סכום קבוע לשלם (לדוגמה: 55₪ על 2 פריטים)
+  nthItem                 Int?
+  volumeRules             Json?
+  minOrder                Float?
+  maxDiscount             Float?
+  maxUses                 Int?
+  usesPerCustomer         Int?           @default(1)
+  usedCount               Int            @default(0)
+  startDate               DateTime?
+  endDate                 DateTime?
+  isActive                Boolean        @default(true)
+  applicableProducts      String[]
+  applicableCategories    String[]
+  applicableCustomers     String[]
+  canCombine              Boolean        @default(false)
+  influencerId            String?
+  // שדות להפעלת מתנה אוטומטית
+  giftProductId           String?
+  giftVariantId           String?
+  giftCondition           GiftCondition?
+  giftConditionProductId  String?
+  giftConditionAmount     Float?
+  // שדות להפעלת הנחת לקוח רשום
+  enableCustomerDiscount  Boolean        @default(false)
+  customerDiscountPercent Float? // אחוז הנחה ללקוח רשום (לדוגמה: 5)
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @default(now())
+  influencer              User?          @relation(fields: [influencerId], references: [id])
+  shop                    Shop           @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   @@index([shopId])
   @@index([code])
@@ -783,27 +805,117 @@ model StoreCreditTransaction {
 }
 
 model Review {
-  id           String    @id @default(cuid())
-  shopId       String
-  productId    String
-  customerId   String?
-  rating       Int
-  title        String?
-  comment      String?
-  images       String[]
-  isApproved   Boolean   @default(false)
-  isVerified   Boolean   @default(false)
-  helpfulCount Int       @default(0)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  customer     Customer? @relation(fields: [customerId], references: [id])
-  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  shop         Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  id              String        @id @default(cuid())
+  shopId          String
+  productId       String
+  customerId      String?
+  rating          Int
+  title           String?
+  comment         String?
+  images          String[]
+  videos          String[]      @default([])
+  tags            String[]      @default([]) // תגיות כמו "איכות", "משלוח", "שירות"
+  isApproved      Boolean       @default(false)
+  isVerified      Boolean       @default(false)
+  verifiedOrderId String? // ID של ההזמנה שמאמתת את הרכישה
+  helpfulCount    Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  customer        Customer?     @relation(fields: [customerId], references: [id])
+  product         Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  shop            Shop          @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  replies         ReviewReply[] @relation("ReviewReplies")
+  order           Order?        @relation(fields: [verifiedOrderId], references: [id])
 
   @@index([shopId])
   @@index([productId])
   @@index([isApproved])
+  @@index([isVerified])
   @@map("reviews")
+}
+
+// תגובות לביקורות
+model ReviewReply {
+  id          String    @id @default(cuid())
+  reviewId    String
+  shopId      String
+  userId      String? // ID של בעל החנות או לקוח
+  customerId  String? // אם זה לקוח
+  comment     String
+  isShopOwner Boolean   @default(false) // האם זה בעל החנות
+  isApproved  Boolean   @default(true) // תגובות של בעל חנות מאושרות אוטומטית
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  review      Review    @relation("ReviewReplies", fields: [reviewId], references: [id], onDelete: Cascade)
+  shop        Shop      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer    Customer? @relation(fields: [customerId], references: [id])
+  user        User?     @relation(fields: [userId], references: [id])
+
+  @@index([reviewId])
+  @@index([shopId])
+  @@map("review_replies")
+}
+
+// שאלות ותשובות על מוצרים
+model ProductQuestion {
+  id           String          @id @default(cuid())
+  shopId       String
+  productId    String
+  customerId   String?
+  question     String
+  isApproved   Boolean         @default(false)
+  helpfulCount Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  product      Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  shop         Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer     Customer?       @relation(fields: [customerId], references: [id])
+  answers      ProductAnswer[]
+
+  @@index([shopId])
+  @@index([productId])
+  @@index([isApproved])
+  @@map("product_questions")
+}
+
+model ProductAnswer {
+  id           String          @id @default(cuid())
+  questionId   String
+  shopId       String
+  userId       String? // ID של בעל החנות או לקוח
+  customerId   String? // אם זה לקוח
+  answer       String
+  isShopOwner  Boolean         @default(false) // האם זה בעל החנות
+  isApproved   Boolean         @default(true) // תשובות של בעל חנות מאושרות אוטומטית
+  helpfulCount Int             @default(0)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  question     ProductQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  shop         Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer     Customer?       @relation(fields: [customerId], references: [id])
+  user         User?           @relation(fields: [userId], references: [id])
+
+  @@index([questionId])
+  @@index([shopId])
+  @@map("product_answers")
+}
+
+// הגדרות תגיות לביקורות (ניתן להגדיר בחנות)
+model ReviewTagDefinition {
+  id        String   @id @default(cuid())
+  shopId    String
+  name      String // שם התגית בעברית
+  nameEn    String? // שם התגית באנגלית
+  icon      String? // אייקון (lucide icon name)
+  color     String? // צבע התגית
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  shop      Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, name])
+  @@index([shopId])
+  @@map("review_tag_definitions")
 }
 
 model Return {
@@ -1246,6 +1358,7 @@ enum DiscountType {
   PERCENTAGE
   FIXED
   BUY_X_GET_Y
+  BUY_X_PAY_Y
   VOLUME_DISCOUNT
   NTH_ITEM_DISCOUNT
   FREE_GIFT

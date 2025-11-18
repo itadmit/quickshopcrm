@@ -1,0 +1,230 @@
+{
+  "common": {
+    "save": "שמור",
+    "cancel": "ביטול",
+    "delete": "מחק",
+    "edit": "ערוך",
+    "add": "הוסף",
+    "close": "סגור",
+    "search": "חיפוש",
+    "loading": "טוען...",
+    "error": "שגיאה",
+    "success": "הצלחה",
+    "name": "שם",
+    "price": "מחיר",
+    "quantity": "כמות",
+    "total": "סה\"כ",
+    "date": "תאריך",
+    "actions": "פעולות"
+  },
+  "sidebar": {
+    "home": "בית",
+    "notifications": "התראות",
+    "products": "מוצרים",
+    "orders": "הזמנות",
+    "customers": "לקוחות",
+    "inventory": "מלאי",
+    "quickEdit": "עריכה מהירה",
+    "discounts": "הנחות",
+    "coupons": "קופונים",
+    "collections": "קטגוריות",
+    "giftCards": "כרטיסי מתנה",
+    "abandonedCarts": "עגלות נטושות",
+    "pages": "דפים",
+    "navigation": "תפריט ניווט",
+    "blog": "בלוג",
+    "appearance": "מראה ועיצוב",
+    "customize": "התאמה אישית",
+    "reviews": "ביקורות",
+    "returns": "החזרות והחלפות",
+    "storeCredits": "קרדיט בחנות",
+    "sizeCharts": "טבלת מידות",
+    "customFields": "שדות מותאמים",
+    "productAddons": "תוספות למוצרים",
+    "bundles": "חבילות מוצרים",
+    "analytics": "אנליטיקה",
+    "automations": "אוטומציות",
+    "webhooks": "Webhooks",
+    "trackingPixels": "פיקסלים וקודי מעקב",
+    "settings": "הגדרות",
+    "integrations": "אינטגרציות",
+    "influencerDashboard": "דשבורד משפיען/ית",
+    "sections": {
+      "influencer": "משפיען/ית",
+      "sales": "מכירות",
+      "marketing": "שיווק והנחות",
+      "content": "תוכן",
+      "customerService": "שירות לקוחות",
+      "additionalProducts": "מוצרים נוספים",
+      "system": "מערכת",
+      "settings": "הגדרות",
+      "superAdmin": "Super Admin"
+    },
+    "superAdmin": {
+      "payplusSettings": "הגדרות PayPlus",
+      "sendgridSettings": "הגדרות SendGrid",
+      "commissions": "גביית עמלות",
+      "pluginManagement": "ניהול תוספים"
+    },
+    "trial": {
+      "title": "מערכת ליצירה וניהול חנויות אונליין",
+      "daysRemaining": "נותרו לך {count} ימי נסיון",
+      "trialEnded": "תקופת הנסיון הסתיימה",
+      "timeRunningOut": "⚠️ הזמן נגמר בקרוב!",
+      "trialPeriod": "תקופת הנסיון"
+    }
+  },
+  "product": {
+    "name": "שם מוצר",
+    "price": "מחיר",
+    "description": "תיאור מוצר",
+    "gallery": "גלריה",
+    "variants": "וריאציות",
+    "quantity": "כמות",
+    "buttons": "כפתורים",
+    "reviews": "ביקורות",
+    "related": "מוצרים קשורים",
+    "customText": "טקסט מותאם",
+    "customAccordion": "אקורדיון",
+    "customHtml": "HTML מותאם",
+    "addElement": "הוסף אלמנט",
+    "hidden": "מוסתר"
+  },
+  "shop": {
+    "notFound": "חנות לא נמצאה",
+    "welcome": "ברוכים הבאים ל-{name}",
+    "shop": "חנות"
+  },
+  "header": {
+    "marketplace": "מרקטפלייס",
+    "viewStore": "צפייה בחנות",
+    "user": "משתמש",
+    "superAdmin": "סופר אדמין",
+    "admin": "מנהל",
+    "manager": "מנהל צוות",
+    "userRole": "משתמש",
+    "myProfile": "הפרופיל שלי",
+    "settings": "הגדרות",
+    "inviteTeam": "הזמנת צוות",
+    "signOut": "התנתק",
+    "quickActions": {
+      "title": "פעולות בשימוש תדיר",
+      "addProduct": "מוצר חדש",
+      "addOrder": "הזמנה חדשה",
+      "addCustomer": "לקוח חדש",
+      "addDiscount": "הנחה חדשה",
+      "addCoupon": "קופון חדש",
+      "more": "עוד",
+      "moreActions": "פעולות נוספות"
+    }
+  },
+  "appLayout": {
+    "accountDeleted": "החשבון נמחק",
+    "accountDeletedDescription": "החשבון שלך נמחק מהמערכת. יש להתחבר מחדש."
+  },
+  "errors": {
+    "unauthorized": "לא מאומת",
+    "notFound": "לא נמצא",
+    "internalServerError": "שגיאת שרת פנימית",
+    "invalidData": "נתונים לא תקינים",
+    "invalidAction": "פעולה לא תקינה",
+    "validationError": "שגיאת אימות",
+    "pluginNotFound": "תוסף לא נמצא",
+    "pluginFree": "תוסף זה חינמי - השתמש ב-install",
+    "sendGridNotConfigured": "SendGrid לא מוגדר",
+    "invitationResent": "הזמנה נשלחה מחדש בהצלחה"
+  },
+  "dashboard": {
+    "subscription": {
+      "expired": "מנוי פג תוקף",
+      "expiringSoon": "תקופת הנסיון מסתיימת בקרוב",
+      "expiredDescription": "המנוי שלך פג תוקף. אנא חידש את המנוי כדי להמשיך להשתמש במערכת.",
+      "expiringDescription": "נותרו {days} ימים לתקופת הנסיון. אנא בחר מסלול מנוי להמשך השימוש.",
+      "renew": "חדש מנוי",
+      "choosePlan": "בחר מסלול מנוי"
+    },
+    "welcome": {
+      "greeting": "שלום, {name}",
+      "user": "משתמש",
+      "question": "איך אני יכול לעזור לך היום?"
+    },
+    "actions": {
+      "createStore": "צור חנות חדשה",
+      "addProduct": "הוסף מוצר",
+      "viewOrders": "צפה בהזמנות",
+      "createStoreShort": "+ צור חנות"
+    },
+    "stats": {
+      "activeShops": "חנויות פעילות",
+      "activeProducts": "מוצרים פעילים",
+      "pendingOrders": "הזמנות ממתינות",
+      "revenue": "הכנסות",
+      "totalShops": "סה״כ {count} חנויות במערכת",
+      "totalProducts": "סה״כ {count} מוצרים",
+      "totalOrders": "סה״כ {count} הזמנות",
+      "totalRevenue": "סה״כ",
+      "monthlyRevenue": "הכנסות החודש"
+    },
+    "quickActions": {
+      "title": "פעולות מהירות",
+      "createStore": {
+        "title": "צרו חנות חדשה",
+        "description": "התחילו עם תבנית מוכנה או צרו מאפס"
+      },
+      "addProducts": {
+        "title": "הוסיפו מוצרים",
+        "description": "התחילו למכור עם קטלוג מוצרים מקצועי"
+      },
+      "manageOrders": {
+        "title": "נהלו הזמנות",
+        "description": "צפו וטפלו בהזמנות שלכם"
+      },
+      "setupPayments": {
+        "title": "הגדירו תשלומים",
+        "description": "חברו את שיטת התשלום שלכם"
+      }
+    },
+    "quickStats": {
+      "title": "סטטיסטיקות מהירות",
+      "activeShops": "חנויות פעילות",
+      "activeProducts": "מוצרים פעילים",
+      "pendingOrders": "הזמנות ממתינות",
+      "monthlyRevenue": "הכנסות החודש"
+    },
+    "notifications": {
+      "title": "התראות אחרונות",
+      "seeAll": "ראה הכל",
+      "noNotifications": "אין התראות חדשות",
+      "viewNotifications": "ראה התראות"
+    }
+  },
+  "search": {
+    "placeholder": "חיפוש מוצרים, הזמנות, לקוחות, תוספים... (Ctrl+K)",
+    "searching": "מחפש...",
+    "noResults": "לא נמצאו תוצאות",
+    "for": "עבור",
+    "quickLinks": "קיצורי דרך",
+    "quickNavigation": "ניווט מהיר",
+    "products": "מוצרים",
+    "orders": "הזמנות",
+    "customers": "לקוחות",
+    "plugins": "תוספים",
+    "startTyping": "התחל להקליד כדי לחפש",
+    "startTypingDescription": "מוצרים, הזמנות, לקוחות, תוספים, דפים ועוד",
+    "navigation": "ניווט",
+    "select": "בחירה",
+    "close": "סגירה",
+    "results": "{count} תוצאות",
+    "resultsCount": "תוצאות",
+    "categories": {
+      "navigation": "ניווט",
+      "settings": "הגדרות",
+      "management": "ניהול"
+    },
+    "orderTitle": "הזמנה #{number}",
+    "customerOrders": "{count} הזמנות",
+    "free": "חינמי",
+    "month": "חודש"
+  }
+}
+

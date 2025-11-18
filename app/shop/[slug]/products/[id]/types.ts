@@ -70,6 +70,7 @@ export interface ProductPageClientProps {
   reviews: any[]
   averageRating: number
   totalReviews: number
+  reviewsPluginActive?: boolean
   relatedProducts: any[]
   galleryLayout: GalleryLayout
   productPageLayout: { elements: any[] } | null

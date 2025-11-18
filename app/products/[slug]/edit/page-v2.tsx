@@ -84,6 +84,11 @@ export default function EditProductPage() {
     lowStockAlert: "",
     availability: "IN_STOCK" as "IN_STOCK" | "OUT_OF_STOCK" | "PRE_ORDER" | "BACKORDER" | "DISCONTINUED",
     availableDate: "",
+    trackInventory: true,
+    sellWhenSoldOut: false,
+    priceByWeight: false,
+    showPricePer100ml: false,
+    pricePer100ml: "",
     weight: "",
     dimensions: {
       length: "",
@@ -91,6 +96,8 @@ export default function EditProductPage() {
       height: "",
     },
     status: "DRAFT" as "DRAFT" | "PUBLISHED" | "ARCHIVED",
+    scheduledPublishDate: "",
+    notifyOnPublish: false,
     images: [] as string[],
     video: "",
     minQuantity: "",
@@ -99,6 +106,8 @@ export default function EditProductPage() {
     seoDescription: "",
     tags: [] as string[],
     categories: [] as string[],
+    badges: [] as any[],
+    pageTemplateId: "",
   })
 
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({})
@@ -165,6 +174,11 @@ export default function EditProductPage() {
           lowStockAlert: data.lowStockAlert?.toString() || "",
           availability: data.availability || "IN_STOCK",
           availableDate: availableDateFormatted,
+          trackInventory: data.trackInventory ?? true,
+          sellWhenSoldOut: data.sellWhenSoldOut ?? false,
+          priceByWeight: data.priceByWeight ?? false,
+          showPricePer100ml: data.showPricePer100ml ?? false,
+          pricePer100ml: data.pricePer100ml?.toString() || "",
           weight: data.weight?.toString() || "",
           dimensions: {
             length: data.dimensions?.length?.toString() || "",
@@ -172,6 +186,8 @@ export default function EditProductPage() {
             height: data.dimensions?.height?.toString() || "",
           },
           status: data.status || "DRAFT",
+          scheduledPublishDate: data.scheduledPublishDate ? new Date(data.scheduledPublishDate).toISOString().slice(0, 16) : "",
+          notifyOnPublish: data.notifyOnPublish || false,
           images: data.images || [],
           video: data.video || "",
           minQuantity: data.minQuantity?.toString() || "",
@@ -179,7 +195,9 @@ export default function EditProductPage() {
           seoTitle: data.seoTitle || "",
           seoDescription: data.seoDescription || "",
           tags: data.tags?.map((t: any) => t.name) || [],
-          categories: data.categories?.map((c: any) => c.category.id) || [],
+          categories: data.collections?.map((c: any) => c.collectionId) || [],
+          badges: data.badges || [],
+          pageTemplateId: data.pageTemplateId || "",
         })
 
         // Fetch options and variants
@@ -320,6 +338,11 @@ export default function EditProductPage() {
         lowStockAlert: formData.lowStockAlert ? parseInt(formData.lowStockAlert) : null,
         availability: formData.availability,
         availableDate: formData.availableDate || null,
+        trackInventory: formData.trackInventory,
+        sellWhenSoldOut: formData.sellWhenSoldOut,
+        priceByWeight: formData.priceByWeight,
+        showPricePer100ml: formData.showPricePer100ml,
+        pricePer100ml: formData.pricePer100ml ? parseFloat(formData.pricePer100ml) : null,
         weight: formData.weight ? parseFloat(formData.weight) : null,
         dimensions: {
           length: formData.dimensions.length || null,
@@ -327,6 +350,8 @@ export default function EditProductPage() {
           height: formData.dimensions.height || null,
         },
         status: formData.status,
+        scheduledPublishDate: formData.scheduledPublishDate ? new Date(formData.scheduledPublishDate).toISOString() : null,
+        notifyOnPublish: formData.notifyOnPublish,
         images: formData.images,
         video: formData.video || null,
         minQuantity: formData.minQuantity ? parseInt(formData.minQuantity) : null,
@@ -336,10 +361,9 @@ export default function EditProductPage() {
         tags: formData.tags,
         categories: formData.categories,
         customFields: customFieldValues,
+        badges: formData.badges.length > 0 ? formData.badges : null,
         addonIds: productAddonIds,
-        hasVariants,
-        options: hasVariants ? options : [],
-        variants: hasVariants ? variants : [],
+        pageTemplateId: formData.pageTemplateId || null,
       }
 
       const response = await fetch(`/api/products/${product.id}`, {

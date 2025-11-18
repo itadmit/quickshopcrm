@@ -61,6 +61,7 @@ interface Cart {
   customerDiscount?: number
   couponDiscount?: number
   automaticDiscount?: number
+  automaticDiscountTitle?: string | null
   couponStatus?: {
     code: string
     isValid: boolean
@@ -82,7 +83,6 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
   const router = useRouter()
   const { theme } = useShopTheme(slug)
   const [couponCode, setCouponCode] = useState("")
-  const [showDiscount, setShowDiscount] = useState(false)
   const [showCoupon, setShowCoupon] = useState(theme?.showCouponByDefault ?? true)
   const [updatingItem, setUpdatingItem] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
@@ -509,48 +509,26 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
               {/* Discount - Only show if there's a discount */}
               {((cart.customerDiscount && cart.customerDiscount > 0) || (cart.couponDiscount && cart.couponDiscount > 0) || (cart.automaticDiscount && cart.automaticDiscount > 0)) && (
                 <div className="mb-4 pb-4 border-b border-gray-200">
-                  <button
-                    onClick={() => setShowDiscount(!showDiscount)}
-                    className="w-full flex items-center justify-between text-gray-900 hover:text-gray-700 transition-colors"
-                  >
-                    <span className="font-medium">הנחה</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-500 text-sm">
-                        -₪{(
-                          (cart.customerDiscount || 0) + 
-                          (cart.couponDiscount || 0) + 
-                          (cart.automaticDiscount || 0)
-                        ).toFixed(2)}
-                      </span>
-                      {showDiscount ? (
-                        <ChevronDown className="w-4 h-4 text-gray-400" />
-                      ) : (
-                        <ChevronUp className="w-4 h-4 text-gray-400" />
-                      )}
-                    </div>
-                  </button>
-                  {showDiscount && (
-                    <div className="mt-3 space-y-2">
-                      {cart.customerDiscount && cart.customerDiscount > 0 && (
-                        <div className="flex justify-between text-sm text-green-600">
-                          <span>הנחת לקוח</span>
-                          <span>-₪{cart.customerDiscount.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {cart.couponDiscount && cart.couponDiscount > 0 && (
-                        <div className="flex justify-between text-sm text-green-600">
-                          <span>קופון {cart.couponCode}</span>
-                          <span>-₪{cart.couponDiscount.toFixed(2)}</span>
-                        </div>
-                      )}
-                      {cart.automaticDiscount && cart.automaticDiscount > 0 && (
-                        <div className="flex justify-between text-sm text-green-600">
-                          <span>הנחה אוטומטית</span>
-                          <span>-₪{cart.automaticDiscount.toFixed(2)}</span>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    {cart.customerDiscount && cart.customerDiscount > 0 && (
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>הנחת לקוח</span>
+                        <span>₪{cart.customerDiscount.toFixed(2)}-</span>
+                      </div>
+                    )}
+                    {cart.couponDiscount && cart.couponDiscount > 0 && (
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>קופון {cart.couponCode}</span>
+                        <span>₪{cart.couponDiscount.toFixed(2)}-</span>
+                      </div>
+                    )}
+                    {cart.automaticDiscount && cart.automaticDiscount > 0 && (
+                      <div className="flex justify-between text-sm text-green-600">
+                        <span>{cart.automaticDiscountTitle || 'הנחה אוטומטית'}</span>
+                        <span>₪{cart.automaticDiscount.toFixed(2)}-</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -567,6 +545,22 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                 </p>
               </div>
 
+              {/* Cart Page Button - Optional */}
+              {theme.showCartPageButton && (
+                <Link href={`/shop/${slug}/cart`}>
+                  <button
+                    onClick={onClose}
+                    className="w-full mb-3 text-gray-700 bg-white border-2 rounded-lg h-11 px-8 font-medium transition-colors hover:bg-gray-50"
+                    style={{
+                      borderColor: theme.primaryColor || "#000000",
+                      color: theme.primaryColor || "#000000",
+                    }}
+                  >
+                    מעבר לעגלה
+                  </button>
+                </Link>
+              )}
+              
               {/* Checkout Button */}
               <button
                 onClick={() => {
@@ -574,9 +568,10 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                   // מוסיף timestamp כדי לאלץ טעינה מחדש של דף הצ'ק אאוט
                   router.push(`/shop/${slug}/checkout?t=${Date.now()}`)
                 }}
-                className="w-full text-white rounded-lg h-11 px-8 font-medium transition-opacity hover:opacity-90"
+                className="w-full rounded-lg h-11 px-8 font-medium transition-opacity hover:opacity-90"
                 style={{
-                  backgroundColor: theme.primaryColor || "#000000",
+                  backgroundColor: theme.proceedToCheckoutBtnColor || theme.primaryColor || "#000000",
+                  color: theme.proceedToCheckoutBtnTextColor || "#ffffff",
                 }}
               >
                 מעבר לקופה

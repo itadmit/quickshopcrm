@@ -117,8 +117,23 @@ export async function GET(
               inventoryQty: true,
               sku: true,
               option1: true,
+              option1Value: true,
               option2: true,
+              option2Value: true,
               option3: true,
+              option3Value: true,
+            },
+          },
+          options: {
+            select: {
+              id: true,
+              name: true,
+              type: true,
+              values: true,
+              position: true,
+            },
+            orderBy: {
+              position: 'asc',
             },
           },
         },

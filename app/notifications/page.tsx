@@ -20,7 +20,8 @@ import {
   Mail,
   Phone,
   MapPin,
-  Trash2
+  Trash2,
+  RotateCcw
 } from "lucide-react"
 
 interface Notification {
@@ -108,6 +109,9 @@ export default function NotificationsPage() {
           break
         case 'task':
           router.push(`/tasks/my`)
+          break
+        case 'return':
+          router.push(`/returns/${notification.entityId}`)
           break
       }
     }
@@ -197,6 +201,8 @@ export default function NotificationsPage() {
         return Receipt
       case 'payment':
         return Coins
+      case 'return':
+        return RotateCcw
       default:
         return Bell
     }
@@ -218,6 +224,8 @@ export default function NotificationsPage() {
         return 'text-indigo-600 bg-indigo-100'
       case 'payment':
         return 'text-emerald-600 bg-emerald-100'
+      case 'return':
+        return 'text-amber-600 bg-amber-100'
       default:
         return 'text-gray-600 bg-gray-100'
     }

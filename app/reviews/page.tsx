@@ -30,6 +30,7 @@ interface Review {
   title: string | null
   comment: string | null
   images: string[]
+  videos: string[]
   isApproved: boolean
   isVerified: boolean
   createdAt: string
@@ -41,14 +42,41 @@ export default function ReviewsPage() {
   const { selectedShop } = useShop()
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
+  const [pluginActive, setPluginActive] = useState<boolean | null>(null)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
 
+  // בדיקה אם תוסף הביקורות פעיל
   useEffect(() => {
-    if (selectedShop) {
+    const checkPlugin = async () => {
+      if (!selectedShop) {
+        setPluginActive(false)
+        return
+      }
+
+      try {
+        const response = await fetch(`/api/plugins/active?shopId=${selectedShop.id}`)
+        if (response.ok) {
+          const plugins = await response.json()
+          const reviewsPlugin = plugins.find((p: any) => p.slug === 'reviews' && p.isActive && p.isInstalled)
+          setPluginActive(!!reviewsPlugin)
+        } else {
+          setPluginActive(false)
+        }
+      } catch (error) {
+        console.error("Error checking reviews plugin:", error)
+        setPluginActive(false)
+      }
+    }
+
+    checkPlugin()
+  }, [selectedShop])
+
+  useEffect(() => {
+    if (selectedShop && pluginActive) {
       fetchReviews()
     }
-  }, [selectedShop, statusFilter])
+  }, [selectedShop, statusFilter, pluginActive])
 
   const fetchReviews = async () => {
     if (!selectedShop) return
@@ -151,6 +179,26 @@ export default function ReviewsPage() {
     )
   }
 
+  // בדיקה אם תוסף הביקורות פעיל
+  if (pluginActive === false) {
+    return (
+      <AppLayout title="ביקורות">
+        <div className="text-center py-12">
+          <Star className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">
+            תוסף הביקורות לא פעיל
+          </h3>
+          <p className="text-gray-600 mb-4">
+            יש להתקין ולהפעיל את תוסף הביקורות מהגדרות התוספים
+          </p>
+          <Button onClick={() => router.push('/settings/plugins')}>
+            לניהול תוספים
+          </Button>
+        </div>
+      </AppLayout>
+    )
+  }
+
   return (
     <AppLayout title="ביקורות">
       <div className="space-y-6">
@@ -241,6 +289,34 @@ export default function ReviewsPage() {
                         )}
                         {review.comment && (
                           <p className="text-gray-700 mb-2">{review.comment}</p>
+                        )}
+                        {review.images && review.images.length > 0 && (
+                          <div className="grid grid-cols-4 gap-2 mt-4 mb-4">
+                            {review.images.map((img: string, idx: number) => (
+                              <img
+                                key={idx}
+                                src={img}
+                                alt={`Review image ${idx + 1}`}
+                                className="w-full h-24 object-cover rounded-lg cursor-pointer"
+                                onClick={() => window.open(img, '_blank')}
+                              />
+                            ))}
+                          </div>
+                        )}
+                        {review.videos && review.videos.length > 0 && (
+                          <div className="grid grid-cols-1 gap-2 mt-4 mb-4">
+                            {review.videos.map((video: string, idx: number) => (
+                              <video
+                                key={idx}
+                                src={video}
+                                controls
+                                className="w-full max-w-md rounded-lg"
+                                preload="metadata"
+                              >
+                                הדפדפן שלך לא תומך בהצגת וידאו.
+                              </video>
+                            ))}
+                          </div>
                         )}
                         {review.customer && (
                           <p className="text-sm text-gray-500">

@@ -48,6 +48,7 @@ interface Cart {
   customerDiscount?: number
   couponDiscount?: number
   automaticDiscount?: number
+  automaticDiscountTitle?: string | null
   couponStatus?: {
     code: string
     isValid: boolean

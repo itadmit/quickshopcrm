@@ -11,7 +11,7 @@ const updateStoreCreditSchema = z.object({
   notes: z.string().optional(),
 })
 
-// GET - קבלת אשראי בחנות
+// GET - קבלת קרדיט בחנות
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -48,7 +48,7 @@ export async function GET(
   }
 }
 
-// PUT - עדכון אשראי בחנות
+// PUT - עדכון קרדיט בחנות
 export async function PUT(
   req: NextRequest,
   { params }: { params: { id: string } }
@@ -115,7 +115,7 @@ export async function PUT(
   }
 }
 
-// DELETE - מחיקת אשראי בחנות
+// DELETE - מחיקת קרדיט בחנות
 export async function DELETE(
   req: NextRequest,
   { params }: { params: { id: string } }

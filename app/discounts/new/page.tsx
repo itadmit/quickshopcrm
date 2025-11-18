@@ -81,7 +81,7 @@ export default function NewDiscountPage() {
     startDate: "",
     endDate: "",
     isActive: true,
-    isAutomatic: false,
+    isAutomatic: true, // כל ההנחות הן אוטומטיות (בניגוד לקופונים שדורשים קוד)
     canCombine: false,
     priority: "0",
     target: "ALL_PRODUCTS" as string,
@@ -1444,19 +1444,6 @@ export default function NewDiscountPage() {
                   />
                 </div>
 
-                <div className="flex items-center justify-center gap-3">
-                  <Label htmlFor="isAutomatic" className="cursor-pointer flex items-center gap-2">
-                    <Zap className="w-4 h-4" />
-                    הנחה אוטומטית (מוחלת ללא קוד)
-                  </Label>
-                  <Switch
-                    id="isAutomatic"
-                    checked={formData.isAutomatic}
-                    onCheckedChange={(checked) =>
-                      setFormData((prev) => ({ ...prev, isAutomatic: checked as boolean }))
-                    }
-                  />
-                </div>
 
                 <div className="flex items-center justify-center gap-3">
                   <Label htmlFor="canCombine" className="cursor-pointer">

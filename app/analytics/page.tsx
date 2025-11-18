@@ -460,7 +460,7 @@ export default function AnalyticsPage() {
     }
 
     // Validation של תאריכים
-    if (needsDates) {
+    if (needsDates && startDate && endDate) {
       const start = new Date(startDate)
       const end = new Date(endDate)
       

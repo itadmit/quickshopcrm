@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { isReviewsPluginActive } from "@/lib/plugins/reviews-helper"
 
 const createReviewSchema = z.object({
   shopId: z.string(),
@@ -12,6 +13,8 @@ const createReviewSchema = z.object({
   title: z.string().optional(),
   comment: z.string().optional(),
   images: z.array(z.string()).optional(),
+  videos: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
 })
 
 const updateReviewSchema = z.object({
@@ -19,6 +22,7 @@ const updateReviewSchema = z.object({
   title: z.string().optional(),
   comment: z.string().optional(),
   images: z.array(z.string()).optional(),
+  videos: z.array(z.string()).optional(),
   isApproved: z.boolean().optional(),
 })
 
@@ -30,8 +34,15 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // בדיקה אם תוסף הביקורות פעיל
     const { searchParams } = new URL(req.url)
     const shopId = searchParams.get("shopId")
+    const isActive = await isReviewsPluginActive(shopId || undefined, session.user.companyId)
+    
+    if (!isActive) {
+      return NextResponse.json({ error: "Reviews plugin is not active" }, { status: 403 })
+    }
+
     const productId = searchParams.get("productId")
     const isApproved = searchParams.get("isApproved")
 
@@ -98,6 +109,13 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const data = createReviewSchema.parse(body)
 
+    // בדיקה אם תוסף הביקורות פעיל
+    const isActive = await isReviewsPluginActive(data.shopId, session.user.companyId)
+    
+    if (!isActive) {
+      return NextResponse.json({ error: "Reviews plugin is not active" }, { status: 403 })
+    }
+
     // בדיקה שהחנות והמוצר שייכים לחברה
     const product = await prisma.product.findFirst({
       where: {
@@ -123,6 +141,8 @@ export async function POST(req: NextRequest) {
         title: data.title,
         comment: data.comment,
         images: data.images || [],
+        videos: data.videos || [],
+        tags: data.tags || [],
         isApproved: false, // דורש אישור
       },
     })

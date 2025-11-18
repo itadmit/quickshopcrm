@@ -23,6 +23,7 @@ import { useTracking } from "@/components/storefront/TrackingPixelProvider"
 import { trackPageView } from "@/lib/tracking-events"
 import { AdminBar } from "@/components/storefront/AdminBar"
 import { getProductPrice, formatProductPrice, formatComparePrice } from "@/lib/product-price"
+import { NotFoundPage } from "@/components/storefront/NotFoundPage"
 
 interface Category {
   id: string
@@ -125,7 +126,7 @@ export default function CategoryPage() {
 
   const fetchCategory = async () => {
     try {
-      const response = await fetch(`/api/storefront/${slug}/collections/${categoryId}`)
+      const response = await fetch(`/api/storefront/${slug}/categories/${categoryId}`)
       if (response.ok) {
         const data = await response.json()
         setCategory(data)
@@ -198,7 +199,13 @@ export default function CategoryPage() {
 
   if (loading && !category) {
     return (
-      <div className="min-h-screen bg-gray-50" dir="rtl">
+      <div className="min-h-screen bg-white" dir="rtl">
+        <StorefrontHeader
+          slug={slug}
+          shop={shop}
+          cartItemCount={cartItemCount}
+          onCartUpdate={fetchCartCount}
+        />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <ProductGridSkeleton count={8} />
         </div>
@@ -208,9 +215,14 @@ export default function CategoryPage() {
 
   if (!category) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-600">קטגוריה לא נמצאה</p>
-      </div>
+      <NotFoundPage
+        slug={slug}
+        shop={shop}
+        cartItemCount={cartItemCount}
+        onCartUpdate={fetchCartCount}
+        theme={theme}
+        type="category"
+      />
     )
   }
 
@@ -235,7 +247,7 @@ export default function CategoryPage() {
             {category.parent && (
               <>
                 <Link 
-                  href={`/shop/${slug}/categories/${category.parent.id}`}
+                  href={`/shop/${slug}/categories/${category.parent.slug || category.parent.id}`}
                   className="hover:text-gray-900 transition-colors"
                 >
                   {category.parent.name}
@@ -275,7 +287,7 @@ export default function CategoryPage() {
               {category.children.map((child) => (
                 <Link
                   key={child.id}
-                  href={`/shop/${slug}/categories/${child.id}`}
+                  href={`/shop/${slug}/categories/${child.slug || child.id}`}
                   className="text-center group"
                 >
                   <div className="mb-3 overflow-hidden rounded-lg">

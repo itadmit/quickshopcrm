@@ -8,12 +8,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
-import { Tag, Search, Plus, Calendar, Zap, Percent, DollarSign } from "lucide-react"
+import { Tag, Search, Plus, Calendar, Zap, Percent, DollarSign, Edit, Trash2, Power, PowerOff } from "lucide-react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 import { DiscountsSkeleton } from "@/components/skeletons/DiscountsSkeleton"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface Discount {
   id: string
@@ -38,12 +45,19 @@ export default function DiscountsPage() {
   const [search, setSearch] = useState("")
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [selectedDiscounts, setSelectedDiscounts] = useState<string[]>([])
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     if (selectedShop && !shopLoading) {
       fetchDiscounts()
     }
   }, [selectedShop, shopLoading])
+
+  useEffect(() => {
+    // איפוס בחירות כשמשנים פילטרים
+    setSelectedDiscounts([])
+  }, [search, typeFilter, statusFilter])
 
   const fetchDiscounts = async () => {
     if (!selectedShop) return
@@ -64,6 +78,118 @@ export default function DiscountsPage() {
       })
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleToggleActive = async (id: string, currentStatus: boolean) => {
+    try {
+      const response = await fetch(`/api/discounts/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isActive: !currentStatus }),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "הצלחה",
+          description: currentStatus ? "ההנחה כובתה בהצלחה" : "ההנחה הופעלה בהצלחה",
+        })
+        fetchDiscounts()
+      } else {
+        toast({
+          title: "שגיאה",
+          description: "לא הצלחנו לעדכן את סטטוס ההנחה",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error toggling discount status:", error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה בעדכון סטטוס ההנחה",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedDiscounts.length === filteredDiscounts.length) {
+      setSelectedDiscounts([])
+    } else {
+      setSelectedDiscounts(filteredDiscounts.map(d => d.id))
+    }
+  }
+
+  const toggleSelectDiscount = (discountId: string) => {
+    setSelectedDiscounts(prev =>
+      prev.includes(discountId)
+        ? prev.filter(id => id !== discountId)
+        : [...prev, discountId]
+    )
+  }
+
+  const handleBulkDelete = async () => {
+    const count = selectedDiscounts.length
+    if (!confirm(`האם אתה בטוח שברצונך למחוק ${count} הנחות?`)) {
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      for (const discountId of selectedDiscounts) {
+        const response = await fetch(`/api/discounts/${discountId}`, {
+          method: "DELETE",
+        })
+        if (!response.ok) {
+          throw new Error(`Failed to delete discount ${discountId}`)
+        }
+      }
+      setSelectedDiscounts([])
+      toast({
+        title: "הצלחה",
+        description: `${count} הנחות נמחקו בהצלחה`,
+      })
+      fetchDiscounts()
+    } catch (error) {
+      console.error("Error deleting discounts:", error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה במחיקת ההנחות",
+        variant: "destructive",
+      })
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("האם אתה בטוח שברצונך למחוק את ההנחה?")) return
+
+    try {
+      const response = await fetch(`/api/discounts/${id}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        toast({
+          title: "הצלחה",
+          description: "ההנחה נמחקה בהצלחה",
+        })
+        fetchDiscounts()
+      } else {
+        toast({
+          title: "שגיאה",
+          description: "לא הצלחנו למחוק את ההנחה",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error deleting discount:", error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה במחיקת ההנחה",
+        variant: "destructive",
+      })
     }
   }
 
@@ -127,13 +253,25 @@ export default function DiscountsPage() {
               נהל הנחות אוטומטיות וקופונים
             </p>
           </div>
-          <Button
-            onClick={() => router.push("/discounts/new")}
-            className="prodify-gradient text-white"
-          >
-            <Plus className="w-4 h-4 ml-2" />
-            הנחה חדשה
-          </Button>
+          <div className="flex gap-2">
+            {selectedDiscounts.length > 0 && (
+              <Button
+                variant="destructive"
+                onClick={handleBulkDelete}
+                disabled={isDeleting}
+              >
+                <Trash2 className="w-4 h-4 ml-2" />
+                מחק {selectedDiscounts.length} נבחרו
+              </Button>
+            )}
+            <Button
+              onClick={() => router.push("/discounts/new")}
+              className="prodify-gradient text-white"
+            >
+              <Plus className="w-4 h-4 ml-2" />
+              הנחה חדשה
+            </Button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -179,46 +317,7 @@ export default function DiscountsPage() {
 
         {/* Discounts List */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-white rounded-lg shadow-sm overflow-hidden animate-pulse">
-                <div className="p-6 space-y-4">
-                  {/* Header */}
-                  <div className="flex items-start justify-between">
-                    <div className="h-6 w-32 bg-gray-200 rounded flex-1"></div>
-                    <div className="flex flex-col gap-2">
-                      <div className="h-5 w-16 bg-gray-200 rounded"></div>
-                      <div className="h-5 w-20 bg-gray-200 rounded"></div>
-                    </div>
-                  </div>
-
-                  {/* Type and Value */}
-                  <div className="flex items-center gap-2">
-                    <div className="h-6 w-20 bg-gray-200 rounded"></div>
-                    <div className="h-6 w-16 bg-gray-200 rounded"></div>
-                  </div>
-
-                  {/* Date */}
-                  <div className="flex items-center gap-2">
-                    <div className="h-4 w-4 bg-gray-200 rounded"></div>
-                    <div className="h-4 w-32 bg-gray-200 rounded"></div>
-                  </div>
-
-                  {/* Usage */}
-                  <div className="flex items-center justify-between">
-                    <div className="h-4 w-16 bg-gray-200 rounded"></div>
-                    <div className="h-4 w-20 bg-gray-200 rounded"></div>
-                  </div>
-
-                  {/* Buttons */}
-                  <div className="flex gap-2 pt-2">
-                    <div className="h-9 flex-1 bg-gray-200 rounded"></div>
-                    <div className="h-9 flex-1 bg-gray-200 rounded"></div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <DiscountsSkeleton />
         ) : filteredDiscounts.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
@@ -234,78 +333,154 @@ export default function DiscountsPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredDiscounts.map((discount) => (
-              <Card key={discount.id} className="hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <CardTitle className="flex-1">{discount.title}</CardTitle>
-                    <div className="flex flex-col gap-1 items-center">
-                      {discount.isAutomatic && (
-                        <Badge className="bg-purple-100 text-purple-800">
-                          <Zap className="w-3 h-3 ml-1" />
-                          אוטומטי
-                        </Badge>
-                      )}
-                      {discount.isActive ? (
-                        <Badge className="bg-green-100 text-green-800">פעיל</Badge>
-                      ) : (
-                        <Badge variant="secondary">לא פעיל</Badge>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Badge variant="outline">{getTypeLabel(discount.type)}</Badge>
-                    {discount.type === "PERCENTAGE" && (
-                      <span className="mr-2 font-bold text-purple-600">
-                        {discount.value}%
-                      </span>
-                    )}
-                    {discount.type === "FIXED" && (
-                      <span className="mr-2 font-bold text-purple-600">
-                        ₪{discount.value.toFixed(2)}
-                      </span>
-                    )}
-                  </div>
-
-                  {discount.startDate && discount.endDate && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar className="w-4 h-4" />
-                      {format(new Date(discount.startDate), "dd/MM/yyyy", { locale: he })} -{" "}
-                      {format(new Date(discount.endDate), "dd/MM/yyyy", { locale: he })}
-                    </div>
-                  )}
-
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">שימושים:</span>
-                    <span className="font-medium">
-                      {discount.usedCount}
-                      {discount.maxUses && ` / ${discount.maxUses}`}
-                    </span>
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => router.push(`/discounts/${discount.id}/edit`)}
-                    >
-                      ערוך
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="flex-1"
-                      onClick={() => router.push(`/discounts/${discount.id}`)}
-                    >
-                      צפה
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="px-4 py-3 text-right">
+                        <Checkbox
+                          checked={selectedDiscounts.length === filteredDiscounts.length && filteredDiscounts.length > 0}
+                          onCheckedChange={toggleSelectAll}
+                        />
+                      </th>
+                      <th className="text-right p-4 text-sm font-medium text-gray-900">
+                        שם ההנחה
+                      </th>
+                      <th className="text-right p-4 text-sm font-medium text-gray-900">
+                        סוג
+                      </th>
+                      <th className="text-right p-4 text-sm font-medium text-gray-900">
+                        ערך
+                      </th>
+                      <th className="text-right p-4 text-sm font-medium text-gray-900">
+                        שימושים
+                      </th>
+                      <th className="text-right p-4 text-sm font-medium text-gray-900">
+                        תאריכים
+                      </th>
+                      <th className="text-right p-4 text-sm font-medium text-gray-900">
+                        סטטוס
+                      </th>
+                      <th className="text-right p-4 text-sm font-medium text-gray-900">
+                        פעולות
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {filteredDiscounts.map((discount) => (
+                      <tr key={discount.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-4">
+                          <Checkbox
+                            checked={selectedDiscounts.includes(discount.id)}
+                            onCheckedChange={() => toggleSelectDiscount(discount.id)}
+                          />
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium">{discount.title}</span>
+                            {discount.isAutomatic && (
+                              <Badge className="bg-purple-100 text-purple-800 text-xs">
+                                <Zap className="w-3 h-3 ml-1" />
+                                אוטומטי
+                              </Badge>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            {discount.type === "PERCENTAGE" ? (
+                              <Percent className="w-4 h-4 text-purple-600" />
+                            ) : discount.type === "FIXED" ? (
+                              <DollarSign className="w-4 h-4 text-purple-600" />
+                            ) : null}
+                            <span className="text-sm">{getTypeLabel(discount.type)}</span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm font-medium">
+                            {discount.type === "PERCENTAGE"
+                              ? `${discount.value}%`
+                              : discount.type === "FIXED"
+                              ? `₪${discount.value.toFixed(2)}`
+                              : "-"}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm">
+                            {discount.usedCount}
+                            {discount.maxUses ? ` / ${discount.maxUses}` : ""}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          {discount.startDate && discount.endDate ? (
+                            <div className="flex items-center gap-2 text-sm">
+                              <Calendar className="w-4 h-4 text-gray-400" />
+                              {format(new Date(discount.startDate), "dd/MM/yyyy", { locale: he })} -{" "}
+                              {format(new Date(discount.endDate), "dd/MM/yyyy", { locale: he })}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-400">ללא תאריכים</span>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          {discount.isActive ? (
+                            <Badge className="bg-green-100 text-green-800">פעיל</Badge>
+                          ) : (
+                            <Badge variant="secondary">לא פעיל</Badge>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm">
+                                <span>⋯</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="min-w-[160px]">
+                              <DropdownMenuItem
+                                onClick={() => handleToggleActive(discount.id, discount.isActive)}
+                                className="flex flex-row-reverse items-center gap-2 cursor-pointer"
+                              >
+                                {discount.isActive ? (
+                                  <>
+                                    <PowerOff className="w-4 h-4 flex-shrink-0" />
+                                    כבה
+                                  </>
+                                ) : (
+                                  <>
+                                    <Power className="w-4 h-4 flex-shrink-0" />
+                                    הפעל
+                                  </>
+                                )}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  router.push(`/discounts/${discount.id}/edit`)
+                                }
+                                className="flex flex-row-reverse items-center gap-2 cursor-pointer"
+                              >
+                                <Edit className="w-4 h-4 flex-shrink-0" />
+                                ערוך
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(discount.id)}
+                                className="text-red-600 flex flex-row-reverse items-center gap-2 cursor-pointer"
+                              >
+                                <Trash2 className="w-4 h-4 flex-shrink-0" />
+                                מחק
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </AppLayout>

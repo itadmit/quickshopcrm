@@ -133,79 +133,8 @@ export default async function ShopPage({ params }: { params: { slug: string } })
     )
   }
 
-  // טעינת מוצרים מהשרת
-  let products: Product[] = []
-  try {
-    const shopForProducts = await prisma.shop.findFirst({
-      where: {
-        slug: slug,
-        ...(session?.user?.companyId ? { companyId: session.user.companyId } : { isPublished: true }),
-      },
-    })
-
-    if (shopForProducts) {
-      const productsData = await prisma.product.findMany({
-        where: {
-          shopId: shopForProducts.id,
-          status: "PUBLISHED",
-          availability: {
-            not: "DISCONTINUED",
-          },
-        },
-        take: 8,
-        select: {
-          id: true,
-          name: true,
-          slug: true,
-          price: true,
-          comparePrice: true,
-          images: true,
-          availability: true,
-          variants: {
-            select: {
-              id: true,
-              name: true,
-              price: true,
-              comparePrice: true,
-              inventoryQty: true,
-              sku: true,
-              option1: true,
-              option2: true,
-              option3: true,
-            },
-          },
-        },
-        orderBy: {
-          createdAt: "desc",
-        },
-      })
-
-      products = productsData.map((p) => ({
-        id: p.id,
-        name: p.name,
-        slug: p.slug,
-        price: Number(p.price),
-        comparePrice: p.comparePrice ? Number(p.comparePrice) : null,
-        images: p.images as string[],
-        availability: p.availability,
-        variants: p.variants.map((v) => ({
-          id: v.id,
-          name: v.name,
-          price: v.price ? Number(v.price) : null,
-          comparePrice: v.comparePrice ? Number(v.comparePrice) : null,
-          inventoryQty: v.inventoryQty,
-          sku: v.sku,
-          options: {
-            ...(v.option1 ? { option1: v.option1 } : {}),
-            ...(v.option2 ? { option2: v.option2 } : {}),
-            ...(v.option3 ? { option3: v.option3 } : {}),
-          },
-        })),
-      }))
-    }
-  } catch (error) {
-    console.error("Error fetching products:", error)
-  }
+  // לא נטען מוצרים בשרת - נטען אותם בצד הלקוח לטעינה מהירה יותר
+  const products: Product[] = []
 
   // הכנת טמפלה
   const themeSettings = (shop.themeSettings as ThemeSettings) || {}

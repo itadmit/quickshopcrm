@@ -3,12 +3,15 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { isReviewsPluginActive } from "@/lib/plugins/reviews-helper"
 
 const updateReviewSchema = z.object({
   rating: z.number().int().min(1).max(5).optional(),
   title: z.string().optional(),
   comment: z.string().optional(),
   images: z.array(z.string()).optional(),
+  videos: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
   isApproved: z.boolean().optional(),
 })
 
@@ -23,7 +26,24 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     }
 
+    // מציאת הביקורת כדי לקבל את shopId
     const review = await prisma.review.findFirst({
+      where: { id: params.id },
+      select: { shopId: true },
+    })
+
+    if (!review) {
+      return NextResponse.json({ error: "Review not found" }, { status: 404 })
+    }
+
+    // בדיקה אם תוסף הביקורות פעיל
+    const isActive = await isReviewsPluginActive(review.shopId, session.user.companyId)
+    
+    if (!isActive) {
+      return NextResponse.json({ error: "Reviews plugin is not active" }, { status: 403 })
+    }
+
+    const fullReview = await prisma.review.findFirst({
       where: {
         id: params.id,
         shop: {
@@ -49,11 +69,11 @@ export async function GET(
       },
     })
 
-    if (!review) {
+    if (!fullReview) {
       return NextResponse.json({ error: "Review not found" }, { status: 404 })
     }
 
-    return NextResponse.json(review)
+    return NextResponse.json(fullReview)
   } catch (error) {
     console.error("Error fetching review:", error)
     return NextResponse.json(
@@ -86,6 +106,13 @@ export async function PUT(
 
     if (!existingReview) {
       return NextResponse.json({ error: "Review not found" }, { status: 404 })
+    }
+
+    // בדיקה אם תוסף הביקורות פעיל
+    const isActive = await isReviewsPluginActive(existingReview.shopId, session.user.companyId)
+    
+    if (!isActive) {
+      return NextResponse.json({ error: "Reviews plugin is not active" }, { status: 403 })
     }
 
     const body = await req.json()
@@ -152,6 +179,13 @@ export async function DELETE(
 
     if (!review) {
       return NextResponse.json({ error: "Review not found" }, { status: 404 })
+    }
+
+    // בדיקה אם תוסף הביקורות פעיל
+    const isActive = await isReviewsPluginActive(review.shopId, session.user.companyId)
+    
+    if (!isActive) {
+      return NextResponse.json({ error: "Reviews plugin is not active" }, { status: 403 })
     }
 
     // מחיקת הביקורת

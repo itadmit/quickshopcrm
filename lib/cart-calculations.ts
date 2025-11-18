@@ -59,6 +59,7 @@ export interface CartCalculationResult {
   subtotal: number
   customerDiscount: number
   automaticDiscount: number
+  automaticDiscountTitle?: string | null
   couponDiscount: number
   tax: number
   shipping: number
@@ -362,8 +363,9 @@ async function calculateAutomaticDiscounts(
   subtotal: number,
   customerId: string | null,
   customer: { totalSpent: number; orderCount: number; tier: string | null } | null
-): Promise<number> {
+): Promise<{ amount: number; title: string | null }> {
   let automaticDiscount = 0
+  let automaticDiscountTitle: string | null = null
   const now = new Date()
   
   const activeAutomaticDiscounts = await prisma.discount.findMany({
@@ -389,9 +391,35 @@ async function calculateAutomaticDiscounts(
     orderBy: { priority: 'desc' },
   })
 
+  console.log('🎁 calculateAutomaticDiscounts - Found discounts:', activeAutomaticDiscounts.length, {
+    shopId,
+    subtotal,
+    customerId: customerId || 'null (no customer)',
+    customer: customer ? { totalSpent: customer.totalSpent, orderCount: customer.orderCount, tier: customer.tier } : 'null',
+    discounts: activeAutomaticDiscounts.map(d => ({
+      id: d.id,
+      title: d.title,
+      type: d.type,
+      value: d.value,
+      priority: d.priority,
+      canCombine: d.canCombine,
+      isActive: d.isActive,
+      isAutomatic: d.isAutomatic,
+      minOrderAmount: d.minOrderAmount,
+      target: d.target,
+      customerTarget: d.customerTarget,
+    }))
+  })
+
   for (const autoDiscount of activeAutomaticDiscounts) {
     // בדיקת minOrderAmount
     if (autoDiscount.minOrderAmount && subtotal < autoDiscount.minOrderAmount) {
+      console.log('🎁 Discount skipped - minOrderAmount:', {
+        discountId: autoDiscount.id,
+        title: autoDiscount.title,
+        minOrderAmount: autoDiscount.minOrderAmount,
+        subtotal,
+      })
       continue
     }
 
@@ -408,6 +436,13 @@ async function calculateAutomaticDiscounts(
     }
 
     if (!customerMatch) {
+      console.log('🎁 Discount skipped - customerTarget:', {
+        discountId: autoDiscount.id,
+        title: autoDiscount.title,
+        customerTarget: autoDiscount.customerTarget,
+        customerId,
+        customerTier: customer?.tier,
+      })
       continue
     }
 
@@ -507,6 +542,12 @@ async function calculateAutomaticDiscounts(
     }
 
     if (!productMatch) {
+      console.log('🎁 Discount skipped - productMatch:', {
+        discountId: autoDiscount.id,
+        title: autoDiscount.title,
+        target: autoDiscount.target,
+        productIds: enrichedItems.map(item => item.productId),
+      })
       continue
     }
 
@@ -565,15 +606,36 @@ async function calculateAutomaticDiscounts(
       discountAmount = Math.min(discountAmount, autoDiscount.maxDiscount)
     }
 
+    console.log('🎁 Discount applied:', {
+      discountId: autoDiscount.id,
+      title: autoDiscount.title,
+      type: autoDiscount.type,
+      value: autoDiscount.value,
+      priority: autoDiscount.priority,
+      canCombine: autoDiscount.canCombine,
+      discountAmount,
+      subtotal,
+      currentTotalDiscount: automaticDiscount,
+    })
+
     automaticDiscount += discountAmount
+    
+    // שמירת שם ההנחה הראשונה (עם עדיפות גבוהה)
+    if (!automaticDiscountTitle && discountAmount > 0) {
+      automaticDiscountTitle = autoDiscount.title
+      console.log('🎁 Set discount title:', autoDiscount.title, 'Priority:', autoDiscount.priority)
+    }
 
     // אם לא ניתן לשלב, נעצור אחרי הראשונה
     if (!autoDiscount.canCombine) {
+      console.log('🎁 Cannot combine - stopping after:', autoDiscount.title, 'Priority:', autoDiscount.priority)
       break
     }
   }
 
-  return automaticDiscount
+  console.log('🎁 Total automatic discount:', automaticDiscount, 'Title:', automaticDiscountTitle)
+
+  return { amount: automaticDiscount, title: automaticDiscountTitle }
 }
 
 /**
@@ -585,7 +647,7 @@ async function calculateCouponDiscount(
   enrichedItems: EnrichedCartItem[],
   subtotal: number,
   customerId?: string | null
-): Promise<{ discount: number; status?: { isValid: boolean; reason?: string; minOrderRequired?: number } }> {
+): Promise<{ discount: number; customerDiscountFromCoupon?: number; status?: { isValid: boolean; reason?: string; minOrderRequired?: number } }> {
   if (!couponCode) {
     return { discount: 0 }
   }
@@ -697,6 +759,62 @@ async function calculateCouponDiscount(
       }
       discount = totalDiscount
     }
+  } else if (coupon.type === "BUY_X_PAY_Y") {
+    // קנה X פריטים, שלם רק על Y מהם
+    if (coupon.buyQuantity) {
+      // אם יש סכום קבוע לשלם
+      if (coupon.payAmount) {
+        // חישוב לפי סכום קבוע: הסכום הכולל שישלם הוא payAmount * מספר הקבוצות המלאות
+        // נחשב את המחיר הכולל של כל הפריטים
+        let totalItemsPrice = 0
+        let totalQuantity = 0
+        
+        for (const item of enrichedItems) {
+          const itemPrice = item.variant?.price || item.product.price
+          totalItemsPrice += itemPrice * item.quantity
+          totalQuantity += item.quantity
+        }
+        
+        // מספר הקבוצות המלאות
+        const fullGroups = Math.floor(totalQuantity / coupon.buyQuantity)
+        // מספר הפריטים שלא נכנסים לקבוצה מלאה
+        const remainingItems = totalQuantity % coupon.buyQuantity
+        
+        // מחיר הפריטים שלא נכנסים לקבוצה מלאה
+        let remainingItemsPrice = 0
+        let itemsCounted = 0
+        for (const item of enrichedItems) {
+          const itemPrice = item.variant?.price || item.product.price
+          const itemsToCount = Math.min(item.quantity, remainingItems - itemsCounted)
+          if (itemsToCount > 0) {
+            remainingItemsPrice += itemPrice * itemsToCount
+            itemsCounted += itemsToCount
+          }
+          if (itemsCounted >= remainingItems) break
+        }
+        
+        // הסכום שישלם = סכום קבוע על כל קבוצה מלאה + מחיר הפריטים שלא נכנסים לקבוצה
+        const totalPriceToPay = (coupon.payAmount * fullGroups) + remainingItemsPrice
+        
+        // ההנחה היא ההפרש בין המחיר המקורי למחיר שישלם
+        discount = Math.max(0, totalItemsPrice - totalPriceToPay)
+      } else if (coupon.payQuantity) {
+        // חישוב רגיל: משלם רק על Y פריטים
+        let totalDiscount = 0
+        for (const item of enrichedItems) {
+          const applicableTimes = Math.floor(item.quantity / coupon.buyQuantity)
+          if (applicableTimes > 0) {
+            // מספר הפריטים החינמיים בכל קבוצה
+            const freeItemsPerGroup = coupon.buyQuantity - coupon.payQuantity
+            const totalFreeItems = Math.min(applicableTimes * freeItemsPerGroup, item.quantity - (applicableTimes * coupon.payQuantity))
+            const itemPrice = item.variant?.price || item.product.price
+            // הנחה של 100% על הפריטים החינמיים
+            totalDiscount += itemPrice * totalFreeItems
+          }
+        }
+        discount = totalDiscount
+      }
+    }
   } else if (coupon.type === "NTH_ITEM_DISCOUNT") {
     if (coupon.nthItem && coupon.value) {
       let totalDiscount = 0
@@ -732,8 +850,17 @@ async function calculateCouponDiscount(
     discount = Math.min(discount, coupon.maxDiscount)
   }
 
+  // חישוב הנחת לקוח רשום מקופון
+  let customerDiscountFromCoupon = 0
+  if (coupon.enableCustomerDiscount && coupon.customerDiscountPercent && customerId) {
+    // הנחה על ה-subtotal אחרי הנחת הקופון
+    const subtotalAfterCoupon = subtotal - discount
+    customerDiscountFromCoupon = (subtotalAfterCoupon * coupon.customerDiscountPercent) / 100
+  }
+
   return { 
     discount,
+    customerDiscountFromCoupon,
     status: { isValid: true }
   }
 }
@@ -833,6 +960,7 @@ export async function calculateCart(
   // טעינת לקוח והגדרות הנחות
   let customerDiscountSettings = null
   let customer = null
+  console.log('🛒 calculateCart - customerId:', customerId || 'null (no customer)')
   if (customerId) {
     const [shopWithSettings, customerData] = await Promise.all([
       prisma.shop.findUnique({
@@ -850,6 +978,14 @@ export async function calculateCart(
     ])
     customerDiscountSettings = shopWithSettings?.customerDiscountSettings
     customer = customerData
+    console.log('🛒 calculateCart - Customer loaded:', customer ? {
+      id: customerId,
+      totalSpent: customer.totalSpent,
+      orderCount: customer.orderCount,
+      tier: customer.tier
+    } : 'Customer not found in DB')
+  } else {
+    console.log('🛒 calculateCart - No customerId provided, customer will be null')
   }
 
   // טעינת bundles אם יש פריטים עם bundleId
@@ -1181,13 +1317,15 @@ export async function calculateCart(
   enrichedItems.push(...giftItems)
 
   // חישוב הנחות אוטומטיות
-  const automaticDiscount = await calculateAutomaticDiscounts(
+  const automaticDiscountResult = await calculateAutomaticDiscounts(
     shopId,
     enrichedItems,
     subtotal,
     customerId,
     customer
   )
+  const automaticDiscount = automaticDiscountResult.amount
+  const automaticDiscountTitle = automaticDiscountResult.title
 
   // חישוב הנחה מקופון
   const couponResult = await calculateCouponDiscount(
@@ -1198,12 +1336,98 @@ export async function calculateCart(
     customerId
   )
 
+  // חישוב הנחת לקוח רשום מקופון
+  const customerDiscountFromCoupon = couponResult.customerDiscountFromCoupon || 0
+  
+  // הוספת מתנה אוטומטית מקופון
+  if (couponCode) {
+    const coupon = await prisma.coupon.findUnique({
+      where: { code: couponCode },
+    })
+    
+    if (coupon && coupon.giftProductId && coupon.isActive) {
+      // בדיקת תנאי המתנה
+      let conditionMet = false
+      
+      if (coupon.giftCondition === "MIN_ORDER_AMOUNT") {
+        const minAmount = coupon.giftConditionAmount ?? coupon.minOrder ?? 0
+        conditionMet = subtotal >= minAmount
+      } else if (coupon.giftCondition === "SPECIFIC_PRODUCT") {
+        if (coupon.giftConditionProductId) {
+          conditionMet = enrichedItems.some(
+            item => item.productId === coupon.giftConditionProductId && !item.isGift
+          )
+        }
+      } else {
+        const minAmount = coupon.minOrder || 0
+        conditionMet = subtotal >= minAmount
+      }
+      
+      if (conditionMet) {
+        // בדיקה אם מוצר המתנה כבר קיים בעגלה
+        const giftAlreadyInCart = enrichedItems.some(
+          item => item.productId === coupon.giftProductId && !item.isGift
+        )
+        
+        if (!giftAlreadyInCart) {
+          // טעינת מוצר המתנה
+          const giftProduct = await prisma.product.findUnique({
+            where: { id: coupon.giftProductId },
+            include: {
+              variants: true,
+            },
+          })
+          
+          if (giftProduct && giftProduct.status === "PUBLISHED") {
+            // בחירת וריאציה
+            let selectedVariant = null
+            if (coupon.giftVariantId) {
+              selectedVariant = giftProduct.variants.find(v => v.id === coupon.giftVariantId)
+            } else if (giftProduct.variants.length > 0) {
+              // אם יש וריאציות אבל לא נבחרה אחת, נצטרך לבחור
+              // נשתמש בוריאציה הראשונה שיש לה מלאי
+              selectedVariant = giftProduct.variants.find(v => (v.inventoryQty ?? 0) > 0) || giftProduct.variants[0]
+            }
+            
+            if (selectedVariant || giftProduct.variants.length === 0) {
+              // יש וריאציה נבחרת או אין וריאציות בכלל
+              const giftPrice = selectedVariant?.price ?? giftProduct.price
+              const giftItem: EnrichedCartItem = {
+                productId: giftProduct.id,
+                variantId: selectedVariant?.id || null,
+                quantity: 1,
+                product: {
+                  id: giftProduct.id,
+                  name: giftProduct.name,
+                  price: giftProduct.price,
+                  sku: giftProduct.sku,
+                },
+                variant: selectedVariant ? {
+                  id: selectedVariant.id,
+                  name: selectedVariant.name,
+                  price: selectedVariant.price ?? 0,
+                  sku: selectedVariant.sku,
+                  inventoryQty: selectedVariant.inventoryQty,
+                } : null,
+                price: 0, // מתנה - מחיר 0
+                total: 0,
+                isGift: true,
+                giftDiscountId: coupon.id,
+              }
+              enrichedItems.push(giftItem)
+            }
+          }
+        }
+      }
+    }
+  }
+
   // חישוב מע"מ
   const finalTaxRate = taxRate !== null ? taxRate : (shop?.taxEnabled && shop.taxRate ? shop.taxRate : 0)
   const totalDiscount = automaticDiscount + couponResult.discount
   const pricesIncludeTax = shop?.pricesIncludeTax ?? true // ברירת מחדל: המחירים כוללים מע"מ
   
-  const finalPrice = subtotal - totalDiscount - customerDiscountTotal
+  const finalPrice = subtotal - totalDiscount - customerDiscountTotal - customerDiscountFromCoupon
   
   let tax = 0
   let total = 0
@@ -1230,8 +1454,9 @@ export async function calculateCart(
   const result: CartCalculationResult = {
     items: enrichedItems,
     subtotal,
-    customerDiscount: customerDiscountTotal,
+    customerDiscount: customerDiscountTotal + customerDiscountFromCoupon,
     automaticDiscount,
+    automaticDiscountTitle,
     couponDiscount: couponResult.discount,
     tax,
     shipping,

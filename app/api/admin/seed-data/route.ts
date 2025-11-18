@@ -987,7 +987,7 @@ export async function POST(req: NextRequest) {
                 id: 'nav-item-1-4',
                 label: collections[0].name, // מוצרים מומלצים
                 type: 'COLLECTION',
-                url: `/collections/${collections[0].slug}`,
+                url: `/categories/${collections[0].slug}`,
                 position: 3,
                 parentId: 'nav-item-1',
                 collectionId: collections[0].id,
@@ -996,7 +996,7 @@ export async function POST(req: NextRequest) {
                 id: 'nav-item-1-5',
                 label: collections[1].name, // מבצעים
                 type: 'COLLECTION',
-                url: `/collections/${collections[1].slug}`,
+                url: `/categories/${collections[1].slug}`,
                 position: 4,
                 parentId: 'nav-item-1',
                 collectionId: collections[1].id,
@@ -1005,7 +1005,7 @@ export async function POST(req: NextRequest) {
                 id: 'nav-item-1-6',
                 label: collections[2].name, // חדש בחנות
                 type: 'COLLECTION',
-                url: `/collections/${collections[2].slug}`,
+                url: `/categories/${collections[2].slug}`,
                 position: 5,
                 parentId: 'nav-item-1',
                 collectionId: collections[2].id,

@@ -109,6 +109,30 @@ export async function GET(
           categoryId = item.id.replace("category-", "")
         }
         transformedItem.categoryId = categoryId || null
+        
+        // שליפת slug של הקטגוריה
+        let categorySlug = null
+        if (item.url) {
+          const urlMatch = item.url.match(/\/categories\/(.+)/)
+          if (urlMatch) {
+            categorySlug = urlMatch[1]
+          }
+        }
+        if (categoryId && !categorySlug) {
+          const categoryData = await prisma.category.findFirst({
+            where: {
+              id: categoryId,
+              shopId: shop.id,
+            },
+            select: {
+              slug: true,
+            },
+          })
+          if (categoryData) {
+            categorySlug = categoryData.slug
+          }
+        }
+        transformedItem.categorySlug = categorySlug || null
       }
       
       // אם זה קולקציה
@@ -118,6 +142,30 @@ export async function GET(
           collectionId = item.id.replace("collection-", "")
         }
         transformedItem.collectionId = collectionId || null
+        
+        // שליפת slug של הקולקציה
+        let collectionSlug = null
+        if (item.url) {
+          const urlMatch = item.url.match(/\/collections\/(.+)/)
+          if (urlMatch) {
+            collectionSlug = urlMatch[1]
+          }
+        }
+        if (collectionId && !collectionSlug) {
+          const collectionData = await prisma.collection.findFirst({
+            where: {
+              id: collectionId,
+              shopId: shop.id,
+            },
+            select: {
+              slug: true,
+            },
+          })
+          if (collectionData) {
+            collectionSlug = collectionData.slug
+          }
+        }
+        transformedItem.collectionSlug = collectionSlug || null
       }
       
       // אם זה קישור חיצוני

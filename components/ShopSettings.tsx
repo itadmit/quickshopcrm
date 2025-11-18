@@ -40,29 +40,28 @@ import {
 } from "lucide-react"
 
 interface ShopData {
-  // שלב 1
+  // פרטי בסיס
   name: string
   slug: string
   description: string
   category: string
-  logo: string | null
-  favicon: string | null
   isPublished: boolean
+  maintenanceMessage: string
   
-  // שלב 2
+  // יצירת קשר
   email: string
   phone: string
   address: string
   workingHours: any
   
-  // שלב 3
+  // תשלום ומע"מ
   paymentMethods: string[]
   currency: string
   taxEnabled: boolean
   taxRate: number
   pricesIncludeTax: boolean
   
-  // שלב 4
+  // משלוח
   shippingEnabled: boolean
   shippingOptions: {
     fixed: boolean
@@ -76,21 +75,6 @@ interface ShopData {
   pickupEnabled: boolean
   pickupAddress: string
   pickupCost: number | null
-  
-  // שלב 5
-  theme: string
-  primaryColor: string
-  secondaryColor: string
-  autoOpenCartAfterAdd: boolean
-  
-  // הגדרות לוגו
-  logoWidthMobile: number
-  logoWidthDesktop: number
-  logoPaddingMobile: number
-  logoPaddingDesktop: number
-  
-  // תחזוקה
-  maintenanceMessage: string
 }
 
 const CATEGORIES = [
@@ -105,11 +89,20 @@ const CATEGORIES = [
   "אחר",
 ]
 
-const THEMES = [
-  { id: "default", name: "ברירת מחדל", description: "תבנית נקייה ומינימליסטית" },
-  { id: "modern", name: "מודרני", description: "תבנית מודרנית עם אנימציות" },
-  { id: "classic", name: "קלאסי", description: "תבנית קלאסית ומסורתית" },
-  { id: "bold", name: "בולט", description: "תבנית בולטת וצבעונית" },
+const PAYMENT_METHODS = [
+  { id: "credit_card", name: "כרטיס אשראי" },
+  { id: "payplus", name: "PayPlus" },
+  { id: "paypal", name: "PayPal" },
+  { id: "bank_transfer", name: "העברה בנקאית" },
+  { id: "cash_on_delivery", name: "מזומן בעת משלוח" },
+  { id: "store_credit", name: "קרדיט חנות" },
+]
+
+const CURRENCIES = [
+  { code: "ILS", name: "שקל (₪)" },
+  { code: "USD", name: "דולר ($)" },
+  { code: "EUR", name: "יורו (€)" },
+  { code: "GBP", name: "פאונד (£)" },
 ]
 
 export function ShopSettings() {
@@ -129,9 +122,8 @@ export function ShopSettings() {
     slug: "",
     description: "",
     category: "",
-    logo: null,
-    favicon: null,
     isPublished: true,
+    maintenanceMessage: "אנו עובדים על שיפורים בחנות. אנא חזור מאוחר יותר.",
     email: "",
     phone: "",
     address: "",
@@ -154,15 +146,6 @@ export function ShopSettings() {
     pickupEnabled: false,
     pickupAddress: "",
     pickupCost: null,
-    theme: "default",
-    primaryColor: "#000000",
-    secondaryColor: "#333333",
-    autoOpenCartAfterAdd: true,
-    logoWidthMobile: 85,
-    logoWidthDesktop: 135,
-    logoPaddingMobile: 0,
-    logoPaddingDesktop: 0,
-    maintenanceMessage: "אנו עובדים על שיפורים בחנות. אנא חזור מאוחר יותר.",
   })
 
   // טעינת נתוני החנות
@@ -243,9 +226,8 @@ export function ShopSettings() {
           slug: shop.slug || "",
           description: shop.description || "",
           category: shop.category || "",
-          logo: shop.logo,
-          favicon: shop.favicon,
           isPublished: shop.isPublished ?? true,
+          maintenanceMessage: shop.settings?.maintenanceMessage || "אנו עובדים על שיפורים בחנות. אנא חזור מאוחר יותר.",
           email: shop.email || "",
           phone: shop.phone || "",
           address: shop.address || "",
@@ -262,15 +244,6 @@ export function ShopSettings() {
           pickupEnabled: pickup.enabled || false,
           pickupAddress: pickup.address || "",
           pickupCost: pickup.cost || null,
-          theme: shop.theme || "default",
-          primaryColor: shop.themeSettings?.primaryColor || "#000000",
-          secondaryColor: shop.themeSettings?.secondaryColor || "#333333",
-          autoOpenCartAfterAdd: shop.settings?.autoOpenCartAfterAdd !== undefined ? shop.settings.autoOpenCartAfterAdd : true,
-          logoWidthMobile: shop.themeSettings?.logoWidthMobile || 85,
-          logoWidthDesktop: shop.themeSettings?.logoWidthDesktop || 135,
-          logoPaddingMobile: shop.themeSettings?.logoPaddingMobile || 0,
-          logoPaddingDesktop: shop.themeSettings?.logoPaddingDesktop || 0,
-          maintenanceMessage: shop.settings?.maintenanceMessage || "אנו עובדים על שיפורים בחנות. אנא חזור מאוחר יותר.",
         })
       }
     } catch (error) {
@@ -364,8 +337,6 @@ export function ShopSettings() {
           slug: shopData.slug,
           description: shopData.description,
           category: shopData.category,
-          logo: shopData.logo,
-          favicon: shopData.favicon,
           isPublished: shopData.isPublished,
           email: shopData.email,
           phone: shopData.phone,
@@ -375,18 +346,8 @@ export function ShopSettings() {
           taxEnabled: shopData.taxEnabled,
           taxRate: shopData.taxRate,
           pricesIncludeTax: shopData.pricesIncludeTax,
-          theme: shopData.theme,
-          themeSettings: {
-            primaryColor: shopData.primaryColor,
-            secondaryColor: shopData.secondaryColor,
-            logoWidthMobile: shopData.logoWidthMobile,
-            logoWidthDesktop: shopData.logoWidthDesktop,
-            logoPaddingMobile: shopData.logoPaddingMobile,
-            logoPaddingDesktop: shopData.logoPaddingDesktop,
-          },
           settings: {
             paymentMethods: shopData.paymentMethods,
-            autoOpenCartAfterAdd: shopData.autoOpenCartAfterAdd,
             shipping: {
               enabled: shopData.shippingEnabled,
               options: shopData.shippingOptions,
@@ -419,8 +380,6 @@ export function ShopSettings() {
         loadShopData()
       }
 
-      // שליחת event לעדכון צבעים בדפי הפרונט
-      window.dispatchEvent(new Event('themeUpdated'))
     } catch (error: any) {
       toast({
         title: "שגיאה",
@@ -692,341 +651,6 @@ export function ShopSettings() {
                 </Select>
               </div>
 
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-gray-700">
-                    לוגו החנות <span className="text-gray-400 font-normal">(אופציונלי)</span>
-                  </Label>
-                  <div className="mt-2 flex items-center gap-4">
-                    {shopData.logo ? (
-                      <div className="relative group">
-                        <img 
-                          src={shopData.logo} 
-                          alt="Logo" 
-                          className="w-28 h-28 object-cover rounded-xl shadow-md ring-2 ring-purple-100 transition-transform group-hover:scale-105" 
-                        />
-                        <button
-                          onClick={async () => {
-                            // מחיקת הקובץ מהשרת (S3) אם זה URL של S3
-                            if (shopData.logo && shopData.logo.startsWith('https://') && shopData.logo.includes('.s3.')) {
-                              try {
-                                const response = await fetch(`/api/files/delete?path=${encodeURIComponent(shopData.logo)}`, {
-                                  method: 'DELETE',
-                                })
-                                if (response.ok) {
-                                  toast({
-                                    title: "הצלחה",
-                                    description: "הלוגו נמחק מהשרת",
-                                  })
-                                } else {
-                                  toast({
-                                    title: "אזהרה",
-                                    description: "הלוגו הוסר מהתצוגה, אך לא נמחק מהשרת",
-                                    variant: "destructive",
-                                  })
-                                }
-                              } catch (error) {
-                                console.error('Error deleting file:', error)
-                                toast({
-                                  title: "אזהרה",
-                                  description: "הלוגו הוסר מהתצוגה, אך לא נמחק מהשרת",
-                                  variant: "destructive",
-                                })
-                              }
-                            }
-                            updateShopData("logo", null)
-                          }}
-                          className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-all hover:scale-110"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                      </div>
-                    ) : (
-                      <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-purple-500 hover:bg-purple-50/50 transition-all duration-200 group">
-                        <Upload className="w-8 h-8 text-gray-400 group-hover:text-purple-500 transition-colors mb-2" />
-                        <span className="text-sm font-medium text-gray-600 group-hover:text-purple-600">העלה לוגו</span>
-                        <input
-                          type="file"
-                          className="hidden"
-                          accept="image/*"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0]
-                            if (file) {
-                              try {
-                                const formData = new FormData()
-                                formData.append("file", file)
-                                formData.append("entityType", "shops")
-                                formData.append("entityId", selectedShop?.id || "new")
-                                formData.append("fileType", "logo")
-                                if (selectedShop?.id) {
-                                  formData.append("shopId", selectedShop.id)
-                                }
-
-                                const response = await fetch("/api/files/upload", {
-                                  method: "POST",
-                                  body: formData,
-                                })
-
-                                if (response.ok) {
-                                  const data = await response.json()
-                                  updateShopData("logo", data.file.path)
-                                  toast({
-                                    title: "הצלחה",
-                                    description: "הלוגו הועלה בהצלחה",
-                                  })
-                                } else {
-                                  throw new Error("Failed to upload")
-                                }
-                              } catch (error) {
-                                toast({
-                                  title: "שגיאה",
-                                  description: "אירעה שגיאה בהעלאת הלוגו",
-                                  variant: "destructive",
-                                })
-                              }
-                            }
-                          }}
-                        />
-                      </label>
-                    )}
-                  </div>
-                </div>
-
-                {/* הגדרות גודל ופדינג לוגו */}
-                {shopData.logo && (
-                  <div className="space-y-4 pt-4 border-t border-gray-200">
-                    <h4 className="text-sm font-semibold text-gray-900">הגדרות תצוגת לוגו</h4>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      {/* רוחב לוגו מובייל */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="logoWidthMobile" className="text-sm font-medium text-gray-700">
-                            רוחב לוגו - מובייל
-                          </Label>
-                          <span className="text-sm text-gray-600">{shopData.logoWidthMobile}px</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            id="logoWidthMobile"
-                            type="range"
-                            value={shopData.logoWidthMobile}
-                            onChange={(e) => updateShopData("logoWidthMobile", parseFloat(e.target.value))}
-                            min="20"
-                            max="300"
-                            step="5"
-                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
-                          />
-                          <Input
-                            type="number"
-                            value={shopData.logoWidthMobile}
-                            onChange={(e) => updateShopData("logoWidthMobile", parseFloat(e.target.value) || 85)}
-                            min="20"
-                            max="300"
-                            className="w-16 h-8 text-xs text-center"
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500">ברירת מחדל: 85px</p>
-                      </div>
-
-                      {/* רוחב לוגו מחשב */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="logoWidthDesktop" className="text-sm font-medium text-gray-700">
-                            רוחב לוגו - מחשב
-                          </Label>
-                          <span className="text-sm text-gray-600">{shopData.logoWidthDesktop}px</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            id="logoWidthDesktop"
-                            type="range"
-                            value={shopData.logoWidthDesktop}
-                            onChange={(e) => updateShopData("logoWidthDesktop", parseFloat(e.target.value))}
-                            min="30"
-                            max="500"
-                            step="5"
-                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
-                          />
-                          <Input
-                            type="number"
-                            value={shopData.logoWidthDesktop}
-                            onChange={(e) => updateShopData("logoWidthDesktop", parseFloat(e.target.value) || 135)}
-                            min="30"
-                            max="500"
-                            className="w-16 h-8 text-xs text-center"
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500">ברירת מחדל: 135px</p>
-                      </div>
-
-                      {/* פדינג לוגו מובייל */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="logoPaddingMobile" className="text-sm font-medium text-gray-700">
-                            פדינג לוגו - מובייל
-                          </Label>
-                          <span className="text-sm text-gray-600">{shopData.logoPaddingMobile}px</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            id="logoPaddingMobile"
-                            type="range"
-                            value={shopData.logoPaddingMobile}
-                            onChange={(e) => updateShopData("logoPaddingMobile", parseFloat(e.target.value))}
-                            min="0"
-                            max="100"
-                            step="2"
-                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
-                          />
-                          <Input
-                            type="number"
-                            value={shopData.logoPaddingMobile}
-                            onChange={(e) => updateShopData("logoPaddingMobile", parseFloat(e.target.value) || 0)}
-                            min="0"
-                            max="100"
-                            className="w-16 h-8 text-xs text-center"
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500">ברירת מחדל: 0px</p>
-                      </div>
-
-                      {/* פדינג לוגו מחשב */}
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="logoPaddingDesktop" className="text-sm font-medium text-gray-700">
-                            פדינג לוגו - מחשב
-                          </Label>
-                          <span className="text-sm text-gray-600">{shopData.logoPaddingDesktop}px</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <input
-                            id="logoPaddingDesktop"
-                            type="range"
-                            value={shopData.logoPaddingDesktop}
-                            onChange={(e) => updateShopData("logoPaddingDesktop", parseFloat(e.target.value))}
-                            min="0"
-                            max="100"
-                            step="2"
-                            className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
-                          />
-                          <Input
-                            type="number"
-                            value={shopData.logoPaddingDesktop}
-                            onChange={(e) => updateShopData("logoPaddingDesktop", parseFloat(e.target.value) || 0)}
-                            min="0"
-                            max="100"
-                            className="w-16 h-8 text-xs text-center"
-                          />
-                        </div>
-                        <p className="text-xs text-gray-500">ברירת מחדל: 0px</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-sm font-semibold text-gray-700">
-                  Favicon (אייקון דפדפן) <span className="text-gray-400 font-normal">(אופציונלי)</span>
-                </Label>
-                <p className="text-xs text-gray-500 mb-2">
-                  האייקון שמוצג בכרטיסיית הדפדפן. מומלץ: 32x32 או 64x64 פיקסלים (PNG, SVG או ICO)
-                </p>
-                <div className="mt-2 flex items-center gap-4">
-                  {shopData.favicon ? (
-                    <div className="relative group">
-                      <img 
-                        src={shopData.favicon} 
-                        alt="Favicon" 
-                        className="w-16 h-16 object-contain rounded-lg shadow-md ring-2 ring-purple-100 transition-transform group-hover:scale-105" 
-                      />
-                      <button
-                        onClick={async () => {
-                          // מחיקת הקובץ מהשרת (S3) אם זה URL של S3
-                          if (shopData.favicon && shopData.favicon.startsWith('https://') && shopData.favicon.includes('.s3.')) {
-                            try {
-                              const response = await fetch(`/api/files/delete?path=${encodeURIComponent(shopData.favicon)}`, {
-                                method: 'DELETE',
-                              })
-                              if (response.ok) {
-                                toast({
-                                  title: "הצלחה",
-                                  description: "ה-Favicon נמחק מהשרת",
-                                })
-                              } else {
-                                toast({
-                                  title: "אזהרה",
-                                  description: "ה-Favicon הוסר מהתצוגה, אך לא נמחק מהשרת",
-                                  variant: "destructive",
-                                })
-                              }
-                            } catch (error) {
-                              console.error('Error deleting file:', error)
-                              toast({
-                                title: "אזהרה",
-                                description: "ה-Favicon הוסר מהתצוגה, אך לא נמחק מהשרת",
-                                variant: "destructive",
-                              })
-                            }
-                          }
-                          updateShopData("favicon", null)
-                        }}
-                        className="absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full p-1.5 shadow-lg transition-all hover:scale-110"
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  ) : (
-                    <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50/50 transition-all duration-200 group">
-                      <Upload className="w-6 h-6 text-gray-400 group-hover:text-purple-500 transition-colors mb-1" />
-                      <span className="text-xs font-medium text-gray-600 group-hover:text-purple-600 text-center px-2">העלה Favicon</span>
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept="image/png,image/svg+xml,image/x-icon,.ico"
-                        onChange={async (e) => {
-                          const file = e.target.files?.[0]
-                          if (file) {
-                            try {
-                              const formData = new FormData()
-                              formData.append("file", file)
-                              formData.append("entityType", "shops")
-                              formData.append("entityId", selectedShop?.id || "new")
-                              formData.append("fileType", "favicon")
-                              if (selectedShop?.id) {
-                                formData.append("shopId", selectedShop.id)
-                              }
-
-                              const response = await fetch("/api/files/upload", {
-                                method: "POST",
-                                body: formData,
-                              })
-
-                              if (response.ok) {
-                                const data = await response.json()
-                                updateShopData("favicon", data.file.path)
-                                toast({
-                                  title: "הצלחה",
-                                  description: "ה-Favicon הועלה בהצלחה",
-                                })
-                              } else {
-                                throw new Error("Failed to upload")
-                              }
-                            } catch (error) {
-                              toast({
-                                title: "שגיאה",
-                                description: "אירעה שגיאה בהעלאת ה-Favicon",
-                                variant: "destructive",
-                              })
-                            }
-                          }
-                        }}
-                      />
-                    </label>
-                  )}
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>
@@ -1096,68 +720,6 @@ export function ShopSettings() {
                     ניתן להגדיר מאוחר יותר בהגדרות החנות
                   </p>
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* תשלום */}
-        <Card className="shadow-sm">
-          <CardHeader>
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
-                <CreditCard className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <CardTitle>מע"מ</CardTitle>
-                <CardDescription>הגדרות מע"מ</CardDescription>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div>
-                <div className="flex items-center space-x-2 space-x-reverse mb-2">
-                  <Checkbox
-                    id="taxEnabled"
-                    checked={shopData.taxEnabled}
-                    onCheckedChange={(checked) => updateShopData("taxEnabled", checked)}
-                  />
-                  <Label htmlFor="taxEnabled" className="cursor-pointer">
-                    הפעל מע"מ
-                  </Label>
-                </div>
-                {shopData.taxEnabled && (
-                  <div className="mt-2 mr-6 space-y-3">
-                    <div>
-                      <Label htmlFor="taxRate">אחוז מע"מ</Label>
-                      <Input
-                        id="taxRate"
-                        type="number"
-                        value={shopData.taxRate}
-                        onChange={(e) => updateShopData("taxRate", parseFloat(e.target.value) || 0)}
-                        min="0"
-                        max="100"
-                        className="h-10 text-sm"
-                      />
-                    </div>
-                    <div className="flex items-center space-x-2 space-x-reverse">
-                      <Checkbox
-                        id="pricesIncludeTax"
-                        checked={shopData.pricesIncludeTax}
-                        onCheckedChange={(checked) => updateShopData("pricesIncludeTax", checked)}
-                      />
-                      <Label htmlFor="pricesIncludeTax" className="cursor-pointer text-sm">
-                        המחירים באתר כוללים מע"מ
-                      </Label>
-                    </div>
-                    <p className="text-xs text-gray-500 mr-6">
-                      {shopData.pricesIncludeTax 
-                        ? "המחירים שמוצגים ללקוחות כבר כוללים מע״מ" 
-                        : "המע״מ יתווסף למחיר בעת התשלום"}
-                    </p>
-                  </div>
-                )}
               </div>
             </div>
           </CardContent>
@@ -1348,92 +910,118 @@ export function ShopSettings() {
           </CardContent>
         </Card>
 
-        {/* עיצוב */}
+        {/* תשלום */}
         <Card className="shadow-sm">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-pink-100 flex items-center justify-center">
-                <Palette className="w-5 h-5 text-pink-600" />
+              <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <CardTitle>עיצוב</CardTitle>
-                <CardDescription>תבנית עיצוב וצבעים</CardDescription>
+                <CardTitle>תשלום ומע"מ</CardTitle>
+                <CardDescription>שיטות תשלום, מטבע והגדרות מע"מ</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div>
-                <Label>תבנית עיצוב</Label>
-                <div className="mt-2 space-y-4">
-                  {THEMES.map((theme) => (
-                    <div
-                      key={theme.id}
-                      className={`p-4 border-2 rounded-lg cursor-pointer transition-all ${
-                        shopData.theme === theme.id
-                          ? "border-purple-500 bg-purple-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                      onClick={() => updateShopData("theme", theme.id)}
-                    >
-                      <h3 className="font-semibold">{theme.name}</h3>
-                      <p className="text-sm text-gray-600">{theme.description}</p>
+            <div className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="currency" className="text-sm font-semibold text-gray-700">
+                  מטבע <span className="text-red-500">*</span>
+                </Label>
+                <Select value={shopData.currency} onValueChange={(value) => updateShopData("currency", value)}>
+                  <SelectTrigger className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500">
+                    <SelectValue placeholder="בחר מטבע" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CURRENCIES.map((curr) => (
+                      <SelectItem key={curr.code} value={curr.code} className="text-sm">
+                        {curr.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-gray-700">
+                  שיטות תשלום <span className="text-red-500">*</span>
+                </Label>
+                <p className="text-xs text-gray-500 mb-2">
+                  בחר את שיטות התשלום שהחנות תתמוך בהן
+                </p>
+                <div className="space-y-2">
+                  {PAYMENT_METHODS.map((method) => (
+                    <div key={method.id} className="flex items-center space-x-2 space-x-reverse">
+                      <Checkbox
+                        id={`payment-${method.id}`}
+                        checked={shopData.paymentMethods.includes(method.id)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            updateShopData("paymentMethods", [...shopData.paymentMethods, method.id])
+                          } else {
+                            updateShopData("paymentMethods", shopData.paymentMethods.filter((m) => m !== method.id))
+                          }
+                        }}
+                      />
+                      <Label htmlFor={`payment-${method.id}`} className="cursor-pointer text-sm">
+                        {method.name}
+                      </Label>
                     </div>
                   ))}
                 </div>
+                {shopData.paymentMethods.length === 0 && (
+                  <p className="text-xs text-red-500 mt-1">
+                    יש לבחור לפחות שיטת תשלום אחת
+                  </p>
+                )}
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="primaryColor">צבע ראשי</Label>
-                  <div className="mt-2 flex items-center gap-2">
-                    <input
-                      id="primaryColor"
-                      type="color"
-                      value={shopData.primaryColor}
-                      onChange={(e) => updateShopData("primaryColor", e.target.value)}
-                      className="w-16 h-10 rounded border"
-                    />
-                    <Input
-                      value={shopData.primaryColor}
-                      onChange={(e) => updateShopData("primaryColor", e.target.value)}
-                      className="flex-1 h-10 text-sm"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <Label htmlFor="secondaryColor">צבע משני</Label>
-                  <div className="mt-2 flex items-center gap-2">
-                    <input
-                      id="secondaryColor"
-                      type="color"
-                      value={shopData.secondaryColor}
-                      onChange={(e) => updateShopData("secondaryColor", e.target.value)}
-                      className="w-16 h-10 rounded border"
-                    />
-                    <Input
-                      value={shopData.secondaryColor}
-                      onChange={(e) => updateShopData("secondaryColor", e.target.value)}
-                      className="flex-1 h-10 text-sm"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* הגדרות עגלה */}
-              <div className="space-y-4 pt-4 border-t">
-                <div className="flex items-center justify-between">
+              <div className="pt-4 border-t border-gray-200">
+                <div className="space-y-4">
                   <div>
-                    <Label>פתיחת עגלה אוטומטית</Label>
-                    <p className="text-sm text-gray-600 mt-1">
-                      פתח את העגלה מהצד אוטומטית אחרי הוספת מוצר
-                    </p>
+                    <div className="flex items-center space-x-2 space-x-reverse mb-2">
+                      <Checkbox
+                        id="taxEnabled"
+                        checked={shopData.taxEnabled}
+                        onCheckedChange={(checked) => updateShopData("taxEnabled", checked)}
+                      />
+                      <Label htmlFor="taxEnabled" className="cursor-pointer">
+                        הפעל מע"מ
+                      </Label>
+                    </div>
+                    {shopData.taxEnabled && (
+                      <div className="mt-2 mr-6 space-y-3">
+                        <div>
+                          <Label htmlFor="taxRate">אחוז מע"מ</Label>
+                          <Input
+                            id="taxRate"
+                            type="number"
+                            value={shopData.taxRate}
+                            onChange={(e) => updateShopData("taxRate", parseFloat(e.target.value) || 0)}
+                            min="0"
+                            max="100"
+                            className="h-10 text-sm"
+                          />
+                        </div>
+                        <div className="flex items-center space-x-2 space-x-reverse">
+                          <Checkbox
+                            id="pricesIncludeTax"
+                            checked={shopData.pricesIncludeTax}
+                            onCheckedChange={(checked) => updateShopData("pricesIncludeTax", checked)}
+                          />
+                          <Label htmlFor="pricesIncludeTax" className="cursor-pointer text-sm">
+                            המחירים באתר כוללים מע"מ
+                          </Label>
+                        </div>
+                        <p className="text-xs text-gray-500 mr-6">
+                          {shopData.pricesIncludeTax 
+                            ? "המחירים שמוצגים ללקוחות כבר כוללים מע״מ" 
+                            : "המע״מ יתווסף למחיר בעת התשלום"}
+                        </p>
+                      </div>
+                    )}
                   </div>
-                  <Switch
-                    checked={shopData.autoOpenCartAfterAdd}
-                    onCheckedChange={(checked) => updateShopData("autoOpenCartAfterAdd", checked)}
-                  />
                 </div>
               </div>
             </div>

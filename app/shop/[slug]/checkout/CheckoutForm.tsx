@@ -26,6 +26,7 @@ import {
   Phone,
   X,
   Lock,
+  Coins,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -67,6 +68,7 @@ interface Cart {
   customerDiscount?: number
   couponDiscount?: number
   automaticDiscount?: number
+  automaticDiscountTitle?: string
 }
 
 interface Shop {
@@ -140,6 +142,8 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
   const { theme } = useShopTheme(slug)
   const { trackEvent } = useTracking()
   const [processing, setProcessing] = useState(false)
+  const [storeCredit, setStoreCredit] = useState<any>(null)
+  const [useStoreCredit, setUseStoreCredit] = useState(false)
   
   // אתחול customFields values
   const initialCustomFields: Record<string, any> = {}
@@ -223,10 +227,42 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
     return 0
   }, [formData.deliveryMethod, shop.shippingSettings, shop.pickupSettings, cart.subtotal])
 
+  // חישוב סכום אחרי שימוש בקרדיט בחנות
+  const storeCreditAmount = useMemo(() => {
+    if (!useStoreCredit || !storeCredit || storeCredit.balance <= 0) {
+      return 0
+    }
+    // השתמש בקרדיט עד הסכום המקסימלי (מינימום בין היתרה לסכום ההזמנה)
+    return Math.min(storeCredit.balance, cart.total + shippingCost)
+  }, [useStoreCredit, storeCredit, cart.total, shippingCost])
+
   const finalTotal = useMemo(() => {
-    // cart.total כבר מחושב נכון (כולל הנחות ומע"מ), רק מוסיפים משלוח
-    return cart.total + shippingCost
-  }, [cart.total, shippingCost])
+    // cart.total כבר מחושב נכון (כולל הנחות ומע"מ), רק מוסיפים משלוח ומפחיתים קרדיט
+    const total = cart.total + shippingCost - storeCreditAmount
+    return Math.max(0, total) // לא יכול להיות שלילי
+  }, [cart.total, shippingCost, storeCreditAmount])
+
+  // טעינת קרדיט בחנות
+  useEffect(() => {
+    if (customerData?.id) {
+      const token = localStorage.getItem(`storefront_token_${slug}`)
+      if (token) {
+        fetch(`/api/storefront/${slug}/store-credit`, {
+          headers: {
+            "x-customer-id": token,
+          },
+        })
+          .then((res) => res.json())
+          .then((data) => {
+            if (data && data.balance > 0) {
+              setStoreCredit(data)
+              setUseStoreCredit(true) // ברירת מחדל - להשתמש בקרדיט אם יש
+            }
+          })
+          .catch((err) => console.error("Error fetching store credit:", err))
+      }
+    }
+  }, [customerData?.id, slug])
 
   // PageView event - רק פעם אחת כשהעמוד נטען
   useEffect(() => {
@@ -357,6 +393,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
           paymentMethod: formData.paymentMethod,
           couponCode: cart.couponCode || undefined,
           shippingCost: shippingCost,
+          storeCreditAmount: useStoreCredit ? storeCreditAmount : 0, // הוספת סכום קרדיט בחנות
           customFields: formData.customFields,
         }),
       })
@@ -878,6 +915,42 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                 </div>
               )}
 
+              {/* Store Credit */}
+              {storeCredit && storeCredit.balance > 0 && (
+                <div 
+                  className="pb-6"
+                  style={{ 
+                    borderBottom: `1px solid #e5e7eb`
+                  }}
+                >
+                  <div className="flex items-center space-x-2 space-x-reverse border border-purple-200 rounded-lg p-4 bg-purple-50">
+                    <Checkbox
+                      id="useStoreCredit"
+                      checked={useStoreCredit}
+                      onCheckedChange={(checked) => setUseStoreCredit(checked === true)}
+                    />
+                    <Label htmlFor="useStoreCredit" className="cursor-pointer flex-1">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium flex items-center gap-2">
+                            <Coins className="w-4 h-4 text-purple-600" />
+                            השתמש בקרדיט בחנות
+                          </div>
+                          <div className="text-sm text-gray-600 mt-1">
+                            יתרה זמינה: ₪{storeCredit.balance.toFixed(2)}
+                            {storeCreditAmount > 0 && (
+                              <span className="text-purple-700 font-semibold mr-2">
+                                • ינוכה: ₪{storeCreditAmount.toFixed(2)}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </Label>
+                  </div>
+                </div>
+              )}
+
               {/* Payment Method */}
               <div 
                 className="pb-6"
@@ -890,9 +963,15 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                   style={{ color: checkoutColors.textColor }}
                 >
                   <CreditCard className="w-5 h-5" />
-                  שיטת תשלום
+                  {finalTotal > 0 ? "שיטת תשלום" : "אישור הזמנה"}
                 </h2>
-                {!hasAnyPaymentMethod ? (
+                {finalTotal === 0 ? (
+                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                    <p className="text-sm text-green-800 font-medium">
+                      ההזמנה מכוסה במלואה בקרדיט בחנות. אין צורך בתשלום נוסף.
+                    </p>
+                  </div>
+                ) : !hasAnyPaymentMethod ? (
                   <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
                     <p className="text-sm text-yellow-800">
                       אין שיטות תשלום זמינות. אנא הגדר שיטת תשלום בהגדרות האינטגרציות.
@@ -1129,8 +1208,18 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                   
                   {cart.automaticDiscount && cart.automaticDiscount > 0 && (
                     <div className="flex justify-between text-green-600">
-                      <span>הנחה אוטומטית</span>
+                      <span>{cart.automaticDiscountTitle || 'הנחה אוטומטית'}</span>
                       <span>-₪{cart.automaticDiscount.toFixed(2)}</span>
+                    </div>
+                  )}
+                  
+                  {storeCreditAmount > 0 && (
+                    <div className="flex justify-between text-purple-600">
+                      <span className="flex items-center gap-1">
+                        <Coins className="w-3 h-3" />
+                        קרדיט בחנות
+                      </span>
+                      <span>-₪{storeCreditAmount.toFixed(2)}</span>
                     </div>
                   )}
                   
@@ -1148,8 +1237,8 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                     </div>
                   )}
                   
-                  {/* Tax info - only if tax is enabled */}
-                  {cart.tax > 0 && (
+                  {/* Tax info - only if tax is enabled and showTaxInCart is not false */}
+                  {theme.showTaxInCart !== false && cart.tax > 0 && (
                     <div className="flex justify-between text-xs" style={{ color: checkoutColors.textColor, opacity: 0.6 }}>
                       <span>כולל מע"מ</span>
                       <span>₪{cart.tax.toFixed(2)}</span>

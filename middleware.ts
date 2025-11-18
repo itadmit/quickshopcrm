@@ -4,6 +4,9 @@ import { NextResponse } from "next/server"
 // Middleware פשוט שרק בודק authentication
 // בדיקת subscription תתבצע ברמת האפליקציה (AppLayout, API routes)
 // כי middleware רץ ב-Edge Runtime שלא תומך ב-Prisma
+// 
+// הערה: עם localePrefix: 'never' ב-next-intl, אין צורך ב-i18n middleware
+// השפה נטענת ישירות מ-cookies ב-i18n.ts
 
 export default withAuth(
   async function middleware(req) {
@@ -17,6 +20,11 @@ export default withAuth(
         
         // API routes מותרים גם בלי token - הם יבדקו את האימות בעצמם
         if (pathname.startsWith("/api/")) {
+          return true
+        }
+        
+        // Storefront routes - לא צריך auth
+        if (pathname.startsWith("/shop/")) {
           return true
         }
         

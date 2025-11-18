@@ -69,7 +69,7 @@ export default function EditStoreCreditPage() {
       } else {
         toast({
           title: "שגיאה",
-          description: "לא הצלחנו לטעון את אשראי בחנות",
+          description: "לא הצלחנו לטעון את קרדיט בחנות",
           variant: "destructive",
         })
         router.push("/store-credits")
@@ -78,7 +78,7 @@ export default function EditStoreCreditPage() {
       console.error("Error fetching store credit:", error)
       toast({
         title: "שגיאה",
-        description: "אירעה שגיאה בטעינת אשראי בחנות",
+        description: "אירעה שגיאה בטעינת קרדיט בחנות",
         variant: "destructive",
       })
       router.push("/store-credits")
@@ -152,14 +152,14 @@ export default function EditStoreCreditPage() {
       if (response.ok) {
         toast({
           title: "הצלחה",
-          description: "אשראי בחנות עודכן בהצלחה",
+          description: "קרדיט בחנות עודכן בהצלחה",
         })
         fetchStoreCredit()
       } else {
         const error = await response.json()
         toast({
           title: "שגיאה",
-          description: error.error || "אירעה שגיאה ביצירת אשראי בחנות",
+          description: error.error || "אירעה שגיאה בעדכון קרדיט בחנות",
           variant: "destructive",
         })
       }
@@ -167,7 +167,7 @@ export default function EditStoreCreditPage() {
       console.error("Error creating store credit:", error)
       toast({
         title: "שגיאה",
-        description: "אירעה שגיאה ביצירת אשראי בחנות",
+        description: "אירעה שגיאה בעדכון קרדיט בחנות",
         variant: "destructive",
       })
     } finally {
@@ -177,7 +177,7 @@ export default function EditStoreCreditPage() {
 
   if (loading) {
     return (
-      <AppLayout title="עריכת אשראי בחנות">
+      <AppLayout title="עריכת קרדיט בחנות">
         <FormSkeleton />
       </AppLayout>
     )
@@ -185,17 +185,17 @@ export default function EditStoreCreditPage() {
 
   if (!selectedShop) {
     return (
-      <AppLayout title="עריכת אשראי בחנות">
+      <AppLayout title="עריכת קרדיט בחנות">
         <div className="text-center py-12">
           <CreditCard className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             אין חנות נבחרת
           </h3>
           <p className="text-gray-600 mb-4">
-            יש לבחור חנות מההדר לפני עריכת אשראי בחנות
+            יש לבחור חנות מההדר לפני עריכת קרדיט בחנות
           </p>
           <Button onClick={() => router.push("/store-credits")}>
-            חזור לרשימת אשראי בחנות
+            חזור לרשימת קרדיט בחנות
           </Button>
         </div>
       </AppLayout>
@@ -203,13 +203,13 @@ export default function EditStoreCreditPage() {
   }
 
   return (
-    <AppLayout title="עריכת אשראי בחנות">
+    <AppLayout title="עריכת קרדיט בחנות">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">עריכת אשראי בחנות</h1>
+            <h1 className="text-3xl font-bold text-gray-900">עריכת קרדיט בחנות</h1>
             <p className="text-gray-600 mt-1">
-              ערוך אשראי בחנות ללקוח
+              ערוך קרדיט בחנות ללקוח
             </p>
           </div>
           <div className="flex gap-2">
@@ -237,7 +237,7 @@ export default function EditStoreCreditPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="w-5 h-5" />
-                  פרטי אשראי בחנות
+                  פרטי קרדיט בחנות
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -297,7 +297,7 @@ export default function EditStoreCreditPage() {
                     id="notes"
                     value={formData.notes}
                     onChange={(e) => setFormData((prev) => ({ ...prev, notes: e.target.value }))}
-                    placeholder="סיבה להענקת האשראי..."
+                    placeholder="סיבה להענקת הקרדיט..."
                     rows={4}
                   />
                 </div>
@@ -312,13 +312,13 @@ export default function EditStoreCreditPage() {
               </CardHeader>
               <CardContent className="space-y-4 text-sm text-gray-600">
                 <p>
-                  אשראי בחנות מאפשר ללקוח להשתמש בכסף בחנות שלך.
+                  קרדיט בחנות מאפשר ללקוח להשתמש בכסף בחנות שלך.
                 </p>
                 <p>
-                  הלקוח יוכל להשתמש באשראי בתשלום על הזמנות.
+                  הלקוח יוכל להשתמש בקרדיט בתשלום על הזמנות.
                 </p>
                 <p>
-                  אם יש כבר אשראי ללקוח, הסכום יתווסף ליתרה הקיימת.
+                  אם יש כבר קרדיט ללקוח, הסכום יתווסף ליתרה הקיימת.
                 </p>
               </CardContent>
             </Card>

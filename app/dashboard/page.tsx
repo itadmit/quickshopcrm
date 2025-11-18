@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Store, Package, ShoppingBag, TrendingUp, CheckSquare, Calendar, Bell, Clock, AlertCircle, Circle, CheckCircle2, User, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton"
+import { useTranslations } from "next-intl"
 import Link from "next/link"
 
 interface Stats {
@@ -30,6 +31,7 @@ export default function DashboardPage() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const { selectedShop } = useShop()
+  const t = useTranslations()
   const [stats, setStats] = useState<Stats>({
     shops: { total: 0, active: 0 },
     products: { total: 0, published: 0 },
@@ -113,22 +115,22 @@ export default function DashboardPage() {
                 !subscriptionInfo.isActive ? 'text-red-900' : 'text-yellow-900'
               }`}>
                 {!subscriptionInfo.isActive 
-                  ? 'מנוי פג תוקף' 
-                  : 'תקופת הנסיון מסתיימת בקרוב'}
+                  ? t('dashboard.subscription.expired')
+                  : t('dashboard.subscription.expiringSoon')}
               </h3>
               <p className={`text-sm mb-3 ${
                 !subscriptionInfo.isActive ? 'text-red-800' : 'text-yellow-800'
               }`}>
                 {!subscriptionInfo.isActive 
-                  ? 'המנוי שלך פג תוקף. אנא חידש את המנוי כדי להמשיך להשתמש במערכת.'
-                  : `נותרו ${subscriptionInfo.daysRemaining} ימים לתקופת הנסיון. אנא בחר מסלול מנוי להמשך השימוש.`}
+                  ? t('dashboard.subscription.expiredDescription')
+                  : t('dashboard.subscription.expiringDescription', { days: subscriptionInfo.daysRemaining })}
               </p>
               <Button
                 onClick={() => router.push('/settings?tab=subscription')}
                 className={!subscriptionInfo.isActive ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-600 hover:bg-yellow-700'}
                 size="sm"
               >
-                {!subscriptionInfo.isActive ? 'חדש מנוי' : 'בחר מסלול מנוי'}
+                {!subscriptionInfo.isActive ? t('dashboard.subscription.renew') : t('dashboard.subscription.choosePlan')}
               </Button>
             </div>
           </div>
@@ -143,7 +145,7 @@ export default function DashboardPage() {
               {new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
             </div>
             <h1 className="text-4xl font-bold text-gray-900 mt-1">
-              שלום, {session?.user?.name || 'משתמש'}
+              {t('dashboard.welcome.greeting', { name: session?.user?.name || t('dashboard.welcome.user') })}
             </h1>
             <h2 className="text-2xl mt-1" style={{
               background: 'linear-gradient(to left, #93f0e1, #6374c5)',
@@ -152,28 +154,28 @@ export default function DashboardPage() {
               backgroundClip: 'text',
               display: 'inline-block'
             }}>
-              איך אני יכול לעזור לך היום?
+              {t('dashboard.welcome.question')}
             </h2>
           </div>
           <div className="flex gap-2">
             <Link href="/shops" prefetch={true}>
               <Button variant="outline">
-                צור חנות חדשה
+                {t('dashboard.actions.createStore')}
               </Button>
             </Link>
             <Link href="/products" prefetch={true}>
               <Button variant="outline">
-                הוסף מוצר
+                {t('dashboard.actions.addProduct')}
               </Button>
             </Link>
             <Link href="/orders" prefetch={true}>
               <Button variant="outline">
-                צפה בהזמנות
+                {t('dashboard.actions.viewOrders')}
               </Button>
             </Link>
             <Link href="/shops" prefetch={true}>
               <Button>
-                + צור חנות
+                {t('dashboard.actions.createStoreShort')}
               </Button>
             </Link>
           </div>
@@ -185,13 +187,13 @@ export default function DashboardPage() {
         <Link href="/shops" prefetch={true} className="block">
           <Card className="shadow-sm hover-lift cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">חנויות פעילות</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('dashboard.stats.activeShops')}</CardTitle>
               <Store className="h-5 w-5 text-purple-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{stats.shops.active}</div>
               <p className="text-xs text-gray-500 mt-1">
-                סה״כ {stats.shops.total} חנויות במערכת
+                {t('dashboard.stats.totalShops', { count: stats.shops.total })}
               </p>
             </CardContent>
           </Card>
@@ -200,13 +202,13 @@ export default function DashboardPage() {
         <Link href="/products" prefetch={true} className="block">
           <Card className="shadow-sm hover-lift cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">מוצרים פעילים</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('dashboard.stats.activeProducts')}</CardTitle>
               <Package className="h-5 w-5 text-purple-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{stats.products.published}</div>
               <p className="text-xs text-gray-500 mt-1">
-                סה״כ {stats.products.total} מוצרים
+                {t('dashboard.stats.totalProducts', { count: stats.products.total })}
               </p>
             </CardContent>
           </Card>
@@ -215,13 +217,13 @@ export default function DashboardPage() {
         <Link href="/orders" prefetch={true} className="block">
           <Card className="shadow-sm hover-lift cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">הזמנות ממתינות</CardTitle>
+              <CardTitle className="text-sm font-medium">{t('dashboard.stats.pendingOrders')}</CardTitle>
               <ShoppingBag className="h-5 w-5 text-purple-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{stats.orders.pending}</div>
               <p className="text-xs text-gray-500 mt-1">
-                סה״כ {stats.orders.total} הזמנות
+                {t('dashboard.stats.totalOrders', { count: stats.orders.total })}
               </p>
             </CardContent>
           </Card>
@@ -229,7 +231,7 @@ export default function DashboardPage() {
 
         <Card className="shadow-sm hover-lift">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">הכנסות</CardTitle>
+            <CardTitle className="text-sm font-medium">{t('dashboard.stats.revenue')}</CardTitle>
             <TrendingUp className="h-5 w-5 text-purple-600" />
           </CardHeader>
           <CardContent>
@@ -241,7 +243,7 @@ export default function DashboardPage() {
             <p className="text-xs text-gray-500 mt-1">
               ₪{stats.revenue.total >= 1000 
                 ? (stats.revenue.total / 1000).toFixed(0) + 'K'
-                : stats.revenue.total.toFixed(0)} סה״כ
+                : stats.revenue.total.toFixed(0)} {t('dashboard.stats.totalRevenue')}
             </p>
           </CardContent>
         </Card>
@@ -256,7 +258,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Store className="w-5 h-5 text-purple-600" />
-                  <CardTitle>פעולות מהירות</CardTitle>
+                  <CardTitle>{t('dashboard.quickActions.title')}</CardTitle>
                 </div>
               </div>
             </CardHeader>
@@ -268,10 +270,10 @@ export default function DashboardPage() {
                       <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <Store className="w-5 h-5 text-purple-600" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">צרו חנות חדשה</h3>
+                      <h3 className="font-semibold text-gray-900">{t('dashboard.quickActions.createStore.title')}</h3>
                     </div>
                     <p className="text-sm text-gray-600">
-                      התחילו עם תבנית מוכנה או צרו מאפס
+                      {t('dashboard.quickActions.createStore.description')}
                     </p>
                   </div>
                 </Link>
@@ -286,10 +288,10 @@ export default function DashboardPage() {
                       <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <Package className="w-5 h-5 text-blue-600" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">הוסיפו מוצרים</h3>
+                      <h3 className="font-semibold text-gray-900">{t('dashboard.quickActions.addProducts.title')}</h3>
                     </div>
                     <p className="text-sm text-gray-600">
-                      התחילו למכור עם קטלוג מוצרים מקצועי
+                      {t('dashboard.quickActions.addProducts.description')}
                     </p>
                   </div>
                 </Link>
@@ -300,10 +302,10 @@ export default function DashboardPage() {
                       <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <ShoppingBag className="w-5 h-5 text-green-600" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">נהלו הזמנות</h3>
+                      <h3 className="font-semibold text-gray-900">{t('dashboard.quickActions.manageOrders.title')}</h3>
                     </div>
                     <p className="text-sm text-gray-600">
-                      צפו וטפלו בהזמנות שלכם
+                      {t('dashboard.quickActions.manageOrders.description')}
                     </p>
                   </div>
                 </Link>
@@ -314,10 +316,10 @@ export default function DashboardPage() {
                       <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <TrendingUp className="w-5 h-5 text-orange-600" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">הגדירו תשלומים</h3>
+                      <h3 className="font-semibold text-gray-900">{t('dashboard.quickActions.setupPayments.title')}</h3>
                     </div>
                     <p className="text-sm text-gray-600">
-                      חברו את שיטת התשלום שלכם
+                      {t('dashboard.quickActions.setupPayments.description')}
                     </p>
                   </div>
                 </Link>
@@ -333,31 +335,31 @@ export default function DashboardPage() {
             <CardHeader>
               <div className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-purple-600" />
-                <CardTitle>סטטיסטיקות מהירות</CardTitle>
+                <CardTitle>{t('dashboard.quickStats.title')}</CardTitle>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">חנויות פעילות</span>
+                  <span className="text-sm text-gray-600">{t('dashboard.quickStats.activeShops')}</span>
                   <span className="text-lg font-bold text-purple-600">
                     {stats.shops.active}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">מוצרים פעילים</span>
+                  <span className="text-sm text-gray-600">{t('dashboard.quickStats.activeProducts')}</span>
                   <span className="text-lg font-bold text-blue-600">
                     {stats.products.published}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">הזמנות ממתינות</span>
+                  <span className="text-sm text-gray-600">{t('dashboard.quickStats.pendingOrders')}</span>
                   <span className="text-lg font-bold text-cyan-600">
                     {stats.orders.pending}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">הכנסות החודש</span>
+                  <span className="text-sm text-gray-600">{t('dashboard.quickStats.monthlyRevenue')}</span>
                   <span className="text-lg font-bold text-orange-600">
                     ₪{stats.revenue.thisMonth >= 1000 
                       ? (stats.revenue.thisMonth / 1000).toFixed(0) + 'K'
@@ -374,7 +376,7 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Bell className="w-5 h-5 text-purple-600" />
-                  <CardTitle>התראות אחרונות</CardTitle>
+                  <CardTitle>{t('dashboard.notifications.title')}</CardTitle>
                 </div>
                 <Link href="/notifications" prefetch={true}>
                   <Button 
@@ -382,7 +384,7 @@ export default function DashboardPage() {
                     size="sm"
                     className="text-purple-600 hover:text-purple-700 p-0 h-auto font-normal"
                   >
-                    ראה הכל ←
+                    {t('dashboard.notifications.seeAll')} ←
                   </Button>
                 </Link>
               </div>
@@ -392,14 +394,14 @@ export default function DashboardPage() {
                 <div className="text-center py-6">
                   <Bell className="w-12 h-12 mx-auto mb-3 text-gray-400" />
                   <p className="text-sm text-gray-600 mb-4">
-                    אין התראות חדשות
+                    {t('dashboard.notifications.noNotifications')}
                   </p>
                   <Link href="/notifications" prefetch={true}>
                     <Button 
                       variant="outline" 
                       size="sm"
                     >
-                      ראה התראות
+                      {t('dashboard.notifications.viewNotifications')}
                     </Button>
                   </Link>
                 </div>

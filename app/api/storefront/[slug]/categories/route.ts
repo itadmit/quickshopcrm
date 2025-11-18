@@ -35,7 +35,8 @@ export async function GET(
       return NextResponse.json({ error: "Shop not found" }, { status: 404 })
     }
 
-    const categories = await prisma.category.findMany({
+    // שליפת collections (שאנחנו קוראים להן קטגוריות)
+    const collections = await prisma.collection.findMany({
       where: {
         shopId: shop.id,
       },
@@ -45,7 +46,7 @@ export async function GET(
         slug: true,
         description: true,
         image: true,
-        parentId: true,
+        type: true,
         _count: {
           select: {
             products: true,
@@ -57,7 +58,7 @@ export async function GET(
       },
     })
 
-    return NextResponse.json(categories)
+    return NextResponse.json(collections)
   } catch (error) {
     console.error("Error fetching categories:", error)
     return NextResponse.json(

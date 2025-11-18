@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter } from "next/navigation"
+import { useTranslations } from "next-intl"
 import { 
   Search, 
   Package, 
@@ -33,202 +34,202 @@ import { useShop } from "@/components/providers/ShopProvider"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
-// קיצורי דרך לניווט מהיר
-const quickLinks = [
+// קיצורי דרך לניווט מהיר - יוגדרו דינמית לפי שפה
+const getQuickLinks = (t: any) => [
   { 
-    title: "דשבורד", 
+    titleKey: "sidebar.home", 
     icon: LayoutDashboard, 
     url: "/dashboard", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["dashboard", "בית", "home"]
   },
   { 
-    title: "מוצרים", 
+    titleKey: "sidebar.products", 
     icon: Package, 
     url: "/products", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["products", "פריטים", "items"]
   },
   { 
-    title: "הזמנות", 
+    titleKey: "sidebar.orders", 
     icon: ShoppingCart, 
     url: "/orders", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["orders", "קניות", "purchases"]
   },
   { 
-    title: "לקוחות", 
+    titleKey: "sidebar.customers", 
     icon: Users, 
     url: "/customers", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["customers", "clients", "קליינטים"]
   },
   { 
-    title: "קולקציות", 
+    titleKey: "sidebar.collections", 
     icon: Archive, 
     url: "/collections", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["collections", "אוספים"]
   },
   { 
-    title: "חבילות", 
+    titleKey: "sidebar.bundles", 
     icon: Box, 
     url: "/bundles", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["bundles", "packages", "חבילות"]
   },
   { 
-    title: "קופונים", 
+    titleKey: "sidebar.coupons", 
     icon: Ticket, 
     url: "/coupons", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["coupons", "קודים", "codes"]
   },
   { 
-    title: "הנחות", 
+    titleKey: "sidebar.discounts", 
     icon: Percent, 
     url: "/discounts", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["discounts", "sales", "מבצעים"]
   },
   { 
-    title: "כרטיסי מתנה", 
+    titleKey: "sidebar.giftCards", 
     icon: Gift, 
     url: "/gift-cards", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["gift cards", "vouchers", "שוברים"]
   },
   { 
-    title: "ביקורות", 
+    titleKey: "sidebar.reviews", 
     icon: Sparkles, 
     url: "/reviews", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["reviews", "ratings", "דירוגים"]
   },
   { 
-    title: "החזרות", 
+    titleKey: "sidebar.returns", 
     icon: ArrowRight, 
     url: "/returns", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["returns", "refunds", "החזר כספי"]
   },
   { 
-    title: "קרדיט חנות", 
+    titleKey: "sidebar.storeCredits", 
     icon: CreditCard, 
     url: "/store-credits", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["store credit", "wallet", "ארנק"]
   },
   { 
-    title: "אוטומציות", 
+    titleKey: "sidebar.automations", 
     icon: Command, 
     url: "/automations", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["automations", "workflows", "תהליכים"]
   },
   { 
-    title: "עגלות נטושות", 
+    titleKey: "sidebar.abandonedCarts", 
     icon: ShoppingCart, 
     url: "/abandoned-carts", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["abandoned carts", "עגלות", "cart recovery"]
   },
   { 
-    title: "דפים", 
+    titleKey: "sidebar.pages", 
     icon: FileText, 
     url: "/pages", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["pages", "content", "תוכן"]
   },
   { 
-    title: "בלוג", 
+    titleKey: "sidebar.blog", 
     icon: FileText, 
     url: "/blog", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["blog", "articles", "מאמרים"]
   },
   { 
-    title: "ניווט", 
+    titleKey: "sidebar.navigation", 
     icon: Barcode, 
     url: "/navigation", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["navigation", "menu", "תפריט"]
   },
   { 
-    title: "עיצוב", 
+    titleKey: "sidebar.appearance", 
     icon: Palette, 
     url: "/appearance", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["appearance", "theme", "עיצוב", "ערכת נושא"]
   },
   { 
-    title: "אנליטיקס", 
+    titleKey: "sidebar.analytics", 
     icon: TrendingUp, 
     url: "/analytics", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["analytics", "stats", "סטטיסטיקה", "נתונים"]
   },
   { 
-    title: "פיקסלים", 
+    titleKey: "sidebar.trackingPixels", 
     icon: Megaphone, 
     url: "/tracking-pixels", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["pixels", "tracking", "מעקב", "facebook", "google"]
   },
   { 
-    title: "webhooks", 
+    titleKey: "sidebar.webhooks", 
     icon: Webhook, 
     url: "/webhooks", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["webhooks", "integrations", "אינטגרציות"]
   },
   { 
-    title: "התראות", 
+    titleKey: "sidebar.notifications", 
     icon: Bell, 
     url: "/notifications", 
-    category: "ניווט",
+    categoryKey: "search.categories.navigation",
     keywords: ["notifications", "alerts", "עדכונים"]
   },
   { 
-    title: "הגדרות כלליות", 
+    titleKey: "sidebar.settings", 
     icon: Settings, 
     url: "/settings", 
-    category: "הגדרות",
+    categoryKey: "search.categories.settings",
     keywords: ["settings", "configuration", "קונפיגורציה"]
   },
   { 
-    title: "אינטגרציות", 
+    titleKey: "sidebar.integrations", 
     icon: Webhook, 
     url: "/settings/integrations", 
-    category: "הגדרות",
+    categoryKey: "search.categories.settings",
     keywords: ["integrations", "connections", "חיבורים"]
   },
   { 
-    title: "שדות מותאמים", 
+    titleKey: "sidebar.customFields", 
     icon: Tag, 
     url: "/settings/custom-fields", 
-    category: "הגדרות",
+    categoryKey: "search.categories.settings",
     keywords: ["custom fields", "שדות", "fields"]
   },
   { 
-    title: "תוספי מוצר", 
+    titleKey: "sidebar.productAddons", 
     icon: Package, 
     url: "/settings/product-addons", 
-    category: "הגדרות",
+    categoryKey: "search.categories.settings",
     keywords: ["product addons", "extras", "תוספות"]
   },
   { 
-    title: "ניהול חנויות", 
+    titleKey: "sidebar.sections.sales", 
     icon: Store, 
     url: "/shops", 
-    category: "ניהול",
+    categoryKey: "search.categories.management",
     keywords: ["shops", "stores", "חנויות"]
   },
   { 
-    title: "עמלות", 
+    titleKey: "sidebar.superAdmin.commissions", 
     icon: CreditCard, 
     url: "/admin/commissions", 
-    category: "ניהול",
+    categoryKey: "search.categories.management",
     keywords: ["commissions", "עמלות", "fees"]
   },
 ]
@@ -254,6 +255,8 @@ interface SearchResults {
 export function GlobalSearch() {
   const router = useRouter()
   const { selectedShop } = useShop()
+  const t = useTranslations()
+  const quickLinks = getQuickLinks(t)
   const [isOpen, setIsOpen] = useState(false)
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<SearchResults>({
@@ -329,8 +332,9 @@ export function GlobalSearch() {
 
     const filtered = quickLinks.filter(link => {
       const searchLower = query.toLowerCase()
+      const title = link.titleKey ? t(link.titleKey) : (link as any).title || ''
       return (
-        link.title.toLowerCase().includes(searchLower) ||
+        title.toLowerCase().includes(searchLower) ||
         link.keywords.some(kw => kw.toLowerCase().includes(searchLower))
       )
     })
@@ -452,11 +456,22 @@ export function GlobalSearch() {
     index: number
     icon: any 
   }) => {
-    const isQuickLink = 'category' in result
+    const isQuickLink = 'categoryKey' in result || 'category' in result
     const url = isQuickLink ? result.url : (result as SearchResult).url
-    const title = result.title
-    const subtitle = isQuickLink ? result.category : (result as SearchResult).subtitle
-    const meta = isQuickLink ? undefined : (result as SearchResult).meta
+    let title = isQuickLink && 'titleKey' in result ? t(result.titleKey) : (result as any).title || result.title
+    // Handle order title translation
+    if (!isQuickLink && (result as SearchResult).type === 'order' && (result as any).titleKey) {
+      title = t((result as any).titleKey, (result as any).titleParams || {})
+    }
+    const subtitle = isQuickLink && 'categoryKey' in result ? t(result.categoryKey) : (isQuickLink && 'category' in result ? result.category : (result as SearchResult).subtitle)
+    let meta = isQuickLink ? undefined : (result as SearchResult).meta
+    // Translate meta for customers
+    if (!isQuickLink && (result as SearchResult).type === 'customer' && meta) {
+      const match = meta.match(/(\d+) orders • (₪[\d.]+)/)
+      if (match) {
+        meta = `${t('search.customerOrders', { count: parseInt(match[1]) })} • ${match[2]}`
+      }
+    }
     const image = isQuickLink ? undefined : (result as SearchResult).image
 
     return (
@@ -535,7 +550,7 @@ export function GlobalSearch() {
         <Input
           ref={inputRef}
           type="search"
-          placeholder="חיפוש מוצרים, הזמנות, לקוחות, תוספים... (Ctrl+K)"
+          placeholder={t('search.placeholder')}
           className="pr-11 pl-20 h-11 text-sm"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
@@ -555,15 +570,15 @@ export function GlobalSearch() {
             {loading && query.length >= 1 && (
               <div className="px-5 py-12 text-center text-gray-500">
                 <div className="animate-spin w-8 h-8 border-3 border-[#6f65e2] border-t-transparent rounded-full mx-auto"></div>
-                <p className="mt-3 text-base font-medium">מחפש...</p>
+                <p className="mt-3 text-base font-medium">{t('search.searching')}</p>
               </div>
             )}
 
             {!loading && totalResults === 0 && query.length >= 1 && (
               <div className="px-5 py-12 text-center text-gray-500">
                 <Search className="w-16 h-16 mx-auto text-gray-300 mb-3" />
-                <p className="text-base font-medium text-gray-700">לא נמצאו תוצאות</p>
-                <p className="text-sm text-gray-500 mt-1">עבור "{query}"</p>
+                <p className="text-base font-medium text-gray-700">{t('search.noResults')}</p>
+                <p className="text-sm text-gray-500 mt-1">{t('search.for')} "{query}"</p>
               </div>
             )}
 
@@ -571,7 +586,7 @@ export function GlobalSearch() {
             {filteredQuickLinks.length > 0 && (
               <div>
                 <div className="px-5 py-3 text-xs font-bold text-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 border-b border-gray-200">
-                  {query ? "קיצורי דרך" : "ניווט מהיר"}
+                  {query ? t('search.quickLinks') : t('search.quickNavigation')}
                 </div>
                 {filteredQuickLinks.map((link, idx) => (
                   <ResultItem
@@ -588,7 +603,7 @@ export function GlobalSearch() {
             {results.products.length > 0 && (
               <div>
                 <div className="px-5 py-3 text-xs font-bold text-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 border-b border-gray-200">
-                  מוצרים
+                  {t('search.products')}
                 </div>
                 {results.products.map((result, idx) => (
                   <ResultItem
@@ -605,7 +620,7 @@ export function GlobalSearch() {
             {results.orders.length > 0 && (
               <div>
                 <div className="px-5 py-3 text-xs font-bold text-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 border-b border-gray-200">
-                  הזמנות
+                  {t('search.orders')}
                 </div>
                 {results.orders.map((result, idx) => (
                   <ResultItem
@@ -622,7 +637,7 @@ export function GlobalSearch() {
             {results.customers.length > 0 && (
               <div>
                 <div className="px-5 py-3 text-xs font-bold text-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 border-b border-gray-200">
-                  לקוחות
+                  {t('search.customers')}
                 </div>
                 {results.customers.map((result, idx) => (
                   <ResultItem
@@ -639,7 +654,7 @@ export function GlobalSearch() {
             {results.plugins.length > 0 && (
               <div>
                 <div className="px-5 py-3 text-xs font-bold text-gray-700 bg-gradient-to-r from-gray-50 to-gray-100 sticky top-0 border-b border-gray-200">
-                  תוספים
+                  {t('search.plugins')}
                 </div>
                 {results.plugins.map((result, idx) => (
                   <ResultItem
@@ -658,8 +673,8 @@ export function GlobalSearch() {
                 <div className="w-16 h-16 mx-auto bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center mb-4">
                   <Search className="w-8 h-8 text-[#6f65e2]" />
                 </div>
-                <p className="text-base font-medium text-gray-700">התחל להקליד כדי לחפש</p>
-                <p className="text-sm text-gray-500 mt-1">מוצרים, הזמנות, לקוחות, תוספים, דפים ועוד</p>
+                <p className="text-base font-medium text-gray-700">{t('search.startTyping')}</p>
+                <p className="text-sm text-gray-500 mt-1">{t('search.startTypingDescription')}</p>
               </div>
             )}
           </div>
@@ -670,19 +685,19 @@ export function GlobalSearch() {
               <div className="flex items-center gap-1.5">
                 <kbd className="px-2 py-1 bg-white border border-gray-300 rounded shadow-sm font-medium">↑</kbd>
                 <kbd className="px-2 py-1 bg-white border border-gray-300 rounded shadow-sm font-medium">↓</kbd>
-                <span className="font-medium">ניווט</span>
+                <span className="font-medium">{t('search.navigation')}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <kbd className="px-2 py-1 bg-white border border-gray-300 rounded shadow-sm font-medium">Enter</kbd>
-                <span className="font-medium">בחירה</span>
+                <span className="font-medium">{t('search.select')}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <kbd className="px-2 py-1 bg-white border border-gray-300 rounded shadow-sm font-medium">Esc</kbd>
-                <span className="font-medium">סגירה</span>
+                <span className="font-medium">{t('search.close')}</span>
               </div>
             </div>
             <div className="text-xs font-semibold text-gray-700">
-              {totalResults > 0 && `${totalResults} תוצאות`}
+              {totalResults > 0 && t('search.results', { count: totalResults })}
             </div>
           </div>
         </div>

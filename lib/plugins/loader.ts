@@ -72,6 +72,9 @@ export async function loadCorePlugin(slug: string): Promise<PluginHook | null> {
       case 'shop-the-look':
         const { ShopTheLookPlugin } = await import('./core/shop-the-look')
         return ShopTheLookPlugin
+      case 'reviews':
+        const { ReviewsPlugin } = await import('./core/reviews')
+        return ReviewsPlugin
       default:
         return null
     }

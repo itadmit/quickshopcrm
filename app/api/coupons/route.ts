@@ -7,11 +7,13 @@ import { z } from "zod"
 const createCouponSchema = z.object({
   shopId: z.string(),
   code: z.string().min(2, "קוד קופון חייב להכיל לפחות 2 תווים").optional(),
-  type: z.enum(["PERCENTAGE", "FIXED", "BUY_X_GET_Y", "VOLUME_DISCOUNT", "NTH_ITEM_DISCOUNT"]),
+  type: z.enum(["PERCENTAGE", "FIXED", "BUY_X_GET_Y", "BUY_X_PAY_Y", "VOLUME_DISCOUNT", "NTH_ITEM_DISCOUNT"]),
   value: z.number().min(0, "ערך הנחה חייב להיות חיובי"),
   buyQuantity: z.number().int().optional(),
   getQuantity: z.number().int().optional(),
   getDiscount: z.number().optional(),
+  payQuantity: z.number().int().optional(), // עבור BUY_X_PAY_Y
+  payAmount: z.number().min(0).optional(), // עבור BUY_X_PAY_Y: סכום קבוע לשלם
   nthItem: z.number().int().optional(),
   volumeRules: z.any().optional(),
   minOrder: z.number().optional(),
@@ -26,6 +28,15 @@ const createCouponSchema = z.object({
   applicableCustomers: z.array(z.string()).default([]),
   canCombine: z.boolean().default(false),
   influencerId: z.string().optional(),
+  // שדות להפעלת מתנה אוטומטית
+  giftProductId: z.string().optional(),
+  giftVariantId: z.string().optional(),
+  giftCondition: z.enum(["MIN_ORDER_AMOUNT", "SPECIFIC_PRODUCT"]).optional(),
+  giftConditionProductId: z.string().optional(),
+  giftConditionAmount: z.number().optional(),
+  // שדות להפעלת הנחת לקוח רשום
+  enableCustomerDiscount: z.boolean().default(false),
+  customerDiscountPercent: z.number().min(0).max(100).optional(),
 })
 
 // GET - קבלת כל הקופונים
@@ -131,6 +142,8 @@ export async function POST(req: NextRequest) {
       buyQuantity: data.buyQuantity,
       getQuantity: data.getQuantity,
       getDiscount: data.getDiscount,
+      payQuantity: data.payQuantity,
+      payAmount: data.payAmount,
       nthItem: data.nthItem,
       volumeRules: data.volumeRules,
       minOrder: data.minOrder,
@@ -145,6 +158,15 @@ export async function POST(req: NextRequest) {
       applicableCustomers: data.applicableCustomers || [],
       canCombine: data.canCombine,
       influencerId: data.influencerId || null,
+      // שדות להפעלת מתנה אוטומטית
+      giftProductId: data.giftProductId || null,
+      giftVariantId: data.giftVariantId || null,
+      giftCondition: data.giftCondition || null,
+      giftConditionProductId: data.giftConditionProductId || null,
+      giftConditionAmount: data.giftConditionAmount || null,
+      // שדות להפעלת הנחת לקוח רשום
+      enableCustomerDiscount: data.enableCustomerDiscount || false,
+      customerDiscountPercent: data.customerDiscountPercent || null,
     }
 
     const coupon = await prisma.coupon.create({

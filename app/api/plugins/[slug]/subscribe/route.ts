@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { subscribeToPlugin } from "@/lib/plugins/billing"
 import { getPluginBySlug } from "@/lib/plugins/registry"
 import { installPlugin } from "@/lib/plugins/loader"
+import { getTranslations } from "next-intl/server"
 
 // POST - רכישת תוסף בתשלום
 export async function POST(
@@ -13,8 +14,9 @@ export async function POST(
 ) {
   try {
     const session = await getServerSession(authOptions)
+    const t = await getTranslations()
     if (!session?.user?.companyId) {
-      return NextResponse.json({ error: "לא מאומת" }, { status: 401 })
+      return NextResponse.json({ error: t("errors.unauthorized") }, { status: 401 })
     }
 
     const { searchParams } = new URL(req.url)
@@ -36,20 +38,26 @@ export async function POST(
     if (!plugin) {
       const pluginDef = getPluginBySlug(params.slug)
       if (!pluginDef) {
-        return NextResponse.json({ error: "תוסף לא נמצא" }, { status: 404 })
+        return NextResponse.json({ error: t("errors.pluginNotFound") }, { status: 404 })
       }
 
       // התקנת התוסף (אבל לא הפעלה - זה יקרה אחרי התשלום)
-      plugin = await installPlugin(
+      const installedPlugin = await installPlugin(
         params.slug,
         shopId || undefined,
         session.user.companyId
       )
+      // המרה לסוג הנכון
+      plugin = installedPlugin as any
+    }
+
+    if (!plugin) {
+      return NextResponse.json({ error: t("errors.pluginNotFound") }, { status: 404 })
     }
 
     if (plugin.isFree) {
       return NextResponse.json(
-        { error: "תוסף זה חינמי - השתמש ב-install" },
+        { error: t("errors.pluginFree") },
         { status: 400 }
       )
     }

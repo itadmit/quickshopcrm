@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Suspense } from "react"
 import { useSession, signOut } from "next-auth/react"
+import { useTranslations, useLocale } from "next-intl"
 import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { Sidebar } from "./Sidebar"
 import { Header } from "./Header"
@@ -21,7 +22,10 @@ function AppLayoutContent({ children, title, hideSidebar, hideHeader }: AppLayou
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const t = useTranslations()
+  const locale = useLocale()
   const { toast } = useToast()
+  const dir = locale === 'he' ? 'rtl' : 'ltr'
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null)
   const [checkingSubscription, setCheckingSubscription] = useState(true)
 
@@ -66,8 +70,8 @@ function AppLayoutContent({ children, title, hideSidebar, hideHeader }: AppLayou
       const userDeleted = sessionStorage.getItem("user_deleted")
       if (userDeleted === "true") {
         toast({
-          title: "החשבון נמחק",
-          description: "החשבון שלך נמחק מהמערכת. יש להתחבר מחדש.",
+          title: t("appLayout.accountDeleted"),
+          description: t("appLayout.accountDeletedDescription"),
           variant: "destructive",
         })
         sessionStorage.removeItem("user_deleted")
@@ -88,7 +92,7 @@ function AppLayoutContent({ children, title, hideSidebar, hideHeader }: AppLayou
   // אם צריך להסתיר Sidebar ו-Header (למשל בדף הזמנה)
   if (hideSidebar && hideHeader) {
     return (
-      <div className="h-screen overflow-hidden" style={{ backgroundColor: '#f7f9fe' }} dir="rtl">
+      <div className="h-screen overflow-hidden" style={{ backgroundColor: '#f7f9fe' }} dir={dir}>
         <main className="h-full overflow-y-auto">
           {children}
         </main>
@@ -99,7 +103,7 @@ function AppLayoutContent({ children, title, hideSidebar, hideHeader }: AppLayou
   return (
     <>
       {shouldShowBlock && <SubscriptionBlock subscriptionInfo={subscriptionInfo} />}
-      <div className="flex h-screen" style={{ backgroundColor: '#f7f9fe' }} dir="rtl">
+      <div className="flex h-screen" style={{ backgroundColor: '#f7f9fe' }} dir={dir}>
         {!hideSidebar && <Sidebar />}
         <div className="flex-1 flex flex-col overflow-hidden">
           {!hideHeader && <Header title={title} />}
@@ -120,9 +124,12 @@ function AppLayoutContent({ children, title, hideSidebar, hideHeader }: AppLayou
 }
 
 export function AppLayout({ children, title, hideSidebar = false, hideHeader = false }: AppLayoutProps) {
+  const locale = useLocale()
+  const dir = locale === 'he' ? 'rtl' : 'ltr'
+  
   return (
     <Suspense fallback={
-      <div className="flex h-screen" style={{ backgroundColor: '#f7f9fe' }} dir="rtl">
+      <div className="flex h-screen" style={{ backgroundColor: '#f7f9fe' }} dir={dir}>
         {!hideSidebar && <Sidebar />}
         <div className="flex-1 flex flex-col overflow-hidden">
           {!hideHeader && <Header title={title} />}
@@ -130,9 +137,13 @@ export function AppLayout({ children, title, hideSidebar = false, hideHeader = f
             <div className="min-h-full flex flex-col">
               <div className="flex-1 p-6">
                 <div className="max-w-7xl mx-auto">
-                  {children}
+                  <div className="animate-pulse space-y-4">
+                    <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+                    <div className="h-64 bg-gray-200 rounded"></div>
+                  </div>
                 </div>
               </div>
+              <Footer />
             </div>
           </main>
         </div>

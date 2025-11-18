@@ -41,12 +41,33 @@ interface AppearanceSettings {
   logo: string | null
   favicon: string | null
   
-  // תבנית
-  theme: string
+  // פונט
+  fontFamily: string
   
   // צבעים כלליים
   primaryColor: string
   secondaryColor: string
+  primaryTextColor: string
+  
+  // צבעי הדר
+  headerBgColor: string
+  headerTextColor: string
+  
+  // צבעי פוטר
+  footerBgColor: string
+  footerTextColor: string
+  
+  // צבעי כפתורים
+  addToCartBtnColor: string
+  addToCartBtnTextColor: string
+  proceedToCheckoutBtnColor: string
+  proceedToCheckoutBtnTextColor: string
+  paymentBtnColor: string
+  paymentBtnTextColor: string
+  
+  // צבעי מחירים
+  regularPriceColor: string
+  salePriceColor: string
   
   // פריסת הדר
   headerLayout: "logo-left" | "logo-right" | "logo-center-menu-below"
@@ -73,6 +94,8 @@ interface AppearanceSettings {
   // התנהגות סל
   cartBehavior: "open-cart" | "show-notification"
   showCouponByDefault: boolean
+  showCartPageButton: boolean
+  showTaxInCart: boolean
   
   // טוב בר
   topBarEnabled: boolean
@@ -109,6 +132,10 @@ interface AppearanceSettings {
   categoryRemoveMobilePadding: boolean
   categoryImageBorderRadius: number
   categoryImageAspectRatio: "1:1" | "3:4" | "6:9" | "9:16"
+  categoryShowSizeButtons: boolean
+  categorySizeButtonPosition: "on-image" | "below-image"
+  categoryShowOnlyInStock: boolean
+  categoryRemoveCardBorders: boolean
   
   // מחירים
   categoryRoundPrices: boolean
@@ -225,11 +252,37 @@ interface AppearanceSettings {
   emailColor2: string
 }
 
-const THEMES = [
-  { id: "default", name: "ברירת מחדל", description: "תבנית נקייה ומינימליסטית" },
-  { id: "modern", name: "מודרני", description: "תבנית מודרנית עם אנימציות" },
-  { id: "classic", name: "קלאסי", description: "תבנית קלאסית ומסורתית" },
-  { id: "bold", name: "בולט", description: "תבנית בולטת וצבעונית" },
+const FONTS = [
+  { 
+    id: "Noto Sans Hebrew", 
+    name: "Noto Sans Hebrew", 
+    description: "פונט נקי ומודרני (ברירת מחדל)",
+    hebrewName: "נוטו סאנס עברית"
+  },
+  { 
+    id: "Heebo", 
+    name: "Heebo", 
+    description: "פונט אלגנטי וקריא",
+    hebrewName: "היבו"
+  },
+  { 
+    id: "Assistant", 
+    name: "Assistant", 
+    description: "פונט ידידותי ונגיש",
+    hebrewName: "אסיסטנט"
+  },
+  { 
+    id: "Varela Round", 
+    name: "Varela Round", 
+    description: "פונט עגול ומסוגנן",
+    hebrewName: "ורלה ראונד"
+  },
+  { 
+    id: "Rubik", 
+    name: "Rubik", 
+    description: "פונט מודרני ובולט",
+    hebrewName: "רוביק"
+  },
 ]
 
 export default function AppearancePage() {
@@ -244,9 +297,22 @@ export default function AppearancePage() {
   const [settings, setSettings] = useState<AppearanceSettings>({
     logo: null,
     favicon: null,
-    theme: "default",
+    fontFamily: "Noto Sans Hebrew",
     primaryColor: "#000000",
     secondaryColor: "#333333",
+    primaryTextColor: "#ffffff",
+    headerBgColor: "#ffffff",
+    headerTextColor: "#000000",
+    footerBgColor: "#ffffff",
+    footerTextColor: "#6b7280",
+    addToCartBtnColor: "#000000",
+    addToCartBtnTextColor: "#ffffff",
+    proceedToCheckoutBtnColor: "#000000",
+    proceedToCheckoutBtnTextColor: "#ffffff",
+    paymentBtnColor: "#000000",
+    paymentBtnTextColor: "#ffffff",
+    regularPriceColor: "#111827",
+    salePriceColor: "#ef4444",
     headerLayout: "logo-left",
     logoWidthMobile: 85,
     logoWidthDesktop: 135,
@@ -261,6 +327,8 @@ export default function AppearancePage() {
     mobileSideMenuShowAuthLinks: true,
     cartBehavior: "open-cart",
     showCouponByDefault: true,
+    showCartPageButton: false,
+    showTaxInCart: true,
     topBarEnabled: false,
     topBarBgColor: "#000000",
     topBarTextColor: "#ffffff",
@@ -290,8 +358,12 @@ export default function AppearancePage() {
     categoryShowImageArrows: false,
     categoryShowImageDots: false,
     categoryRemoveMobilePadding: false,
-    categoryImageBorderRadius: 8,
+    categoryImageBorderRadius: 0,
     categoryImageAspectRatio: "1:1",
+    categoryShowSizeButtons: true,
+    categorySizeButtonPosition: "on-image",
+    categoryShowOnlyInStock: true,
+    categoryRemoveCardBorders: true,
     categoryRoundPrices: false,
     categoryShowDecimals: true,
     categoryContentAlignment: "right",
@@ -403,9 +475,22 @@ export default function AppearancePage() {
         setSettings({
           logo: shop.logo || null,
           favicon: shop.favicon || null,
-          theme: shop.theme || "default",
+          fontFamily: themeSettings.fontFamily || "Noto Sans Hebrew",
           primaryColor: themeSettings.primaryColor || "#000000",
           secondaryColor: themeSettings.secondaryColor || "#333333",
+          primaryTextColor: themeSettings.primaryTextColor || "#ffffff",
+          headerBgColor: themeSettings.headerBgColor || "#ffffff",
+          headerTextColor: themeSettings.headerTextColor || "#000000",
+          footerBgColor: themeSettings.footerBgColor || "#ffffff",
+          footerTextColor: themeSettings.footerTextColor || "#6b7280",
+          addToCartBtnColor: themeSettings.addToCartBtnColor || "#000000",
+          addToCartBtnTextColor: themeSettings.addToCartBtnTextColor || "#ffffff",
+          proceedToCheckoutBtnColor: themeSettings.proceedToCheckoutBtnColor || "#000000",
+          proceedToCheckoutBtnTextColor: themeSettings.proceedToCheckoutBtnTextColor || "#ffffff",
+          paymentBtnColor: themeSettings.paymentBtnColor || "#000000",
+          paymentBtnTextColor: themeSettings.paymentBtnTextColor || "#ffffff",
+          regularPriceColor: themeSettings.regularPriceColor || "#111827",
+          salePriceColor: themeSettings.salePriceColor || "#ef4444",
           headerLayout: themeSettings.headerLayout || "logo-left",
           logoWidthMobile: themeSettings.logoWidthMobile || 85,
           logoWidthDesktop: themeSettings.logoWidthDesktop || 135,
@@ -420,6 +505,8 @@ export default function AppearancePage() {
           mobileSideMenuShowAuthLinks: themeSettings.mobileSideMenuShowAuthLinks !== undefined ? themeSettings.mobileSideMenuShowAuthLinks : true,
           cartBehavior: shopSettings.cartBehavior || "open-cart",
           showCouponByDefault: themeSettings.showCouponByDefault !== undefined ? themeSettings.showCouponByDefault : true,
+          showCartPageButton: themeSettings.showCartPageButton !== undefined ? themeSettings.showCartPageButton : false,
+          showTaxInCart: themeSettings.showTaxInCart !== undefined ? themeSettings.showTaxInCart : true,
           topBarEnabled: themeSettings.topBarEnabled || false,
           topBarBgColor: themeSettings.topBarBgColor || "#000000",
           topBarTextColor: themeSettings.topBarTextColor || "#ffffff",
@@ -445,8 +532,12 @@ export default function AppearancePage() {
           categoryShowImageArrows: themeSettings.categoryShowImageArrows || false,
           categoryShowImageDots: themeSettings.categoryShowImageDots || false,
           categoryRemoveMobilePadding: themeSettings.categoryRemoveMobilePadding || false,
-          categoryImageBorderRadius: themeSettings.categoryImageBorderRadius || 8,
+          categoryImageBorderRadius: themeSettings.categoryImageBorderRadius !== undefined ? themeSettings.categoryImageBorderRadius : 0,
           categoryImageAspectRatio: themeSettings.categoryImageAspectRatio || "1:1",
+          categoryShowSizeButtons: themeSettings.categoryShowSizeButtons !== undefined ? themeSettings.categoryShowSizeButtons : true,
+          categorySizeButtonPosition: themeSettings.categorySizeButtonPosition || "on-image",
+          categoryShowOnlyInStock: themeSettings.categoryShowOnlyInStock !== undefined ? themeSettings.categoryShowOnlyInStock : true,
+          categoryRemoveCardBorders: themeSettings.categoryRemoveCardBorders !== undefined ? themeSettings.categoryRemoveCardBorders : true,
           categoryRoundPrices: themeSettings.categoryRoundPrices || false,
           categoryShowDecimals: themeSettings.categoryShowDecimals !== undefined ? themeSettings.categoryShowDecimals : true,
           categoryContentAlignment: themeSettings.categoryContentAlignment || "right",
@@ -552,10 +643,23 @@ export default function AppearancePage() {
         body: JSON.stringify({
           logo: settings.logo,
           favicon: settings.favicon,
-          theme: settings.theme,
           themeSettings: {
+            fontFamily: settings.fontFamily,
             primaryColor: settings.primaryColor,
             secondaryColor: settings.secondaryColor,
+            primaryTextColor: settings.primaryTextColor,
+            headerBgColor: settings.headerBgColor,
+            headerTextColor: settings.headerTextColor,
+            footerBgColor: settings.footerBgColor,
+            footerTextColor: settings.footerTextColor,
+            addToCartBtnColor: settings.addToCartBtnColor,
+            addToCartBtnTextColor: settings.addToCartBtnTextColor,
+            proceedToCheckoutBtnColor: settings.proceedToCheckoutBtnColor,
+            proceedToCheckoutBtnTextColor: settings.proceedToCheckoutBtnTextColor,
+            paymentBtnColor: settings.paymentBtnColor,
+            paymentBtnTextColor: settings.paymentBtnTextColor,
+            regularPriceColor: settings.regularPriceColor,
+            salePriceColor: settings.salePriceColor,
             headerLayout: settings.headerLayout,
             logoWidthMobile: settings.logoWidthMobile,
             logoWidthDesktop: settings.logoWidthDesktop,
@@ -569,6 +673,8 @@ export default function AppearancePage() {
             mobileSideMenuTitle: settings.mobileSideMenuTitle,
             mobileSideMenuShowAuthLinks: settings.mobileSideMenuShowAuthLinks,
             showCouponByDefault: settings.showCouponByDefault,
+            showCartPageButton: settings.showCartPageButton,
+            showTaxInCart: settings.showTaxInCart,
             topBarEnabled: settings.topBarEnabled,
             topBarBgColor: settings.topBarBgColor,
             topBarTextColor: settings.topBarTextColor,
@@ -596,6 +702,10 @@ export default function AppearancePage() {
             categoryRemoveMobilePadding: settings.categoryRemoveMobilePadding,
             categoryImageBorderRadius: settings.categoryImageBorderRadius,
             categoryImageAspectRatio: settings.categoryImageAspectRatio,
+            categoryShowSizeButtons: settings.categoryShowSizeButtons,
+            categorySizeButtonPosition: settings.categorySizeButtonPosition,
+            categoryShowOnlyInStock: settings.categoryShowOnlyInStock,
+            categoryRemoveCardBorders: settings.categoryRemoveCardBorders,
             categoryRoundPrices: settings.categoryRoundPrices,
             categoryShowDecimals: settings.categoryShowDecimals,
             categoryContentAlignment: settings.categoryContentAlignment,
@@ -736,21 +846,37 @@ export default function AppearancePage() {
         return (
           <div className="space-y-6">
             <div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">בחר תבנית</h3>
-              <div className="space-y-3">
-                {THEMES.map((theme) => (
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">בחירת פונט</h3>
+              <p className="text-sm text-gray-600 mb-4">הפונט ישפיע על הפרונט של החנות בלבד</p>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                {FONTS.map((font) => (
                   <div
-                    key={theme.id}
+                    key={font.id}
                     className={cn(
-                      "p-4 border-2 rounded-lg cursor-pointer transition-all",
-                      settings.theme === theme.id
-                        ? "border-purple-500 bg-purple-50"
+                      "p-4 border-2 rounded-lg cursor-pointer transition-all hover:shadow-md",
+                      settings.fontFamily === font.id
+                        ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200"
                         : "border-gray-200 hover:border-gray-300"
                     )}
-                    onClick={() => updateSettings("theme", theme.id)}
+                    onClick={() => updateSettings("fontFamily", font.id)}
                   >
-                    <h4 className="font-semibold text-gray-900">{theme.name}</h4>
-                    <p className="text-sm text-gray-600 mt-1">{theme.description}</p>
+                    <div className="text-center">
+                      <h4 className="font-semibold text-gray-900 mb-1 text-sm">{font.hebrewName}</h4>
+                      <p className="text-xs text-gray-500 mb-2">{font.name}</p>
+                      <div 
+                        className="text-3xl font-bold mb-1"
+                        style={{ 
+                          fontFamily: font.id === "Noto Sans Hebrew" ? "Noto Sans Hebrew" : 
+                                      font.id === "Heebo" ? "Heebo" :
+                                      font.id === "Assistant" ? "Assistant" :
+                                      font.id === "Varela Round" ? "Varela Round" :
+                                      font.id === "Rubik" ? "Rubik" : font.id
+                        }}
+                      >
+                        שלום
+                      </div>
+                      <p className="text-xs text-gray-600">{font.description}</p>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -790,6 +916,256 @@ export default function AppearancePage() {
                   <Input
                     value={settings.secondaryColor}
                     onChange={(e) => updateSettings("secondaryColor", e.target.value)}
+                    className="flex-1 h-10 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="primaryTextColor">צבע טקסט ראשי (לכפתורים)</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  <input
+                    id="primaryTextColor"
+                    type="color"
+                    value={settings.primaryTextColor}
+                    onChange={(e) => updateSettings("primaryTextColor", e.target.value)}
+                    className="w-20 h-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={settings.primaryTextColor}
+                    onChange={(e) => updateSettings("primaryTextColor", e.target.value)}
+                    className="flex-1 h-10 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-6 border-t">
+              <h3 className="text-lg font-semibold text-gray-900">צבעי הדר</h3>
+              
+              <div>
+                <Label htmlFor="headerBgColor">צבע רקע הדר</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  <input
+                    id="headerBgColor"
+                    type="color"
+                    value={settings.headerBgColor}
+                    onChange={(e) => updateSettings("headerBgColor", e.target.value)}
+                    className="w-20 h-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={settings.headerBgColor}
+                    onChange={(e) => updateSettings("headerBgColor", e.target.value)}
+                    className="flex-1 h-10 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="headerTextColor">צבע תוכן הדר</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  <input
+                    id="headerTextColor"
+                    type="color"
+                    value={settings.headerTextColor}
+                    onChange={(e) => updateSettings("headerTextColor", e.target.value)}
+                    className="w-20 h-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={settings.headerTextColor}
+                    onChange={(e) => updateSettings("headerTextColor", e.target.value)}
+                    className="flex-1 h-10 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-6 border-t">
+              <h3 className="text-lg font-semibold text-gray-900">צבעי פוטר</h3>
+              
+              <div>
+                <Label htmlFor="footerBgColor">צבע רקע פוטר</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  <input
+                    id="footerBgColor"
+                    type="color"
+                    value={settings.footerBgColor}
+                    onChange={(e) => updateSettings("footerBgColor", e.target.value)}
+                    className="w-20 h-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={settings.footerBgColor}
+                    onChange={(e) => updateSettings("footerBgColor", e.target.value)}
+                    className="flex-1 h-10 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="footerTextColor">צבע תוכן פוטר</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  <input
+                    id="footerTextColor"
+                    type="color"
+                    value={settings.footerTextColor}
+                    onChange={(e) => updateSettings("footerTextColor", e.target.value)}
+                    className="w-20 h-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={settings.footerTextColor}
+                    onChange={(e) => updateSettings("footerTextColor", e.target.value)}
+                    className="flex-1 h-10 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-6 border-t">
+              <h3 className="text-lg font-semibold text-gray-900">צבעי כפתורים</h3>
+              
+              <div>
+                <Label htmlFor="addToCartBtnColor">צבע כפתור הוספה לסל</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  <input
+                    id="addToCartBtnColor"
+                    type="color"
+                    value={settings.addToCartBtnColor}
+                    onChange={(e) => updateSettings("addToCartBtnColor", e.target.value)}
+                    className="w-20 h-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={settings.addToCartBtnColor}
+                    onChange={(e) => updateSettings("addToCartBtnColor", e.target.value)}
+                    className="flex-1 h-10 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="addToCartBtnTextColor">צבע טקסט כפתור הוספה לסל</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  <input
+                    id="addToCartBtnTextColor"
+                    type="color"
+                    value={settings.addToCartBtnTextColor}
+                    onChange={(e) => updateSettings("addToCartBtnTextColor", e.target.value)}
+                    className="w-20 h-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={settings.addToCartBtnTextColor}
+                    onChange={(e) => updateSettings("addToCartBtnTextColor", e.target.value)}
+                    className="flex-1 h-10 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="proceedToCheckoutBtnColor">צבע כפתור מעבר לתשלום</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  <input
+                    id="proceedToCheckoutBtnColor"
+                    type="color"
+                    value={settings.proceedToCheckoutBtnColor}
+                    onChange={(e) => updateSettings("proceedToCheckoutBtnColor", e.target.value)}
+                    className="w-20 h-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={settings.proceedToCheckoutBtnColor}
+                    onChange={(e) => updateSettings("proceedToCheckoutBtnColor", e.target.value)}
+                    className="flex-1 h-10 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="proceedToCheckoutBtnTextColor">צבע טקסט כפתור מעבר לתשלום</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  <input
+                    id="proceedToCheckoutBtnTextColor"
+                    type="color"
+                    value={settings.proceedToCheckoutBtnTextColor}
+                    onChange={(e) => updateSettings("proceedToCheckoutBtnTextColor", e.target.value)}
+                    className="w-20 h-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={settings.proceedToCheckoutBtnTextColor}
+                    onChange={(e) => updateSettings("proceedToCheckoutBtnTextColor", e.target.value)}
+                    className="flex-1 h-10 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="paymentBtnColor">צבע כפתור תשלום</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  <input
+                    id="paymentBtnColor"
+                    type="color"
+                    value={settings.paymentBtnColor}
+                    onChange={(e) => updateSettings("paymentBtnColor", e.target.value)}
+                    className="w-20 h-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={settings.paymentBtnColor}
+                    onChange={(e) => updateSettings("paymentBtnColor", e.target.value)}
+                    className="flex-1 h-10 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="paymentBtnTextColor">צבע טקסט כפתור תשלום</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  <input
+                    id="paymentBtnTextColor"
+                    type="color"
+                    value={settings.paymentBtnTextColor}
+                    onChange={(e) => updateSettings("paymentBtnTextColor", e.target.value)}
+                    className="w-20 h-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={settings.paymentBtnTextColor}
+                    onChange={(e) => updateSettings("paymentBtnTextColor", e.target.value)}
+                    className="flex-1 h-10 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4 pt-6 border-t">
+              <h3 className="text-lg font-semibold text-gray-900">צבעי מחירים</h3>
+              
+              <div>
+                <Label htmlFor="regularPriceColor">צבע מחיר רגיל</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  <input
+                    id="regularPriceColor"
+                    type="color"
+                    value={settings.regularPriceColor}
+                    onChange={(e) => updateSettings("regularPriceColor", e.target.value)}
+                    className="w-20 h-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={settings.regularPriceColor}
+                    onChange={(e) => updateSettings("regularPriceColor", e.target.value)}
+                    className="flex-1 h-10 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="salePriceColor">צבע מחיר מבצע</Label>
+                <div className="mt-2 flex items-center gap-3">
+                  <input
+                    id="salePriceColor"
+                    type="color"
+                    value={settings.salePriceColor}
+                    onChange={(e) => updateSettings("salePriceColor", e.target.value)}
+                    className="w-20 h-10 rounded border cursor-pointer"
+                  />
+                  <Input
+                    value={settings.salePriceColor}
+                    onChange={(e) => updateSettings("salePriceColor", e.target.value)}
                     className="flex-1 h-10 text-sm"
                   />
                 </div>
@@ -1334,6 +1710,34 @@ export default function AppearancePage() {
                 />
               </div>
             </div>
+            <div className="pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-base font-semibold">הצגת כפתור מעבר לעגלה</Label>
+                  <p className="text-sm text-gray-600 mt-1">
+                    הצג כפתור נוסף "מעבר לעגלה" בעגלת הצד, מתחת לכפתור "מעבר לקופה"
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.showCartPageButton}
+                  onCheckedChange={(checked) => updateSettings("showCartPageButton", checked)}
+                />
+              </div>
+            </div>
+            <div className="pt-4 border-t">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-base font-semibold">הצגת מע"מ בעגלה</Label>
+                  <p className="text-sm text-gray-600 mt-1">
+                    הצג את שורת "כולל מע״מ" בעגלה, עגלת הצד ובעמוד הקופה
+                  </p>
+                </div>
+                <Switch
+                  checked={settings.showTaxInCart}
+                  onCheckedChange={(checked) => updateSettings("showTaxInCart", checked)}
+                />
+              </div>
+            </div>
           </div>
         )
 
@@ -1475,6 +1879,59 @@ export default function AppearancePage() {
                     onCheckedChange={(checked) => updateSettings("categoryRemoveMobilePadding", checked)}
                   />
                 </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-medium">הסר מסגרות מכרטיסים</Label>
+                    <p className="text-xs text-gray-500">עיצוב נקי ללא מסגרות סביב המוצרים</p>
+                  </div>
+                  <Switch
+                    checked={settings.categoryRemoveCardBorders}
+                    onCheckedChange={(checked) => updateSettings("categoryRemoveCardBorders", checked)}
+                  />
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-medium">הצג כפתורי מידות</Label>
+                    <p className="text-xs text-gray-500">הצגת מידות זמינות על כרטיס המוצר</p>
+                  </div>
+                  <Switch
+                    checked={settings.categoryShowSizeButtons}
+                    onCheckedChange={(checked) => updateSettings("categoryShowSizeButtons", checked)}
+                  />
+                </div>
+
+                {settings.categoryShowSizeButtons && (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <Label className="text-sm font-medium">הצג רק מידות במלאי</Label>
+                        <p className="text-xs text-gray-500">הסתר מידות שאזלו מהמלאי</p>
+                      </div>
+                      <Switch
+                        checked={settings.categoryShowOnlyInStock}
+                        onCheckedChange={(checked) => updateSettings("categoryShowOnlyInStock", checked)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">מיקום כפתורי מידות</Label>
+                      <Select
+                        value={settings.categorySizeButtonPosition}
+                        onValueChange={(value) => updateSettings("categorySizeButtonPosition", value)}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="on-image">על התמונה מצד ימין</SelectItem>
+                          <SelectItem value="below-image">מתחת למחיר</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-4 border-t">
@@ -2358,7 +2815,7 @@ export default function AppearancePage() {
 
   const tabs = [
     { key: "logo", label: "לוגו ופאביקון", icon: ImageIcon, divider: false },
-    { key: "theme", label: "תבנית וצבעים", icon: Palette, divider: false },
+    { key: "theme", label: "טיפוגרפיה וצבעים", icon: Palette, divider: false },
     { key: "header", label: "הדר", icon: Layout, divider: false },
     { key: "cart", label: "התנהגות סל", icon: Settings, divider: false },
     { key: "topbar", label: "טופ בר", icon: Bell, divider: true },
@@ -2447,8 +2904,8 @@ export default function AppearancePage() {
                         <Palette className="w-5 h-5 text-purple-600" />
                       </div>
                       <div>
-                        <CardTitle>תבנית וצבעים</CardTitle>
-                        <CardDescription>בחר תבנית ועדכן צבעים כלליים</CardDescription>
+                        <CardTitle>טיפוגרפיה וצבעים</CardTitle>
+                        <CardDescription>בחר פונט ועדכן צבעים כלליים</CardDescription>
                       </div>
                     </div>
                     <Button

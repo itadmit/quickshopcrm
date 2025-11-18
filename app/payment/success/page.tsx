@@ -47,9 +47,9 @@ async function getOrder(orderId: string) {
 export default async function PaymentSuccessPage({
   searchParams,
 }: {
-  searchParams: { orderId?: string }
+  searchParams: { orderId?: string; [key: string]: string | undefined }
 }) {
-  const { orderId } = searchParams
+  const { orderId, status, status_code } = searchParams
 
   if (!orderId) {
     redirect("/")
@@ -59,6 +59,100 @@ export default async function PaymentSuccessPage({
 
   if (!order) {
     redirect("/")
+  }
+
+  // אם יש פרמטרים של PayPlus שמצביעים על תשלום מוצלח, נעדכן את ההזמנה
+  // זה גיבוי למקרה שה-callback לא נקרא
+  const isPaymentSuccess = status === "approved" || status_code === "000"
+  if (isPaymentSuccess && order.paymentStatus !== "PAID") {
+    try {
+      await prisma.order.update({
+        where: { id: orderId },
+        data: {
+          paymentStatus: "PAID",
+          paidAt: new Date(),
+          transactionId: searchParams.transaction_uid || order.transactionId,
+        },
+      })
+      
+      // אם התשלום הצליח, נעדכן את המלאי
+      const orderWithItems = await prisma.order.findUnique({
+        where: { id: orderId },
+        include: {
+          items: true,
+        },
+      })
+
+      if (orderWithItems) {
+        for (const item of orderWithItems.items) {
+          if (item.variantId) {
+            const variant = await prisma.productVariant.findUnique({
+              where: { id: item.variantId },
+              include: { product: { select: { shopId: true, lowStockAlert: true } } },
+            })
+            
+            if (variant) {
+              const oldQty = variant.inventoryQty
+              const newQty = Math.max(0, oldQty - item.quantity)
+              
+              await prisma.productVariant.update({
+                where: { id: item.variantId },
+                data: {
+                  inventoryQty: newQty,
+                },
+              })
+            }
+          } else if (item.productId) {
+            const product = await prisma.product.findUnique({
+              where: { id: item.productId },
+            })
+            
+            if (product) {
+              const oldQty = product.inventoryQty
+              const newQty = Math.max(0, oldQty - item.quantity)
+              
+              await prisma.product.update({
+                where: { id: item.productId },
+                data: {
+                  inventoryQty: newQty,
+                },
+              })
+            }
+          }
+        }
+      }
+
+      // יצירת אירוע payment.completed
+      await prisma.shopEvent.create({
+        data: {
+          shopId: order.shopId,
+          type: "payment.completed",
+          entityType: "order",
+          entityId: order.id,
+          payload: {
+            orderId: order.id,
+            orderNumber: order.orderNumber,
+            amount: order.total,
+            transactionId: searchParams.transaction_uid || order.transactionId,
+            paymentMethod: "credit_card",
+            shopId: order.shopId,
+          },
+          userId: order.customerId || undefined,
+        },
+      })
+
+      // שליחת מייל אישור תשלום
+      const { sendOrderConfirmationEmail } = await import("@/lib/order-email")
+      await sendOrderConfirmationEmail(order.id).catch((error) => {
+        console.error("Error sending confirmation email:", error)
+      })
+
+      // טעינת ההזמנה מחדש עם הנתונים המעודכנים (לא חובה, אבל עוזר לוודא שהנתונים מעודכנים)
+      // ההזמנה כבר מעודכנת ב-DB, אז זה רק לוודא שהנתונים נכונים
+    } catch (error) {
+      console.error("Error updating order status:", error)
+      // לא נעצור את התהליך אם יש שגיאה בעדכון
+    }
   }
 
   const shopSettings = order.shop.settings as any

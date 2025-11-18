@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&family=Assistant:wght@300;400;500;600;700&family=Varela+Round&family=Rubik:wght@300;400;500;600;700&family=Noto+Sans+Hebrew:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -56,6 +58,23 @@ input[type="number"] {
 /* Noto Sans Hebrew Font - loaded via next/font */
 body {
   font-family: var(--font-noto-sans-hebrew), sans-serif;
+}
+
+/* Available Fonts for Storefront */
+.font-heebo {
+  font-family: var(--font-heebo), sans-serif;
+}
+
+.font-assistant {
+  font-family: var(--font-assistant), sans-serif;
+}
+
+.font-varela-round {
+  font-family: var(--font-varela-round), sans-serif;
+}
+
+.font-rubik {
+  font-family: var(--font-rubik), sans-serif;
 }
 
 /* Pacifico Font for Logo */

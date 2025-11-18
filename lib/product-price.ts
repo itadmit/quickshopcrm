@@ -81,7 +81,13 @@ export function formatProductPrice(product: Product): string {
     if (priceInfo.minPrice === priceInfo.maxPrice) {
       return `₪${priceInfo.minPrice.toFixed(2)}`
     }
-    return `₪${priceInfo.minPrice.toFixed(2)} - ₪${priceInfo.maxPrice.toFixed(2)}`
+    // אם יש טווח מחירים, נציג "החל מ-"
+    return `החל מ-₪${priceInfo.minPrice.toFixed(2)}`
+  }
+  
+  // אם המחיר 0 או שלילי (לא תקין), נחזיר טקסט ברור
+  if (priceInfo.price <= 0) {
+    return 'בחר אפשרויות'
   }
   
   return `₪${priceInfo.price.toFixed(2)}`

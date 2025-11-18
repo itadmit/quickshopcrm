@@ -42,6 +42,7 @@ import { Product, ProductPageClientProps, GalleryLayout } from "./types"
 import { ProductAddonsSelector } from "./components/ProductAddonsSelector"
 import { ProductCustomFields } from "./components/ProductCustomFields"
 import { BundleSelector } from "./components/BundleSelector"
+import { ReviewForm } from "@/components/storefront/ReviewForm"
 
 const popularColors: Record<string, string> = {
   'שחור': '#000000',
@@ -74,6 +75,7 @@ export function ProductPageClient({
   reviews: initialReviews,
   averageRating: initialAverageRating,
   totalReviews: initialTotalReviews,
+  reviewsPluginActive = false,
   relatedProducts: initialRelatedProducts,
   galleryLayout: initialGalleryLayout,
   productPageLayout: initialProductPageLayout,
@@ -93,6 +95,7 @@ export function ProductPageClient({
   const [totalReviews] = useState(initialTotalReviews)
   const [relatedProducts] = useState<any[]>(initialRelatedProducts)
   const [showReviews, setShowReviews] = useState(false)
+  const [showReviewForm, setShowReviewForm] = useState(false)
   const [showQuickBuy, setShowQuickBuy] = useState(false)
   const [isGift, setIsGift] = useState(false)
   const [giftDiscountId, setGiftDiscountId] = useState<string | null>(null)
@@ -369,7 +372,7 @@ export function ProductPageClient({
     onToggleElementVisibility: toggleElementVisibility,
     onOpenElementSettings: handleOpenElementSettings,
     slug,
-    productId,
+    productId: product.id, // שימוש ב-id האמיתי של המוצר במקום slug
     theme,
     hasBundles: bundles && bundles.length > 0, // האם יש bundles
     averageRating,
@@ -380,6 +383,7 @@ export function ProductPageClient({
     currentPrice,
     sizeChart,
     onShowSizeChart: () => setShowSizeChart(true),
+    customerId,
   })
 
   // פונקציה לרינדור כוכבים לביקורות
@@ -651,10 +655,20 @@ export function ProductPageClient({
           </div>
         )}
 
-        {/* Reviews Section */}
-        {showReviews && !layoutElements.find(el => el.type === "product-reviews") && (
+        {/* Reviews Section - רק אם התוסף פעיל */}
+        {reviewsPluginActive && showReviews && !layoutElements.find(el => el.type === "product-reviews") && (
           <div className="mt-12">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">ביקורות ({totalReviews})</h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">ביקורות ({totalReviews})</h2>
+              <Button
+                onClick={() => setShowReviewForm(true)}
+                variant="outline"
+                className="flex items-center gap-2"
+              >
+                <Star className="w-4 h-4" />
+                כתוב ביקורת
+              </Button>
+            </div>
             {reviews.length === 0 ? (
               <div className="text-center py-12 bg-white rounded-lg">
                 <Star className="w-16 h-16 mx-auto text-gray-400 mb-4" />
@@ -695,8 +709,24 @@ export function ProductPageClient({
                               key={idx}
                               src={img}
                               alt={`Review image ${idx + 1}`}
-                              className="w-full h-24 object-cover rounded-lg"
+                              className="w-full h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                              onClick={() => window.open(img, '_blank')}
                             />
+                          ))}
+                        </div>
+                      )}
+                      {review.videos && review.videos.length > 0 && (
+                        <div className="grid grid-cols-1 gap-2 mt-4">
+                          {review.videos.map((video: string, idx: number) => (
+                            <video
+                              key={idx}
+                              src={video}
+                              controls
+                              className="w-full max-w-md rounded-lg"
+                              preload="metadata"
+                            >
+                              הדפדפן שלך לא תומך בהצגת וידאו.
+                            </video>
                           ))}
                         </div>
                       )}
@@ -711,6 +741,32 @@ export function ProductPageClient({
         {/* רינדור מוצרים קשורים */}
         {relatedElement && renderElement(relatedElement)}
       </main>
+
+      {/* Review Form Dialog - רק אם התוסף פעיל */}
+      {reviewsPluginActive && (
+        <Dialog open={showReviewForm} onOpenChange={setShowReviewForm}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto" dir="rtl">
+          <DialogHeader>
+            <DialogTitle>כתוב ביקורת</DialogTitle>
+            <DialogDescription>
+              שתף את החוויה שלך עם המוצר
+            </DialogDescription>
+          </DialogHeader>
+          <ReviewForm
+            productId={productId}
+            slug={slug}
+            shopId={shop.id}
+            customerId={customerId}
+            onSuccess={() => {
+              setShowReviewForm(false)
+              // רענון הביקורות
+              window.location.reload()
+            }}
+            onCancel={() => setShowReviewForm(false)}
+          />
+        </DialogContent>
+      </Dialog>
+      )}
 
       {/* Quick Buy Modal */}
       <Dialog open={showQuickBuy} onOpenChange={(open) => {

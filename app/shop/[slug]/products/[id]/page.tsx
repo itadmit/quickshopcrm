@@ -113,19 +113,33 @@ export default async function ProductPage({ params }: { params: { slug: string; 
     }
   }
 
-  // בדיקה אם התוסף bundle-products פעיל
-  const bundlePlugin = await (prisma as any).plugin.findFirst({
-    where: {
-      slug: 'bundle-products',
-      isActive: true,
-      isInstalled: true,
-      OR: [
-        { shopId: shop.id },
-        { companyId: shop.companyId },
-        { shopId: null, companyId: null },
-      ],
-    },
-  })
+  // בדיקה אם התוספים פעילים
+  const [bundlePlugin, reviewsPlugin] = await Promise.all([
+    (prisma as any).plugin.findFirst({
+      where: {
+        slug: 'bundle-products',
+        isActive: true,
+        isInstalled: true,
+        OR: [
+          { shopId: shop.id },
+          { companyId: shop.companyId },
+          { shopId: null, companyId: null },
+        ],
+      },
+    }),
+    (prisma as any).plugin.findFirst({
+      where: {
+        slug: 'reviews',
+        isActive: true,
+        isInstalled: true,
+        OR: [
+          { shopId: shop.id },
+          { companyId: shop.companyId },
+          { shopId: null, companyId: null },
+        ],
+      },
+    }),
+  ])
 
   // טעינת bundles שמכילים את המוצר הזה (רק אם התוסף פעיל)
   const bundlesContainingProduct = bundlePlugin ? await prisma.bundle.findMany({
@@ -161,18 +175,25 @@ export default async function ProductPage({ params }: { params: { slug: string; 
   }) : []
 
   const [reviewsData, relatedProducts, productAddons] = await Promise.all([
-    prisma.review.findMany({
+    // טעינת ביקורות רק אם התוסף פעיל
+    reviewsPlugin ? prisma.review.findMany({
       where: {
         productId: product.id,
+        isApproved: true, // רק ביקורות מאושרות בסטורפרונט
       },
       include: {
-        customer: true,
+        customer: {
+          select: {
+            firstName: true,
+            lastName: true,
+          },
+        },
       },
       orderBy: {
         createdAt: 'desc',
       },
       take: 10,
-    }),
+    }) : Promise.resolve([]),
 
     prisma.product.findMany({
       where: {
@@ -207,9 +228,10 @@ export default async function ProductPage({ params }: { params: { slug: string; 
     }),
   ])
 
-  const averageRating = reviewsData.length > 0
+  const averageRating = reviewsPlugin && reviewsData.length > 0
     ? reviewsData.reduce((sum, r) => sum + r.rating, 0) / reviewsData.length
     : 0
+  const totalReviews = reviewsPlugin ? reviewsData.length : 0
 
   const themeSettings = (shop.themeSettings as any) || {}
   const galleryLayout = themeSettings.productGalleryLayout || 'standard'
@@ -228,9 +250,10 @@ export default async function ProductPage({ params }: { params: { slug: string; 
       productId={decodedProductId}
       shop={shop}
       product={product as any}
-      reviews={reviewsData}
+      reviews={reviewsPlugin ? reviewsData : []}
       averageRating={averageRating}
-      totalReviews={reviewsData.length}
+      totalReviews={totalReviews}
+      reviewsPluginActive={!!reviewsPlugin}
       relatedProducts={relatedProducts}
       galleryLayout={galleryLayout}
       productPageLayout={productPageLayout}

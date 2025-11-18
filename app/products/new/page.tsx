@@ -181,49 +181,107 @@ export default function NewProductPage() {
     try {
     setSaving(true)
 
-      const payload = {
+      // טיפול בערכי מספרים - מניעת NaN
+      const safeParseInt = (value: string) => {
+        if (!value || !value.trim()) return null
+        const parsed = parseInt(value)
+        return isNaN(parsed) ? null : parsed
+      }
+      
+      const safeParseFloat = (value: string) => {
+        if (!value || !value.trim()) return null
+        const parsed = parseFloat(value)
+        return isNaN(parsed) ? null : parsed
+      }
+      
+      const inventoryQtyValue = hasVariants ? 0 : (safeParseInt(formData.inventoryQty) ?? 0)
+      const lowStockAlertValue = safeParseInt(formData.lowStockAlert)
+      const minQuantityValue = safeParseInt(formData.minQuantity)
+      const maxQuantityValue = safeParseInt(formData.maxQuantity)
+      const pricePer100mlValue = safeParseFloat(formData.pricePer100ml)
+      const weightValue = safeParseFloat(formData.weight)
+
+      const payload: any = {
         shopId: selectedShop.id,
         name: formData.name,
         slug: formData.slug || generateSlug(formData.name),
-        description: formData.description || null,
-        sku: formData.sku || null,
-        price: hasVariants ? 0 : parseFloat(formData.price),
-        comparePrice: hasVariants ? undefined : (formData.comparePrice ? parseFloat(formData.comparePrice) : undefined),
-        cost: hasVariants ? undefined : (formData.cost ? parseFloat(formData.cost) : undefined),
+        price: hasVariants ? 0 : (safeParseFloat(formData.price) ?? 0),
         taxEnabled: formData.taxEnabled,
         inventoryEnabled: formData.inventoryEnabled,
-        inventoryQty: hasVariants ? 0 : (formData.inventoryQty ? parseInt(formData.inventoryQty) : 0),
-        lowStockAlert: formData.lowStockAlert ? parseInt(formData.lowStockAlert) : null,
+        inventoryQty: inventoryQtyValue,
         availability: formData.availability,
-        availableDate: formData.availableDate || null,
         trackInventory: formData.trackInventory,
         sellWhenSoldOut: formData.sellWhenSoldOut,
         priceByWeight: formData.priceByWeight,
         showPricePer100ml: formData.showPricePer100ml,
-        pricePer100ml: formData.pricePer100ml ? parseFloat(formData.pricePer100ml) : null,
-        weight: formData.weight ? parseFloat(formData.weight) : null,
-        dimensions: {
-          length: formData.dimensions.length || null,
-          width: formData.dimensions.width || null,
-          height: formData.dimensions.height || null,
-        },
         status: formData.status,
-        scheduledPublishDate: formData.scheduledPublishDate ? new Date(formData.scheduledPublishDate).toISOString() : null,
         notifyOnPublish: formData.notifyOnPublish,
         images: formData.images,
-        video: formData.video || null,
-        minQuantity: formData.minQuantity ? parseInt(formData.minQuantity) : null,
-        maxQuantity: formData.maxQuantity ? parseInt(formData.maxQuantity) : null,
-        seoTitle: formData.seoTitle || null,
-        seoDescription: formData.seoDescription || null,
         tags: formData.tags,
         categories: formData.categories,
         customFields: customFieldValues,
-        badges: formData.badges.length > 0 ? formData.badges : null,
         addonIds: productAddonIds,
-        hasVariants,
-        options: hasVariants ? options : [],
-        variants: hasVariants ? variants : [],
+      }
+
+      // הוסף שדות אופציונליים רק אם יש להם ערך
+      if (formData.description && formData.description.trim()) {
+        payload.description = formData.description
+      }
+      if (formData.sku && formData.sku.trim()) {
+        payload.sku = formData.sku
+      }
+      if (formData.video && formData.video.trim()) {
+        payload.video = formData.video
+      }
+      if (formData.seoTitle && formData.seoTitle.trim()) {
+        payload.seoTitle = formData.seoTitle
+      }
+      if (formData.seoDescription && formData.seoDescription.trim()) {
+        payload.seoDescription = formData.seoDescription
+      }
+      if (formData.scheduledPublishDate && formData.scheduledPublishDate.trim()) {
+        payload.scheduledPublishDate = new Date(formData.scheduledPublishDate).toISOString()
+      }
+      if (formData.availableDate && formData.availableDate.trim()) {
+        payload.availableDate = new Date(formData.availableDate).toISOString()
+      }
+      if (formData.badges && formData.badges.length > 0) {
+        payload.badges = formData.badges
+      }
+      if (!hasVariants) {
+        const comparePrice = safeParseFloat(formData.comparePrice)
+        if (comparePrice !== null && comparePrice !== undefined) {
+          payload.comparePrice = comparePrice
+        }
+        const cost = safeParseFloat(formData.cost)
+        if (cost !== null && cost !== undefined) {
+          payload.cost = cost
+        }
+      }
+      if (lowStockAlertValue !== null && lowStockAlertValue !== undefined) {
+        payload.lowStockAlert = lowStockAlertValue
+      }
+      if (minQuantityValue !== null && minQuantityValue !== undefined) {
+        payload.minQuantity = minQuantityValue
+      }
+      if (maxQuantityValue !== null && maxQuantityValue !== undefined) {
+        payload.maxQuantity = maxQuantityValue
+      }
+      if (pricePer100mlValue !== null && pricePer100mlValue !== undefined) {
+        payload.pricePer100ml = pricePer100mlValue
+      }
+      if (weightValue !== null && weightValue !== undefined) {
+        payload.weight = weightValue
+      }
+      const dimLength = safeParseFloat(formData.dimensions.length)
+      const dimWidth = safeParseFloat(formData.dimensions.width)
+      const dimHeight = safeParseFloat(formData.dimensions.height)
+      if (dimLength !== null || dimWidth !== null || dimHeight !== null) {
+        payload.dimensions = {
+          length: dimLength,
+          width: dimWidth,
+          height: dimHeight,
+        }
       }
 
       const response = await fetch("/api/products", {
@@ -234,10 +292,130 @@ export default function NewProductPage() {
 
       if (response.ok) {
         const product = await response.json()
-        toast({
-          title: "הצלחה",
-          description: "המוצר נוצר בהצלחה",
-        })
+        
+        // אם יש variants, צור אותם בנפרד
+        if (hasVariants && variants.length > 0 && options.length > 0) {
+          try {
+            // צור options קודם
+            const optionPromises = options.map(async (option, i) => {
+              // המרת values לפורמט הנכון
+              const formattedValues = option.values.map((value: any) => {
+                if (typeof value === 'string') {
+                  return { id: value, label: value }
+                }
+                return {
+                  id: value.id || String(value),
+                  label: value.label || value.id || String(value),
+                  metadata: value.metadata || {}
+                }
+              })
+              
+              const optionResponse = await fetch(`/api/products/${product.id}/options`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  name: option.name,
+                  type: option.type || "button",
+                  values: formattedValues,
+                  position: i,
+                }),
+              })
+              
+              if (!optionResponse.ok) {
+                const error = await optionResponse.json()
+                throw new Error(`שגיאה ביצירת אפשרות ${option.name}: ${error.error || 'שגיאה לא ידועה'}`)
+              }
+              
+              return await optionResponse.json()
+            })
+            
+            await Promise.all(optionPromises)
+            
+            // צור variants
+            const variantPromises = variants.map(async (variant) => {
+              // המרת optionValues לפורמט option1/option1Value וכו'
+              const optionEntries = Object.entries(variant.optionValues || {})
+              const variantPayload: any = {
+                name: variant.name,
+                inventoryQty: safeParseInt(variant.inventoryQty) ?? 0,
+              }
+              
+              // הוסף שדות רק אם יש להם ערך
+              const price = safeParseFloat(variant.price)
+              if (price !== null && price !== undefined) {
+                variantPayload.price = price
+              }
+              
+              const comparePrice = safeParseFloat(variant.comparePrice)
+              if (comparePrice !== null && comparePrice !== undefined) {
+                variantPayload.comparePrice = comparePrice
+              }
+              
+              const cost = safeParseFloat(variant.cost)
+              if (cost !== null && cost !== undefined) {
+                variantPayload.cost = cost
+              }
+              
+              if (variant.sku && variant.sku.trim()) {
+                variantPayload.sku = variant.sku
+              }
+              
+              if (variant.barcode && variant.barcode.trim()) {
+                variantPayload.barcode = variant.barcode
+              }
+              
+              const weight = safeParseFloat(variant.weight)
+              if (weight !== null && weight !== undefined) {
+                variantPayload.weight = weight
+              }
+              
+              if (variant.image && variant.image.trim()) {
+                variantPayload.image = variant.image
+              }
+              
+              // המרת optionValues לפורמט הנכון
+              optionEntries.forEach(([optionName, optionValue], index) => {
+                if (index < 3 && optionValue) { // רק 3 options נתמכים
+                  variantPayload[`option${index + 1}`] = optionName
+                  variantPayload[`option${index + 1}Value`] = String(optionValue)
+                }
+              })
+              
+              const variantResponse = await fetch(`/api/products/${product.id}/variants`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(variantPayload),
+              })
+              
+              if (!variantResponse.ok) {
+                const error = await variantResponse.json()
+                throw new Error(`שגיאה ביצירת וריאציה ${variant.name}: ${error.error || 'שגיאה לא ידועה'}`)
+              }
+              
+              return await variantResponse.json()
+            })
+            
+            await Promise.all(variantPromises)
+            
+            toast({
+              title: "הצלחה",
+              description: "המוצר והוריאציות נוצרו בהצלחה",
+            })
+          } catch (variantError: any) {
+            console.error("Error creating variants:", variantError)
+            toast({
+              title: "אזהרה",
+              description: `המוצר נוצר אבל הייתה בעיה ביצירת הוריאציות: ${variantError.message || 'שגיאה לא ידועה'}`,
+              variant: "destructive",
+            })
+          }
+        } else {
+          toast({
+            title: "הצלחה",
+            description: "המוצר נוצר בהצלחה",
+          })
+        }
+        
         router.push(`/products/${product.slug}/edit`)
       } else {
         const error = await response.json()

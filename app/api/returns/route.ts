@@ -151,8 +151,28 @@ export async function POST(req: NextRequest) {
         )
       }
 
-      // בדיקה כמה כבר הוחזר מהפריט הזה
-      const allReturns = await prisma.return.findMany({
+      // בדיקה אם יש החזרה ממתינה (PENDING) לפריט הזה
+      const pendingReturns = await prisma.return.findMany({
+        where: {
+          orderId: order.id,
+          status: "PENDING",
+        },
+      })
+
+      // בדיקה אם הפריט הזה כבר נמצא בהחזרה ממתינה
+      for (const pendingRet of pendingReturns) {
+        const pendingRetItems = pendingRet.items as Array<{ orderItemId: string; quantity: number }>
+        const pendingRetItem = pendingRetItems.find((item) => item.orderItemId === returnItem.orderItemId)
+        if (pendingRetItem) {
+          return NextResponse.json(
+            { error: `לפריט זה כבר יש בקשת החזרה ממתינה. לא ניתן ליצור החזרה נוספת לאותו פריט` },
+            { status: 400 }
+          )
+        }
+      }
+
+      // בדיקה כמה כבר הוחזר מהפריט הזה (מהחזרות מאושרות/הושלמות)
+      const approvedReturns = await prisma.return.findMany({
         where: {
           orderId: order.id,
           status: {
@@ -162,7 +182,7 @@ export async function POST(req: NextRequest) {
       })
 
       let totalReturnedQty = 0
-      for (const ret of allReturns) {
+      for (const ret of approvedReturns) {
         const retItems = ret.items as Array<{ orderItemId: string; quantity: number }>
         const retItem = retItems.find((item) => item.orderItemId === returnItem.orderItemId)
         if (retItem) {
@@ -206,6 +226,30 @@ export async function POST(req: NextRequest) {
         userId: session.user.id,
       },
     })
+
+    // יצירת התראה לכל המנהלים
+    try {
+      const shop = await prisma.shop.findUnique({
+        where: { id: returnRequest.shopId },
+        select: { companyId: true },
+      })
+      
+      if (shop) {
+        const { notifyReturnCreated } = await import("@/lib/notification-service")
+        await notifyReturnCreated({
+          companyId: shop.companyId,
+          returnId: returnRequest.id,
+          orderNumber: order.orderNumber,
+          customerName: order.customerName || undefined,
+          customerEmail: order.customerEmail || undefined,
+          refundAmount: returnRequest.refundAmount || undefined,
+          reason: data.reason,
+        })
+      }
+    } catch (error) {
+      console.error("Error sending return notification:", error)
+      // לא נכשל את כל התהליך אם שליחת ההתראה נכשלה
+    }
 
     return NextResponse.json(returnRequest, { status: 201 })
   } catch (error) {

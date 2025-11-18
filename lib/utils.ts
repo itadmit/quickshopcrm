@@ -71,7 +71,7 @@ export function getShopCollectionUrl(
   collectionIdOrSlug: string
 ): string {
   const baseUrl = getShopBaseUrl(shop);
-  return `${baseUrl}/collections/${collectionIdOrSlug}`;
+  return `${baseUrl}/categories/${collectionIdOrSlug}`;
 }
 
 /**

@@ -53,6 +53,7 @@ interface AddToCartButtonProps {
   // אפשרויות למודל הוספה מהירה
   useQuickAddModal?: boolean
   product?: Product
+  theme?: any
   // פתיחת עגלה אוטומטית אחרי הוספה
   autoOpenCart?: boolean
   onCartOpen?: () => void
@@ -79,6 +80,7 @@ export function AddToCartButton({
   disabled = false,
   useQuickAddModal = false,
   product,
+  theme,
   autoOpenCart = false,
   onCartOpen,
 }: AddToCartButtonProps) {
@@ -126,6 +128,12 @@ export function AddToCartButton({
         variant={variant}
         size={size}
         className={`${fullWidth ? 'w-full' : ''} ${className}`}
+        style={
+          variant === "default" && theme ? {
+            backgroundColor: theme.addToCartBtnColor || '#000000',
+            color: theme.addToCartBtnTextColor || '#ffffff',
+          } : undefined
+        }
       >
         {showIcon && (isCurrentlyAdding ? (
           <Loader2 className="w-4 h-4 ml-2 animate-spin" />

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getTranslations } from "next-intl/server"
 import { z } from "zod"
 
 const bulkUpdateSchema = z.object({
@@ -18,6 +19,7 @@ const bulkUpdateSchema = z.object({
 
 // POST - עדכון קבוצתי של מוצרים ווריאציות
 export async function POST(req: NextRequest) {
+  const t = await getTranslations()
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.companyId) {
@@ -158,13 +160,13 @@ export async function POST(req: NextRequest) {
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: "נתונים לא תקינים", details: error.errors },
+        { error: t("errors.invalidData"), details: error.errors },
         { status: 400 }
       )
     }
 
     return NextResponse.json(
-      { error: "Internal server error", message: error.message },
+      { error: t("errors.internalServerError"), message: error.message },
       { status: 500 }
     )
   }

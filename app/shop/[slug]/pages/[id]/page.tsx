@@ -11,10 +11,11 @@ import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { useCart } from "@/hooks/useCart"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { StorefrontHeader } from "@/components/storefront/StorefrontHeader"
-import { useShopTheme } from "@/hooks/useShopTheme"
+import { useShopTheme, getThemeStyles } from "@/hooks/useShopTheme"
 import { AddToCartButton } from "@/components/storefront/AddToCartButton"
 import { AdminBar } from "@/components/storefront/AdminBar"
 import { getProductPrice, formatProductPrice, formatComparePrice } from "@/lib/product-price"
+import { NotFoundPage } from "@/components/storefront/NotFoundPage"
 
 interface ProductVariant {
   id: string

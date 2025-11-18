@@ -6,10 +6,12 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { cookies } from "next/headers"
 import { calculateCart } from "@/lib/cart-calculations"
+import { getTranslations } from "next-intl/server"
 import type { Metadata } from 'next'
 
 export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
   const slug = params.slug
+  const t = await getTranslations()
   
   try {
     const shop = await prisma.shop.findUnique({
@@ -24,13 +26,13 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
     if (!shop) {
       return {
-        title: 'חנות לא נמצאה',
+        title: t('shop.notFound'),
       }
     }
 
     return {
       title: shop.name,
-      description: shop.description || `ברוכים הבאים ל-${shop.name}`,
+      description: shop.description || t('shop.welcome', { name: shop.name }),
       icons: {
         icon: shop.favicon || shop.logo || '/favicon.ico',
       },
@@ -38,7 +40,7 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   } catch (error) {
     console.error('Error generating metadata:', error)
     return {
-      title: 'חנות',
+      title: t('shop.shop'),
     }
   }
 }

@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState } from "react"
 import { Bold, Italic, Underline, List, ListOrdered, Link, Image, Youtube, Code } from "lucide-react"
+import { YouTubeDialog } from "./youtube-dialog"
 
 interface RichTextEditorProps {
   value: string
@@ -14,6 +15,7 @@ export function RichTextEditor({ value, onChange, placeholder, className = "" }:
   const editorRef = useRef<HTMLDivElement>(null)
   const [isHtmlMode, setIsHtmlMode] = useState(false)
   const [htmlValue, setHtmlValue] = useState(value)
+  const [youtubeDialogOpen, setYoutubeDialogOpen] = useState(false)
 
   useEffect(() => {
     if (editorRef.current && !isHtmlMode) {
@@ -50,22 +52,13 @@ export function RichTextEditor({ value, onChange, placeholder, className = "" }:
   }
 
   const insertYouTube = () => {
-    const url = prompt("הזן קישור יוטיוב:")
-    if (url) {
-      let videoId = ""
-      
-      // Extract video ID from various YouTube URL formats
-      if (url.includes("youtube.com/watch?v=")) {
-        videoId = url.split("v=")[1]?.split("&")[0] || ""
-      } else if (url.includes("youtu.be/")) {
-        videoId = url.split("youtu.be/")[1]?.split("?")[0] || ""
-      }
-      
-      if (videoId) {
-        const iframe = `<iframe width="560" height="315" src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>`
-        document.execCommand("insertHTML", false, iframe)
-        updateContent()
-      }
+    setYoutubeDialogOpen(true)
+  }
+
+  const handleYouTubeInsert = (iframe: string) => {
+    if (editorRef.current) {
+      document.execCommand("insertHTML", false, iframe)
+      updateContent()
     }
   }
 
@@ -228,6 +221,13 @@ export function RichTextEditor({ value, onChange, placeholder, className = "" }:
           color: #9ca3af;
         }
       `}</style>
+
+      {/* YouTube Dialog */}
+      <YouTubeDialog
+        open={youtubeDialogOpen}
+        onOpenChange={setYoutubeDialogOpen}
+        onInsert={handleYouTubeInsert}
+      />
     </div>
   )
 }

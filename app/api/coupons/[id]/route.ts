@@ -6,8 +6,15 @@ import { z } from "zod"
 
 const updateCouponSchema = z.object({
   code: z.string().min(2).optional(),
-  type: z.enum(["PERCENTAGE", "FIXED"]).optional(),
-  value: z.number().min(0.01).optional(),
+  type: z.enum(["PERCENTAGE", "FIXED", "BUY_X_GET_Y", "BUY_X_PAY_Y", "VOLUME_DISCOUNT", "NTH_ITEM_DISCOUNT"]).optional(),
+  value: z.number().min(0).optional(),
+  buyQuantity: z.number().int().optional(),
+  getQuantity: z.number().int().optional(),
+  getDiscount: z.number().optional(),
+  payQuantity: z.number().int().optional(),
+  payAmount: z.number().min(0).optional(),
+  nthItem: z.number().int().optional(),
+  volumeRules: z.any().optional(),
   minOrder: z.number().optional(),
   maxDiscount: z.number().optional(),
   maxUses: z.number().int().optional(),
@@ -20,6 +27,15 @@ const updateCouponSchema = z.object({
   applicableCustomers: z.array(z.string()).optional(),
   canCombine: z.boolean().optional(),
   influencerId: z.string().optional(),
+  // שדות להפעלת מתנה אוטומטית
+  giftProductId: z.string().optional(),
+  giftVariantId: z.string().optional(),
+  giftCondition: z.enum(["MIN_ORDER_AMOUNT", "SPECIFIC_PRODUCT"]).optional(),
+  giftConditionProductId: z.string().optional(),
+  giftConditionAmount: z.number().optional(),
+  // שדות להפעלת הנחת לקוח רשום
+  enableCustomerDiscount: z.boolean().optional(),
+  customerDiscountPercent: z.number().min(0).max(100).optional(),
 })
 
 // GET - קבלת פרטי קופון

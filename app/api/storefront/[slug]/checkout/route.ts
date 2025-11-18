@@ -23,6 +23,7 @@ const checkoutSchema = z.object({
   shippingCost: z.number().optional(),
   couponCode: z.string().nullable().optional(),
   giftCardCode: z.string().nullable().optional(),
+  storeCreditAmount: z.number().min(0).optional(), // סכום קרדיט בחנות לשימוש
   notes: z.string().nullable().optional(),
   customFields: z.record(z.any()).optional(),
 })
@@ -223,7 +224,50 @@ export async function POST(
 
     // חישוב המחיר הסופי
     const totalDiscount = calculation.automaticDiscount + calculation.couponDiscount
-    const finalPrice = calculation.subtotal - totalDiscount - giftCardDiscount - calculation.customerDiscount
+    const finalPrice = calculation.subtotal - totalDiscount - (data.storeCreditAmount || 0)
+    
+    // יצירת או מציאת לקוח רק אם הלקוח בחר להרשם או לשמור פרטים
+    let finalCustomerId = data.customerId || customerId || null
+    
+    // אם הלקוח לא מחובר ולא בחר להרשם/לשמור פרטים, לא יוצרים לקוח
+    if (!finalCustomerId && (data.createAccount || data.saveDetails)) {
+      // חיפוש לקוח קיים לפי אימייל
+      const existingCustomer = await prisma.customer.findFirst({
+        where: {
+          shopId: shop.id,
+          email: data.customerEmail.toLowerCase(),
+        },
+      })
+
+      if (existingCustomer) {
+        finalCustomerId = existingCustomer.id
+        // עדכון פרטי הלקוח אם יש מידע חדש
+        await prisma.customer.update({
+          where: { id: existingCustomer.id },
+          data: {
+            firstName: data.customerName.split(" ")[0] || existingCustomer.firstName,
+            lastName: data.customerName.split(" ").slice(1).join(" ") || existingCustomer.lastName,
+            phone: data.customerPhone || existingCustomer.phone,
+          },
+        })
+      } else {
+        // יצירת לקוח חדש
+        const newCustomer = await prisma.customer.create({
+          data: {
+            shopId: shop.id,
+            email: data.customerEmail.toLowerCase(),
+            firstName: data.customerName.split(" ")[0] || null,
+            lastName: data.customerName.split(" ").slice(1).join(" ") || null,
+            phone: data.customerPhone || null,
+          },
+        })
+        finalCustomerId = newCustomer.id
+      }
+    }
+    
+    // חישוב סכום קרדיט בחנות לשימוש (נחשב אחרי יצירת הלקוח)
+    const storeCreditAmount = data.storeCreditAmount || 0
+    let storeCreditUsed = 0
     
     // חישוב מע"מ בהתאם להגדרת החנות
     const taxRate = shop.taxEnabled && shop.taxRate ? shop.taxRate : 0
@@ -248,7 +292,7 @@ export async function POST(
     }
 
     // יצירת או מציאת לקוח רק אם הלקוח בחר להרשם או לשמור פרטים
-    let finalCustomerId = data.customerId || customerId || null
+    // finalCustomerId כבר הוגדר למעלה בשורה 229
     
     // אם הלקוח לא מחובר ולא בחר להרשם/לשמור פרטים, לא יוצרים לקוח
     if (!finalCustomerId && (data.createAccount || data.saveDetails)) {
@@ -325,8 +369,8 @@ export async function POST(
         subtotal: Math.round(calculation.subtotal * 100) / 100,
         shipping: Math.round(shipping * 100) / 100,
         tax: Math.round(tax * 100) / 100,
-        discount: Math.round((totalDiscount + giftCardDiscount + calculation.customerDiscount) * 100) / 100,
-        total: Math.round(Math.max(0, total) * 100) / 100, // עיגול ל-2 ספרות אחרי הנקודה
+        discount: Math.round((totalDiscount + giftCardDiscount + calculation.customerDiscount + storeCreditUsed) * 100) / 100,
+        total: Math.round(Math.max(0, finalPrice + tax + shipping) * 100) / 100, // עיגול ל-2 ספרות אחרי הנקודה
         paymentMethod: data.paymentMethod,
         couponCode: data.couponCode,
         notes: data.notes,
@@ -365,6 +409,36 @@ export async function POST(
             type: "CHARGE",
           },
         })
+      }
+    }
+
+    // עדכון יתרת קרדיט בחנות אם נעשה שימוש
+    if (storeCreditUsed > 0 && finalCustomerId) {
+      const storeCredit = await prisma.storeCredit.findFirst({
+        where: {
+          shopId: shop.id,
+          customerId: finalCustomerId,
+        },
+      })
+
+      if (storeCredit) {
+        await prisma.storeCredit.update({
+          where: { id: storeCredit.id },
+          data: {
+            balance: storeCredit.balance - storeCreditUsed,
+          },
+        })
+
+        await prisma.storeCreditTransaction.create({
+          data: {
+            storeCreditId: storeCredit.id,
+            orderId: order.id,
+            amount: -storeCreditUsed,
+            type: "CHARGE", // CHARGE = שימוש בקרדיט (חיוב)
+          },
+        })
+
+        console.log(`✅ Store credit used: ${storeCreditUsed}, remaining balance: ${storeCredit.balance - storeCreditUsed}`)
       }
     }
 

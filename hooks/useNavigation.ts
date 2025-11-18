@@ -10,7 +10,9 @@ export interface NavigationItem {
   pageId?: string
   pageSlug?: string
   categoryId?: string
+  categorySlug?: string
   collectionId?: string
+  collectionSlug?: string
   children?: NavigationItem[]
   image?: string
   columnTitle?: string

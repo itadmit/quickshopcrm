@@ -18,9 +18,12 @@ interface Product {
   id: string
   name: string
   price: number
+  comparePrice: number | null
   variants?: Array<{
     id: string
+    name: string
     price: number | null
+    comparePrice: number | null
   }>
 }
 
@@ -126,7 +129,16 @@ export default function EditBundlePage() {
       const response = await fetch(`/api/products?shopId=${selectedShop.id}`)
       if (response.ok) {
         const data = await response.json()
-        setProducts(data.products || [])
+        // Ensure all products have comparePrice field
+        const productsWithComparePrice = (data.products || []).map((p: any) => ({
+          ...p,
+          comparePrice: p.comparePrice ?? null,
+          variants: (p.variants || []).map((v: any) => ({
+            ...v,
+            comparePrice: v.comparePrice ?? null,
+          })),
+        }))
+        setProducts(productsWithComparePrice as Product[])
       }
     } catch (error) {
       console.error("Error fetching products:", error)
@@ -346,7 +358,7 @@ export default function EditBundlePage() {
                         <div className="flex-1">
                           <p className="font-medium">{product?.name || "מוצר לא נמצא"}</p>
                           <p className="text-sm text-gray-600">
-                            {product ? formatProductPrice(product) : "₪0.00"}
+                            {product && product.comparePrice !== undefined ? formatProductPrice(product) : "₪0.00"}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -388,7 +400,7 @@ export default function EditBundlePage() {
                         onClick={() => handleAddProduct(product.id)}
                       >
                         <Plus className="w-4 h-4 ml-2" />
-                        {product.name} - {formatProductPrice(product)}
+                        {product.name} - {product.comparePrice !== undefined ? formatProductPrice(product) : `₪${product.price.toFixed(2)}`}
                       </Button>
                     ))}
                 </div>

@@ -60,6 +60,7 @@ export async function GET(
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("cart_session")?.value
     const customerId = req.headers.get("x-customer-id") || null
+    console.log('🛒 GET /api/storefront/[slug]/cart - customerId from header:', customerId || 'null (no customer)')
 
     // שימוש בפונקציה המרכזית למציאת עגלה
     const cart = await findCart(shop.id, sessionId, customerId)
@@ -188,6 +189,7 @@ export async function GET(
       customerDiscount: calculation.customerDiscount > 0 ? calculation.customerDiscount : undefined,
       couponDiscount: calculation.couponDiscount > 0 ? calculation.couponDiscount : undefined,
       automaticDiscount: calculation.automaticDiscount > 0 ? calculation.automaticDiscount : undefined,
+      automaticDiscountTitle: calculation.automaticDiscountTitle || undefined,
       total: calculation.total,
       couponCode: cart.couponCode,
       couponStatus: calculation.couponStatus,
@@ -587,6 +589,7 @@ export async function POST(
         customerDiscount: updatedCalculation.customerDiscount > 0 ? updatedCalculation.customerDiscount : undefined,
         couponDiscount: updatedCalculation.couponDiscount > 0 ? updatedCalculation.couponDiscount : undefined,
         automaticDiscount: updatedCalculation.automaticDiscount > 0 ? updatedCalculation.automaticDiscount : undefined,
+        automaticDiscountTitle: updatedCalculation.automaticDiscountTitle || undefined,
         total: updatedCalculation.total,
         couponCode: cart.couponCode,
         couponStatus: updatedCalculation.couponStatus,
@@ -605,6 +608,7 @@ export async function POST(
       customerDiscount: calculation.customerDiscount > 0 ? calculation.customerDiscount : undefined,
       couponDiscount: calculation.couponDiscount > 0 ? calculation.couponDiscount : undefined,
       automaticDiscount: calculation.automaticDiscount > 0 ? calculation.automaticDiscount : undefined,
+      automaticDiscountTitle: calculation.automaticDiscountTitle || undefined,
       total: calculation.total,
       couponCode: cart.couponCode,
       couponStatus: calculation.couponStatus,
@@ -835,12 +839,55 @@ export async function PUT(
     // יישום קופון
     if (body.couponCode !== undefined) {
       if (body.couponCode) {
+        console.log('🎫 Applying coupon:', body.couponCode, 'for shop:', shop.id)
         // בדיקת קופון בסיסית
         const coupon = await prisma.coupon.findUnique({
           where: { code: body.couponCode },
+          select: {
+            id: true,
+            code: true,
+            isActive: true,
+            shopId: true,
+            type: true,
+            buyQuantity: true,
+            payQuantity: true,
+            payAmount: true,
+            startDate: true,
+            endDate: true,
+            maxUses: true,
+            usedCount: true,
+          },
         })
 
-        if (!coupon || !coupon.isActive || coupon.shopId !== shop.id) {
+        console.log('🎫 Coupon found:', coupon ? {
+          id: coupon.id,
+          code: coupon.code,
+          isActive: coupon.isActive,
+          shopId: coupon.shopId,
+          type: coupon.type,
+          buyQuantity: coupon.buyQuantity,
+          payQuantity: coupon.payQuantity,
+          payAmount: coupon.payAmount,
+        } : 'NOT FOUND')
+
+        if (!coupon) {
+          console.log('❌ Coupon not found')
+          return NextResponse.json(
+            { error: "Invalid coupon code" },
+            { status: 400 }
+          )
+        }
+
+        if (!coupon.isActive) {
+          console.log('❌ Coupon is not active')
+          return NextResponse.json(
+            { error: "Coupon is not active" },
+            { status: 400 }
+          )
+        }
+
+        if (coupon.shopId !== shop.id) {
+          console.log('❌ Coupon shop mismatch:', coupon.shopId, 'vs', shop.id)
           return NextResponse.json(
             { error: "Invalid coupon code" },
             { status: 400 }
@@ -970,6 +1017,7 @@ export async function PUT(
       customerDiscount: calculation.customerDiscount > 0 ? calculation.customerDiscount : undefined,
       couponDiscount: calculation.couponDiscount > 0 ? calculation.couponDiscount : undefined,
       automaticDiscount: calculation.automaticDiscount > 0 ? calculation.automaticDiscount : undefined,
+      automaticDiscountTitle: calculation.automaticDiscountTitle || undefined,
       total: calculation.total,
       couponCode: cart.couponCode,
       couponStatus: calculation.couponStatus,
@@ -1254,6 +1302,7 @@ export async function DELETE(
       customerDiscount: calculation.customerDiscount > 0 ? calculation.customerDiscount : undefined,
       couponDiscount: calculation.couponDiscount > 0 ? calculation.couponDiscount : undefined,
       automaticDiscount: calculation.automaticDiscount > 0 ? calculation.automaticDiscount : undefined,
+      automaticDiscountTitle: calculation.automaticDiscountTitle || undefined,
       total: calculation.total,
       couponCode: updatedCart.couponCode,
       couponStatus: calculation.couponStatus,

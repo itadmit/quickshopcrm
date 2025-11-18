@@ -6,6 +6,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { useSession } from "next-auth/react"
+import { useTranslations, useLocale } from "next-intl"
+import { useRouter } from "next/navigation"
+import { Globe } from "lucide-react"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { 
   Trash2, 
   AlertTriangle, 
@@ -42,7 +52,11 @@ import { ShopSettings } from "@/components/ShopSettings"
 export default function SettingsPage() {
   const { toast } = useToast()
   const { data: session } = useSession()
+  const t = useTranslations()
+  const locale = useLocale()
+  const router = useRouter()
   const [activeTab, setActiveTab] = useState<"shop" | "shipping" | "general" | "communication" | "security" | "subscription" | "advanced">("shop")
+  const [systemLanguage, setSystemLanguage] = useState(locale)
 
   // Check URL params for tab
   useEffect(() => {
@@ -590,7 +604,46 @@ export default function SettingsPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-6">
+                {/* Language Selection */}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium flex items-center gap-2">
+                    <Globe className="w-4 h-4" />
+                    שפת המערכת
+                  </Label>
+                  <Select
+                    value={systemLanguage}
+                    onValueChange={(value) => {
+                      setSystemLanguage(value)
+                      // שמירת שפה ב-cookie
+                      document.cookie = `locale=${value}; path=/; max-age=31536000`
+                      // רענון הדף כדי לטעון את התרגומים החדשים
+                      router.refresh()
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="he">
+                        <div className="flex items-center gap-2">
+                          <span>🇮🇱</span>
+                          <span>עברית</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="en">
+                        <div className="flex items-center gap-2">
+                          <span>🇬🇧</span>
+                          <span>English</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">
+                    בחר את השפה שבה תוצג המערכת
+                  </p>
+                </div>
+
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">לאחר שמירת שינויים בעריכת מוצר</Label>
                   <RadioGroup
@@ -1212,7 +1265,7 @@ export default function SettingsPage() {
                         <li>• 3 הנחות (אוטומטיות)</li>
                         <li>• 3 ביקורות מוצרים</li>
                         <li>• 3 כרטיסי מתנה</li>
-                        <li>• 3 אשראי חנות</li>
+                        <li>• 3 קרדיט חנות</li>
                         <li>• 2 חבילות מוצרים</li>
                         <li>• 3 דפים</li>
                         <li>• 3 פוסטים בבלוג</li>

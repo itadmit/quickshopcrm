@@ -2,8 +2,10 @@ import { useState, useEffect, useCallback } from "react"
 import { useStorefrontData } from "@/components/storefront/StorefrontDataProvider"
 
 interface ThemeSettings {
+  fontFamily?: string
   primaryColor?: string
   secondaryColor?: string
+  primaryTextColor?: string
   logoWidthMobile?: number
   logoWidthDesktop?: number
   logoPaddingMobile?: number
@@ -15,6 +17,8 @@ interface ThemeSettings {
   transparentHeader?: boolean
   logoColorOnScroll?: "none" | "white" | "black"
   headerMobilePadding?: number
+  headerBgColor?: string
+  headerTextColor?: string
   
   // Top bar settings
   topBarEnabled?: boolean
@@ -30,6 +34,22 @@ interface ThemeSettings {
   messagesTextColor?: string
   messagesFontSize?: number
   
+  // Footer settings
+  footerBgColor?: string
+  footerTextColor?: string
+  
+  // Button colors
+  addToCartBtnColor?: string
+  addToCartBtnTextColor?: string
+  proceedToCheckoutBtnColor?: string
+  proceedToCheckoutBtnTextColor?: string
+  paymentBtnColor?: string
+  paymentBtnTextColor?: string
+  
+  // Price colors
+  regularPriceColor?: string
+  salePriceColor?: string
+  
   // Mobile side menu settings
   mobileSideMenuShowSearch?: boolean
   mobileSideMenuTitle?: string
@@ -37,11 +57,30 @@ interface ThemeSettings {
   
   // Cart settings
   showCouponByDefault?: boolean
+  showCartPageButton?: boolean
+  showTaxInCart?: boolean
   
   // Category page settings
   categoryProductsPerRowMobile?: number
   categoryProductsPerRowTablet?: number
   categoryProductsPerRowDesktop?: number
+  categoryCardHoverEffect?: boolean
+  categoryShowFavButton?: boolean
+  categoryQuickAddToCart?: boolean
+  categoryShowColorSamples?: boolean
+  categoryShowVideo?: boolean
+  categoryShowImageArrows?: boolean
+  categoryShowImageDots?: boolean
+  categoryRemoveMobilePadding?: boolean
+  categoryImageBorderRadius?: number
+  categoryImageAspectRatio?: "1:1" | "3:4" | "6:9" | "9:16"
+  categoryShowSizeButtons?: boolean
+  categorySizeButtonPosition?: "on-image" | "below-image"
+  categoryShowOnlyInStock?: boolean
+  categoryRemoveCardBorders?: boolean
+  categoryShowBadges?: boolean
+  categoryAutoSaleBadge?: boolean
+  categoryBadgePosition?: "top-right" | "top-left" | "bottom-right" | "bottom-left"
   categoryEnableBanners?: boolean
   categoryBanners?: Array<{
     id: string
@@ -98,8 +137,10 @@ interface ShopTheme extends ThemeSettings {
 }
 
 const DEFAULT_THEME: ShopTheme = {
+  fontFamily: "Noto Sans Hebrew",
   primaryColor: "#000000",
   secondaryColor: "#333333",
+  primaryTextColor: "#ffffff",
   logoWidthMobile: 85,
   logoWidthDesktop: 135,
   logoPaddingMobile: 0,
@@ -108,6 +149,18 @@ const DEFAULT_THEME: ShopTheme = {
   stickyHeader: true,
   transparentHeader: false,
   logoColorOnScroll: "none",
+  headerBgColor: "#ffffff",
+  headerTextColor: "#000000",
+  footerBgColor: "#ffffff",
+  footerTextColor: "#6b7280",
+  addToCartBtnColor: "#000000",
+  addToCartBtnTextColor: "#ffffff",
+  proceedToCheckoutBtnColor: "#000000",
+  proceedToCheckoutBtnTextColor: "#ffffff",
+  paymentBtnColor: "#000000",
+  paymentBtnTextColor: "#ffffff",
+  regularPriceColor: "#111827",
+  salePriceColor: "#ef4444",
   categoryProductsPerRowMobile: 2,
   categoryProductsPerRowTablet: 3,
   categoryProductsPerRowDesktop: 4,
@@ -158,8 +211,10 @@ export function useShopTheme(slug: string) {
         const themeSettings = (shop.themeSettings as ThemeSettings) || {}
         
         const newTheme = {
+          fontFamily: themeSettings.fontFamily || DEFAULT_THEME.fontFamily,
           primaryColor: themeSettings.primaryColor || DEFAULT_THEME.primaryColor,
           secondaryColor: themeSettings.secondaryColor || DEFAULT_THEME.secondaryColor,
+          primaryTextColor: themeSettings.primaryTextColor || DEFAULT_THEME.primaryTextColor,
           logoWidthMobile: themeSettings.logoWidthMobile || DEFAULT_THEME.logoWidthMobile,
           logoWidthDesktop: themeSettings.logoWidthDesktop || DEFAULT_THEME.logoWidthDesktop,
           logoPaddingMobile: themeSettings.logoPaddingMobile || DEFAULT_THEME.logoPaddingMobile,
@@ -171,6 +226,24 @@ export function useShopTheme(slug: string) {
           transparentHeader: themeSettings.transparentHeader !== undefined ? themeSettings.transparentHeader : DEFAULT_THEME.transparentHeader,
           logoColorOnScroll: themeSettings.logoColorOnScroll || DEFAULT_THEME.logoColorOnScroll,
           headerMobilePadding: themeSettings.headerMobilePadding || 16,
+          headerBgColor: themeSettings.headerBgColor || DEFAULT_THEME.headerBgColor,
+          headerTextColor: themeSettings.headerTextColor || DEFAULT_THEME.headerTextColor,
+          
+          // Footer settings
+          footerBgColor: themeSettings.footerBgColor || DEFAULT_THEME.footerBgColor,
+          footerTextColor: themeSettings.footerTextColor || DEFAULT_THEME.footerTextColor,
+          
+          // Button colors
+          addToCartBtnColor: themeSettings.addToCartBtnColor || DEFAULT_THEME.addToCartBtnColor,
+          addToCartBtnTextColor: themeSettings.addToCartBtnTextColor || DEFAULT_THEME.addToCartBtnTextColor,
+          proceedToCheckoutBtnColor: themeSettings.proceedToCheckoutBtnColor || DEFAULT_THEME.proceedToCheckoutBtnColor,
+          proceedToCheckoutBtnTextColor: themeSettings.proceedToCheckoutBtnTextColor || DEFAULT_THEME.proceedToCheckoutBtnTextColor,
+          paymentBtnColor: themeSettings.paymentBtnColor || DEFAULT_THEME.paymentBtnColor,
+          paymentBtnTextColor: themeSettings.paymentBtnTextColor || DEFAULT_THEME.paymentBtnTextColor,
+          
+          // Price colors
+          regularPriceColor: themeSettings.regularPriceColor || DEFAULT_THEME.regularPriceColor,
+          salePriceColor: themeSettings.salePriceColor || DEFAULT_THEME.salePriceColor,
           
           // Top bar settings
           topBarEnabled: themeSettings.topBarEnabled ?? false,
@@ -193,11 +266,30 @@ export function useShopTheme(slug: string) {
           
           // Cart settings
           showCouponByDefault: themeSettings.showCouponByDefault !== undefined ? themeSettings.showCouponByDefault : true,
+          showCartPageButton: themeSettings.showCartPageButton !== undefined ? themeSettings.showCartPageButton : false,
+          showTaxInCart: themeSettings.showTaxInCart !== undefined ? themeSettings.showTaxInCart : true,
           
           // Category settings
           categoryProductsPerRowMobile: themeSettings.categoryProductsPerRowMobile || DEFAULT_THEME.categoryProductsPerRowMobile,
           categoryProductsPerRowTablet: themeSettings.categoryProductsPerRowTablet || DEFAULT_THEME.categoryProductsPerRowTablet,
           categoryProductsPerRowDesktop: themeSettings.categoryProductsPerRowDesktop || DEFAULT_THEME.categoryProductsPerRowDesktop,
+          categoryCardHoverEffect: themeSettings.categoryCardHoverEffect !== undefined ? themeSettings.categoryCardHoverEffect : true,
+          categoryShowFavButton: themeSettings.categoryShowFavButton !== undefined ? themeSettings.categoryShowFavButton : true,
+          categoryQuickAddToCart: themeSettings.categoryQuickAddToCart !== undefined ? themeSettings.categoryQuickAddToCart : true,
+          categoryShowColorSamples: themeSettings.categoryShowColorSamples !== undefined ? themeSettings.categoryShowColorSamples : true,
+          categoryShowVideo: themeSettings.categoryShowVideo !== undefined ? themeSettings.categoryShowVideo : true,
+          categoryShowImageArrows: themeSettings.categoryShowImageArrows || false,
+          categoryShowImageDots: themeSettings.categoryShowImageDots || false,
+          categoryRemoveMobilePadding: themeSettings.categoryRemoveMobilePadding || false,
+          categoryImageBorderRadius: themeSettings.categoryImageBorderRadius !== undefined ? themeSettings.categoryImageBorderRadius : 0,
+          categoryImageAspectRatio: themeSettings.categoryImageAspectRatio || "1:1",
+          categoryShowSizeButtons: themeSettings.categoryShowSizeButtons !== undefined ? themeSettings.categoryShowSizeButtons : true,
+          categorySizeButtonPosition: themeSettings.categorySizeButtonPosition || "on-image",
+          categoryShowOnlyInStock: themeSettings.categoryShowOnlyInStock !== undefined ? themeSettings.categoryShowOnlyInStock : true,
+          categoryRemoveCardBorders: themeSettings.categoryRemoveCardBorders !== undefined ? themeSettings.categoryRemoveCardBorders : true,
+          categoryShowBadges: themeSettings.categoryShowBadges !== undefined ? themeSettings.categoryShowBadges : true,
+          categoryAutoSaleBadge: themeSettings.categoryAutoSaleBadge !== undefined ? themeSettings.categoryAutoSaleBadge : true,
+          categoryBadgePosition: themeSettings.categoryBadgePosition || "top-right",
           categoryEnableBanners: themeSettings.categoryEnableBanners ?? DEFAULT_THEME.categoryEnableBanners,
           categoryBanners: themeSettings.categoryBanners || DEFAULT_THEME.categoryBanners,
           categoryBannerFrequency: themeSettings.categoryBannerFrequency || DEFAULT_THEME.categoryBannerFrequency,
@@ -263,10 +355,13 @@ export function useShopTheme(slug: string) {
 }
 
 // Helper function to get CSS variables from theme
-export function getThemeStyles(theme: ShopTheme) {
+export function getThemeStyles(theme?: ShopTheme) {
+  if (!theme) return {}
+  
   return {
     "--shop-primary": theme.primaryColor,
     "--shop-secondary": theme.secondaryColor,
+    fontFamily: theme.fontFamily || "Noto Sans Hebrew",
   } as React.CSSProperties
 }
 

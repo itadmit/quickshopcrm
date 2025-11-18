@@ -311,7 +311,7 @@ export class ShippingManager {
         const integrations = await prisma.integration.findMany({
           where: {
             companyId: order.shop.companyId,
-            type: { contains: '_SHIPPING' },
+            type: { in: ['FOCUS_SHIPPING'] }, // רשימת כל סוגי האינטגרציות של משלוחים
             isActive: true,
           },
         })

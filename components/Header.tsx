@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
+import { useTranslations } from "next-intl"
 import { Bell, ChevronDown, Settings, LogOut, User, ExternalLink, UserPlus, Plug } from "lucide-react"
 import { useShop } from "@/components/providers/ShopProvider"
 import Link from "next/link"
@@ -18,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { NotificationsDrawer } from "@/components/NotificationsDrawer"
 import { InvitePeopleDialog } from "@/components/dialogs/InvitePeopleDialog"
 import { GlobalSearch } from "@/components/GlobalSearch"
+import { QuickActions } from "@/components/QuickActions"
 import { getShopBaseUrl } from "@/lib/utils"
 
 interface HeaderProps {
@@ -27,6 +29,7 @@ interface HeaderProps {
 export function Header({ title }: HeaderProps) {
   const { data: session } = useSession()
   const { selectedShop, shops, setSelectedShop, loading: shopsLoading } = useShop()
+  const t = useTranslations()
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
@@ -61,6 +64,11 @@ export function Header({ title }: HeaderProps) {
 
   return (
     <header className="h-16 border-b border-gray-200 bg-white flex items-center justify-between px-6 sticky top-0 z-50">
+      {/* Quick Actions - Left */}
+      <div className="flex items-center gap-2">
+        <QuickActions />
+      </div>
+
       {/* Global Search - Center */}
       <div className="flex-1 max-w-2xl mx-8">
         <GlobalSearch />
@@ -76,7 +84,7 @@ export function Header({ title }: HeaderProps) {
         >
           <Link href="/settings/plugins">
             <Plug className="w-4 h-4" />
-            <span>מרקטפלייס</span>
+            <span>{t("header.marketplace")}</span>
           </Link>
         </Button>
 
@@ -92,7 +100,7 @@ export function Header({ title }: HeaderProps) {
             }}
           >
             <ExternalLink className="w-4 h-4" />
-            <span>צפייה בחנות</span>
+            <span>{t("header.viewStore")}</span>
           </Button>
         )}
 
@@ -132,13 +140,13 @@ export function Header({ title }: HeaderProps) {
               </Avatar>
               <div className="text-right">
                 <div className="text-sm font-medium text-gray-900">
-                  {session?.user?.name || "משתמש"}
+                  {session?.user?.name || t("header.user")}
                 </div>
                 <div className="text-xs text-gray-500">
-                  {session?.user?.role === "SUPER_ADMIN" && "סופר אדמין"}
-                  {session?.user?.role === "ADMIN" && "מנהל"}
-                  {session?.user?.role === "MANAGER" && "מנהל צוות"}
-                  {session?.user?.role === "USER" && "משתמש"}
+                  {session?.user?.role === "SUPER_ADMIN" && t("header.superAdmin")}
+                  {session?.user?.role === "ADMIN" && t("header.admin")}
+                  {session?.user?.role === "MANAGER" && t("header.manager")}
+                  {session?.user?.role === "USER" && t("header.userRole")}
                 </div>
               </div>
               <ChevronDown className="w-4 h-4 text-gray-400" />
@@ -154,12 +162,12 @@ export function Header({ title }: HeaderProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem className="flex flex-row-reverse items-center gap-2 cursor-pointer">
               <User className="w-4 h-4 flex-shrink-0" />
-              <span>הפרופיל שלי</span>
+              <span>{t("header.myProfile")}</span>
             </DropdownMenuItem>
             <DropdownMenuItem asChild className="flex flex-row-reverse items-center gap-2 cursor-pointer">
               <Link href="/settings" className="flex flex-row-reverse items-center gap-2 w-full">
                 <Settings className="w-4 h-4 flex-shrink-0" />
-                <span>הגדרות</span>
+                <span>{t("header.settings")}</span>
               </Link>
             </DropdownMenuItem>
             {(session?.user?.role === "ADMIN" || session?.user?.role === "SUPER_ADMIN" || session?.user?.role === "MANAGER") && (
@@ -167,7 +175,7 @@ export function Header({ title }: HeaderProps) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => setInviteDialogOpen(true)} className="flex flex-row-reverse items-center gap-2 cursor-pointer">
                   <UserPlus className="w-4 h-4 flex-shrink-0" />
-                  <span>הזמנת צוות</span>
+                  <span>{t("header.inviteTeam")}</span>
                 </DropdownMenuItem>
               </>
             )}
@@ -177,7 +185,7 @@ export function Header({ title }: HeaderProps) {
               className="text-red-600 focus:text-red-600 flex flex-row-reverse items-center gap-2 cursor-pointer"
             >
               <LogOut className="w-4 h-4 flex-shrink-0" />
-              <span>התנתק</span>
+              <span>{t("header.signOut")}</span>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

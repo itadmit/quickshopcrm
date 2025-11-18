@@ -17,7 +17,21 @@ interface ProductVariant {
   comparePrice: number | null
   inventoryQty: number | null
   sku: string | null
-  options: Record<string, string>
+  options?: Record<string, string>
+  option1?: string | null
+  option1Value?: string | null
+  option2?: string | null
+  option2Value?: string | null
+  option3?: string | null
+  option3Value?: string | null
+}
+
+interface ProductOption {
+  id: string
+  name: string
+  type: string
+  values: any
+  position: number
 }
 
 interface ProductCardProps {
@@ -32,6 +46,7 @@ interface ProductCardProps {
     description?: string | null
     inventoryQty?: number
     variants?: ProductVariant[]
+    options?: ProductOption[]
   }
   slug: string
   showWishlist?: boolean
@@ -63,11 +78,42 @@ export function ProductCard({
   const [isHovered, setIsHovered] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [isClicking, setIsClicking] = useState(false)
+  const [applicableDiscount, setApplicableDiscount] = useState<{
+    id: string
+    title: string
+    type: string
+    value: number
+    originalPrice: number
+    discountedPrice: number
+  } | null>(null)
   
   const priceInfo = getProductPrice(product)
   const discountPercentage = priceInfo.comparePrice
     ? Math.round(((priceInfo.comparePrice - priceInfo.price) / priceInfo.comparePrice) * 100)
     : 0
+
+  // טעינת הנחה אוטומטית שחלה על המוצר
+  useEffect(() => {
+    const fetchDiscount = async () => {
+      try {
+        const params = new URLSearchParams()
+        if (customerId) {
+          params.append('customerId', customerId)
+        }
+        // אם יש variant, נשתמש במחיר הבסיסי של המוצר
+        const response = await fetch(`/api/storefront/${slug}/products/${product.id}/discounts?${params.toString()}`)
+        if (response.ok) {
+          const data = await response.json()
+          if (data.discounts && data.discounts.length > 0) {
+            setApplicableDiscount(data.discounts[0]) // ההנחה הראשונה (עם עדיפות גבוהה)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching discount:', error)
+      }
+    }
+    fetchDiscount()
+  }, [slug, product.id, customerId])
   
   // Get aspect ratio class
   const getAspectRatioClass = () => {
@@ -131,6 +177,67 @@ export function ProductCard({
     // Next.js יראה את loading.tsx אוטומטית
   }
 
+  // פונקציות עזר לחילוץ מידות וצבעים
+  const getUniqueValues = (optionName: string, type: 'size' | 'color') => {
+    if (!product.variants || !product.options) {
+      // דיבוג - נראה מה יש למוצר
+      console.log(`Product "${product.name}":`, {
+        hasVariants: !!product.variants,
+        variantsCount: product.variants?.length || 0,
+        hasOptions: !!product.options,
+        optionsCount: product.options?.length || 0,
+        variants: product.variants,
+        options: product.options
+      })
+      return []
+    }
+    
+    const option = product.options.find(opt => opt.type === type)
+    if (!option) return []
+    
+    const values = new Map<string, { value: string, hasStock: boolean }>()
+    
+    product.variants.forEach(variant => {
+      let variantValue: string | null = null
+      
+      // מצא את הערך של האופציה הזו בvariant
+      if (variant.option1 === option.name) {
+        variantValue = variant.option1Value || null
+      } else if (variant.option2 === option.name) {
+        variantValue = variant.option2Value || null
+      } else if (variant.option3 === option.name) {
+        variantValue = variant.option3Value || null
+      }
+      
+      if (variantValue) {
+        const hasStock = variant.inventoryQty !== null && variant.inventoryQty > 0
+        const existing = values.get(variantValue)
+        
+        // אם כבר קיים ערך זה, נשמור hasStock = true אם לפחות variant אחד יש לו מלאי
+        values.set(variantValue, {
+          value: variantValue,
+          hasStock: existing ? (existing.hasStock || hasStock) : hasStock
+        })
+      }
+    })
+    
+    return Array.from(values.values())
+  }
+
+  const colorValues = getUniqueValues('color', 'color')
+  const sizeValues = getUniqueValues('size', 'size')
+  
+  // האם להציג כפתורי מידות
+  const showSizeButtons = theme?.categoryShowSizeButtons !== false && sizeValues.length > 0
+  const showOnlyInStock = theme?.categoryShowOnlyInStock !== false
+  const sizeButtonPosition = theme?.categorySizeButtonPosition || 'on-image'
+  const removeCardBorders = theme?.categoryRemoveCardBorders || false
+  
+  // סינון מידות לפי מלאי אם נדרש
+  const displayedSizes = showOnlyInStock 
+    ? sizeValues.filter(s => s.hasStock) 
+    : sizeValues
+
   return (
     <div 
       className="group relative"
@@ -148,9 +255,11 @@ export function ProductCard({
         className="block"
       >
         <Card className={cn(
-          "h-full transition-all duration-200 border-gray-200 overflow-hidden",
-          cardHoverEffect && "hover:shadow-lg hover:border-gray-300",
-          removeMobilePadding ? "md:border" : "border",
+          "h-full transition-all duration-200 overflow-hidden",
+          !removeCardBorders && "border border-gray-200",
+          !removeCardBorders && cardHoverEffect && "hover:shadow-lg hover:border-gray-300",
+          removeCardBorders && cardHoverEffect && "hover:shadow-md",
+          removeMobilePadding ? "md:border" : !removeCardBorders && "border",
           isClicking && "opacity-90 scale-[0.98]"
         )}>
           <CardContent className={removeMobilePadding ? 'p-0 md:p-0' : 'p-0'}>
@@ -262,6 +371,39 @@ export function ProductCard({
 
               {/* Hover Overlay */}
               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors duration-300" />
+              
+              {/* Quick Add Cart Icon - bottom left */}
+              {showQuickAdd && (
+                <button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    // TODO: Open quick add modal
+                  }}
+                  className="absolute bottom-2 left-2 w-8 h-8 bg-white/95 backdrop-blur-sm hover:bg-white rounded-full shadow-md transition-all opacity-0 group-hover:opacity-100 hover:scale-110 flex items-center justify-center"
+                  title="הוסף לסל"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="9" cy="21" r="1"/>
+                    <circle cx="20" cy="21" r="1"/>
+                    <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                  </svg>
+                </button>
+              )}
+              
+              {/* Size Buttons on Image */}
+              {showSizeButtons && sizeButtonPosition === 'on-image' && displayedSizes.length > 0 && (
+                <div className="absolute top-3 left-3 flex flex-col gap-1.5" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                  {displayedSizes.map((size) => (
+                    <button
+                      key={size.value}
+                      className="bg-white/95 backdrop-blur-sm hover:bg-white text-gray-900 text-xs font-medium px-2.5 py-1.5 rounded-md shadow-md transition-all hover:scale-105 border border-gray-200"
+                    >
+                      {size.value}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Product Info */}
@@ -269,36 +411,111 @@ export function ProductCard({
               <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[2.5rem] group-hover:text-gray-700 transition-colors">
                 {product.name}
               </h3>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-lg font-bold text-gray-900">
-                  {formatProductPrice(product)}
-                </span>
-                {formatComparePrice(product) && (
-                  <span className="text-sm text-gray-500 line-through">
-                    {formatComparePrice(product)}
+              
+              {/* Color Samples - מתחת לשם */}
+              {theme?.categoryShowColorSamples !== false && product.options && product.options.some(opt => opt.type === 'color') && (
+                <div className="flex items-center gap-1.5 mb-3" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                  {product.options
+                    .filter(opt => opt.type === 'color')
+                    .flatMap(opt => {
+                      // נבדוק איזה צבעים יש מלאי
+                      const colorStock = new Map<string, boolean>()
+                      
+                      product.variants?.forEach(variant => {
+                        let variantColorValue: string | null = null
+                        
+                        if (variant.option1 === opt.name) variantColorValue = variant.option1Value || null
+                        else if (variant.option2 === opt.name) variantColorValue = variant.option2Value || null
+                        else if (variant.option3 === opt.name) variantColorValue = variant.option3Value || null
+                        
+                        if (variantColorValue) {
+                          const hasStock = variant.inventoryQty !== null && variant.inventoryQty > 0
+                          const existing = colorStock.get(variantColorValue)
+                          colorStock.set(variantColorValue, existing || hasStock)
+                        }
+                      })
+                      
+                      // מציג את כל הצבעים מה-values של האופציה
+                      return (opt.values as any[]).map((colorValue: any) => {
+                        const label = colorValue.label || colorValue.id || String(colorValue)
+                        const colorCode = colorValue.metadata?.color || colorValue.color || null
+                        const hasStock = colorStock.get(label)
+                        
+                        // אם showOnlyInStock מופעל, מסתיר צבעים ללא מלאי
+                        if (showOnlyInStock && !hasStock) return null
+                        
+                        return (
+                          <button
+                            key={label}
+                            className="w-6 h-6 rounded-full border-2 border-gray-200 hover:border-gray-400 transition-all hover:scale-110 relative"
+                            style={{ 
+                              backgroundColor: colorCode || label.toLowerCase(),
+                              opacity: !hasStock ? 0.5 : 1
+                            }}
+                            title={label}
+                          >
+                            {!hasStock && (
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <div className="w-full h-0.5 bg-gray-400 rotate-45" />
+                              </div>
+                            )}
+                          </button>
+                        )
+                      }).filter(Boolean)
+                    })
+                  }
+                </div>
+              )}
+              
+              <div className="space-y-1 mb-3">
+                {/* הצגת המחיר המקורי */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {/* הצגת comparePrice אם יש */}
+                  {formatComparePrice(product) && (
+                    <span className="text-sm text-gray-500 line-through">
+                      {formatComparePrice(product)}
+                    </span>
+                  )}
+                  <span 
+                    className="text-lg font-bold"
+                    style={{ color: theme?.regularPriceColor || '#111827' }}
+                  >
+                    {applicableDiscount && applicableDiscount.originalPrice > 0
+                      ? `₪${applicableDiscount.originalPrice.toFixed(2)}`
+                      : formatProductPrice(product)}
                   </span>
+                </div>
+                
+                {/* הצגת הנחה אוטומטית למטה אם יש */}
+                {applicableDiscount && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge className="bg-green-100 hover:bg-green-100 text-green-800 border border-green-700 text-xs font-semibold whitespace-nowrap px-2 py-1 rounded-sm transition-none">
+                      הנחה נוספת: {applicableDiscount.title}
+                    </Badge>
+                    <span 
+                      className="text-base font-bold"
+                      style={{ color: theme?.salePriceColor || '#ef4444' }}
+                    >
+                      ₪{applicableDiscount.discountedPrice.toFixed(2)}
+                    </span>
+                  </div>
                 )}
               </div>
 
-              {/* Quick Add Button - מופיע בהובר */}
-              {showQuickAdd && isHovered && (
-                <div className="absolute bottom-4 left-4 right-4" onClick={(e) => e.preventDefault()}>
-                  <AddToCartButton
-                    slug={slug}
-                    productId={product.id}
-                    productName={product.name}
-                    customerId={customerId}
-                    onSuccess={onCartUpdate}
-                    useQuickAddModal={true}
-                    product={product}
-                    size="sm"
-                    fullWidth
-                    className="shadow-lg"
-                    autoOpenCart={autoOpenCart}
-                    onCartOpen={onCartOpen}
-                  />
+              {/* Size Buttons Below Image */}
+              {showSizeButtons && sizeButtonPosition === 'below-image' && displayedSizes.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 mb-2" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                  {displayedSizes.map((size) => (
+                    <button
+                      key={size.value}
+                      className="bg-white hover:bg-gray-50 text-gray-900 text-xs font-medium px-2.5 py-1 rounded border border-gray-300 hover:border-gray-400 transition-all"
+                    >
+                      {size.value}
+                    </button>
+                  ))}
                 </div>
               )}
+
             </div>
           </CardContent>
         </Card>

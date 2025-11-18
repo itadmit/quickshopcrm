@@ -38,7 +38,9 @@ interface NavigationItem {
   pageId?: string
   pageSlug?: string
   categoryId?: string
+  categorySlug?: string
   collectionId?: string
+  collectionSlug?: string
   children?: NavigationItem[]
   image?: string
   columnTitle?: string
@@ -63,6 +65,8 @@ interface ThemeSettings {
   transparentHeader?: boolean
   logoColorOnScroll?: "none" | "white" | "black"
   headerMobilePadding?: number
+  headerBgColor?: string
+  headerTextColor?: string
   // Top bar settings
   topBarEnabled?: boolean
   topBarBgColor?: string
@@ -91,6 +95,7 @@ interface StorefrontHeaderProps {
   onOpenCart?: (callback: () => void) => void
   cartRefreshKey?: number
   theme?: ThemeSettings
+  disableCartDrawer?: boolean
 }
 
 const DEFAULT_THEME: ThemeSettings = {
@@ -104,6 +109,8 @@ const DEFAULT_THEME: ThemeSettings = {
   stickyHeader: true,
   transparentHeader: false,
   logoColorOnScroll: "none",
+  headerBgColor: "#ffffff",
+  headerTextColor: "#000000",
   topBarEnabled: false,
   topBarBgColor: "#000000",
   topBarTextColor: "#ffffff",
@@ -118,7 +125,7 @@ const DEFAULT_THEME: ThemeSettings = {
   messagesFontSize: 14,
 }
 
-export function StorefrontHeader({ slug, shop, navigation: initialNavigation, cartItemCount: propCartItemCount, onCartUpdate, onOpenCart, cartRefreshKey, theme: themeProp }: StorefrontHeaderProps) {
+export function StorefrontHeader({ slug, shop, navigation: initialNavigation, cartItemCount: propCartItemCount, onCartUpdate, onOpenCart, cartRefreshKey, theme: themeProp, disableCartDrawer = false }: StorefrontHeaderProps) {
   const router = useRouter()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -163,6 +170,8 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
     transparentHeader: themeProp?.transparentHeader !== undefined ? themeProp.transparentHeader : (themeFromHook.theme?.transparentHeader !== undefined ? themeFromHook.theme.transparentHeader : DEFAULT_THEME.transparentHeader),
     logoColorOnScroll: themeProp?.logoColorOnScroll || themeFromHook.theme?.logoColorOnScroll || DEFAULT_THEME.logoColorOnScroll,
     headerMobilePadding: themeProp?.headerMobilePadding || themeFromHook.theme?.headerMobilePadding || 16,
+    headerBgColor: themeProp?.headerBgColor || themeFromHook.theme?.headerBgColor || DEFAULT_THEME.headerBgColor,
+    headerTextColor: themeProp?.headerTextColor || themeFromHook.theme?.headerTextColor || DEFAULT_THEME.headerTextColor,
     // Top bar settings
     topBarEnabled: themeProp?.topBarEnabled ?? themeFromHook.theme?.topBarEnabled ?? DEFAULT_THEME.topBarEnabled,
     topBarBgColor: themeProp?.topBarBgColor || themeFromHook.theme?.topBarBgColor || DEFAULT_THEME.topBarBgColor,
@@ -238,13 +247,13 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
 
   // חשיפת פונקציה לפתיחת עגלה
   useEffect(() => {
-    if (onOpenCart) {
+    if (onOpenCart && !disableCartDrawer) {
       onOpenCart(() => {
         setCartOpen(true)
       })
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []) // ריצה פעם אחת בלבד בעת mount
+  }, [disableCartDrawer]) // ריצה פעם אחת בלבד בעת mount
   
   const loadCustomerData = () => {
     const customerData = localStorage.getItem(`storefront_customer_${slug}`)
@@ -338,20 +347,24 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
         </Link>
       )
     } else if (item.type === "category") {
+      // שימוש ב-slug אם קיים, אחרת ב-ID (תאימות לאחור)
+      const categoryIdentifier = item.categorySlug || item.categoryId
       return (
         <Link
           key={index}
-          href={`/shop/${slug}/categories/${item.categoryId}`}
+          href={`/shop/${slug}/categories/${categoryIdentifier}`}
           className="text-gray-700 hover:text-gray-900 transition-colors text-sm font-medium"
         >
           {item.label}
         </Link>
       )
     } else if (item.type === "collection") {
+      // שימוש ב-slug אם קיים, אחרת ב-ID (תאימות לאחור)
+      const collectionIdentifier = item.collectionSlug || item.collectionId
       return (
         <Link
           key={index}
-          href={`/shop/${slug}/collections/${item.collectionId}`}
+          href={`/shop/${slug}/categories/${collectionIdentifier}`}
           className="text-gray-700 hover:text-gray-900 transition-colors text-sm font-medium"
         >
           {item.label}
@@ -374,9 +387,13 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
         const pageIdentifier = item.pageSlug || item.pageId
         return `/shop/${slug}/pages/${pageIdentifier}`
       } else if (item.type === "category") {
-        return `/shop/${slug}/categories/${item.categoryId}`
+        // שימוש ב-slug אם קיים, אחרת ב-ID (תאימות לאחור)
+        const categoryIdentifier = item.categorySlug || item.categoryId
+        return `/shop/${slug}/categories/${categoryIdentifier}`
       } else if (item.type === "collection") {
-        return `/shop/${slug}/collections/${item.collectionId}`
+        // שימוש ב-slug אם קיים, אחרת ב-ID (תאימות לאחור)
+        const collectionIdentifier = item.collectionSlug || item.collectionId
+        return `/shop/${slug}/categories/${collectionIdentifier}`
       } else if (item.type === "link") {
         return item.url || "#"
       }
@@ -449,10 +466,12 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
         </Link>
       )
     } else if (item.type === "category") {
+      // שימוש ב-slug אם קיים, אחרת ב-ID (תאימות לאחור)
+      const categoryIdentifier = item.categorySlug || item.categoryId
       return (
         <Link
           key={itemKey}
-          href={`/shop/${slug}/categories/${item.categoryId}`}
+          href={`/shop/${slug}/categories/${categoryIdentifier}`}
           className={linkClassName}
           onClick={() => setMobileMenuOpen(false)}
         >
@@ -460,10 +479,12 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
         </Link>
       )
     } else if (item.type === "collection") {
+      // שימוש ב-slug אם קיים, אחרת ב-ID (תאימות לאחור)
+      const collectionIdentifier = item.collectionSlug || item.collectionId
       return (
         <Link
           key={itemKey}
-          href={`/shop/${slug}/collections/${item.collectionId}`}
+          href={`/shop/${slug}/categories/${collectionIdentifier}`}
           className={linkClassName}
           onClick={() => setMobileMenuOpen(false)}
         >
@@ -704,141 +725,224 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
   }
   
   // Helper function ללוגו
-  const renderLogo = (className?: string) => (
-    <Link href={`/shop/${slug}`} className={`flex items-center gap-3 group ${className || ''}`}>
-      {shop?.logo ? (
-        <>
-          {/* Logo for Mobile */}
-          <div 
-            className="flex items-center justify-center md:hidden"
-            style={{
-              width: `${logoSizes.mobile * 2}px`,
-              height: `${logoSizes.mobile}px`,
-              flexShrink: 0,
-            }}
-          >
-            <img
-              src={shop.logo}
-              alt={shop?.name || "Shop"}
+  const renderLogo = (className?: string) => {
+    // אם אין shop בכלל, נציג סקלטון קטן וסביר
+    if (!shop) {
+      return (
+        <div className={`flex items-center gap-3 ${className || ''}`}>
+          {/* סקלטון למובייל */}
+          <div className="md:hidden">
+            <div 
+              className="bg-gray-200 rounded animate-pulse"
               style={{
-                maxWidth: `${logoSizes.mobile * 2}px`,
-                maxHeight: `${logoSizes.mobile}px`,
-                width: 'auto',
-                height: 'auto',
-                objectFit: 'contain',
-              }}
-              loading="eager"
-              onError={(e) => {
-                const target = e.currentTarget as HTMLImageElement
-                target.style.display = "none"
+                width: '120px',
+                height: '40px',
               }}
             />
           </div>
-          {/* Logo for Desktop */}
-          <div 
-            className="hidden md:flex md:items-center md:justify-center"
-            style={{
-              width: `${logoSizes.desktop * 2}px`,
-              height: `${logoSizes.desktop}px`,
-              flexShrink: 0,
-            }}
-          >
-            <img
-              src={shop.logo}
-              alt={shop?.name || "Shop"}
+          {/* סקלטון לדסקטופ */}
+          <div className="hidden md:block">
+            <div 
+              className="bg-gray-200 rounded animate-pulse"
               style={{
-                maxWidth: `${logoSizes.desktop * 2}px`,
-                maxHeight: `${logoSizes.desktop}px`,
-                width: 'auto',
-                height: 'auto',
-                objectFit: 'contain',
-              }}
-              loading="eager"
-              onError={(e) => {
-                const target = e.currentTarget as HTMLImageElement
-                target.style.display = "none"
+                width: '160px',
+                height: '50px',
               }}
             />
           </div>
-        </>
-      ) : (
-        <h1 className="text-xl font-bold text-gray-900 group-hover:text-gray-700 transition-colors">
-          {shop?.name || "חנות"}
-        </h1>
-      )}
-    </Link>
-  )
+        </div>
+      )
+    }
+
+    // קביעת הפילטר לצבע הלוגו בהתאם להגדרות וגלילה
+    const getLogoFilter = () => {
+      if (!transparentHeader || !isScrolled || theme.logoColorOnScroll === "none") return "none"
+      
+      if (theme.logoColorOnScroll === "white") {
+        // המרה ללבן - invert + brightness
+        return "brightness(0) invert(1)"
+      } else if (theme.logoColorOnScroll === "black") {
+        // המרה לשחור - brightness(0)
+        return "brightness(0)"
+      }
+      return "none"
+    }
+
+    const logoFilter = getLogoFilter()
+
+    return (
+      <Link href={`/shop/${slug}`} className={`flex items-center gap-3 group ${className || ''}`}>
+        {shop?.logo ? (
+          <>
+            {/* Logo for Mobile */}
+            <div 
+              className="flex items-center justify-center md:hidden"
+              style={{
+                width: `${logoSizes.mobile * 2}px`,
+                height: `${logoSizes.mobile}px`,
+                flexShrink: 0,
+                padding: `${theme.logoPaddingMobile}px`,
+              }}
+            >
+              <img
+                src={shop.logo}
+                alt={shop?.name || "Shop"}
+                style={{
+                  maxWidth: `${logoSizes.mobile * 2}px`,
+                  maxHeight: `${logoSizes.mobile}px`,
+                  width: 'auto',
+                  height: 'auto',
+                  objectFit: 'contain',
+                  filter: logoFilter,
+                  transition: 'filter 0.3s ease',
+                }}
+                loading="eager"
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement
+                  target.style.display = "none"
+                }}
+              />
+            </div>
+            {/* Logo for Desktop */}
+            <div 
+              className="hidden md:flex md:items-center md:justify-center"
+              style={{
+                width: `${logoSizes.desktop * 2}px`,
+                height: `${logoSizes.desktop}px`,
+                flexShrink: 0,
+                padding: `${theme.logoPaddingDesktop}px`,
+              }}
+            >
+              <img
+                src={shop.logo}
+                alt={shop?.name || "Shop"}
+                style={{
+                  maxWidth: `${logoSizes.desktop * 2}px`,
+                  maxHeight: `${logoSizes.desktop}px`,
+                  width: 'auto',
+                  height: 'auto',
+                  objectFit: 'contain',
+                  filter: logoFilter,
+                  transition: 'filter 0.3s ease',
+                }}
+                loading="eager"
+                onError={(e) => {
+                  const target = e.currentTarget as HTMLImageElement
+                  target.style.display = "none"
+                }}
+              />
+            </div>
+          </>
+        ) : (
+          <h1 
+            className="text-xl font-bold transition-colors"
+            style={{ 
+              color: transparentHeader && isScrolled && theme.logoColorOnScroll !== "none" 
+                ? (theme.logoColorOnScroll === "white" ? "#ffffff" : "#000000")
+                : (theme.headerTextColor || "#000000")
+            }}
+          >
+            {shop?.name || "חנות"}
+          </h1>
+        )}
+      </Link>
+    )
+  }
 
   // Helper function לניווט
-  const renderNavigation = (className?: string) => (
-    <nav className={`hidden md:flex items-center gap-6 flex-1 justify-center ${className || ''}`} style={{ minHeight: '24px' }}>
-      {!navigation || !navigation.items || !Array.isArray(navigation.items) || navigation.items.length === 0 ? (
-        <>
-          {[60, 80, 70, 90].map((width, index) => (
-            <div
-              key={index}
-              className="h-4 bg-gray-200 rounded animate-pulse"
-              style={{ width: `${width}px` }}
-            />
-          ))}
-        </>
-      ) : (
-        navigation.items.map((item, index) => renderNavigationItem(item, index))
-      )}
-    </nav>
-  )
+  const renderNavigation = (className?: string) => {
+    // תנאי מורחב: נציג סקלטון אם אין navigation, אם אין items, או אם אין shop
+    const shouldShowSkeleton = !shop || !navigation || !navigation.items || !Array.isArray(navigation.items) || navigation.items.length === 0
+    
+    return (
+      <nav className={`hidden md:flex items-center gap-6 flex-1 justify-center ${className || ''}`} style={{ minHeight: '24px' }}>
+        {shouldShowSkeleton ? (
+          <>
+            {[70, 90, 80, 100, 75].map((width, index) => (
+              <div
+                key={index}
+                className="h-5 bg-gray-200 rounded animate-pulse"
+                style={{ width: `${width}px` }}
+              />
+            ))}
+          </>
+        ) : (
+          navigation.items.map((item, index) => renderNavigationItem(item, index))
+        )}
+      </nav>
+    )
+  }
 
   // Helper function לכפתורים (Search, Account, Cart)
-  const renderActions = () => (
-    <div className="flex items-center gap-1 md:gap-4">
-      {/* Search */}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setSearchOpen(true)}
-        className="p-2"
-      >
-        <Search className="w-5 h-5 text-gray-700" />
-      </Button>
+  const renderActions = () => {
+    // אם אין shop, נציג סקלטון
+    if (!shop) {
+      return (
+        <div className="flex items-center gap-1 md:gap-4">
+          <div className="w-9 h-9 bg-gray-200 rounded-full animate-pulse" />
+          <div className="w-9 h-9 bg-gray-200 rounded-full animate-pulse" />
+          <div className="w-9 h-9 bg-gray-200 rounded-full animate-pulse" />
+        </div>
+      )
+    }
 
-      {/* Account */}
-      {mounted ? (
-        <Link href={customerId ? `/shop/${slug}/account` : `/shop/${slug}/login`}>
-          <Button variant="ghost" size="sm" className="p-2">
-            {customerName ? (
-              <span className="text-sm text-gray-700 mr-2">שלום, {customerName}</span>
-            ) : (
-              <User className="w-5 h-5 text-gray-700" />
-            )}
-          </Button>
-        </Link>
-      ) : (
-        <Button variant="ghost" size="sm" className="p-2">
-          <User className="w-5 h-5 text-gray-700" />
+    return (
+      <div className="flex items-center gap-1 md:gap-4">
+        {/* Search */}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setSearchOpen(true)}
+          className="p-2"
+        >
+          <Search className="w-5 h-5 text-gray-700" />
         </Button>
-      )}
 
-      {/* Cart */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className="p-2 relative"
-        onClick={() => setCartOpen(true)}
-      >
-        <ShoppingCart className="w-5 h-5 text-gray-700" />
-        {cartItemCount > 0 && (
-          <span
-            suppressHydrationWarning
-            className="absolute -top-1 -right-1 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium"
-            style={{ backgroundColor: theme.primaryColor }}
-          >
-            {cartItemCount > 9 ? "9+" : cartItemCount}
-          </span>
+        {/* Account */}
+        {mounted ? (
+          <Link href={customerId ? `/shop/${slug}/account` : `/shop/${slug}/login`}>
+            <Button variant="ghost" size="sm" className="p-2">
+              {customerName ? (
+                <span className="text-sm text-gray-700 mr-2">שלום, {customerName}</span>
+              ) : (
+                <User className="w-5 h-5 text-gray-700" />
+              )}
+            </Button>
+          </Link>
+        ) : (
+          <Button variant="ghost" size="sm" className="p-2">
+            <User className="w-5 h-5 text-gray-700" />
+          </Button>
         )}
-      </Button>
 
-    </div>
-  )
+        {/* Cart */}
+        <Button
+          variant="ghost"
+          size="sm"
+          className="p-2 relative"
+          onClick={() => {
+            if (disableCartDrawer) {
+              router.push(`/shop/${slug}/cart`)
+            } else {
+              setCartOpen(true)
+            }
+          }}
+        >
+          <ShoppingCart className="w-5 h-5 text-gray-700" />
+          {cartItemCount > 0 && (
+            <span
+              suppressHydrationWarning
+              className="absolute -top-1 -right-1 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium"
+              style={{ backgroundColor: theme.primaryColor }}
+            >
+              {cartItemCount > 9 ? "9+" : cartItemCount}
+            </span>
+          )}
+        </Button>
+
+      </div>
+    )
+  }
 
   return (
     <>
@@ -849,9 +953,13 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
         className={`z-50 transition-all duration-300 ${stickyHeader ? 'sticky top-0' : ''} ${
           transparentHeader && !isScrolled 
             ? 'bg-transparent border-transparent' 
-            : 'bg-white border-b border-gray-200'
+            : 'border-b border-gray-200'
         }`}
-        style={{ minHeight: '80px' }}
+        style={{ 
+          minHeight: '80px',
+          backgroundColor: transparentHeader && !isScrolled ? 'transparent' : (theme.headerBgColor || '#ffffff'),
+          color: theme.headerTextColor || '#000000'
+        }}
       >
         <div 
           className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
@@ -874,7 +982,7 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
               className="p-2"
               onClick={() => setMobileMenuOpen(true)}
             >
-              <Menu className="w-5 h-5 text-gray-700" />
+              <Menu className="w-5 h-5" style={{ color: theme.headerTextColor || '#000000' }} />
             </Button>
           </div>
           

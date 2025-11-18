@@ -183,7 +183,9 @@ export async function GET(req: NextRequest) {
       orders: orders.map(o => ({
         type: 'order',
         id: o.id,
-        title: `הזמנה #${o.orderNumber}`,
+        title: `Order #${o.orderNumber}`, // Will be translated on client
+        titleKey: 'search.orderTitle',
+        titleParams: { number: o.orderNumber },
         subtitle: o.customerName || o.customerEmail,
         meta: `₪${o.total.toFixed(2)} • ${o.status}`,
         url: `/orders/${o.id}`,
@@ -194,7 +196,7 @@ export async function GET(req: NextRequest) {
         id: c.id,
         title: `${c.firstName || ''} ${c.lastName || ''}`.trim() || c.email,
         subtitle: c.email,
-        meta: `${c.orderCount} הזמנות • ₪${c.totalSpent.toFixed(2)}`,
+        meta: `${c.orderCount} orders • ₪${c.totalSpent.toFixed(2)}`, // Will be translated on client
         url: `/customers/${c.id}`,
         shopName: c.shop.name,
       })),
@@ -203,7 +205,7 @@ export async function GET(req: NextRequest) {
         id: pl.id,
         title: pl.name,
         subtitle: pl.description || '',
-        meta: pl.isFree ? 'חינמי' : `₪${pl.price?.toFixed(2) || '0'}/חודש`,
+        meta: pl.isFree ? 'Free' : `₪${pl.price?.toFixed(2) || '0'}/month`, // Will be translated on client
         url: `/settings/plugins`,
         icon: pl.icon,
         category: pl.category,

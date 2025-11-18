@@ -9,7 +9,7 @@ import { sendEmail, emailTemplates, getEmailTemplate } from './email'
 export interface NotificationData {
   userId: string
   companyId: string
-  type: 'task' | 'lead' | 'client' | 'project' | 'meeting' | 'automation' | 'system' | 'reminder' | 'document' | 'quote' | 'payment'
+  type: 'task' | 'lead' | 'client' | 'project' | 'meeting' | 'automation' | 'system' | 'reminder' | 'document' | 'quote' | 'payment' | 'return'
   title: string
   message: string
   entityType?: string
@@ -347,6 +347,69 @@ async function sendPaymentNotificationToManagers(params: {
     }
   } catch (error) {
     console.error('Error sending payment notifications to managers:', error)
+  }
+}
+
+/**
+ * Send return notification to all managers/admins in the company
+ */
+export async function notifyReturnCreated(params: {
+  companyId: string
+  returnId: string
+  orderNumber: string
+  customerName?: string
+  customerEmail?: string
+  refundAmount?: number
+  reason?: string
+}) {
+  try {
+    console.log(`📧 Creating return notifications for company ${params.companyId}, return ${params.returnId}`)
+    
+    // מציאת כל המנהלים והמנהלים בחברה
+    const managers = await prisma.user.findMany({
+      where: {
+        companyId: params.companyId,
+        role: {
+          in: ['ADMIN', 'MANAGER'],
+        },
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+      },
+    })
+
+    console.log(`Found ${managers.length} managers/admins for company ${params.companyId}`)
+
+    if (managers.length === 0) {
+      console.warn(`No managers/admins found for company ${params.companyId}`)
+      return
+    }
+
+    // שליחת התראה לכל המנהלים
+    for (const manager of managers) {
+      // יצירת התראה במערכת
+      try {
+        const notification = await prisma.notification.create({
+          data: {
+            userId: manager.id,
+            companyId: params.companyId,
+            type: 'return',
+            title: 'בקשת החזרה חדשה',
+            message: `בקשת החזרה חדשה התקבלה עבור הזמנה ${params.orderNumber}${params.customerName ? ` מלקוח ${params.customerName}` : ''}${params.refundAmount ? `. סכום החזר: ₪${params.refundAmount.toFixed(2)}` : ''}${params.reason ? `. סיבה: ${params.reason}` : ''}`,
+            entityType: 'return',
+            entityId: params.returnId,
+            isRead: false,
+          },
+        })
+        console.log(`✅ Return notification created for manager ${manager.id} (${manager.name || manager.email}), notification ID: ${notification.id}`)
+      } catch (error) {
+        console.error(`Error creating notification for manager ${manager.id}:`, error)
+      }
+    }
+  } catch (error) {
+    console.error('Error sending return notifications to managers:', error)
   }
 }
 

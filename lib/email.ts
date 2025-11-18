@@ -2,7 +2,7 @@ import sgMail from '@sendgrid/mail'
 import { prisma } from './prisma'
 
 /**
- * Get email settings from shop theme settings
+ * Get email settings from shop theme settings (from appearance page)
  */
 export async function getShopEmailSettings(shopId: string): Promise<{
   senderName: string
@@ -28,11 +28,26 @@ export async function getShopEmailSettings(shopId: string): Promise<{
 
     const themeSettings = (shop.themeSettings as any) || {}
     
-    return {
+    // הגדרות המיילים נשמרות ב-themeSettings מ-appearance page
+    const emailSettings = {
       senderName: themeSettings.emailSenderName || shop.name || 'Quick Shop',
       color1: themeSettings.emailColor1 || '#6f65e2',
       color2: themeSettings.emailColor2 || '#b965e2',
     }
+    
+    // לוג לבדיקה שההגדרות נטענות נכון
+    console.log(`📧 Email settings for shop ${shopId}:`, {
+      senderName: emailSettings.senderName,
+      color1: emailSettings.color1,
+      color2: emailSettings.color2,
+      fromThemeSettings: {
+        emailSenderName: themeSettings.emailSenderName,
+        emailColor1: themeSettings.emailColor1,
+        emailColor2: themeSettings.emailColor2,
+      },
+    })
+    
+    return emailSettings
   } catch (error) {
     console.error('Error fetching shop email settings:', error)
     return {

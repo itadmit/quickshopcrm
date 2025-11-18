@@ -12,7 +12,9 @@ interface NavigationItem {
   pageId?: string
   pageSlug?: string
   categoryId?: string
+  categorySlug?: string
   collectionId?: string
+  collectionSlug?: string
   children?: NavigationItem[]
   image?: string
   columnTitle?: string
@@ -119,9 +121,13 @@ export function MegaMenu({ item, slug, onClose }: MegaMenuProps) {
       const pageIdentifier = childItem.pageSlug || childItem.pageId
       return `/shop/${slug}/pages/${pageIdentifier}`
     } else if (childItem.type === "category") {
-      return `/shop/${slug}/categories/${childItem.categoryId}`
+      // שימוש ב-slug אם קיים, אחרת ב-ID (תאימות לאחור)
+      const categoryIdentifier = childItem.categorySlug || childItem.categoryId
+      return `/shop/${slug}/categories/${categoryIdentifier}`
     } else if (childItem.type === "collection") {
-      return `/shop/${slug}/collections/${childItem.collectionId}`
+      // שימוש ב-slug אם קיים, אחרת ב-ID (תאימות לאחור)
+      const collectionIdentifier = childItem.collectionSlug || childItem.collectionId
+      return `/shop/${slug}/categories/${collectionIdentifier}`
     } else if (childItem.type === "link") {
       return childItem.url || "#"
     }

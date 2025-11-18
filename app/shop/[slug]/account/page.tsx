@@ -25,7 +25,7 @@ import {
   LogOut,
   Package,
   Calendar,
-  DollarSign,
+  Coins,
   RotateCcw,
   Trash2,
   Plus,
@@ -56,8 +56,13 @@ interface Order {
   id: string
   orderNumber: string
   status: string
+  paymentStatus?: string
   total: number
   createdAt: string
+  items?: Array<{
+    id: string
+    quantity: number
+  }>
 }
 
 export default function StorefrontAccountPage() {
@@ -70,9 +75,10 @@ export default function StorefrontAccountPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [returns, setReturns] = useState<any[]>([])
   const [shop, setShop] = useState<Shop | null>(null)
+  const [storeCredit, setStoreCredit] = useState<any>(null)
   const [cartItemCount, setCartItemCount] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<"profile" | "orders" | "addresses" | "wishlist" | "returns">("profile")
+  const [activeTab, setActiveTab] = useState<"profile" | "orders" | "addresses" | "wishlist" | "returns" | "credits">("profile")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [addresses, setAddresses] = useState<any[]>([])
@@ -86,6 +92,52 @@ export default function StorefrontAccountPage() {
     zip: "",
   })
   const [savingAddress, setSavingAddress] = useState(false)
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false)
+  const [selectedOrderForReturn, setSelectedOrderForReturn] = useState<Order | null>(null)
+  const [orderDetails, setOrderDetails] = useState<any>(null)
+  const [returnForm, setReturnForm] = useState({
+    reason: "",
+    notes: "",
+    items: [] as Array<{ orderItemId: string; quantity: number; reason?: string }>,
+  })
+  const [creatingReturn, setCreatingReturn] = useState(false)
+
+  // פונקציה לתרגום סטטוס לעברית
+  const getStatusText = (status: string, paymentStatus?: string) => {
+    // אם התשלום שולם, נציג "שולם" במקום "ממתין"
+    if (paymentStatus === "PAID" && status === "PENDING") {
+      return "שולם"
+    }
+    
+    const statusMap: Record<string, string> = {
+      PENDING: "ממתין לתשלום",
+      CONFIRMED: "מאושר",
+      PROCESSING: "מעבד",
+      SHIPPED: "נשלח",
+      DELIVERED: "נמסר",
+      CANCELLED: "בוטל",
+      REFUNDED: "הוחזר",
+    }
+    return statusMap[status] || status
+  }
+
+  // פונקציה לקביעת צבע סטטוס
+  const getStatusColor = (status: string, paymentStatus?: string) => {
+    // אם הוזמן ביקרוק ובוטל - אדום
+    if (status === "CANCELLED" || status === "REFUNDED") {
+      return "bg-red-100 text-red-700 border-red-200"
+    }
+    // אם הוזמן ביקרוק - ירוק
+    if (paymentStatus === "PAID" && status !== "CANCELLED") {
+      return "bg-green-100 text-green-700 border-green-200"
+    }
+    // פנדינג - צהוב
+    if (status === "PENDING") {
+      return "bg-yellow-100 text-yellow-700 border-yellow-200"
+    }
+    // סטטוסים אחרים - כחול פסטל
+    return "bg-blue-100 text-blue-700 border-blue-200"
+  }
 
   useEffect(() => {
     fetchShopInfo()
@@ -105,6 +157,7 @@ export default function StorefrontAccountPage() {
       fetchOrders(parsed.id)
       fetchReturns(parsed.id)
       fetchAddresses(parsed.id)
+      fetchStoreCredit(parsed.id)
     } catch (error) {
       console.error("Error parsing customer data:", error)
       router.push(`/shop/${slug}/login`)
@@ -112,6 +165,13 @@ export default function StorefrontAccountPage() {
       setLoading(false)
     }
   }, [slug, router])
+
+  // רענון קרדיט בחנות כשעוברים לטאב פרטים אישיים או קרדיט
+  useEffect(() => {
+    if ((activeTab === "profile" || activeTab === "credits") && customer) {
+      fetchStoreCredit(customer.id)
+    }
+  }, [activeTab, customer])
 
   const fetchShopInfo = async () => {
     try {
@@ -196,6 +256,32 @@ export default function StorefrontAccountPage() {
       }
     } catch (error) {
       console.error("Error fetching addresses:", error)
+    }
+  }
+
+  const fetchStoreCredit = async (customerId: string) => {
+    try {
+      const token = localStorage.getItem(`storefront_token_${slug}`)
+      if (!token) {
+        console.log("No token found for store credit")
+        return
+      }
+
+      const response = await fetch(`/api/storefront/${slug}/store-credit`, {
+        headers: {
+          "x-customer-id": token,
+        },
+      })
+      if (response.ok) {
+        const data = await response.json()
+        console.log("Store credit data:", data)
+        setStoreCredit(data)
+      } else {
+        const errorData = await response.json()
+        console.error("Error fetching store credit:", errorData)
+      }
+    } catch (error) {
+      console.error("Error fetching store credit:", error)
     }
   }
 
@@ -470,8 +556,8 @@ export default function StorefrontAccountPage() {
                     onClick={() => setActiveTab("profile")}
                     className={`w-full text-right px-4 py-3 rounded-lg transition-colors ${
                       activeTab === "profile"
-                        ? "bg-purple-100 text-purple-900"
-                        : "hover:bg-gray-100"
+                        ? "bg-blue-50 text-blue-700"
+                        : "hover:bg-gray-50"
                     }`}
                   >
                     <User className="w-4 h-4 inline ml-2" />
@@ -481,8 +567,8 @@ export default function StorefrontAccountPage() {
                     onClick={() => setActiveTab("orders")}
                     className={`w-full text-right px-4 py-3 rounded-lg transition-colors ${
                       activeTab === "orders"
-                        ? "bg-purple-100 text-purple-900"
-                        : "hover:bg-gray-100"
+                        ? "bg-blue-50 text-blue-700"
+                        : "hover:bg-gray-50"
                     }`}
                   >
                     <ShoppingBag className="w-4 h-4 inline ml-2" />
@@ -492,8 +578,8 @@ export default function StorefrontAccountPage() {
                     onClick={() => setActiveTab("addresses")}
                     className={`w-full text-right px-4 py-3 rounded-lg transition-colors ${
                       activeTab === "addresses"
-                        ? "bg-purple-100 text-purple-900"
-                        : "hover:bg-gray-100"
+                        ? "bg-blue-50 text-blue-700"
+                        : "hover:bg-gray-50"
                     }`}
                   >
                     <MapPin className="w-4 h-4 inline ml-2" />
@@ -503,8 +589,8 @@ export default function StorefrontAccountPage() {
                     onClick={() => setActiveTab("wishlist")}
                     className={`w-full text-right px-4 py-3 rounded-lg transition-colors ${
                       activeTab === "wishlist"
-                        ? "bg-purple-100 text-purple-900"
-                        : "hover:bg-gray-100"
+                        ? "bg-blue-50 text-blue-700"
+                        : "hover:bg-gray-50"
                     }`}
                   >
                     <Heart className="w-4 h-4 inline ml-2" />
@@ -514,12 +600,23 @@ export default function StorefrontAccountPage() {
                     onClick={() => setActiveTab("returns")}
                     className={`w-full text-right px-4 py-3 rounded-lg transition-colors ${
                       activeTab === "returns"
-                        ? "bg-purple-100 text-purple-900"
-                        : "hover:bg-gray-100"
+                        ? "bg-blue-50 text-blue-700"
+                        : "hover:bg-gray-50"
                     }`}
                   >
                     <RotateCcw className="w-4 h-4 inline ml-2" />
                     החזרות והחלפות
+                  </button>
+                  <button
+                    onClick={() => setActiveTab("credits")}
+                    className={`w-full text-right px-4 py-3 rounded-lg transition-colors ${
+                      activeTab === "credits"
+                        ? "bg-blue-50 text-blue-700"
+                        : "hover:bg-gray-50"
+                    }`}
+                  >
+                    <Coins className="w-4 h-4 inline ml-2" />
+                    קרדיט בחנות
                   </button>
                 </nav>
               </CardContent>
@@ -552,6 +649,45 @@ export default function StorefrontAccountPage() {
                     <Label>טלפון</Label>
                     <p className="font-medium">{customer.phone || "-"}</p>
                   </div>
+                  
+                  {/* קרדיט בחנות */}
+                  {storeCredit && (
+                    <div className="mt-6 pt-6 border-t">
+                      <div className={`rounded-lg p-4 ${
+                        storeCredit.balance > 0 
+                          ? "bg-gradient-to-r from-blue-50 to-cyan-50" 
+                          : "bg-gray-50"
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="text-sm text-gray-600">קרדיט בחנות</Label>
+                            <p className={`text-2xl font-bold mt-1 ${
+                              storeCredit.balance > 0 
+                                ? "text-blue-700" 
+                                : "text-gray-500"
+                            }`}>
+                              ₪{storeCredit.balance.toFixed(2)}
+                            </p>
+                            {storeCredit.expiresAt && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                תאריך תפוגה: {new Date(storeCredit.expiresAt).toLocaleDateString("he-IL")}
+                              </p>
+                            )}
+                            {storeCredit.reason && (
+                              <p className="text-xs text-gray-500 mt-1">
+                                {storeCredit.reason}
+                              </p>
+                            )}
+                          </div>
+                          <Coins className={`w-12 h-12 ${
+                            storeCredit.balance > 0 
+                              ? "text-blue-500" 
+                              : "text-gray-400"
+                          }`} />
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="pt-4 border-t">
                     <Button
@@ -589,16 +725,18 @@ export default function StorefrontAccountPage() {
                       {orders.map((order) => (
                         <div
                           key={order.id}
-                          className="border rounded-lg p-4 hover:shadow-md transition-shadow"
+                          className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
                         >
                           <div className="flex items-center justify-between">
-                            <div>
+                            <div className="flex-1">
                               <div className="flex items-center gap-2 mb-2">
                                 <Package className="w-4 h-4 text-gray-400" />
                                 <span className="font-semibold">
                                   הזמנה #{order.orderNumber}
                                 </span>
-                                <Badge>{order.status}</Badge>
+                                <Badge className={getStatusColor(order.status, order.paymentStatus)}>
+                                  {getStatusText(order.status, order.paymentStatus)}
+                                </Badge>
                               </div>
                               <div className="flex items-center gap-4 text-sm text-gray-600">
                                 <div className="flex items-center gap-1">
@@ -606,12 +744,16 @@ export default function StorefrontAccountPage() {
                                   {new Date(order.createdAt).toLocaleDateString("he-IL")}
                                 </div>
                                 <div className="flex items-center gap-1">
-                                  <DollarSign className="w-4 h-4" />
+                                  <Coins className="w-4 h-4" />
                                   ₪{order.total.toFixed(2)}
                                 </div>
                               </div>
                             </div>
-                            <Button variant="outline" size="sm">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => router.push(`/shop/${slug}/orders/${order.id}`)}
+                            >
                               צפה בהזמנה
                             </Button>
                           </div>
@@ -711,13 +853,52 @@ export default function StorefrontAccountPage() {
             {activeTab === "returns" && (
               <Card>
                 <CardHeader>
-                  <CardTitle>החזרות והחלפות</CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle>החזרות והחלפות</CardTitle>
+                    <Button
+                      onClick={() => {
+                        // נציג רק הזמנות ששולמו
+                        const paidOrders = orders.filter(o => o.paymentStatus === "PAID")
+                        if (paidOrders.length === 0) {
+                          toast({
+                            title: "אין הזמנות זמינות",
+                            description: "רק הזמנות ששולמו יכולות להיות מוחזרות",
+                            variant: "destructive",
+                          })
+                          return
+                        }
+                        setReturnDialogOpen(true)
+                      }}
+                      className="prodify-gradient text-white"
+                    >
+                      <Plus className="w-4 h-4 ml-2" />
+                      צור החזרה חדשה
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {returns.length === 0 ? (
                     <div className="text-center py-12">
                       <RotateCcw className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-                      <p className="text-gray-600">אין החזרות או החלפות</p>
+                      <p className="text-gray-600 mb-4">אין החזרות או החלפות</p>
+                      <Button
+                        onClick={() => {
+                          const paidOrders = orders.filter(o => o.paymentStatus === "PAID")
+                          if (paidOrders.length === 0) {
+                            toast({
+                              title: "אין הזמנות זמינות",
+                              description: "רק הזמנות ששולמו יכולות להיות מוחזרות",
+                              variant: "destructive",
+                            })
+                            return
+                          }
+                          setReturnDialogOpen(true)
+                        }}
+                        className="prodify-gradient text-white"
+                      >
+                        <Plus className="w-4 h-4 ml-2" />
+                        צור החזרה חדשה
+                      </Button>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -766,7 +947,7 @@ export default function StorefrontAccountPage() {
                                 </div>
                                 {returnItem.refundAmount && (
                                   <div className="flex items-center gap-1">
-                                    <DollarSign className="w-4 h-4" />
+                                    <Coins className="w-4 h-4" />
                                     ₪{returnItem.refundAmount.toFixed(2)}
                                   </div>
                                 )}
@@ -780,6 +961,112 @@ export default function StorefrontAccountPage() {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {activeTab === "credits" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>קרדיט בחנות</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {storeCredit ? (
+                    <div className="space-y-6">
+                      {/* יתרה נוכחית */}
+                      <div className={`rounded-lg p-6 ${
+                        storeCredit.balance > 0 
+                          ? "bg-gradient-to-r from-blue-50 to-cyan-50 border-2 border-blue-200" 
+                          : "bg-gray-50 border-2 border-gray-200"
+                      }`}>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <Label className="text-sm text-gray-600 mb-2 block">יתרה נוכחית</Label>
+                            <p className={`text-4xl font-bold ${
+                              storeCredit.balance > 0 
+                                ? "text-blue-700" 
+                                : "text-gray-500"
+                            }`}>
+                              ₪{storeCredit.balance.toFixed(2)}
+                            </p>
+                          </div>
+                          <Coins className={`w-16 h-16 ${
+                            storeCredit.balance > 0 
+                              ? "text-blue-500" 
+                              : "text-gray-400"
+                          }`} />
+                        </div>
+                        {storeCredit.expiresAt && (
+                          <p className="text-sm text-gray-600 mt-4">
+                            <Calendar className="w-4 h-4 inline ml-1" />
+                            תאריך תפוגה: {new Date(storeCredit.expiresAt).toLocaleDateString("he-IL")}
+                          </p>
+                        )}
+                        {storeCredit.reason && (
+                          <p className="text-sm text-gray-600 mt-2">
+                            סיבה: {storeCredit.reason}
+                          </p>
+                        )}
+                      </div>
+
+                      {/* היסטוריית קרדיט */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4">היסטוריית קרדיט</h3>
+                        <div className="space-y-3">
+                          {/* נציג החזרות שהקרדיט נוצר מהן */}
+                          {returns
+                            .filter((r: any) => r.refundMethod === "STORE_CREDIT" && (r.status === "APPROVED" || r.status === "COMPLETED"))
+                            .map((returnItem: any) => (
+                              <div
+                                key={returnItem.id}
+                                className="border rounded-lg p-4 bg-white hover:shadow-md transition-shadow"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <Coins className="w-4 h-4 text-green-600" />
+                                      <span className="font-semibold text-green-700">
+                                        קרדיט מהחזרה #{returnItem.id.slice(-6)}
+                                      </span>
+                                    </div>
+                                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                                      <div className="flex items-center gap-1">
+                                        <Calendar className="w-4 h-4" />
+                                        {new Date(returnItem.createdAt).toLocaleDateString("he-IL")}
+                                      </div>
+                                      {returnItem.refundAmount && (
+                                        <div className="flex items-center gap-1">
+                                          <span className="text-green-700 font-semibold">
+                                            +₪{returnItem.refundAmount.toFixed(2)}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    {returnItem.order?.orderNumber && (
+                                      <p className="text-xs text-gray-500 mt-1">
+                                        מהזמנה #{returnItem.order.orderNumber}
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          
+                          {returns.filter((r: any) => r.refundMethod === "STORE_CREDIT" && (r.status === "APPROVED" || r.status === "COMPLETED")).length === 0 && (
+                            <div className="text-center py-8 text-gray-500">
+                              <Coins className="w-12 h-12 mx-auto mb-2 text-gray-400" />
+                              <p>אין היסטוריית קרדיט עדיין</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Coins className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                      <p className="text-gray-600">אין קרדיט בחנות זמין</p>
                     </div>
                   )}
                 </CardContent>
@@ -892,6 +1179,403 @@ export default function StorefrontAccountPage() {
             >
               {deleting ? "מוחק..." : "מחק חשבון"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Create Return Dialog */}
+      <Dialog open={returnDialogOpen} onOpenChange={setReturnDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>צור החזרה חדשה</DialogTitle>
+            <DialogDescription>
+              בחר הזמנה ופריטים להחזרה
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {/* בחירת הזמנה */}
+            {!selectedOrderForReturn ? (
+              <div className="space-y-2">
+                <Label>בחר הזמנה</Label>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {orders
+                    .filter(o => o.paymentStatus === "PAID")
+                    .map((order) => {
+                      // בדיקה אם יש החזרות מאושרות/הושלמות להזמנה הזו
+                      const approvedReturns = returns.filter(
+                        (r: any) => r.orderId === order.id && 
+                        (r.status === "APPROVED" || r.status === "COMPLETED")
+                      )
+                      
+                      // חישוב כמה כבר הוחזר מכל פריט
+                      let allItemsFullyReturned = false
+                      const orderItems = (order as any).items || []
+                      
+                      if (approvedReturns.length > 0) {
+                        if (orderItems.length > 0) {
+                          // יש items בהזמנה - נבדוק אם כל הפריטים הוחזרו במלואם
+                          const returnedQuantities = new Map<string, number>()
+                          for (const ret of approvedReturns) {
+                            const retItems = (ret.items as Array<{ orderItemId: string; quantity: number }>) || []
+                            for (const retItem of retItems) {
+                              const currentQty = returnedQuantities.get(retItem.orderItemId) || 0
+                              returnedQuantities.set(retItem.orderItemId, currentQty + retItem.quantity)
+                            }
+                          }
+                          
+                          // בדיקה אם כל הפריטים כבר הוחזרו במלואם
+                          allItemsFullyReturned = orderItems.every((item: any) => {
+                            const returnedQty = returnedQuantities.get(item.id) || 0
+                            return returnedQty >= item.quantity
+                          })
+                        } else {
+                          // אין items בהזמנה אבל יש החזרה מאושרת - נניח שהכל הוחזר
+                          // (למקרה שההזמנה לא נטענה עם items)
+                          allItemsFullyReturned = true
+                        }
+                      }
+                      
+                      return (
+                        <div
+                          key={order.id}
+                          className={`border rounded-lg p-3 ${
+                            allItemsFullyReturned 
+                              ? "opacity-50 cursor-not-allowed bg-gray-100" 
+                              : "cursor-pointer hover:bg-gray-50"
+                          }`}
+                          onClick={async () => {
+                            if (allItemsFullyReturned) {
+                              toast({
+                                title: "לא ניתן להחזיר",
+                                description: "כל הפריטים בהזמנה זו כבר הוחזרו במלואם",
+                                variant: "destructive",
+                              })
+                              return
+                            }
+                            
+                            setSelectedOrderForReturn(order)
+                            // טעינת פרטי ההזמנה
+                            try {
+                              const token = localStorage.getItem(`storefront_token_${slug}`)
+                              const response = await fetch(`/api/storefront/${slug}/orders/${order.id}`, {
+                                headers: {
+                                  "x-customer-id": token || "",
+                                },
+                              })
+                              if (response.ok) {
+                                const data = await response.json()
+                                setOrderDetails(data)
+                                // איפוס הטופס
+                                setReturnForm({
+                                  reason: "",
+                                  notes: "",
+                                  items: [],
+                                })
+                              }
+                            } catch (error) {
+                              console.error("Error fetching order details:", error)
+                              toast({
+                                title: "שגיאה",
+                                description: "לא הצלחנו לטעון את פרטי ההזמנה",
+                                variant: "destructive",
+                              })
+                            }
+                          }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="font-semibold">הזמנה #{order.orderNumber}</p>
+                              <p className="text-sm text-gray-600">
+                                {new Date(order.createdAt).toLocaleDateString("he-IL")} - ₪{order.total.toFixed(2)}
+                              </p>
+                              {allItemsFullyReturned && (
+                                <p className="text-xs text-red-600 mt-1">
+                                  כל הפריטים בהזמנה זו כבר הוחזרו במלואם
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                </div>
+              </div>
+            ) : (
+              <>
+                {/* פרטי ההזמנה */}
+                <div className="border rounded-lg p-3 bg-gray-50">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold">הזמנה #{selectedOrderForReturn.orderNumber}</p>
+                      <p className="text-sm text-gray-600">
+                        {new Date(selectedOrderForReturn.createdAt).toLocaleDateString("he-IL")}
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setSelectedOrderForReturn(null)
+                        setOrderDetails(null)
+                        setReturnForm({ reason: "", notes: "", items: [] })
+                      }}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* בחירת פריטים */}
+                {orderDetails && (() => {
+                  // חישוב כמה כבר הוחזר מכל פריט (מהחזרות מאושרות/הושלמות)
+                  const returnedQuantities = new Map<string, number>()
+                  const approvedReturns = returns.filter(
+                    (r: any) => r.orderId === selectedOrderForReturn.id && 
+                    (r.status === "APPROVED" || r.status === "COMPLETED")
+                  )
+                  
+                  for (const ret of approvedReturns) {
+                    const retItems = (ret.items as Array<{ orderItemId: string; quantity: number }>) || []
+                    for (const retItem of retItems) {
+                      const currentQty = returnedQuantities.get(retItem.orderItemId) || 0
+                      returnedQuantities.set(retItem.orderItemId, currentQty + retItem.quantity)
+                    }
+                  }
+
+                  // בדיקה אילו פריטים יש להם החזרה ממתינה (PENDING)
+                  const pendingReturns = returns.filter(
+                    (r: any) => r.orderId === selectedOrderForReturn.id && 
+                    r.status === "PENDING"
+                  )
+                  
+                  const pendingItemIds = new Set<string>()
+                  for (const ret of pendingReturns) {
+                    const retItems = (ret.items as Array<{ orderItemId: string; quantity: number }>) || []
+                    for (const retItem of retItems) {
+                      pendingItemIds.add(retItem.orderItemId)
+                    }
+                  }
+
+                  return (
+                    <div className="space-y-2">
+                      <Label>בחר פריטים להחזרה</Label>
+                      <div className="space-y-2 max-h-60 overflow-y-auto">
+                        {orderDetails.items.map((item: any) => {
+                          const selectedItem = returnForm.items.find(i => i.orderItemId === item.id)
+                          const selectedQty = selectedItem?.quantity || 0
+                          const alreadyReturnedQty = returnedQuantities.get(item.id) || 0
+                          const availableQty = item.quantity - alreadyReturnedQty
+                          const isFullyReturned = alreadyReturnedQty >= item.quantity
+                          const hasPendingReturn = pendingItemIds.has(item.id)
+                          const isDisabled = isFullyReturned || hasPendingReturn
+                          
+                          return (
+                            <div 
+                              key={item.id} 
+                              className={`border rounded-lg p-3 ${
+                                isDisabled ? "opacity-50 bg-gray-50" : ""
+                              }`}
+                            >
+                              <div className="flex items-start gap-3">
+                                <input
+                                  type="checkbox"
+                                  checked={selectedQty > 0}
+                                  disabled={isDisabled}
+                                  onChange={(e) => {
+                                    if (e.target.checked && !isDisabled) {
+                                      setReturnForm(prev => ({
+                                        ...prev,
+                                        items: [...prev.items, { orderItemId: item.id, quantity: 1 }],
+                                      }))
+                                    } else {
+                                      setReturnForm(prev => ({
+                                        ...prev,
+                                        items: prev.items.filter(i => i.orderItemId !== item.id),
+                                      }))
+                                    }
+                                  }}
+                                  className="mt-1"
+                                />
+                                <div className="flex-1">
+                                  <p className="font-medium">{item.name}</p>
+                                  {item.variant && (
+                                    <p className="text-sm text-gray-600">{item.variant.name}</p>
+                                  )}
+                                  <p className="text-sm text-gray-600">
+                                    כמות שהוזמנה: {item.quantity}
+                                    {alreadyReturnedQty > 0 && (
+                                      <span className="text-red-600"> (הוחזר: {alreadyReturnedQty})</span>
+                                    )}
+                                  </p>
+                                  {hasPendingReturn && (
+                                    <p className="text-xs text-orange-600 mt-1">
+                                      יש בקשת החזרה ממתינה לפריט זה
+                                    </p>
+                                  )}
+                                  {isFullyReturned && !hasPendingReturn && (
+                                    <p className="text-xs text-red-600 mt-1">
+                                      פריט זה כבר הוחזר במלואו
+                                    </p>
+                                  )}
+                                  {selectedQty > 0 && !isDisabled && (
+                                    <div className="mt-2 flex items-center gap-2">
+                                      <Label className="text-sm">כמות להחזרה:</Label>
+                                      <Input
+                                        type="number"
+                                        min="1"
+                                        max={availableQty}
+                                        value={selectedQty}
+                                        onChange={(e) => {
+                                          const inputValue = e.target.value
+                                          if (inputValue === "") {
+                                            // אפשר למחוק את הערך
+                                            setReturnForm(prev => ({
+                                              ...prev,
+                                              items: prev.items.filter(i => i.orderItemId !== item.id),
+                                            }))
+                                            return
+                                          }
+                                          const qty = parseInt(inputValue)
+                                          if (!isNaN(qty) && qty > 0 && qty <= availableQty) {
+                                            setReturnForm(prev => ({
+                                              ...prev,
+                                              items: prev.items.map(i =>
+                                                i.orderItemId === item.id ? { ...i, quantity: qty } : i
+                                              ),
+                                            }))
+                                          }
+                                        }}
+                                        className="w-20"
+                                      />
+                                      {availableQty < item.quantity && (
+                                        <span className="text-xs text-gray-500">
+                                          (זמין: {availableQty})
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* סיבת ההחזרה */}
+                <div className="space-y-2">
+                  <Label htmlFor="returnReason">סיבת ההחזרה *</Label>
+                  <select
+                    id="returnReason"
+                    value={returnForm.reason}
+                    onChange={(e) => setReturnForm(prev => ({ ...prev, reason: e.target.value }))}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    required
+                  >
+                    <option value="">בחר סיבה</option>
+                    <option value="לא מתאים">לא מתאים</option>
+                    <option value="פגם במוצר">פגם במוצר</option>
+                    <option value="שינוי דעה">שינוי דעה</option>
+                    <option value="נשלח מוצר שגוי">נשלח מוצר שגוי</option>
+                    <option value="אחר">אחר</option>
+                  </select>
+                </div>
+
+                {/* הערות */}
+                <div className="space-y-2">
+                  <Label htmlFor="returnNotes">הערות (אופציונלי)</Label>
+                  <Textarea
+                    id="returnNotes"
+                    value={returnForm.notes}
+                    onChange={(e) => setReturnForm(prev => ({ ...prev, notes: e.target.value }))}
+                    rows={3}
+                  />
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setReturnDialogOpen(false)
+                setSelectedOrderForReturn(null)
+                setOrderDetails(null)
+                setReturnForm({ reason: "", notes: "", items: [] })
+              }}
+              disabled={creatingReturn}
+            >
+              ביטול
+            </Button>
+            {selectedOrderForReturn && (
+              <Button
+                onClick={async () => {
+                  if (!returnForm.reason || returnForm.items.length === 0) {
+                    toast({
+                      title: "שגיאה",
+                      description: "אנא בחר סיבת החזרה ולפחות פריט אחד",
+                      variant: "destructive",
+                    })
+                    return
+                  }
+
+                  setCreatingReturn(true)
+                  try {
+                    const token = localStorage.getItem(`storefront_token_${slug}`)
+                    const response = await fetch(`/api/storefront/${slug}/returns`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        "x-customer-id": token || "",
+                      },
+                      body: JSON.stringify({
+                        orderId: selectedOrderForReturn.id,
+                        reason: returnForm.reason,
+                        items: returnForm.items,
+                        notes: returnForm.notes || undefined,
+                      }),
+                    })
+
+                    if (response.ok) {
+                      toast({
+                        title: "הצלחה",
+                        description: "החזרה נוצרה בהצלחה",
+                      })
+                      setReturnDialogOpen(false)
+                      setSelectedOrderForReturn(null)
+                      setOrderDetails(null)
+                      setReturnForm({ reason: "", notes: "", items: [] })
+                      // רענון רשימת החזרות
+                      if (customer) {
+                        fetchReturns(customer.id)
+                      }
+                    } else {
+                      const error = await response.json()
+                      toast({
+                        title: "שגיאה",
+                        description: error.error || "אירעה שגיאה ביצירת החזרה",
+                        variant: "destructive",
+                      })
+                    }
+                  } catch (error) {
+                    console.error("Error creating return:", error)
+                    toast({
+                      title: "שגיאה",
+                      description: "אירעה שגיאה ביצירת החזרה",
+                      variant: "destructive",
+                    })
+                  } finally {
+                    setCreatingReturn(false)
+                  }
+                }}
+                disabled={creatingReturn || !returnForm.reason || returnForm.items.length === 0}
+                className="prodify-gradient text-white"
+              >
+                {creatingReturn ? "יוצר..." : "צור החזרה"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

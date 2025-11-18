@@ -97,7 +97,7 @@ export async function GET(
     }
 
     // החזרת PDF ישירות מהשרת שלהם
-    return new NextResponse(labelResult.pdfBuffer, {
+    return new NextResponse(Buffer.from(labelResult.pdfBuffer), {
       headers: {
         "Content-Type": "application/pdf",
         "Content-Disposition": `attachment; filename="label-${order.orderNumber}.pdf"`,

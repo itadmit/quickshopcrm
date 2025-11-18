@@ -18,7 +18,7 @@ export const builtInPlugins: PluginDefinition[] = [
     metadata: {
       menuItem: {
         icon: 'Boxes',
-        label: 'חבילות מוצרים',
+        labelKey: 'sidebar.bundles', // שימוש ב-i18n
         href: '/bundles',
         permission: 'products',
         section: 'productItems', // איפה להוסיף בתפריט
@@ -65,6 +65,38 @@ export const builtInPlugins: PluginDefinition[] = [
     isFree: false, // בתשלום - מחיר יוגדר על ידי סופר אדמין
     price: 29.90, // מחיר ברירת מחדל (ניתן לערוך)
     defaultConfig: {},
+  },
+  {
+    slug: 'reviews',
+    name: 'ביקורות מתקדמות',
+    description: 'מערכת ביקורות מתקדמת עם תמיכה בתמונות ווידאו, בדומה ל-Yotpo. כולל אימות רכישה, תגובות, Q&A ועוד',
+    type: 'CORE',
+    category: 'MARKETING',
+    version: '1.0.0',
+    isBuiltIn: true,
+    isFree: true, // חינמי
+    defaultConfig: {
+      requireApproval: true, // דורש אישור מנהל
+      allowAnonymous: false, // האם לאפשר ביקורות אנונימיות
+      allowVideos: true, // האם לאפשר העלאת וידאו
+      allowImages: true, // האם לאפשר העלאת תמונות
+      maxImages: 5, // מקסימום תמונות לביקורת
+      maxVideos: 1, // מקסימום וידאו לביקורת
+      verifyPurchase: true, // האם לאמת רכישה
+      enableReplies: false, // האם לאפשר תגובות (לעתיד)
+      enableQnA: false, // האם לאפשר שאלות ותשובות (לעתיד)
+    },
+    metadata: {
+      menuItem: {
+        icon: 'Star',
+        labelKey: 'sidebar.reviews',
+        href: '/reviews',
+        permission: 'products',
+        section: 'marketing',
+      },
+      screenshots: [],
+      documentation: 'מערכת ביקורות מתקדמת עם תמיכה בתמונות ווידאו',
+    },
   },
   
   // Script Plugins

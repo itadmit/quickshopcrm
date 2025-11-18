@@ -14,6 +14,7 @@ import {
   ChevronRight,
   Tag,
   Loader2,
+  Lock,
 } from "lucide-react"
 import Link from "next/link"
 import { CartSkeleton } from "@/components/skeletons/CartSkeleton"
@@ -25,6 +26,10 @@ import {
   trackInitiateCheckout,
 } from "@/lib/tracking-events"
 import { LoadingOverlay } from "@/components/storefront/LoadingOverlay"
+import { StorefrontHeader } from "@/components/storefront/StorefrontHeader"
+import { ProductCard } from "@/components/storefront/ProductCard"
+import { useShopTheme } from "@/hooks/useShopTheme"
+import { useNavigation } from "@/hooks/useNavigation"
 
 interface CartItem {
   productId: string
@@ -41,6 +46,19 @@ interface CartItem {
     price: number | null
   } | null
   quantity: number
+  price: number
+  total: number
+  isGift?: boolean
+  giftDiscountId?: string
+  bundleId?: string
+  bundleName?: string
+  addons?: Array<{
+    addonId: string
+    valueId: string | null
+    label: string
+    price: number
+    quantity: number
+  }>
 }
 
 interface Cart {
@@ -55,6 +73,24 @@ interface Cart {
   customerDiscount?: number
   couponDiscount?: number
   automaticDiscount?: number
+  automaticDiscountTitle?: string
+}
+
+interface RecommendedProduct {
+  id: string
+  name: string
+  slug: string
+  price: number
+  comparePrice: number | null
+  images: string[]
+  availability: string
+}
+
+interface Shop {
+  id: string
+  name: string
+  description: string | null
+  logo: string | null
 }
 
 export default function CartPage() {
@@ -68,6 +104,11 @@ export default function CartPage() {
   const [customerId, setCustomerId] = useState<string | null>(null)
   const { trackEvent } = useTracking()
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false)
+  const [shop, setShop] = useState<Shop | null>(null)
+  const [recommendedProducts, setRecommendedProducts] = useState<RecommendedProduct[]>([])
+  const [loadingRecommended, setLoadingRecommended] = useState(false)
+  const theme = useShopTheme(slug)
+  const { navigation } = useNavigation(slug, "HEADER")
 
   useEffect(() => {
     const customerData = localStorage.getItem(`storefront_customer_${slug}`)
@@ -79,11 +120,48 @@ export default function CartPage() {
         console.error("Error parsing customer data:", error)
       }
     }
+    fetchShop()
     fetchCart()
     
     // PageView event
     trackPageView(trackEvent, `/shop/${slug}/cart`, "עגלת קניות")
   }, [slug])
+
+  useEffect(() => {
+    if (cart && cart.items.length > 0) {
+      fetchRecommendedProducts()
+    }
+  }, [cart])
+
+  const fetchShop = async () => {
+    try {
+      const response = await fetch(`/api/storefront/${slug}/info`)
+      if (response.ok) {
+        const data = await response.json()
+        setShop(data)
+      }
+    } catch (error) {
+      console.error("Error fetching shop:", error)
+    }
+  }
+
+  const fetchRecommendedProducts = async () => {
+    if (!cart || cart.items.length === 0) return
+    
+    setLoadingRecommended(true)
+    try {
+      const productIds = cart.items.map(item => item.productId).join(",")
+      const response = await fetch(`/api/storefront/${slug}/cart/recommended-products?productIds=${productIds}&limit=4`)
+      if (response.ok) {
+        const data = await response.json()
+        setRecommendedProducts(data.products || [])
+      }
+    } catch (error) {
+      console.error("Error fetching recommended products:", error)
+    } finally {
+      setLoadingRecommended(false)
+    }
+  }
 
   const fetchCart = async () => {
     setLoading(true)
@@ -226,49 +304,71 @@ export default function CartPage() {
 
   if (!cart || cart.items.length === 0) {
     return (
-      <div className="min-h-screen bg-gray-50" dir="rtl">
-        <header className="bg-white shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <Link href={`/shop/${slug}`} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-              <ChevronRight className="w-5 h-5" />
-              חזרה לחנות
-            </Link>
-          </div>
-        </header>
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <div className="min-h-screen bg-white" dir="rtl" style={theme?.theme ? { 
+        '--primary-color': theme.theme.primaryColor || '#000000',
+      } as React.CSSProperties : {}}>
+        {shop && (
+          <StorefrontHeader
+            slug={slug}
+            shop={shop}
+            navigation={navigation}
+            cartItemCount={0}
+            onCartUpdate={() => {}}
+            theme={theme?.theme}
+            disableCartDrawer={true}
+          />
+        )}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <div className="text-center">
-            <ShoppingCart className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">העגלה שלך ריקה</h2>
-            <p className="text-gray-600 mb-6">הוסף מוצרים לעגלה כדי להתחיל</p>
+            <ShoppingCart className="w-20 h-20 mx-auto mb-6 text-gray-300" />
+            <h2 className="text-3xl font-bold text-gray-900 mb-3">העגלה שלך ריקה</h2>
+            <p className="text-gray-600 mb-8 text-lg">הוסף מוצרים לעגלה כדי להתחיל</p>
             <Link href={`/shop/${slug}`}>
-              <Button className="prodify-gradient text-white">
+              <Button className="prodify-gradient text-white px-8 py-6 text-lg">
                 המשך לקניות
               </Button>
             </Link>
           </div>
         </main>
+        {/* Footer */}
+        <footer className="bg-white border-t border-gray-200 mt-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="flex flex-col md:flex-row items-center justify-between">
+              <p className="text-gray-600 text-sm">
+                &copy; {new Date().getFullYear()} {shop?.name || "חנות"}. כל הזכויות שמורות.
+              </p>
+            </div>
+          </div>
+        </footer>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50" dir="rtl">
+    <div className="min-h-screen bg-gray-50" dir="rtl" style={theme?.theme ? { 
+      '--primary-color': theme.theme.primaryColor || '#000000',
+    } as React.CSSProperties : {}}>
       <LoadingOverlay 
         isLoading={isProcessingCheckout} 
         message="מעביר לתשלום..."
       />
       
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link href={`/shop/${slug}`} className="flex items-center gap-2 text-gray-600 hover:text-gray-900">
-            <ChevronRight className="w-5 h-5" />
-            חזרה לחנות
-          </Link>
-        </div>
-      </header>
+      {/* Header */}
+      {shop && (
+        <StorefrontHeader
+          slug={slug}
+          shop={shop}
+          navigation={navigation}
+          cartItemCount={cart.items.reduce((sum, item) => sum + item.quantity, 0)}
+          onCartUpdate={fetchCart}
+          theme={theme?.theme}
+          disableCartDrawer={true}
+        />
+      )}
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">עגלת קניות</h1>
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">עגלת קניות</h1>
+        <p className="text-gray-600 mb-8">עדכן את הכמויות או המשך לתשלום</p>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
@@ -276,65 +376,131 @@ export default function CartPage() {
             {cart.items.map((item, index) => {
               const price = item.variant?.price || item.product.price
               return (
-                <Card key={index}>
-                  <CardContent className="p-4">
-                    <div className="flex gap-4">
-                      {item.product.images && item.product.images.length > 0 && (
-                        <img
-                          src={item.product.images[0]}
-                          alt={item.product.name}
-                          className="w-24 h-24 object-cover rounded-lg"
-                        />
-                      )}
-                      <div className="flex-1">
-                        <h3 className="font-semibold text-lg mb-1">
-                          {item.product.name}
-                        </h3>
-                        {item.variant && (
-                          <p className="text-sm text-gray-600 mb-2">
-                            {item.variant.name}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-4">
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                updateQuantity(
-                                  item.productId,
-                                  item.variantId,
-                                  item.quantity - 1
-                                )
-                              }
-                            >
-                              <Minus className="w-4 h-4" />
-                            </Button>
-                            <span className="w-12 text-center">{item.quantity}</span>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                updateQuantity(
-                                  item.productId,
-                                  item.variantId,
-                                  item.quantity + 1
-                                )
-                              }
-                            >
-                              <Plus className="w-4 h-4" />
-                            </Button>
+                <Card key={index} className="overflow-hidden hover:shadow-md transition-shadow">
+                  <CardContent className="p-0">
+                    <div className="flex flex-col sm:flex-row gap-4 p-4">
+                      {/* Product Image */}
+                      <Link 
+                        href={`/shop/${slug}/products/${item.product.id}`}
+                        className="flex-shrink-0 mx-auto sm:mx-0"
+                      >
+                        {item.product.images && item.product.images.length > 0 ? (
+                          <img
+                            src={item.product.images[0]}
+                            alt={item.product.name}
+                            className="w-24 h-24 sm:w-28 sm:h-28 object-cover rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                          />
+                        ) : (
+                          <div className="w-24 h-24 sm:w-28 sm:h-28 bg-gray-100 rounded-lg flex items-center justify-center">
+                            <ShoppingCart className="w-8 h-8 text-gray-400" />
                           </div>
-                          <span className="font-semibold">
-                            ₪{(price * item.quantity).toFixed(2)}
+                        )}
+                      </Link>
+                      
+                      <div className="flex-1 min-w-0 flex flex-col">
+                        {/* Product Info */}
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between gap-2 mb-2">
+                            <div className="flex-1 min-w-0">
+                              <Link href={`/shop/${slug}/products/${item.product.id}`}>
+                                <h3 className="font-semibold text-base sm:text-lg mb-1 hover:text-gray-700 transition-colors cursor-pointer line-clamp-2">
+                                  {item.product.name}
+                                </h3>
+                              </Link>
+                              
+                              {/* Bundle Name */}
+                              {item.bundleName && (
+                                <p className="text-xs text-purple-600 mb-1 font-medium">
+                                  חלק מחבילה: {item.bundleName}
+                                </p>
+                              )}
+                              
+                              {/* Variant */}
+                              {item.variant && (
+                                <p className="text-xs sm:text-sm text-gray-500 mb-1">
+                                  {item.variant.name}
+                                </p>
+                              )}
+                              
+                              {/* Addons */}
+                              {item.addons && item.addons.length > 0 && (
+                                <div className="text-xs text-gray-500 mb-1">
+                                  {item.addons.map((addon, idx) => (
+                                    <div key={idx}>
+                                      {addon.label}
+                                      {addon.price > 0 && ` (+₪${addon.price.toFixed(2)})`}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              
+                              {/* Gift Badge */}
+                              {item.isGift && (
+                                <Badge className="bg-green-100 text-green-800 text-xs mt-1">
+                                  מתנה
+                                </Badge>
+                              )}
+                            </div>
+                            
+                            {/* Remove Button */}
+                            {!item.isGift && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0 h-8 w-8 p-0"
+                                onClick={() => removeItem(item.productId, item.variantId)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                          
+                          {/* Price per unit */}
+                          <p className="text-xs sm:text-sm text-gray-500 mb-2">
+                            ₪{price.toFixed(2)} ליחידה
+                          </p>
+                        </div>
+                        
+                        {/* Quantity Controls and Total */}
+                        <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-auto">
+                          {!item.isGift ? (
+                            <div className="flex items-center border rounded-lg overflow-hidden">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 rounded-none hover:bg-gray-100"
+                                onClick={() =>
+                                  updateQuantity(
+                                    item.productId,
+                                    item.variantId,
+                                    item.quantity - 1
+                                  )
+                                }
+                              >
+                                <Minus className="w-3 h-3" />
+                              </Button>
+                              <span className="w-10 text-center text-sm font-medium border-x">{item.quantity}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 rounded-none hover:bg-gray-100"
+                                onClick={() =>
+                                  updateQuantity(
+                                    item.productId,
+                                    item.variantId,
+                                    item.quantity + 1
+                                  )
+                                }
+                              >
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-500">כמות: {item.quantity}</span>
+                          )}
+                          <span className="text-base sm:text-lg font-bold text-gray-900">
+                            ₪{item.total.toFixed(2)}
                           </span>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => removeItem(item.productId, item.variantId)}
-                          >
-                            <Trash2 className="w-4 h-4 text-red-500" />
-                          </Button>
                         </div>
                       </div>
                     </div>
@@ -342,24 +508,116 @@ export default function CartPage() {
                 </Card>
               )
             })}
+
+            {/* Recommended Products Section */}
+            {recommendedProducts.length > 0 && (
+              <div className="mt-12 pt-8 border-t border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">מוצרים מומלצים עבורך</h2>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+                  {recommendedProducts.slice(0, 4).map((product) => {
+                    // חישוב המחיר הנכון - אם המחיר הבסיסי הוא 0, נראה מחיר מינימלי מהוריאציות
+                    const displayPrice = product.price > 0 ? product.price : 0
+                    const displayComparePrice = product.comparePrice && product.comparePrice > displayPrice ? product.comparePrice : null
+                    const hasDiscount = displayComparePrice && displayComparePrice > displayPrice
+                    
+                    return (
+                      <div key={product.id} className="w-full">
+                        <Link 
+                          href={`/shop/${slug}/products/${product.slug || product.id}`}
+                          className="block group"
+                        >
+                          <Card className="h-full transition-all duration-200 border-gray-200 overflow-hidden hover:shadow-lg hover:border-gray-300">
+                            <CardContent className="p-0">
+                              {/* Image Container */}
+                              <div className="relative overflow-hidden bg-gray-100 aspect-square">
+                                {product.images && product.images.length > 0 ? (
+                                  <img
+                                    src={product.images[0]}
+                                    alt={product.name}
+                                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                                    style={{ borderRadius: '8px 8px 0 0' }}
+                                  />
+                                ) : (
+                                  <div className="w-full h-full flex items-center justify-center">
+                                    <ShoppingCart className="w-12 h-12 text-gray-400" />
+                                  </div>
+                                )}
+                                
+                                {/* Discount Badge */}
+                                {hasDiscount && (
+                                  <Badge className="absolute top-3 right-3 bg-green-500 text-white shadow-lg">
+                                    {Math.round(((displayComparePrice - displayPrice) / displayComparePrice) * 100)}% הנחה
+                                  </Badge>
+                                )}
+                                
+                                {/* Out of Stock Badge */}
+                                {product.availability === "OUT_OF_STOCK" && (
+                                  <Badge className="absolute top-3 right-3 bg-red-500 text-white shadow-lg">
+                                    אזל מהמלאי
+                                  </Badge>
+                                )}
+                              </div>
+
+                              {/* Product Info */}
+                              <div className="p-3">
+                                <h3 className="font-semibold text-sm mb-2 line-clamp-2 min-h-[2.5rem] group-hover:text-gray-700 transition-colors">
+                                  {product.name}
+                                </h3>
+                                <div className="space-y-1">
+                                  {displayPrice > 0 ? (
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      {displayComparePrice && (
+                                        <span className="text-xs text-gray-500 line-through">
+                                          ₪{displayComparePrice.toFixed(2)}
+                                        </span>
+                                      )}
+                                      <span className="text-base font-bold text-gray-900">
+                                        ₪{displayPrice.toFixed(2)}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <span className="text-sm font-medium text-gray-600">
+                                      בחר אפשרות
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        </Link>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Order Summary */}
           <div>
-            <Card>
+            <Card className="shadow-lg sticky top-8">
               <CardContent className="p-6">
-                <h2 className="text-xl font-bold mb-4">סיכום הזמנה</h2>
+                <h2 className="text-2xl font-bold mb-6">סיכום הזמנה</h2>
 
                 {/* Coupon */}
-                <div className="mb-4">
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    קוד קופון או הנחה
+                  </label>
                   <div className="flex gap-2">
                     <Input
-                      placeholder="קוד קופון"
+                      placeholder="הכנס קוד קופון"
                       value={couponCode}
                       onChange={(e) => setCouponCode(e.target.value)}
+                      className="flex-1"
                     />
-                    <Button onClick={applyCoupon} variant="outline">
-                      <Tag className="w-4 h-4" />
+                    <Button 
+                      onClick={applyCoupon} 
+                      variant="outline"
+                      className="px-4"
+                    >
+                      <Tag className="w-4 h-4 ml-1" />
+                      החל
                     </Button>
                   </div>
                   {cart.couponCode && (
@@ -369,48 +627,53 @@ export default function CartPage() {
                   )}
                 </div>
 
-                <div className="space-y-2 mb-4">
-                  <div className="flex justify-between">
+                <div className="space-y-3 mb-6">
+                  <div className="flex justify-between text-gray-700">
                     <span>סכום ביניים</span>
-                    <span>₪{cart.subtotal.toFixed(2)}</span>
+                    <span className="font-medium">₪{cart.subtotal.toFixed(2)}</span>
                   </div>
                   {cart.customerDiscount && cart.customerDiscount > 0 && (
                     <div className="flex justify-between text-green-600">
                       <span>הנחת לקוח</span>
-                      <span>-₪{cart.customerDiscount.toFixed(2)}</span>
+                      <span className="font-medium">-₪{cart.customerDiscount.toFixed(2)}</span>
                     </div>
                   )}
                   {cart.couponDiscount && cart.couponDiscount > 0 && (
                     <div className="flex justify-between text-green-600">
-                      <span>קופון</span>
-                      <span>-₪{cart.couponDiscount.toFixed(2)}</span>
+                      <span>קופון {cart.couponCode}</span>
+                      <span className="font-medium">-₪{cart.couponDiscount.toFixed(2)}</span>
                     </div>
                   )}
                   {cart.automaticDiscount && cart.automaticDiscount > 0 && (
                     <div className="flex justify-between text-green-600">
-                      <span>הנחה אוטומטית</span>
-                      <span>-₪{cart.automaticDiscount.toFixed(2)}</span>
+                      <span>{cart.automaticDiscountTitle || 'הנחה אוטומטית'}</span>
+                      <span className="font-medium">-₪{cart.automaticDiscount.toFixed(2)}</span>
                     </div>
                   )}
-                  {cart.shipping > 0 && (
-                    <div className="flex justify-between">
+                  {cart.shipping > 0 ? (
+                    <div className="flex justify-between text-gray-700">
                       <span>משלוח</span>
-                      <span>₪{cart.shipping.toFixed(2)}</span>
+                      <span className="font-medium">₪{cart.shipping.toFixed(2)}</span>
+                    </div>
+                  ) : (
+                    <div className="flex justify-between text-green-600">
+                      <span>משלוח</span>
+                      <span className="font-medium">חינם</span>
                     </div>
                   )}
-                  {cart.tax > 0 && (
-                    <div className="flex justify-between">
-                      <span>מע"מ</span>
-                      <span>₪{cart.tax.toFixed(2)}</span>
+                  {theme?.theme?.showTaxInCart !== false && cart.tax > 0 && (
+                    <div className="flex justify-between text-gray-700">
+                      <span>כולל מע"מ</span>
+                      <span className="font-medium">₪{cart.tax.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="border-t pt-2 flex justify-between font-bold text-lg">
+                  <div className="border-t border-gray-200 pt-3 flex justify-between font-bold text-xl">
                     <span>סה"כ</span>
                     <span>₪{cart.total.toFixed(2)}</span>
                   </div>
                 </div>
 
-                <Button
+                <button
                   onClick={() => {
                     setIsProcessingCheckout(true)
                     // InitiateCheckout event
@@ -424,23 +687,70 @@ export default function CartPage() {
                     router.push(`/shop/${slug}/checkout`)
                   }}
                   disabled={isProcessingCheckout}
-                  className="w-full prodify-gradient text-white"
-                  size="lg"
+                  className="w-full text-white py-6 text-lg font-semibold rounded-lg transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  style={{ backgroundColor: theme?.theme?.primaryColor || '#9333ea' }}
                 >
                   {isProcessingCheckout ? (
                     <>
-                      <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-                      מעביר לתשלום...
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span>מעביר לקופה...</span>
                     </>
                   ) : (
-                    "המשך לתשלום"
+                    <>
+                      <Lock className="w-5 h-5" />
+                      <span>מעבר לקופה</span>
+                    </>
                   )}
-                </Button>
+                </button>
+                
+                <p className="mt-4 text-center text-sm text-gray-500">
+                  תשלום מאובטח ומוצפן
+                </p>
               </CardContent>
             </Card>
           </div>
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t border-gray-200 mt-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-4">{shop?.name || "חנות"}</h3>
+              <p className="text-sm text-gray-600">{shop?.description || ""}</p>
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-4">קישורים מהירים</h3>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <Link href={`/shop/${slug}`} className="text-gray-600 hover:text-gray-900">
+                    דף הבית
+                  </Link>
+                </li>
+                <li>
+                  <Link href={`/shop/${slug}/cart`} className="text-gray-600 hover:text-gray-900">
+                    עגלת קניות
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900 mb-4">צור קשר</h3>
+              <p className="text-sm text-gray-600">
+                יש לך שאלות? אנחנו כאן לעזור
+              </p>
+            </div>
+          </div>
+          <div className="border-t border-gray-200 pt-8">
+            <div className="flex flex-col md:flex-row items-center justify-between">
+              <p className="text-gray-600 text-sm">
+                &copy; {new Date().getFullYear()} {shop?.name || "חנות"}. כל הזכויות שמורות.
+              </p>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }

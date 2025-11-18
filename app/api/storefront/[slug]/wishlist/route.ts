@@ -42,6 +42,16 @@ export async function GET(
             images: true,
             availability: true,
             status: true,
+            variants: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                comparePrice: true,
+                inventoryQty: true,
+                sku: true,
+              },
+            },
           },
         },
         variant: {
@@ -142,6 +152,16 @@ export async function POST(
             comparePrice: true,
             images: true,
             availability: true,
+            variants: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                comparePrice: true,
+                inventoryQty: true,
+                sku: true,
+              },
+            },
           },
         },
         variant: {

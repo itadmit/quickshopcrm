@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { AlertCircle, ChevronRight, Heart, MoreVertical, ShoppingCart, Loader2, Star, Ruler } from "lucide-react"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { ProductCard } from "@/components/storefront/ProductCard"
@@ -58,7 +59,7 @@ interface ProductElementsProps {
   onToggleElementVisibility: (elementId: string) => void
   onOpenElementSettings: (elementId: string) => void
   slug: string
-  productId: string
+  productId: string // זה ה-id האמיתי של המוצר, לא ה-slug
   theme: any
   averageRating: number
   totalReviews: number
@@ -69,6 +70,7 @@ interface ProductElementsProps {
   sizeChart?: any
   onShowSizeChart?: () => void
   hasBundles?: boolean // האם יש bundles למוצר הזה
+  customerId?: string | null
 }
 
 export function ProductElements({
@@ -104,9 +106,63 @@ export function ProductElements({
   sizeChart,
   onShowSizeChart,
   hasBundles = false,
+  customerId = null,
 }: ProductElementsProps) {
   const router = useRouter()
   const { toast } = useToast()
+  const [applicableDiscounts, setApplicableDiscounts] = useState<Array<{
+    id: string
+    title: string
+    type: string
+    value: number
+    originalPrice: number
+    discountedPrice: number
+  }>>([])
+
+  // טעינת הנחות אוטומטיות שחלות על המוצר
+  useEffect(() => {
+    let isCancelled = false
+    
+    const fetchDiscounts = async () => {
+      try {
+        const params = new URLSearchParams()
+        if (customerId) {
+          params.append('customerId', customerId)
+        }
+        
+        if (selectedVariant) {
+          params.append('variantId', selectedVariant)
+        }
+        
+        const url = `/api/storefront/${slug}/products/${productId}/discounts?${params.toString()}`
+        console.log('🎁 ProductElements - Fetching discounts from:', url)
+        
+        const response = await fetch(url)
+        if (response.ok) {
+          const data = await response.json()
+          console.log('🎁 ProductElements - Discounts received:', data)
+          // עדכון המצב רק אם הקריאה לא בוטלה
+          if (!isCancelled) {
+            setApplicableDiscounts(data.discounts || [])
+          }
+        } else {
+          console.error('🎁 ProductElements - Failed to fetch discounts:', response.status, response.statusText)
+        }
+      } catch (error) {
+        console.error('🎁 ProductElements - Error fetching discounts:', error)
+      }
+    }
+    
+    // debounce כדי למנוע קריאות כפולות - מחכים קצת לפני הקריאה
+    const timeoutId = setTimeout(() => {
+      fetchDiscounts()
+    }, 150)
+    
+    return () => {
+      isCancelled = true
+      clearTimeout(timeoutId)
+    }
+  }, [slug, productId, customerId, selectedVariant])
 
   const getElementStyle = (element: ProductPageElement): React.CSSProperties => {
     const style = element.config?.style || {}
@@ -203,17 +259,80 @@ export function ProductElements({
         // הצגת מחיר ל-100 מ״ל (אם הוגדר)
         const pricePer100ml = product.showPricePer100ml && product.pricePer100ml ? product.pricePer100ml : null
         
+        // חישוב המחיר הבסיסי (ללא addons) לפי ה-variant שנבחר
+        const basePrice = selectedVariant && product.variants
+          ? product.variants.find((v) => v.id === selectedVariant)?.price || product.price
+          : product.price
+        
+        // חישוב addonsTotal (ההפרש בין currentPrice ל-basePrice)
+        const addonsTotal = currentPrice - basePrice
+        
+        // חישוב המחיר הסופי אחרי כל ההנחות
+        // ההנחה האחרונה מכילה את המחיר המוזל הסופי
+        const finalDiscount = applicableDiscounts.length > 0 
+          ? applicableDiscounts[applicableDiscounts.length - 1] 
+          : null
+        
+        // לוגים לדיבוג
+        if (applicableDiscounts.length > 0) {
+          console.log('🎁 ProductElements - Displaying discounts:', {
+            discounts: applicableDiscounts.map(d => d.title),
+            applicableDiscountsCount: applicableDiscounts.length,
+            basePrice,
+            addonsTotal,
+            currentPrice,
+            finalDiscount: finalDiscount?.title
+          })
+        }
+        
+        // המחיר המוזל כולל את ה-addons (מההנחה האחרונה)
+        const displayPrice = finalDiscount 
+          ? finalDiscount.discountedPrice + addonsTotal 
+          : currentPrice
+        // המחיר המקורי הוא תמיד basePrice + addons (לא המחיר אחרי ההנחה הראשונה)
+        const originalPrice = basePrice + addonsTotal
+
         return (
           <div key={element.id} style={elementStyle}>
-            <div className="flex items-baseline gap-4 mb-2">
-              {product.comparePrice && (
-                <span className="line-through text-gray-500" style={comparePriceStyle}>
-                  ₪{product.comparePrice.toFixed(2)}
+            <div className="space-y-2">
+              {/* הצגת המחיר המקורי */}
+              <div className="flex items-baseline gap-4 flex-wrap">
+                {/* הצגת comparePrice אם יש */}
+                {product.comparePrice && (
+                  <span className="line-through text-gray-500" style={comparePriceStyle}>
+                    ₪{product.comparePrice.toFixed(2)}
+                  </span>
+                )}
+                {/* הצגת המחיר הנוכחי (ללא הנחה אוטומטית) */}
+                <span className="text-3xl font-bold" style={priceStyle}>
+                  ₪{finalDiscount ? originalPrice.toFixed(2) : displayPrice.toFixed(2)}
                 </span>
+              </div>
+              
+              {/* הצגת הנחות אוטומטיות למטה אם יש */}
+              {applicableDiscounts.length > 0 && (
+                <div className="flex flex-col gap-2 pt-1">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    {applicableDiscounts.map((discount, index) => {
+                      // אם יש comparePrice (קו מחוק), זה "הנחה נוספת", אחרת רק "הנחה"
+                      const discountLabel = product.comparePrice 
+                        ? (index === 0 ? 'הנחה נוספת: ' : '')
+                        : (index === 0 ? 'הנחה: ' : '')
+                      return (
+                        <Badge 
+                          key={discount.id}
+                          className="bg-green-100 hover:bg-green-100 text-green-800 border border-green-700 text-xs font-semibold whitespace-nowrap px-3 py-1.5 rounded-sm transition-none"
+                        >
+                          {discountLabel}{discount.title}
+                        </Badge>
+                      )
+                    })}
+                  </div>
+                  <span className="text-xl font-bold text-green-700" style={priceStyle}>
+                    ₪{displayPrice.toFixed(2)}
+                  </span>
+                </div>
               )}
-              <span className="text-3xl font-bold" style={priceStyle}>
-                ₪{currentPrice.toFixed(2)}
-              </span>
             </div>
             {pricePer100ml !== null && (
               <div className="text-sm text-gray-600 mb-2">

@@ -12,7 +12,7 @@ const createStoreCreditSchema = z.object({
   notes: z.string().optional(),
 })
 
-// GET - קבלת אשראי בחנות
+// GET - קבלת קרדיט בחנות
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -60,7 +60,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST - יצירת אשראי בחנות
+// POST - יצירת קרדיט בחנות
 export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Customer not found" }, { status: 404 })
     }
 
-    // בדיקה אם יש כבר אשראי ללקוח
+    // בדיקה אם יש כבר קרדיט ללקוח
     const existingCredit = await prisma.storeCredit.findFirst({
       where: {
         shopId: data.shopId,
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
         },
       })
     } else {
-      // יצירת אשראי חדש
+      // יצירת קרדיט חדש
       credit = await prisma.storeCredit.create({
         data: {
           shopId: data.shopId,

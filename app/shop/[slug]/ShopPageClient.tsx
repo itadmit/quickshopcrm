@@ -67,7 +67,9 @@ interface NavigationItem {
   pageId?: string
   pageSlug?: string
   categoryId?: string
+  categorySlug?: string
   collectionId?: string
+  collectionSlug?: string
   children?: NavigationItem[]
 }
 
@@ -89,7 +91,7 @@ interface ShopPageClientProps {
 export function ShopPageClient({ shop, products: initialProducts, slug, theme, navigation }: ShopPageClientProps) {
   const [products, setProducts] = useState<Product[]>(initialProducts)
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>(initialProducts.slice(0, 4))
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(initialProducts.length === 0) // אם אין מוצרים מהשרת, נטען מהלקוח
   const { trackEvent } = useTracking()
   const { toast } = useToast()
   const searchParams = useSearchParams()
@@ -105,6 +107,28 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
   // Placeholder icons for empty store
   const placeholderIcons = [ShoppingBag, Watch, Glasses, Shirt, Laptop, Coffee, Package, Sparkles]
   const categoryIcons = [Shirt, Watch, Laptop, Coffee, Glasses, ShoppingBag]
+
+  // טעינת מוצרים בצד הלקוח אם אין מוצרים מהשרת
+  useEffect(() => {
+    if (initialProducts.length === 0) {
+      const fetchProducts = async () => {
+        try {
+          const response = await fetch(`/api/storefront/${slug}/products?limit=8`)
+          if (response.ok) {
+            const data = await response.json()
+            setProducts(data.products || [])
+            setFeaturedProducts((data.products || []).slice(0, 4))
+          }
+        } catch (error) {
+          console.error("Error fetching products:", error)
+        } finally {
+          setLoading(false)
+        }
+      }
+
+      fetchProducts()
+    }
+  }, [slug, initialProducts.length])
 
   // טעינת homePageLayout מה-API
   useEffect(() => {
@@ -821,9 +845,29 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
 
       {/* Dynamic Home Page Sections */}
       {loadingSections ? (
-        <section className="relative w-full h-[600px] md:h-[700px] overflow-hidden bg-gray-100">
-          <div className="w-full h-full bg-gray-200 animate-pulse" />
-        </section>
+        <>
+          {/* Hero Skeleton */}
+          <section className="relative w-full h-[600px] md:h-[700px] overflow-hidden bg-gray-100">
+            <div className="w-full h-full bg-gray-200 animate-pulse" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center space-y-4">
+                <div className="h-12 w-64 bg-gray-300 rounded animate-pulse mx-auto" />
+                <div className="h-6 w-48 bg-gray-300 rounded animate-pulse mx-auto" />
+              </div>
+            </div>
+          </section>
+          
+          {/* Featured Products Skeleton */}
+          <section className="py-16 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="mb-8">
+                <div className="h-8 w-48 bg-gray-200 rounded animate-pulse mb-2" />
+                <div className="h-4 w-32 bg-gray-200 rounded animate-pulse" />
+              </div>
+              <ProductGridSkeleton count={4} />
+            </div>
+          </section>
+        </>
       ) : (
         <>
           {getSortedSections().map((section) => renderSection(section))}

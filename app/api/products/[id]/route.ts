@@ -36,6 +36,7 @@ const updateProductSchema = z.object({
   seoDescription: z.union([z.string(), z.null()]).optional(),
   customFields: z.any().optional(),
   badges: z.any().optional(),
+  categories: z.array(z.string()).optional(),
   addonIds: z.array(z.string()).optional(),
   pageTemplateId: z.union([z.string(), z.null()]).optional(),
 })
@@ -70,9 +71,9 @@ export async function GET(
             domain: true,
           },
         },
-        categories: {
+        collections: {
           include: {
-            category: true,
+            collection: true,
           },
         },
         tags: true,
@@ -180,9 +181,11 @@ async function updateProduct(
       updateData.scheduledPublishDate = null
     }
 
-    // הסר addonIds מה-updateData (הוא לא חלק מהמודל של Product)
+    // הסר addonIds ו-categories מה-updateData (הם לא חלק מהמודל של Product)
     const addonIds = updateData.addonIds
+    const categories = updateData.categories
     delete updateData.addonIds
+    delete updateData.categories
 
     // עדכון המוצר
     const product = await prisma.product.update({
@@ -199,6 +202,34 @@ async function updateProduct(
         },
       },
     })
+
+    // עדכון קטגוריות (collections)
+    if (categories !== undefined) {
+      try {
+        // מחיקת כל הקטגוריות הקיימות
+        await prisma.productCollection.deleteMany({
+          where: { productId: product.id },
+        })
+
+        // הוספת קטגוריות חדשות
+        if (Array.isArray(categories) && categories.length > 0) {
+          await Promise.all(
+            categories.map(async (collectionId: string) => {
+              await prisma.productCollection.create({
+                data: {
+                  productId: product.id,
+                  collectionId: collectionId,
+                  position: 0,
+                },
+              })
+            })
+          )
+        }
+      } catch (error) {
+        console.error("Error updating product collections:", error)
+        // לא נכשיל את כל הבקשה בגלל שגיאה בקטגוריות
+      }
+    }
 
     // עדכון ProductAddons
     if (addonIds !== undefined) {

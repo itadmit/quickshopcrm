@@ -7,7 +7,9 @@ export interface NavigationItem {
   pageId?: string
   pageSlug?: string
   categoryId?: string
+  categorySlug?: string
   collectionId?: string
+  collectionSlug?: string
   children?: NavigationItem[]
   image?: string
   columnTitle?: string
@@ -97,10 +99,30 @@ export async function getShopNavigation(
           }
           
           if (childType === "category" || child.type === "CATEGORY") {
+            let categoryId = child.categoryId
+            let categorySlug = null
+            
+            if (child.url) {
+              const urlMatch = child.url.match(/\/categories\/(.+)/)
+              if (urlMatch) {
+                categorySlug = urlMatch[1]
+              }
+            }
+            if (categoryId && !categorySlug) {
+              const categoryData = await prisma.category.findFirst({
+                where: { id: categoryId, shopId: shop.id },
+                select: { slug: true },
+              })
+              if (categoryData) {
+                categorySlug = categoryData.slug
+              }
+            }
+            
             return {
               type: "category" as const,
               label: child.label,
-              categoryId: child.categoryId || null,
+              categoryId: categoryId || null,
+              categorySlug: categorySlug || null,
               children: child.children ? await transformChildren(child.children) : undefined,
               image: child.image || undefined,
               columnTitle: child.columnTitle || undefined,
@@ -108,10 +130,30 @@ export async function getShopNavigation(
           }
           
           if (childType === "collection" || child.type === "COLLECTION") {
+            let collectionId = child.collectionId
+            let collectionSlug = null
+            
+            if (child.url) {
+              const urlMatch = child.url.match(/\/categories\/(.+)/)
+              if (urlMatch) {
+                collectionSlug = urlMatch[1]
+              }
+            }
+            if (collectionId && !collectionSlug) {
+              const collectionData = await prisma.collection.findFirst({
+                where: { id: collectionId, shopId: shop.id },
+                select: { slug: true },
+              })
+              if (collectionData) {
+                collectionSlug = collectionData.slug
+              }
+            }
+            
             return {
               type: "collection" as const,
               label: child.label,
-              collectionId: child.collectionId || null,
+              collectionId: collectionId || null,
+              collectionSlug: collectionSlug || null,
               children: child.children ? await transformChildren(child.children) : undefined,
               image: child.image || undefined,
               columnTitle: child.columnTitle || undefined,
@@ -194,10 +236,29 @@ export async function getShopNavigation(
           if (!categoryId && item.id?.startsWith("category-")) {
             categoryId = item.id.replace("category-", "")
           }
+          
+          let categorySlug = null
+          if (item.url) {
+            const urlMatch = item.url.match(/\/categories\/(.+)/)
+            if (urlMatch) {
+              categorySlug = urlMatch[1]
+            }
+          }
+          if (categoryId && !categorySlug) {
+            const categoryData = await prisma.category.findFirst({
+              where: { id: categoryId, shopId: shop.id },
+              select: { slug: true },
+            })
+            if (categoryData) {
+              categorySlug = categoryData.slug
+            }
+          }
+          
           return {
             type: "category",
             label: item.label,
             categoryId: categoryId || null,
+            categorySlug: categorySlug || null,
             children: item.children ? await transformChildren(item.children) : undefined,
             image: item.image || undefined,
             columnTitle: item.columnTitle || undefined,
@@ -210,10 +271,29 @@ export async function getShopNavigation(
           if (!collectionId && item.id?.startsWith("collection-")) {
             collectionId = item.id.replace("collection-", "")
           }
+          
+          let collectionSlug = null
+          if (item.url) {
+            const urlMatch = item.url.match(/\/categories\/(.+)/)
+            if (urlMatch) {
+              collectionSlug = urlMatch[1]
+            }
+          }
+          if (collectionId && !collectionSlug) {
+            const collectionData = await prisma.collection.findFirst({
+              where: { id: collectionId, shopId: shop.id },
+              select: { slug: true },
+            })
+            if (collectionData) {
+              collectionSlug = collectionData.slug
+            }
+          }
+          
           return {
             type: "collection",
             label: item.label,
             collectionId: collectionId || null,
+            collectionSlug: collectionSlug || null,
             children: item.children ? await transformChildren(item.children) : undefined,
             image: item.image || undefined,
             columnTitle: item.columnTitle || undefined,

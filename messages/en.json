@@ -1,0 +1,230 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "add": "Add",
+    "close": "Close",
+    "search": "Search",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "name": "Name",
+    "price": "Price",
+    "quantity": "Quantity",
+    "total": "Total",
+    "date": "Date",
+    "actions": "Actions"
+  },
+  "sidebar": {
+    "home": "Home",
+    "notifications": "Notifications",
+    "products": "Products",
+    "orders": "Orders",
+    "customers": "Customers",
+    "inventory": "Inventory",
+    "quickEdit": "Quick Edit",
+    "discounts": "Discounts",
+    "coupons": "Coupons",
+    "collections": "Categories",
+    "giftCards": "Gift Cards",
+    "abandonedCarts": "Abandoned Carts",
+    "pages": "Pages",
+    "navigation": "Navigation Menu",
+    "blog": "Blog",
+    "appearance": "Appearance & Design",
+    "customize": "Customize",
+    "reviews": "Reviews",
+    "returns": "Returns",
+    "storeCredits": "Store Credits",
+    "sizeCharts": "Size Charts",
+    "customFields": "Custom Fields",
+    "productAddons": "Product Addons",
+    "bundles": "Product Bundles",
+    "analytics": "Analytics",
+    "automations": "Automations",
+    "webhooks": "Webhooks",
+    "trackingPixels": "Tracking Pixels",
+    "settings": "Settings",
+    "integrations": "Integrations",
+    "influencerDashboard": "Influencer Dashboard",
+    "sections": {
+      "influencer": "Influencer",
+      "sales": "Sales",
+      "marketing": "Marketing & Discounts",
+      "content": "Content",
+      "customerService": "Customer Service",
+      "additionalProducts": "Additional Products",
+      "system": "System",
+      "settings": "Settings",
+      "superAdmin": "Super Admin"
+    },
+    "superAdmin": {
+      "payplusSettings": "PayPlus Settings",
+      "sendgridSettings": "SendGrid Settings",
+      "commissions": "Commissions",
+      "pluginManagement": "Plugin Management"
+    },
+    "trial": {
+      "title": "Online store creation and management system",
+      "daysRemaining": "{count} trial days remaining",
+      "trialEnded": "Trial period ended",
+      "timeRunningOut": "⚠️ Time is running out!",
+      "trialPeriod": "Trial Period"
+    }
+  },
+  "product": {
+    "name": "Product Name",
+    "price": "Price",
+    "description": "Product Description",
+    "gallery": "Gallery",
+    "variants": "Variants",
+    "quantity": "Quantity",
+    "buttons": "Buttons",
+    "reviews": "Reviews",
+    "related": "Related Products",
+    "customText": "Custom Text",
+    "customAccordion": "Accordion",
+    "customHtml": "Custom HTML",
+    "addElement": "Add Element",
+    "hidden": "Hidden"
+  },
+  "shop": {
+    "notFound": "Shop not found",
+    "welcome": "Welcome to {name}",
+    "shop": "Shop"
+  },
+  "header": {
+    "marketplace": "Marketplace",
+    "viewStore": "View Store",
+    "user": "User",
+    "superAdmin": "Super Admin",
+    "admin": "Admin",
+    "manager": "Team Manager",
+    "userRole": "User",
+    "myProfile": "My Profile",
+    "settings": "Settings",
+    "inviteTeam": "Invite Team",
+    "signOut": "Sign Out",
+    "quickActions": {
+      "title": "Frequently Used Actions",
+      "addProduct": "New Product",
+      "addOrder": "New Order",
+      "addCustomer": "New Customer",
+      "addDiscount": "New Discount",
+      "addCoupon": "New Coupon",
+      "more": "More",
+      "moreActions": "More Actions"
+    }
+  },
+  "appLayout": {
+    "accountDeleted": "Account Deleted",
+    "accountDeletedDescription": "Your account has been deleted from the system. Please log in again."
+  },
+  "errors": {
+    "unauthorized": "Unauthorized",
+    "notFound": "Not found",
+    "internalServerError": "Internal server error",
+    "invalidData": "Invalid data",
+    "invalidAction": "Invalid action",
+    "validationError": "Validation error",
+    "pluginNotFound": "Plugin not found",
+    "pluginFree": "This plugin is free - use install instead",
+    "sendGridNotConfigured": "SendGrid not configured",
+    "invitationResent": "Invitation resent successfully"
+  },
+  "dashboard": {
+    "subscription": {
+      "expired": "Subscription Expired",
+      "expiringSoon": "Trial Period Ending Soon",
+      "expiredDescription": "Your subscription has expired. Please renew your subscription to continue using the system.",
+      "expiringDescription": "{days} days remaining in your trial period. Please choose a subscription plan to continue.",
+      "renew": "Renew Subscription",
+      "choosePlan": "Choose Subscription Plan"
+    },
+    "welcome": {
+      "greeting": "Hello, {name}",
+      "user": "User",
+      "question": "How can I help you today?"
+    },
+    "actions": {
+      "createStore": "Create New Store",
+      "addProduct": "Add Product",
+      "viewOrders": "View Orders",
+      "createStoreShort": "+ Create Store"
+    },
+    "stats": {
+      "activeShops": "Active Stores",
+      "activeProducts": "Active Products",
+      "pendingOrders": "Pending Orders",
+      "revenue": "Revenue",
+      "totalShops": "Total {count} stores in system",
+      "totalProducts": "Total {count} products",
+      "totalOrders": "Total {count} orders",
+      "totalRevenue": "Total",
+      "monthlyRevenue": "Monthly Revenue"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "createStore": {
+        "title": "Create New Store",
+        "description": "Start with a ready-made template or create from scratch"
+      },
+      "addProducts": {
+        "title": "Add Products",
+        "description": "Start selling with a professional product catalog"
+      },
+      "manageOrders": {
+        "title": "Manage Orders",
+        "description": "View and process your orders"
+      },
+      "setupPayments": {
+        "title": "Set up Payments",
+        "description": "Connect your payment method"
+      }
+    },
+    "quickStats": {
+      "title": "Quick Statistics",
+      "activeShops": "Active Stores",
+      "activeProducts": "Active Products",
+      "pendingOrders": "Pending Orders",
+      "monthlyRevenue": "Monthly Revenue"
+    },
+    "notifications": {
+      "title": "Recent Alerts",
+      "seeAll": "See All",
+      "noNotifications": "No new notifications",
+      "viewNotifications": "View Notifications"
+    }
+  },
+  "search": {
+    "placeholder": "Search products, orders, customers, plugins... (Ctrl+K)",
+    "searching": "Searching...",
+    "noResults": "No results found",
+    "for": "for",
+    "quickLinks": "Quick Links",
+    "quickNavigation": "Quick Navigation",
+    "products": "Products",
+    "orders": "Orders",
+    "customers": "Customers",
+    "plugins": "Plugins",
+    "startTyping": "Start typing to search",
+    "startTypingDescription": "products, orders, customers, plugins, pages and more",
+    "navigation": "Navigate",
+    "select": "Select",
+    "close": "Close",
+    "results": "{count} results",
+    "resultsCount": "results",
+    "categories": {
+      "navigation": "Navigation",
+      "settings": "Settings",
+      "management": "Management"
+    },
+    "orderTitle": "Order #{number}",
+    "customerOrders": "{count} orders",
+    "free": "Free",
+    "month": "month"
+  }
+}
+

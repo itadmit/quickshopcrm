@@ -689,7 +689,7 @@ export default function NavigationPage() {
   // בחירת קטגוריה/קולקציה
   const selectCollection = (itemId: string, collection: { id: string; slug: string; name: string }) => {
     updateItem(itemId, {
-      url: `/collections/${collection.slug}`, // נשמור גם את ה-URL לצורך תצוגה
+      url: `/categories/${collection.slug}`, // נשמור גם את ה-URL לצורך תצוגה
       label: collection.name,
       type: "COLLECTION",
       collectionId: collection.id, // נשמור את ה-ID לשימוש בפרונט

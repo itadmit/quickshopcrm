@@ -57,7 +57,7 @@ export default function StoreCreditsPage() {
       console.error("Error fetching store credits:", error)
       toast({
         title: "שגיאה",
-        description: "לא הצלחנו לטעון את אשראי בחנות",
+        description: "לא הצלחנו לטעון את קרדיט בחנות",
         variant: "destructive",
       })
     } finally {
@@ -79,14 +79,14 @@ export default function StoreCreditsPage() {
 
   if (!selectedShop) {
     return (
-      <AppLayout title="אשראי בחנות">
+      <AppLayout title="קרדיט בחנות">
         <div className="text-center py-12">
           <CreditCard className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
             אין חנות נבחרת
           </h3>
           <p className="text-gray-600">
-            יש לבחור חנות מההדר לפני ניהול אשראי בחנות
+            יש לבחור חנות מההדר לפני ניהול קרדיט בחנות
           </p>
         </div>
       </AppLayout>
@@ -94,19 +94,19 @@ export default function StoreCreditsPage() {
   }
 
   return (
-    <AppLayout title="אשראי בחנות">
+    <AppLayout title="קרדיט בחנות">
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">אשראי בחנות</h1>
-            <p className="text-gray-600 mt-1">נהל אשראי בחנות ללקוחות</p>
+            <h1 className="text-3xl font-bold text-gray-900">קרדיט בחנות</h1>
+            <p className="text-gray-600 mt-1">נהל קרדיט בחנות ללקוחות</p>
           </div>
           <Button
             onClick={() => router.push("/store-credits/new")}
             className="prodify-gradient text-white"
           >
             <Plus className="w-4 h-4 ml-2" />
-            הוסף אשראי
+            הוסף קרדיט
           </Button>
         </div>
 
@@ -114,7 +114,7 @@ export default function StoreCreditsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">סה"כ לקוחות עם אשראי</CardTitle>
+              <CardTitle className="text-sm font-medium">סה"כ לקוחות עם קרדיט</CardTitle>
               <User className="h-5 w-5 text-purple-600" />
             </CardHeader>
             <CardContent>
@@ -167,7 +167,7 @@ export default function StoreCreditsPage() {
           <Card>
             <CardContent className="py-12 text-center">
               <CreditCard className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <p className="text-gray-600">אין אשראי בחנות</p>
+              <p className="text-gray-600">אין קרדיט בחנות</p>
             </CardContent>
           </Card>
         ) : (
