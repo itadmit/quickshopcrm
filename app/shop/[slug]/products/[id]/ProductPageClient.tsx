@@ -432,8 +432,11 @@ export function ProductPageClient({
           <button
             onClick={() => handleAddToCart(true)}
             disabled={product.availability === "OUT_OF_STOCK" || isAddingToCart}
-            className="w-full text-white rounded-sm h-12 px-8 font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            style={{ backgroundColor: theme.primaryColor || "#000000" }}
+            className="w-full rounded-sm h-12 px-8 font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            style={{ 
+              backgroundColor: theme.primaryColor || "#000000",
+              color: theme.primaryTextColor || '#ffffff',
+            }}
           >
             {isAddingToCart ? (
               <Loader2 className="w-5 h-5 ml-2 animate-spin" />
@@ -454,6 +457,7 @@ export function ProductPageClient({
                 className="fixed right-6 bottom-6 z-50 rounded-full w-14 h-14 p-0 shadow-lg hover:shadow-xl transition-all flex items-center justify-center aspect-square focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 active:scale-100 active:translate-x-0 active:translate-y-0"
                 style={{ 
                   backgroundColor: theme.primaryColor || "#000000",
+                  color: theme.primaryTextColor || '#ffffff',
                   outline: 'none',
                   transform: 'none'
                 }}
@@ -466,7 +470,7 @@ export function ProductPageClient({
                   e.target.style.transform = 'none'
                 }}
               >
-                <Pencil className="w-6 h-6 text-white" style={{ transform: 'none', position: 'relative', left: 0, top: 0 }} />
+                <Pencil className="w-6 h-6" style={{ transform: 'none', position: 'relative', left: 0, top: 0 }} />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent 
@@ -510,9 +514,10 @@ export function ProductPageClient({
             className="fixed right-6 bottom-24 z-50 rounded-full w-14 h-14 p-0 shadow-lg hover:shadow-xl transition-all flex items-center justify-center aspect-square"
             style={{ 
               backgroundColor: theme.primaryColor || "#000000",
+              color: theme.primaryTextColor || '#ffffff',
             }}
           >
-            <Palette className="w-6 h-6 text-white" />
+            <Palette className="w-6 h-6" />
           </Button>
         </>
       )}
@@ -737,10 +742,10 @@ export function ProductPageClient({
             )}
           </div>
         )}
-
-        {/* רינדור מוצרים קשורים */}
-        {relatedElement && renderElement(relatedElement)}
       </main>
+
+      {/* רינדור מוצרים קשורים - מחוץ ל-main כדי שהרקע ישתרע על כל הרוחב */}
+      {relatedElement && renderElement(relatedElement)}
 
       {/* Review Form Dialog - רק אם התוסף פעיל */}
       {reviewsPluginActive && (
@@ -903,60 +908,57 @@ export function ProductPageClient({
                             const valueLabel = typeof value === 'object' ? value.label : value
                             const isSelected = selectedOptionValues[option.id] === valueId
                             
-                            // בדיקה האם האפשרות זמינה
-                            let isAvailable = true
-                            if (product.variants && product.variants.length > 0) {
-                              isAvailable = product.variants.some((variant: any) => {
-                                const variantValues = [
-                                  variant.option1Value,
-                                  variant.option2Value,
-                                  variant.option3Value,
-                                ].filter(Boolean)
-                                
-                                // בדיקה אם ה-variant תואם את הבחירות הנוכחיות + הערך הזה
-                                const matchesCurrentSelections = displayOptions.every((opt: any) => {
-                                  if (opt.id === option.id) return true
-                                  const selectedValueId = selectedOptionValues[opt.id]
-                                  if (selectedValueId === undefined) return true
+                            // בדיקת זמינות - האם יש variant זמין עם הערך הזה + הבחירות הקודמות
+                            const isAvailable = (() => {
+                              // אם אין variants, הכל זמין
+                              if (!product.variants || product.variants.length === 0) return true
+                              
+                              // אם אין בחירות אחרות, בדוק רק את הערך הזה
+                              if (Object.keys(selectedOptionValues).length === 0) {
+                                return product.variants.some((variant: any) => {
+                                  const matchesValue = 
+                                    (variant.option1 === option.name && variant.option1Value === valueId) ||
+                                    (variant.option2 === option.name && variant.option2Value === valueId) ||
+                                    (variant.option3 === option.name && variant.option3Value === valueId)
                                   
-                                  const selectedValue = opt.values?.find((v: any) => {
-                                    const vId = typeof v === 'object' ? v.id : v
-                                    return vId === selectedValueId
-                                  })
-                                  const selectedLabel = typeof selectedValue === 'object' ? selectedValue?.label : selectedValue
-                                  
-                                  // בדיקה לפי שם האופציה (option1, option2, option3)
-                                  const optionName = opt.name
-                                  let variantValue: string | null = null
-                                  if (variant.option1 === optionName) variantValue = variant.option1Value
-                                  else if (variant.option2 === optionName) variantValue = variant.option2Value
-                                  else if (variant.option3 === optionName) variantValue = variant.option3Value
-                                  
-                                  if (!variantValue) return true
-                                  
-                                  const vStr = variantValue?.toString().trim().toLowerCase()
-                                  const labelStr = selectedLabel?.toString().trim().toLowerCase()
-                                  return vStr === labelStr || vStr?.includes(labelStr) || labelStr?.includes(vStr)
+                                  if (!matchesValue) return false
+                                  return variant.inventoryQty === null || variant.inventoryQty === undefined || variant.inventoryQty > 0
                                 })
+                              }
+                              
+                              // יש בחירות קודמות - צריך לבדוק שהן תואמות
+                              return product.variants.some((v: any) => {
+                                // המרת variant ל-options structure
+                                const variantOptions: Record<string, string> = {}
+                                if (v.option1 && v.option1Value) {
+                                  variantOptions[v.option1] = v.option1Value
+                                }
+                                if (v.option2 && v.option2Value) {
+                                  variantOptions[v.option2] = v.option2Value
+                                }
+                                if (v.option3 && v.option3Value) {
+                                  variantOptions[v.option3] = v.option3Value
+                                }
                                 
-                                // בדיקה אם ה-variant תואם את הערך הנוכחי
-                                const optionName = option.name
-                                let variantValue: string | null = null
-                                if (variant.option1 === optionName) variantValue = variant.option1Value
-                                else if (variant.option2 === optionName) variantValue = variant.option2Value
-                                else if (variant.option3 === optionName) variantValue = variant.option3Value
+                                // בדיקה שהבחירות הקודמות תואמות (מלבד האפשרות הנוכחית)
+                                const matchesCurrentSelections = Object.entries(selectedOptionValues)
+                                  .filter(([key]) => key !== option.id)
+                                  .every(([optionId, val]) => {
+                                    // מצא את שם האפשרות לפי ה-ID
+                                    const selectedOption = displayOptions.find((opt: any) => opt.id === optionId)
+                                    const optionName = selectedOption?.name || optionId
+                                    return variantOptions[optionName] === val
+                                  })
                                 
-                                const matchesThisOption = variantValue ? (() => {
-                                  const vStr = variantValue.toString().trim().toLowerCase()
-                                  const labelStr = valueLabel?.toString().trim().toLowerCase()
-                                  return vStr === labelStr || vStr?.includes(labelStr) || labelStr?.includes(vStr)
-                                })() : false
+                                // בדיקה שהאפשרות הנוכחית תואמת
+                                const matchesThisOption = variantOptions[option.name] === valueId
                                 
-                                const hasStock = variant.inventoryQty === null || variant.inventoryQty === undefined || variant.inventoryQty > 0
+                                // בדיקת מלאי
+                                const hasStock = v.inventoryQty === null || v.inventoryQty === undefined || v.inventoryQty > 0
                                 
                                 return matchesCurrentSelections && matchesThisOption && hasStock
                               })
-                            }
+                            })()
                             
                             // קביעת קוד הצבע
                             let colorCode: string | undefined = undefined
@@ -1034,7 +1036,7 @@ export function ProductPageClient({
                                 disabled={!isAvailable}
                                 className={`px-3 py-1.5 border-2 rounded-sm text-sm font-medium transition-all ${
                                   isSelected
-                                    ? "text-white"
+                                    ? ""
                                     : isAvailable
                                     ? "border-gray-300 text-gray-700 hover:border-gray-400"
                                     : "border-gray-200 text-gray-400 opacity-50 cursor-not-allowed"
@@ -1042,6 +1044,7 @@ export function ProductPageClient({
                                 style={isSelected ? {
                                   borderColor: theme.primaryColor,
                                   backgroundColor: theme.primaryColor,
+                                  color: theme.primaryTextColor || '#ffffff',
                                 } : {}}
                               >
                                 {valueLabel}
@@ -1206,8 +1209,11 @@ export function ProductPageClient({
                       }
                     }}
                     disabled={product.availability === "OUT_OF_STOCK" || isProcessingCheckout || (product.options && product.options.length > 0 && !selectedVariant)}
-                    className="w-full text-white rounded-sm h-11 px-8 font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                    style={{ backgroundColor: theme.primaryColor || "#000000" }}
+                    className="w-full rounded-sm h-11 px-8 font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    style={{ 
+                      backgroundColor: theme.primaryColor || "#000000",
+                      color: theme.primaryTextColor || '#ffffff',
+                    }}
                   >
                     {isProcessingCheckout ? (
                       <Loader2 className="w-5 h-5 ml-2 animate-spin" />
@@ -1227,8 +1233,11 @@ export function ProductPageClient({
                         }
                       }}
                       disabled={product.availability === "OUT_OF_STOCK" || isAddingToCart || (product.options && product.options.length > 0 && !selectedVariant)}
-                      className="w-full text-white rounded-sm h-11 px-8 font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                      style={{ backgroundColor: theme.primaryColor || "#000000" }}
+                      className="w-full rounded-sm h-11 px-8 font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                      style={{ 
+                        backgroundColor: theme.primaryColor || "#000000",
+                        color: theme.primaryTextColor || '#ffffff',
+                      }}
                     >
                       {isAddingToCart ? (
                         <Loader2 className="w-5 h-5 ml-2 animate-spin" />

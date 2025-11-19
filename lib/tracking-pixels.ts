@@ -23,6 +23,7 @@ export function sendFacebookPixelEvent(
     
     // המרת שם אירוע לפורמט של פייסבוק
     const fbEventName = convertToFacebookEvent(eventName)
+    console.log(`📊 [FB Pixel] ${fbEventName}`, params)
     
     if (fbEventName === "PageView") {
       (window as any).fbq("track", "PageView", params)
@@ -72,6 +73,7 @@ export function sendGTMEvent(containerId: string, event: TrackingEvent) {
 
   if ((window as any).dataLayer) {
     const { event: eventName, ...rest } = event as { event: string; [key: string]: any }
+    console.log(`📊 [GTM] ${eventName}`, rest)
     ;(window as any).dataLayer.push({
       event: eventName,
       ...rest,
@@ -95,6 +97,7 @@ export function sendGAEvent(
   // שליחה דרך gtag
   if ((window as any).gtag) {
     const { event: eventName, ...params } = event
+    console.log(`📊 [GA] ${eventName}`, params)
     ;(window as any).gtag("event", eventName, params)
   } else {
     // טעינת Google Analytics אם לא נטען
@@ -117,6 +120,7 @@ export function sendTikTokPixelEvent(
     
     // המרת שם אירוע לפורמט של טיקטוק
     const ttEventName = convertToTikTokEvent(eventName)
+    console.log(`📊 [TikTok Pixel] ${ttEventName}`, params)
     
     ;(window as any).ttq.track(ttEventName, params)
   } else {

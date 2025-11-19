@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         shopId: review.shopId,
         customerId: data.customerId,
         status: {
-          in: ["COMPLETED", "FULFILLED"], // רק הזמנות שהושלמו
+          in: ["DELIVERED", "SHIPPED"], // רק הזמנות שהושלמו
         },
         items: {
           some: {

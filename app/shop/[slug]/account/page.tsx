@@ -35,6 +35,8 @@ import {
 import Link from "next/link"
 import { StorefrontHeader } from "@/components/storefront/StorefrontHeader"
 import { FormSkeleton } from "@/components/skeletons/FormSkeleton"
+import { Autocomplete } from "@/components/ui/autocomplete"
+import { useCitySearch, useStreetSearch } from "@/hooks/useIsraelAddress"
 
 interface Shop {
   id: string
@@ -88,10 +90,18 @@ export default function StorefrontAccountPage() {
     firstName: "",
     lastName: "",
     address: "",
+    houseNumber: "",
+    apartment: "",
+    floor: "",
     city: "",
     zip: "",
   })
   const [savingAddress, setSavingAddress] = useState(false)
+  
+  // Autocomplete hooks לערים ורחובות
+  const citySearch = useCitySearch(slug)
+  const [selectedCityForStreets, setSelectedCityForStreets] = useState("")
+  const streetSearch = useStreetSearch(slug, selectedCityForStreets)
   const [returnDialogOpen, setReturnDialogOpen] = useState(false)
   const [selectedOrderForReturn, setSelectedOrderForReturn] = useState<Order | null>(null)
   const [orderDetails, setOrderDetails] = useState<any>(null)
@@ -291,6 +301,9 @@ export default function StorefrontAccountPage() {
       firstName: customer?.firstName || "",
       lastName: customer?.lastName || "",
       address: "",
+      houseNumber: "",
+      apartment: "",
+      floor: "",
       city: "",
       zip: "",
     })
@@ -303,14 +316,18 @@ export default function StorefrontAccountPage() {
       firstName: address.firstName || "",
       lastName: address.lastName || "",
       address: address.address || "",
+      houseNumber: address.houseNumber || "",
+      apartment: address.apartment || "",
+      floor: address.floor || "",
       city: address.city || "",
       zip: address.zip || "",
     })
+    setSelectedCityForStreets(address.city || "")
     setAddressDialogOpen(true)
   }
 
   const handleSaveAddress = async () => {
-    if (!addressForm.firstName || !addressForm.address || !addressForm.city || !addressForm.zip) {
+    if (!addressForm.firstName || !addressForm.address || !addressForm.houseNumber || !addressForm.city) {
       toast({
         title: "שגיאה",
         description: "אנא מלא את כל השדות הנדרשים",
@@ -1105,33 +1122,84 @@ export default function StorefrontAccountPage() {
                 />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="addressStreet">כתובת *</Label>
-              <Textarea
-                id="addressStreet"
-                value={addressForm.address}
-                onChange={(e) => setAddressForm((prev) => ({ ...prev, address: e.target.value }))}
-                required
-                rows={2}
-              />
-            </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="addressCity">עיר *</Label>
-                <Input
+                <Autocomplete
                   id="addressCity"
                   value={addressForm.city}
-                  onChange={(e) => setAddressForm((prev) => ({ ...prev, city: e.target.value }))}
+                  onChange={(value) => {
+                    setAddressForm((prev) => ({ ...prev, city: value }))
+                    citySearch.setQuery(value)
+                  }}
+                  onSelect={(option) => {
+                    setAddressForm((prev) => ({ ...prev, city: option.value }))
+                    setSelectedCityForStreets(option.value)
+                  }}
+                  options={citySearch.cities.map((city) => ({
+                    value: city.cityName,
+                    label: city.cityName,
+                  }))}
+                  loading={citySearch.loading}
+                  placeholder="התחל להקליד עיר..."
                   required
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="addressZip">מיקוד *</Label>
+                <Label htmlFor="addressZip">מיקוד</Label>
                 <Input
                   id="addressZip"
                   value={addressForm.zip}
                   onChange={(e) => setAddressForm((prev) => ({ ...prev, zip: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="addressStreet">רחוב *</Label>
+              <Autocomplete
+                id="addressStreet"
+                value={addressForm.address}
+                onChange={(value) => {
+                  setAddressForm((prev) => ({ ...prev, address: value }))
+                  streetSearch.setQuery(value)
+                }}
+                onSelect={(option) => {
+                  setAddressForm((prev) => ({ ...prev, address: option.value }))
+                }}
+                options={streetSearch.streets.map((street) => ({
+                  value: street.streetName,
+                  label: street.streetName,
+                }))}
+                loading={streetSearch.loading}
+                placeholder={addressForm.city ? "התחל להקליד רחוב..." : "בחר עיר תחילה..."}
+                required
+                disabled={!addressForm.city}
+              />
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="houseNumber">מספר בית *</Label>
+                <Input
+                  id="houseNumber"
+                  value={addressForm.houseNumber}
+                  onChange={(e) => setAddressForm((prev) => ({ ...prev, houseNumber: e.target.value }))}
                   required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="apartment">דירה</Label>
+                <Input
+                  id="apartment"
+                  value={addressForm.apartment}
+                  onChange={(e) => setAddressForm((prev) => ({ ...prev, apartment: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="floor">קומה</Label>
+                <Input
+                  id="floor"
+                  value={addressForm.floor}
+                  onChange={(e) => setAddressForm((prev) => ({ ...prev, floor: e.target.value }))}
                 />
               </div>
             </div>

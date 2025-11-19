@@ -283,7 +283,7 @@ export default function NewBundlePage() {
                         <div className="flex-1">
                           <p className="font-medium">{product?.name || "מוצר לא נמצא"}</p>
                           <p className="text-sm text-gray-600">
-                            {product ? formatProductPrice(product) : "₪0.00"}
+                            {product ? `₪${product.price.toFixed(2)}` : "₪0.00"}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
@@ -325,7 +325,7 @@ export default function NewBundlePage() {
                         onClick={() => handleAddProduct(product.id)}
                       >
                         <Plus className="w-4 h-4 ml-2" />
-                        {product.name} - {formatProductPrice(product)}
+                        {product.name} - ₪{product.price.toFixed(2)}
                       </Button>
                     ))}
                 </div>

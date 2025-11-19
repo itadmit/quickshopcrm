@@ -21,9 +21,9 @@ import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { CartSkeleton, CartSummarySkeleton } from "@/components/skeletons/CartSkeleton"
 import { useShopTheme } from "@/hooks/useShopTheme"
 import { useCart } from "@/hooks/useCart"
-import { useDebouncedCallback } from "use-debounce"
 
-interface CartItem {
+// Import CartItem type from useCart
+type CartItem = {
   productId: string
   variantId: string | null
   quantity: number
@@ -31,6 +31,22 @@ interface CartItem {
   total: number
   isGift?: boolean
   giftDiscountId?: string
+  product: {
+    id: string
+    slug: string
+    name: string
+    price: number
+    comparePrice: number | null
+    images: string[]
+    sku: string | null
+  }
+  variant: {
+    id: string
+    name: string
+    price: number
+    sku: string | null
+    inventoryQty: number | null
+  } | null
   addons?: Array<{
     addonId: string
     valueId: string | null
@@ -38,16 +54,9 @@ interface CartItem {
     price: number
     quantity: number
   }>
-  product: {
-    id: string
-    name: string
-    images: string[]
-  }
-  variant: {
-    id: string
-    name: string
-  } | null
 }
+import { useDebouncedCallback } from "use-debounce"
+
 
 interface Cart {
   id: string
@@ -221,9 +230,10 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                 </p>
                 <button
                   onClick={onClose}
-                  className="text-white rounded-lg px-4 py-2 font-medium transition-opacity hover:opacity-90"
+                  className="rounded-lg px-4 py-2 font-medium transition-opacity hover:opacity-90"
                   style={{
                     backgroundColor: theme.primaryColor || "#000000",
+                    color: theme.primaryTextColor || '#ffffff',
                   }}
                 >
                   המשך לקניות
@@ -239,7 +249,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                     <div className="flex gap-3 items-stretch">
                       {/* Product Image - Square, full height */}
                       <Link
-                        href={`/shop/${slug}/products/${item.productId}`}
+                        href={`/shop/${slug}/products/${(item.product as CartItem['product']).slug || item.productId}`}
                         onClick={onClose}
                         className="flex-shrink-0 self-stretch"
                       >
@@ -265,7 +275,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
                             <Link
-                              href={`/shop/${slug}/products/${item.productId}`}
+                              href={`/shop/${slug}/products/${(item.product as CartItem['product']).slug || item.productId}`}
                               onClick={onClose}
                               className="block"
                             >

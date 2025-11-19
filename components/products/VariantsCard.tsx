@@ -35,9 +35,11 @@ interface VariantsCardProps {
   enabled: boolean
   options: Option[]
   variants: Variant[]
+  defaultVariantId?: string | null
   onEnabledChange: (enabled: boolean) => void
   onOptionsChange: (options: Option[]) => void
   onVariantsChange: (variants: Variant[]) => void
+  onDefaultVariantChange?: (variantId: string | null) => void
 }
 
 // Popular colors mapping (Hebrew)
@@ -68,9 +70,11 @@ export function VariantsCard({
   enabled,
   options,
   variants,
+  defaultVariantId,
   onEnabledChange,
   onOptionsChange,
   onVariantsChange,
+  onDefaultVariantChange,
 }: VariantsCardProps) {
   const [colorDetectionTimers, setColorDetectionTimers] = useState<Record<string, NodeJS.Timeout>>({})
 
@@ -484,6 +488,7 @@ export function VariantsCard({
                                     if (!valueExists) {
                                       const updated = [...options]
                                       updated[optionIndex].values.push({
+                                        id: value,
                                         label: value,
                                         metadata: { color }
                                       })
@@ -517,6 +522,7 @@ export function VariantsCard({
                                   if (!valueExists) {
                                     const updated = [...options]
                                     updated[optionIndex].values.push({
+                                      id: value,
                                       label: value,
                                       metadata: { color }
                                     })
@@ -689,6 +695,7 @@ export function VariantsCard({
                                     if (!valueExists) {
                                       const updated = [...options]
                                       updated[optionIndex].values.push({
+                                        id: value,
                                         label: value,
                                         metadata: { 
                                           pattern,
@@ -747,6 +754,7 @@ export function VariantsCard({
                                   if (!valueExists) {
                                     const updated = [...options]
                                     updated[optionIndex].values.push({
+                                      id: value,
                                       label: value,
                                       metadata: { 
                                         pattern,
@@ -869,6 +877,7 @@ export function VariantsCard({
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr>
+                        <th className="text-center p-2 text-sm font-medium">ברירת מחדל</th>
                         <th className="text-right p-2 text-sm font-medium">שם</th>
                         <th className="text-right p-2 text-sm font-medium">מחיר</th>
                         <th className="text-right p-2 text-sm font-medium">מחיר לפני הנחה</th>
@@ -880,6 +889,17 @@ export function VariantsCard({
                     <tbody>
                       {variants.map((variant, variantIndex) => (
                         <tr key={variant.id} className="border-t">
+                          <td className="p-2 text-center">
+                            <Checkbox
+                              checked={defaultVariantId === variant.id}
+                              onCheckedChange={(checked) => {
+                                if (onDefaultVariantChange) {
+                                  onDefaultVariantChange(checked ? variant.id : null)
+                                }
+                              }}
+                              title="סמן כווריאנט ברירת מחדל"
+                            />
+                          </td>
                           <td className="p-2">
                             <div className="font-medium text-sm">{variant.name}</div>
                           </td>

@@ -296,6 +296,54 @@ export default function ProductsPage() {
     }
   }
 
+  const handleBulkDelete = async () => {
+    const selectedArray = Array.from(selectedProducts)
+    if (selectedArray.length === 0) {
+      toast({
+        title: "שים לב",
+        description: "לא נבחרו מוצרים למחיקה",
+        variant: "destructive",
+      })
+      return
+    }
+
+    if (!confirm(`האם אתה בטוח שברצונך למחוק ${selectedArray.length} מוצרים?`)) {
+      return
+    }
+
+    try {
+      const response = await fetch("/api/products/bulk-delete", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ productIds: selectedArray }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        toast({
+          title: "הצלחה",
+          description: `${data.results.success} מוצרים נמחקו בהצלחה${data.results.failed > 0 ? `, ${data.results.failed} נכשלו` : ""}`,
+        })
+        setSelectedProducts(new Set())
+        fetchProducts()
+      } else {
+        toast({
+          title: "שגיאה",
+          description: data.error || "לא הצלחנו למחוק את המוצרים",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error bulk deleting products:", error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה במחיקת המוצרים",
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleViewProduct = (product: Product) => {
     if (!product.shop?.slug) {
       toast({
@@ -436,17 +484,27 @@ export default function ProductsPage() {
         </div>
         <div className="flex gap-2">
           {selectedProducts.size > 0 && (
-            <Button
-              onClick={() => {
-                const ids = Array.from(selectedProducts).join(",")
-                router.push(`/products/bulk-edit?ids=${ids}`)
-              }}
-              variant="default"
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              <Edit3 className="w-4 h-4 ml-2" />
-              עריכה קבוצתית ({selectedProducts.size})
-            </Button>
+            <>
+              <Button
+                onClick={() => {
+                  const ids = Array.from(selectedProducts).join(",")
+                  router.push(`/products/bulk-edit?ids=${ids}`)
+                }}
+                variant="default"
+                className="bg-purple-600 hover:bg-purple-700"
+              >
+                <Edit3 className="w-4 h-4 ml-2" />
+                עריכה קבוצתית ({selectedProducts.size})
+              </Button>
+              <Button
+                onClick={handleBulkDelete}
+                variant="destructive"
+                className="bg-red-600 hover:bg-red-700"
+              >
+                <Trash2 className="w-4 h-4 ml-2" />
+                מחיקה קבוצתית ({selectedProducts.size})
+              </Button>
+            </>
           )}
           <Button 
             variant="outline" 

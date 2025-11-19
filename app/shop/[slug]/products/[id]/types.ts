@@ -18,8 +18,11 @@ export interface Product {
     price: number | null
     sku?: string | null
     inventoryQty: number
+    option1?: string | null
     option1Value?: string | null
+    option2?: string | null
     option2Value?: string | null
+    option3?: string | null
     option3Value?: string | null
   }>
   options?: Array<{

@@ -241,3 +241,42 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Custom hover styles for navigation links in for-marketers page */
+.for-marketers-nav a:hover {
+  color: #8b5784 !important;
+}
+
+/* Custom hover for client URLs */
+a[href^="https://"].transition-colors:hover {
+  color: #d7a695 !important;
+}
+
+/* Geometric Pattern Animations */
+@keyframes float-geometric {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(5deg);
+  }
+}
+
+@keyframes pulse-geometric {
+  0%, 100% {
+    opacity: 0.1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.2;
+    transform: scale(1.1);
+  }
+}
+
+.animate-float-geometric {
+  animation: float-geometric 6s ease-in-out infinite;
+}
+
+.animate-pulse-geometric {
+  animation: pulse-geometric 4s ease-in-out infinite;
+}
+

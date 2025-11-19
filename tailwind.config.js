@@ -56,6 +56,14 @@ module.exports = {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontFamily: {
+        sans: ["var(--font-noto-sans-hebrew)", "sans-serif"],
+        heading: ["var(--font-heebo)", "sans-serif"],
+        assistant: ["var(--font-assistant)", "sans-serif"],
+        rubik: ["var(--font-rubik)", "sans-serif"],
+        varela: ["var(--font-varela-round)", "sans-serif"],
+        pacifico: ["var(--font-pacifico)", "cursive"],
+      },
       keyframes: {
         "accordion-down": {
           from: { height: 0 },

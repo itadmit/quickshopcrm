@@ -112,7 +112,7 @@ export function QuickAddModal({
       if (autoOpenCart && onCartOpen) {
         setTimeout(() => {
           onCartOpen()
-        }, 300) // קצת delay כדי שהטוסט יופיע
+        }, 300) // קצת delay כדי שההוספה תתבצע לפני פתיחת העגלה
       }
     },
   })

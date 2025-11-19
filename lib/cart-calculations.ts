@@ -10,6 +10,7 @@ export interface EnrichedCartItem {
   quantity: number
   product: {
     id: string
+    slug: string
     name: string
     price: number
     comparePrice?: number | null
@@ -221,6 +222,7 @@ async function addGiftItemsToCart(
       where: { id: giftDiscount.giftProductId },
       select: {
         id: true,
+        slug: true,
         name: true,
         price: true,
         comparePrice: true,
@@ -321,6 +323,7 @@ async function addGiftItemsToCart(
       quantity: 1,
       product: {
         id: giftProduct.id,
+        slug: giftProduct.slug,
         name: giftProduct.name,
         price: giftProduct.price,
         comparePrice: giftProduct.comparePrice,
@@ -391,35 +394,9 @@ async function calculateAutomaticDiscounts(
     orderBy: { priority: 'desc' },
   })
 
-  console.log('🎁 calculateAutomaticDiscounts - Found discounts:', activeAutomaticDiscounts.length, {
-    shopId,
-    subtotal,
-    customerId: customerId || 'null (no customer)',
-    customer: customer ? { totalSpent: customer.totalSpent, orderCount: customer.orderCount, tier: customer.tier } : 'null',
-    discounts: activeAutomaticDiscounts.map(d => ({
-      id: d.id,
-      title: d.title,
-      type: d.type,
-      value: d.value,
-      priority: d.priority,
-      canCombine: d.canCombine,
-      isActive: d.isActive,
-      isAutomatic: d.isAutomatic,
-      minOrderAmount: d.minOrderAmount,
-      target: d.target,
-      customerTarget: d.customerTarget,
-    }))
-  })
-
   for (const autoDiscount of activeAutomaticDiscounts) {
     // בדיקת minOrderAmount
     if (autoDiscount.minOrderAmount && subtotal < autoDiscount.minOrderAmount) {
-      console.log('🎁 Discount skipped - minOrderAmount:', {
-        discountId: autoDiscount.id,
-        title: autoDiscount.title,
-        minOrderAmount: autoDiscount.minOrderAmount,
-        subtotal,
-      })
       continue
     }
 
@@ -436,13 +413,6 @@ async function calculateAutomaticDiscounts(
     }
 
     if (!customerMatch) {
-      console.log('🎁 Discount skipped - customerTarget:', {
-        discountId: autoDiscount.id,
-        title: autoDiscount.title,
-        customerTarget: autoDiscount.customerTarget,
-        customerId,
-        customerTier: customer?.tier,
-      })
       continue
     }
 
@@ -542,12 +512,6 @@ async function calculateAutomaticDiscounts(
     }
 
     if (!productMatch) {
-      console.log('🎁 Discount skipped - productMatch:', {
-        discountId: autoDiscount.id,
-        title: autoDiscount.title,
-        target: autoDiscount.target,
-        productIds: enrichedItems.map(item => item.productId),
-      })
       continue
     }
 
@@ -606,34 +570,19 @@ async function calculateAutomaticDiscounts(
       discountAmount = Math.min(discountAmount, autoDiscount.maxDiscount)
     }
 
-    console.log('🎁 Discount applied:', {
-      discountId: autoDiscount.id,
-      title: autoDiscount.title,
-      type: autoDiscount.type,
-      value: autoDiscount.value,
-      priority: autoDiscount.priority,
-      canCombine: autoDiscount.canCombine,
-      discountAmount,
-      subtotal,
-      currentTotalDiscount: automaticDiscount,
-    })
-
     automaticDiscount += discountAmount
     
     // שמירת שם ההנחה הראשונה (עם עדיפות גבוהה)
     if (!automaticDiscountTitle && discountAmount > 0) {
       automaticDiscountTitle = autoDiscount.title
-      console.log('🎁 Set discount title:', autoDiscount.title, 'Priority:', autoDiscount.priority)
     }
 
     // אם לא ניתן לשלב, נעצור אחרי הראשונה
     if (!autoDiscount.canCombine) {
-      console.log('🎁 Cannot combine - stopping after:', autoDiscount.title, 'Priority:', autoDiscount.priority)
       break
     }
   }
 
-  console.log('🎁 Total automatic discount:', automaticDiscount, 'Title:', automaticDiscountTitle)
 
   return { amount: automaticDiscount, title: automaticDiscountTitle }
 }
@@ -904,18 +853,12 @@ export async function calculateCart(
     .map(item => item.variantId)
     .filter((id): id is string => id !== null && id !== undefined)
 
-  console.log('🛒 calculateCart - Looking for variants:', variantIds)
-  console.log('🛒 calculateCart - Cart items:', cartItems.map(item => ({
-    productId: item.productId,
-    variantId: item.variantId,
-    quantity: item.quantity
-  })))
-
   const [products, variants, shop] = await Promise.all([
     prisma.product.findMany({
       where: { id: { in: productIds }, shopId },
       select: {
         id: true,
+        slug: true,
         name: true,
         price: true,
         comparePrice: true,
@@ -947,20 +890,12 @@ export async function calculateCart(
     }),
   ])
 
-  console.log('🛒 calculateCart - Found variants in DB:', variants.map((v: any) => ({
-    id: v.id,
-    name: v.name,
-    productId: v.productId
-  })))
-  console.log('🛒 calculateCart - Missing variants:', variantIds.filter(id => !variants.find((v: any) => v.id === id)))
-
   const productsMap = new Map(products.map(p => [p.id, p]))
   const variantsMap = new Map(variants.map(v => [v.id, v]))
 
   // טעינת לקוח והגדרות הנחות
   let customerDiscountSettings = null
   let customer = null
-  console.log('🛒 calculateCart - customerId:', customerId || 'null (no customer)')
   if (customerId) {
     const [shopWithSettings, customerData] = await Promise.all([
       prisma.shop.findUnique({
@@ -978,14 +913,7 @@ export async function calculateCart(
     ])
     customerDiscountSettings = shopWithSettings?.customerDiscountSettings
     customer = customerData
-    console.log('🛒 calculateCart - Customer loaded:', customer ? {
-      id: customerId,
-      totalSpent: customer.totalSpent,
-      orderCount: customer.orderCount,
-      tier: customer.tier
-    } : 'Customer not found in DB')
   } else {
-    console.log('🛒 calculateCart - No customerId provided, customer will be null')
   }
 
   // טעינת bundles אם יש פריטים עם bundleId
@@ -1047,15 +975,6 @@ export async function calculateCart(
 
     const variant = item.variantId ? variantsMap.get(item.variantId) : null
     
-    if (item.variantId && !variant) {
-      console.warn('⚠️ calculateCart - Variant not found in DB:', {
-        variantId: item.variantId,
-        productId: item.productId,
-        productName: product.name,
-        availableVariantIds: Array.from(variantsMap.keys())
-      })
-    }
-    
     // אם זה מתנה, המחיר הוא 0
     const basePrice = item.isGift ? 0 : (variant?.price || product.price)
     let itemPrice = basePrice
@@ -1092,6 +1011,7 @@ export async function calculateCart(
       quantity: item.quantity,
       product: {
         id: product.id,
+        slug: product.slug,
         name: product.name,
         price: product.price,
         comparePrice: product.comparePrice,
@@ -1157,6 +1077,7 @@ export async function calculateCart(
           quantity: item.quantity,
           product: {
             id: product.id,
+            slug: product.slug,
             name: product.name,
             price: product.price,
             comparePrice: product.comparePrice,
@@ -1278,6 +1199,7 @@ export async function calculateCart(
         quantity: item.quantity,
         product: {
           id: product.id,
+          slug: product.slug,
           name: product.name,
           price: product.price,
           comparePrice: product.comparePrice,
@@ -1398,6 +1320,7 @@ export async function calculateCart(
                 quantity: 1,
                 product: {
                   id: giftProduct.id,
+                  slug: giftProduct.slug,
                   name: giftProduct.name,
                   price: giftProduct.price,
                   sku: giftProduct.sku,

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { useAddToCart } from "@/hooks/useAddToCart"
@@ -60,6 +60,10 @@ export function useProductPage({
   const [isProcessingCheckout, setIsProcessingCheckout] = useState(false)
   const [autoOpenCart] = useState(initialAutoOpenCart)
   const { trackEvent } = useTracking()
+  
+  // למנוע tracking כפול - שומר את ה-product ID שכבר עקבנו אחריו
+  const lastTrackedPageViewId = useRef<string | null>(null)
+  const lastTrackedViewContentId = useRef<string | null>(null)
 
   const { addToCart, isAddingToCart } = useAddToCart({
     slug,
@@ -94,36 +98,59 @@ export function useProductPage({
     }
   }, [slug])
 
-  // אתחול variant ו-options
+  // אתחול variant ו-options - לוגיקה מסודרת
   useEffect(() => {
-    if (product.variants && product.variants.length > 0) {
-      if (!product.options || product.options.length === 0) {
-        setSelectedVariant(product.variants[0].id)
-      } else {
-        const initialOptions: Record<string, string> = {}
-        let hasDefaults = false
-        
-        if ((product as any).customFields && typeof (product as any).customFields === 'object') {
-          const customFields = (product as any).customFields as any
-          if (customFields.defaultOptionValues) {
-            hasDefaults = true
-            Object.assign(initialOptions, customFields.defaultOptionValues)
-          }
-        }
-        
-        if (!hasDefaults) {
-          product.options.forEach((option: any) => {
-            if (option.values && Array.isArray(option.values) && option.values.length > 0) {
-              const firstValue = option.values[0]
-              const valueId = typeof firstValue === 'object' ? firstValue.id : firstValue
-              initialOptions[option.id] = valueId
-            }
-          })
-        }
-        
-        setSelectedOptionValues(initialOptions)
+    if (!product.variants || product.variants.length === 0) return
+    
+    // אם אין options, פשוט בחר variant
+    if (!product.options || product.options.length === 0) {
+      setSelectedVariant(product.variants[0].id)
+      return
+    }
+    
+    // יש options - צריך לבחור איזה variant להציג
+    let variantToSelect = null
+    
+    // שלב 1: נסה לבחור defaultVariant אם הוא זמין
+    if ((product as any).defaultVariantId) {
+      const defaultVariant = product.variants.find((v: any) => v.id === (product as any).defaultVariantId)
+      if (defaultVariant && (defaultVariant.inventoryQty === null || defaultVariant.inventoryQty === undefined || defaultVariant.inventoryQty > 0)) {
+        variantToSelect = defaultVariant
       }
     }
+    
+    // שלב 2: אם אין defaultVariant זמין, נבחר את הזמין הראשון
+    if (!variantToSelect) {
+      variantToSelect = product.variants.find((v: any) => 
+        v.inventoryQty === null || v.inventoryQty === undefined || v.inventoryQty > 0
+      )
+    }
+    
+    // שלב 3: אם אף אחד לא זמין, נבחר את הראשון בכלל
+    if (!variantToSelect) {
+      variantToSelect = product.variants[0]
+    }
+    
+    // עכשיו מצא את האופציות של הvariant שנבחר
+    const initialOptions: Record<string, string> = {}
+    product.options.forEach((option: any) => {
+      const optionName = option.name
+      let variantValue = null
+      
+      if ((variantToSelect as any).option1 === optionName) {
+        variantValue = (variantToSelect as any).option1Value
+      } else if ((variantToSelect as any).option2 === optionName) {
+        variantValue = (variantToSelect as any).option2Value
+      } else if ((variantToSelect as any).option3 === optionName) {
+        variantValue = (variantToSelect as any).option3Value
+      }
+      
+      if (variantValue) {
+        initialOptions[option.id] = variantValue
+      }
+    })
+    
+    setSelectedOptionValues(initialOptions)
   }, [product])
 
   // טעינת cart count
@@ -207,7 +234,11 @@ export function useProductPage({
     // עדכון title
     document.title = title
     
-    trackPageView(trackEvent, `/shop/${slug}/products/${productId}`, title)
+    // Track PageView רק פעם אחת למוצר - בדיקה לפי product ID
+    if (lastTrackedPageViewId.current !== product.id) {
+      trackPageView(trackEvent, `/shop/${slug}/products/${productId}`, title)
+      lastTrackedPageViewId.current = product.id
+    }
     
     // עדכון meta tags - רק עדכון, לא הסרה ב-cleanup
     // זה בטוח יותר ולא גורם לבעיות עם removeChild
@@ -247,9 +278,9 @@ export function useProductPage({
 
     // אין cleanup - נשאיר את ה-meta tags כי הם יתעדכנו במוצר הבא
     // זה מונע בעיות עם removeChild כשהקומפוננטה מתבטלת
-  }, [product?.id, slug, productId, trackEvent])
+  }, [product?.id, slug, productId]) // הסרנו trackEvent מה-dependencies
 
-  // ViewContent event
+  // ViewContent event - רק כשהמוצר משתנה, לא כש-variant משתנה
   useEffect(() => {
     if (!product) return
 
@@ -257,13 +288,17 @@ export function useProductPage({
       ? product.variants.find((v) => v.id === selectedVariant)?.price || product.price
       : product.price
     
-    trackViewContent(trackEvent, {
-      id: product.id,
-      name: product.name,
-      price: currentPrice,
-      sku: product.sku || null,
-    })
-  }, [product?.id, selectedVariant, trackEvent])
+    // Track ViewContent רק פעם אחת למוצר - בדיקה לפי product ID
+    if (lastTrackedViewContentId.current !== product.id) {
+      trackViewContent(trackEvent, {
+        id: product.id,
+        name: product.name,
+        price: currentPrice,
+        sku: product.sku || null,
+      })
+      lastTrackedViewContentId.current = product.id
+    }
+  }, [product?.id]) // הסרנו selectedVariant ו-trackEvent - רק כשמוצר משתנה
 
   // עדכון selectedVariant לפי selectedOptionValues
   useEffect(() => {
@@ -332,8 +367,6 @@ export function useProductPage({
             sku: matchingVariant.sku || null,
           })
         }
-      } else if (!matchingVariant && product.variants.length > 0 && Object.keys(selectedOptionValues).length === 0) {
-        setSelectedVariant(product.variants[0].id)
       }
     }
   }, [selectedOptionValues, product?.id, trackEvent])
@@ -377,10 +410,15 @@ export function useProductPage({
           setWishlistItemId(null)
           
           if (product) {
+            // מציאת שם הvariant
+            const variantName = selectedVariant && product.variants
+              ? product.variants.find((v) => v.id === selectedVariant)?.name
+              : undefined
+            
             trackRemoveFromWishlist(trackEvent, {
               id: product.id,
               name: product.name,
-            })
+            }, selectedVariant || undefined, variantName)
           }
         }
       } catch (error) {
@@ -407,11 +445,16 @@ export function useProductPage({
               ? product.variants.find((v) => v.id === selectedVariant)?.price || product.price
               : product.price
             
+            // מציאת שם הvariant
+            const variantName = selectedVariant && product.variants
+              ? product.variants.find((v) => v.id === selectedVariant)?.name
+              : undefined
+            
             trackAddToWishlist(trackEvent, {
               id: product.id,
               name: product.name,
               price: currentPrice,
-            })
+            }, selectedVariant || undefined, variantName)
           }
         }
       } catch (error) {
@@ -449,12 +492,17 @@ export function useProductPage({
         return sum + (addon.price || 0) * (addon.quantity || 1)
       }, 0)
       
+      // מציאת שם הvariant
+      const variantName = selectedVariant && product.variants
+        ? product.variants.find((v) => v.id === selectedVariant)?.name
+        : undefined
+      
       trackAddToCart(trackEvent, {
         id: product.id,
         name: product.name,
         price: currentPrice,
         sku: product.sku || null,
-      }, quantity, selectedVariant || undefined, addonsTotal)
+      }, quantity, selectedVariant || undefined, addonsTotal, variantName)
       
       if (autoOpenCart && cartOpenCallback) {
         setTimeout(() => {

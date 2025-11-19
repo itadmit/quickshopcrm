@@ -128,7 +128,9 @@ export function ProductCard({
   
   // Get border radius
   const getBorderRadius = () => {
-    return `${theme?.categoryImageBorderRadius || 8}px`
+    // אם מסירים מסגרות, תמיד 0
+    if (removeCardBorders) return '0px'
+    return `${theme?.categoryImageBorderRadius !== undefined ? theme.categoryImageBorderRadius : 0}px`
   }
   
   // Get badge position classes
@@ -180,19 +182,24 @@ export function ProductCard({
   // פונקציות עזר לחילוץ מידות וצבעים
   const getUniqueValues = (optionName: string, type: 'size' | 'color') => {
     if (!product.variants || !product.options) {
-      // דיבוג - נראה מה יש למוצר
-      console.log(`Product "${product.name}":`, {
-        hasVariants: !!product.variants,
-        variantsCount: product.variants?.length || 0,
-        hasOptions: !!product.options,
-        optionsCount: product.options?.length || 0,
-        variants: product.variants,
-        options: product.options
-      })
       return []
     }
     
-    const option = product.options.find(opt => opt.type === type)
+    let option
+    
+    if (type === 'color') {
+      // מצא את אופציית הצבע
+      option = product.options.find(opt => opt.type === 'color')
+    } else if (type === 'size') {
+      // מצא את אופציית המידה - לפי שם או כל button
+      option = product.options.find(opt => 
+        opt.name === 'מידה' || 
+        opt.name === 'size' || 
+        opt.name === 'Size' ||
+        opt.type === 'button'
+      )
+    }
+    
     if (!option) return []
     
     const values = new Map<string, { value: string, hasStock: boolean }>()
@@ -229,12 +236,12 @@ export function ProductCard({
   
   // האם להציג כפתורי מידות
   const showSizeButtons = theme?.categoryShowSizeButtons !== false && sizeValues.length > 0
-  const showOnlyInStock = theme?.categoryShowOnlyInStock !== false
+  const hideOutOfStockSizes = theme?.categoryHideOutOfStockSizes === true
   const sizeButtonPosition = theme?.categorySizeButtonPosition || 'on-image'
   const removeCardBorders = theme?.categoryRemoveCardBorders || false
   
   // סינון מידות לפי מלאי אם נדרש
-  const displayedSizes = showOnlyInStock 
+  const displayedSizes = hideOutOfStockSizes 
     ? sizeValues.filter(s => s.hasStock) 
     : sizeValues
 
@@ -256,10 +263,9 @@ export function ProductCard({
       >
         <Card className={cn(
           "h-full transition-all duration-200 overflow-hidden",
-          !removeCardBorders && "border border-gray-200",
+          removeCardBorders ? "shadow-none border-0 rounded-none" : "shadow-sm border border-gray-200 rounded-lg",
           !removeCardBorders && cardHoverEffect && "hover:shadow-lg hover:border-gray-300",
           removeCardBorders && cardHoverEffect && "hover:shadow-md",
-          removeMobilePadding ? "md:border" : !removeCardBorders && "border",
           isClicking && "opacity-90 scale-[0.98]"
         )}>
           <CardContent className={removeMobilePadding ? 'p-0 md:p-0' : 'p-0'}>
@@ -332,17 +338,17 @@ export function ProductCard({
               {showBadges && (
                 <div className={`absolute ${getBadgePositionClasses()} flex flex-col gap-2`}>
                   {product.availability === "OUT_OF_STOCK" && (
-                    <Badge className="bg-red-500 text-white shadow-lg">
+                    <Badge className="bg-red-500 text-white shadow-lg rounded-md">
                       אזל מהמלאי
                     </Badge>
                   )}
                   {product.availability === "PRE_ORDER" && (
-                    <Badge className="bg-blue-500 text-white shadow-lg">
+                    <Badge className="bg-blue-500 text-white shadow-lg rounded-md">
                       הזמנה מראש
                     </Badge>
                   )}
                   {autoSaleBadge && discountPercentage > 0 && (
-                    <Badge className="bg-green-500 text-white shadow-lg">
+                    <Badge className="bg-green-500 text-white shadow-lg rounded-md">
                       {discountPercentage}% הנחה
                     </Badge>
                   )}
@@ -397,9 +403,20 @@ export function ProductCard({
                   {displayedSizes.map((size) => (
                     <button
                       key={size.value}
-                      className="bg-white/95 backdrop-blur-sm hover:bg-white text-gray-900 text-xs font-medium px-2.5 py-1.5 rounded-md shadow-md transition-all hover:scale-105 border border-gray-200"
+                      className={`relative bg-white/95 backdrop-blur-sm hover:bg-white text-gray-900 text-xs font-medium px-2.5 py-1.5 rounded-md shadow-md transition-all hover:scale-105 border border-gray-200 overflow-hidden ${!size.hasStock ? 'opacity-60' : ''}`}
                     >
                       {size.value}
+                      {!size.hasStock && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden rounded-md">
+                          <div 
+                            className="w-[150%] h-[2px] bg-red-500"
+                            style={{
+                              transform: 'rotate(-25deg)',
+                              transformOrigin: 'center'
+                            }}
+                          />
+                        </div>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -407,14 +424,14 @@ export function ProductCard({
             </div>
 
             {/* Product Info */}
-            <div className="p-4">
-              <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 min-h-[2.5rem] group-hover:text-gray-700 transition-colors">
+            <div className={removeCardBorders ? "px-2 py-3" : "p-4"}>
+              <h3 className={`font-semibold text-gray-900 line-clamp-2 group-hover:text-gray-700 transition-colors ${removeCardBorders ? 'mb-1.5' : 'mb-2'}`}>
                 {product.name}
               </h3>
               
               {/* Color Samples - מתחת לשם */}
               {theme?.categoryShowColorSamples !== false && product.options && product.options.some(opt => opt.type === 'color') && (
-                <div className="flex items-center gap-1.5 mb-3" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                <div className={`flex items-center gap-1.5 ${removeCardBorders ? 'mb-2' : 'mb-3'}`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
                   {product.options
                     .filter(opt => opt.type === 'color')
                     .flatMap(opt => {
@@ -441,8 +458,8 @@ export function ProductCard({
                         const colorCode = colorValue.metadata?.color || colorValue.color || null
                         const hasStock = colorStock.get(label)
                         
-                        // אם showOnlyInStock מופעל, מסתיר צבעים ללא מלאי
-                        if (showOnlyInStock && !hasStock) return null
+                        // אם hideOutOfStockSizes מופעל, מסתיר צבעים ללא מלאי
+                        if (hideOutOfStockSizes && !hasStock) return null
                         
                         return (
                           <button
@@ -467,7 +484,7 @@ export function ProductCard({
                 </div>
               )}
               
-              <div className="space-y-1 mb-3">
+              <div className={`space-y-1 ${removeCardBorders ? 'mb-0' : 'mb-3'}`}>
                 {/* הצגת המחיר המקורי */}
                 <div className="flex items-center gap-2 flex-wrap">
                   {/* הצגת comparePrice אם יש */}

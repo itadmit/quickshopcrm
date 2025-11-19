@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useMemo, useEffect } from "react"
+import { useState, useMemo, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,12 +9,15 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Textarea } from "@/components/ui/textarea"
+import { Autocomplete } from "@/components/ui/autocomplete"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { CheckoutHeader } from "@/components/storefront/CheckoutHeader"
 import { useShopTheme } from "@/hooks/useShopTheme"
 import { useTracking } from "@/components/storefront/TrackingPixelProvider"
+import { useCitySearch, useStreetSearch } from "@/hooks/useIsraelAddress"
 import {
   trackPageView,
+  trackInitiateCheckout,
   trackAddPaymentInfo,
   trackPurchase,
 } from "@/lib/tracking-events"
@@ -113,6 +116,8 @@ interface Shop {
     borderColor: string
     showNewsletterCheckbox?: boolean
     newsletterDefaultChecked?: boolean
+    showZipField?: boolean
+    zipRequired?: boolean
     footerLinks?: Array<{
       id: string
       text: string
@@ -144,6 +149,15 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
   const [processing, setProcessing] = useState(false)
   const [storeCredit, setStoreCredit] = useState<any>(null)
   const [useStoreCredit, setUseStoreCredit] = useState(false)
+  
+  // למנוע tracking כפול
+  const hasTrackedPageView = useRef(false)
+  const hasTrackedCheckout = useRef(false)
+  
+  // Autocomplete hooks לערים ורחובות
+  const citySearch = useCitySearch(slug)
+  const [selectedCityForStreets, setSelectedCityForStreets] = useState("")
+  const streetSearch = useStreetSearch(slug, selectedCityForStreets)
   
   // אתחול customFields values
   const initialCustomFields: Record<string, any> = {}
@@ -181,6 +195,9 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
     lastName: customerData?.lastName || "",
     companyName: "",
     address: "",
+    houseNumber: "",
+    apartment: "",
+    floor: "",
     city: "",
     zip: "",
     orderNotes: "",
@@ -266,22 +283,30 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
 
   // PageView event - רק פעם אחת כשהעמוד נטען
   useEffect(() => {
-    // בדיקה כדי למנוע שליחה כפולה ב-React Strict Mode
-    const pageViewKey = `pageview_${slug}_checkout`
-    if (sessionStorage.getItem(pageViewKey)) {
-      return // כבר שלחנו PageView לעמוד הזה
+    if (!hasTrackedPageView.current) {
+      trackPageView(trackEvent, `/shop/${slug}/checkout`, "תשלום")
+      hasTrackedPageView.current = true
     }
-    
-    trackPageView(trackEvent, `/shop/${slug}/checkout`, "תשלום")
-    sessionStorage.setItem(pageViewKey, "true")
-    
-    // ניקוי אחרי 5 שניות (למקרה של ניווט מהיר)
-    setTimeout(() => {
-      sessionStorage.removeItem(pageViewKey)
-    }, 5000)
-    
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [slug]) // רק כשהעמוד משתנה, לא trackEvent
+  }, [slug, trackEvent])
+
+  // InitiateCheckout event - רק פעם אחת כשהעמוד נטען
+  useEffect(() => {
+    if (!hasTrackedCheckout.current) {
+      trackInitiateCheckout(
+        trackEvent,
+        cart.items.map((item) => ({
+          id: item.variantId || item.product.id, // אם יש variant, נשלח את ה-variant ID
+          name: item.variant?.name 
+            ? `${item.product.name} - ${item.variant.name}` 
+            : item.product.name, // אם יש variant, נוסיף את שם הvariant
+          price: item.price,
+          quantity: item.quantity,
+        })),
+        cart.total
+      )
+      hasTrackedCheckout.current = true
+    }
+  }, [cart.id, cart.items, cart.total, trackEvent])
 
   // טעינת כתובות שמורות
   useEffect(() => {
@@ -311,6 +336,9 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
               firstName: addr.firstName || prev.firstName,
               lastName: addr.lastName || prev.lastName,
               address: addr.address || "",
+              houseNumber: addr.houseNumber || "",
+              apartment: addr.apartment || "",
+              floor: addr.floor || "",
               city: addr.city || "",
               zip: addr.zip || "",
             }))
@@ -385,9 +413,12 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
           shippingAddress: formData.deliveryMethod === "shipping" ? {
             firstName: formData.firstName,
             lastName: formData.lastName,
-            address: formData.address,
             city: formData.city,
-            zip: formData.zip,
+            address: formData.address,
+            houseNumber: formData.houseNumber,
+            apartment: formData.apartment || undefined,
+            floor: formData.floor || undefined,
+            zip: formData.zip || undefined,
           } : null,
           deliveryMethod: formData.deliveryMethod,
           paymentMethod: formData.paymentMethod,
@@ -403,8 +434,10 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
         
         // Purchase event
         const items = cart.items.map((item) => ({
-          id: item.productId,
-          name: item.product.name,
+          id: item.variantId || item.productId, // אם יש variant, נשלח את ה-variant ID
+          name: item.variant?.name 
+            ? `${item.product.name} - ${item.variant.name}` 
+            : item.product.name, // אם יש variant, נוסיף את שם הvariant
           price: item.price,
           quantity: item.quantity,
         }))
@@ -549,7 +582,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                           id="createAccount"
                           checked={formData.createAccount}
                           onCheckedChange={(checked) =>
-                            setFormData((prev) => ({ ...prev, createAccount: checked === true, saveDetails: checked === true ? false : prev.saveDetails }))
+                            setFormData((prev) => ({ ...prev, createAccount: checked === true }))
                           }
                         />
                         <Label 
@@ -557,25 +590,6 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                           className="text-sm text-gray-700 cursor-pointer"
                         >
                           צור חשבון כדי לעקוב אחרי הזמנות ולשמור פרטים לפעם הבאה
-                        </Label>
-                      </div>
-                    )}
-
-                    {/* Save Details Checkbox - רק אם הלקוח לא מחובר ולא בחר createAccount */}
-                    {!customerData?.id && !formData.createAccount && (
-                      <div className="flex items-center space-x-2 space-x-reverse mt-2">
-                        <Checkbox
-                          id="saveDetails"
-                          checked={formData.saveDetails}
-                          onCheckedChange={(checked) =>
-                            setFormData((prev) => ({ ...prev, saveDetails: checked === true }))
-                          }
-                        />
-                        <Label 
-                          htmlFor="saveDetails" 
-                          className="text-sm text-gray-700 cursor-pointer"
-                        >
-                          שמור פרטים לפעם הבאה (ללא יצירת חשבון)
                         </Label>
                       </div>
                     )}
@@ -821,7 +835,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                         value={formData.selectedAddressId}
                         onValueChange={(value) => {
                           if (value === "new") {
-                            setFormData((prev) => ({ ...prev, selectedAddressId: "", address: "", city: "", zip: "" }))
+                            setFormData((prev) => ({ ...prev, selectedAddressId: "", address: "", houseNumber: "", apartment: "", floor: "", city: "", zip: "" }))
                           } else {
                             const selectedAddr = savedAddresses.find((addr) => addr.id === value)
                             if (selectedAddr) {
@@ -831,6 +845,9 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                                 firstName: selectedAddr.firstName || prev.firstName,
                                 lastName: selectedAddr.lastName || prev.lastName,
                                 address: selectedAddr.address || "",
+                                houseNumber: selectedAddr.houseNumber || "",
+                                apartment: selectedAddr.apartment || "",
+                                floor: selectedAddr.floor || "",
                                 city: selectedAddr.city || "",
                                 zip: selectedAddr.zip || "",
                               }))
@@ -845,51 +862,115 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                           <SelectItem value="new">הוסף כתובת חדשה</SelectItem>
                           {savedAddresses.map((addr) => (
                             <SelectItem key={addr.id} value={addr.id}>
-                              {addr.firstName} {addr.lastName} - {addr.address}, {addr.city} {addr.zip}
+                              {addr.firstName} {addr.lastName} - {addr.city}, {addr.address} {addr.houseNumber}{addr.apartment ? `, דירה ${addr.apartment}` : ''}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
                   )}
-                  <div>
-                    <Label htmlFor="address" className="text-sm font-medium text-gray-700">
-                      כתובת *
-                    </Label>
-                    <Input
-                      id="address"
-                      value={formData.address}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, address: e.target.value, selectedAddressId: "" }))}
-                      required
-                      className="mt-1"
-                    />
-                  </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <Label htmlFor="city" className="text-sm font-medium text-gray-700">
                         עיר *
                       </Label>
-                      <Input
+                      <Autocomplete
                         id="city"
                         value={formData.city}
-                        onChange={(e) => setFormData((prev) => ({ ...prev, city: e.target.value, selectedAddressId: "" }))}
+                        onChange={(value) => {
+                          setFormData((prev) => ({ ...prev, city: value, selectedAddressId: "" }))
+                          citySearch.setQuery(value)
+                        }}
+                        onSelect={(option) => {
+                          setFormData((prev) => ({ ...prev, city: option.value, selectedAddressId: "" }))
+                          setSelectedCityForStreets(option.value)
+                        }}
+                        options={citySearch.cities.map((city) => ({
+                          value: city.cityName,
+                          label: city.cityName,
+                        }))}
+                        loading={citySearch.loading}
+                        placeholder="התחל להקליד עיר..."
+                        className="mt-1"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="address" className="text-sm font-medium text-gray-700">
+                        רחוב *
+                      </Label>
+                      <Autocomplete
+                        id="address"
+                        value={formData.address}
+                        onChange={(value) => {
+                          setFormData((prev) => ({ ...prev, address: value, selectedAddressId: "" }))
+                          streetSearch.setQuery(value)
+                        }}
+                        onSelect={(option) => {
+                          setFormData((prev) => ({ ...prev, address: option.value, selectedAddressId: "" }))
+                        }}
+                        options={streetSearch.streets.map((street) => ({
+                          value: street.streetName,
+                          label: street.streetName,
+                        }))}
+                        loading={streetSearch.loading}
+                        placeholder={formData.city ? "התחל להקליד רחוב..." : "בחר עיר תחילה..."}
+                        className="mt-1"
+                        required
+                        disabled={!formData.city}
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <Label htmlFor="houseNumber" className="text-sm font-medium text-gray-700">
+                        מספר בית *
+                      </Label>
+                      <Input
+                        id="houseNumber"
+                        value={formData.houseNumber}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, houseNumber: e.target.value, selectedAddressId: "" }))}
                         required
                         className="mt-1"
                       />
                     </div>
                     <div>
+                      <Label htmlFor="apartment" className="text-sm font-medium text-gray-700">
+                        דירה
+                      </Label>
+                      <Input
+                        id="apartment"
+                        value={formData.apartment}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, apartment: e.target.value, selectedAddressId: "" }))}
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="floor" className="text-sm font-medium text-gray-700">
+                        קומה
+                      </Label>
+                      <Input
+                        id="floor"
+                        value={formData.floor}
+                        onChange={(e) => setFormData((prev) => ({ ...prev, floor: e.target.value, selectedAddressId: "" }))}
+                        className="mt-1"
+                      />
+                    </div>
+                  </div>
+                  {shop.checkoutSettings?.showZipField === true && (
+                    <div>
                       <Label htmlFor="zip" className="text-sm font-medium text-gray-700">
-                        מיקוד *
+                        מיקוד {shop.checkoutSettings?.zipRequired === true && "*"}
                       </Label>
                       <Input
                         id="zip"
                         value={formData.zip}
                         onChange={(e) => setFormData((prev) => ({ ...prev, zip: e.target.value, selectedAddressId: "" }))}
-                        required
+                        required={shop.checkoutSettings?.zipRequired === true}
                         className="mt-1"
                       />
                     </div>
-                  </div>
+                  )}
                 </div>
                 </div>
               )}

@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Palette,
   Layout,
@@ -33,6 +34,17 @@ import {
   CheckCircle2,
   CreditCard,
   Mail,
+  Monitor,
+  Tablet,
+  Smartphone,
+  Image,
+  DollarSign,
+  AlignLeft,
+  Filter,
+  Tag,
+  Loader,
+  Heart,
+  ShoppingCart,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -224,6 +236,8 @@ interface AppearanceSettings {
   checkoutPageBorderColor: string
   checkoutShowNewsletterCheckbox: boolean
   checkoutNewsletterDefaultChecked: boolean
+  checkoutShowZipField: boolean
+  checkoutZipRequired: boolean
   checkoutFooterLinks: Array<{
     id: string
     text: string
@@ -422,6 +436,8 @@ export default function AppearancePage() {
     checkoutPageBorderColor: "#e5e7eb",
     checkoutShowNewsletterCheckbox: true,
     checkoutNewsletterDefaultChecked: true,
+    checkoutShowZipField: false,
+    checkoutZipRequired: false,
     checkoutFooterLinks: [],
     checkoutCustomFields: [],
     
@@ -596,6 +612,8 @@ export default function AppearancePage() {
           checkoutPageBorderColor: shopSettings.checkoutPage?.borderColor || "#e5e7eb",
           checkoutShowNewsletterCheckbox: shopSettings.checkoutPage?.showNewsletterCheckbox !== undefined ? shopSettings.checkoutPage.showNewsletterCheckbox : true,
           checkoutNewsletterDefaultChecked: shopSettings.checkoutPage?.newsletterDefaultChecked !== undefined ? shopSettings.checkoutPage.newsletterDefaultChecked : true,
+          checkoutShowZipField: shopSettings.checkoutPage?.showZipField !== undefined ? shopSettings.checkoutPage.showZipField : false,
+          checkoutZipRequired: shopSettings.checkoutPage?.zipRequired !== undefined ? shopSettings.checkoutPage.zipRequired : false,
           checkoutFooterLinks: shopSettings.checkoutPage?.footerLinks || [],
           checkoutCustomFields: shopSettings.checkoutPage?.customFields || [],
           
@@ -782,6 +800,8 @@ export default function AppearancePage() {
               borderColor: settings.checkoutPageBorderColor,
               showNewsletterCheckbox: settings.checkoutShowNewsletterCheckbox,
               newsletterDefaultChecked: settings.checkoutNewsletterDefaultChecked,
+              showZipField: settings.checkoutShowZipField,
+              zipRequired: settings.checkoutZipRequired,
               footerLinks: settings.checkoutFooterLinks,
               customFields: settings.checkoutCustomFields,
             },
@@ -1742,489 +1762,844 @@ export default function AppearancePage() {
         )
 
       case "category":
-        return (
-          <div className="space-y-8">
-            {/* פריסה */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">הגדרות פריסה</h3>
+        // פונקציה ליצירת תצוגה מקדימה של כרטיס מוצר
+        const CategoryPreviewCard = () => {
+          const aspectRatioMap = {
+            "1:1": "aspect-square",
+            "3:4": "aspect-[3/4]",
+            "6:9": "aspect-[6/9]",
+            "9:16": "aspect-[9/16]",
+          }
+          
+          return (
+            <div className={cn(
+              "bg-white rounded-lg overflow-hidden transition-all",
+              !settings.categoryRemoveCardBorders && "border border-gray-200 shadow-sm",
+              settings.categoryRemoveCardBorders && "shadow-none"
+            )}>
+              {/* תמונה */}
+              <div 
+                className={cn(
+                  "relative bg-gray-100",
+                  aspectRatioMap[settings.categoryImageAspectRatio]
+                )} 
+                style={{ 
+                  borderRadius: settings.categoryImageBorderRadius > 0 
+                    ? `${settings.categoryImageBorderRadius}px ${settings.categoryImageBorderRadius}px 0 0` 
+                    : undefined 
+                }}
+              >
+                <Skeleton className="w-full h-full" />
+                
+                {/* כפתור מועדפים - תמיד משמאל כדי לא להתנגש עם מדבקות */}
+                {settings.categoryShowFavButton && (() => {
+                  // אם יש מדבקות למעלה, כפתור המועדפים יהיה משמאל (top-left)
+                  // אחרת, השתמש במיקום שנבחר
+                  const hasTopBadge = settings.categoryShowBadges && 
+                    (settings.categoryBadgePosition === "top-right" || settings.categoryBadgePosition === "top-left");
+                  
+                  let position = "";
+                  if (hasTopBadge) {
+                    // אם יש מדבקות למעלה, כפתור המועדפים משמאל
+                    position = "top-2 left-2";
+                  } else {
+                    // אחרת, השתמש במיקום שנבחר
+                    if (settings.categoryFavButtonPosition === "top-right") position = "top-2 right-2";
+                    else if (settings.categoryFavButtonPosition === "top-left") position = "top-2 left-2";
+                    else if (settings.categoryFavButtonPosition === "bottom-right") position = "bottom-2 right-2";
+                    else if (settings.categoryFavButtonPosition === "bottom-left") position = "bottom-2 left-2";
+                    else position = "top-2 left-2"; // ברירת מחדל משמאל
+                  }
+                  
+                  return (
+                    <div className={cn("absolute z-20", position)}>
+                      <div className="w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm hover:bg-white transition-colors">
+                        <Heart className="w-4 h-4 text-gray-600" />
+                      </div>
+                    </div>
+                  );
+                })()}
+                
+                {/* מדבקות - תמיד מימין למעלה */}
+                {settings.categoryShowBadges && (
+                  <div className={cn(
+                    "absolute z-10",
+                    settings.categoryBadgePosition === "top-right" && "top-2 right-2",
+                    settings.categoryBadgePosition === "top-left" && "top-2 left-2",
+                    settings.categoryBadgePosition === "bottom-right" && "bottom-2 right-2",
+                    settings.categoryBadgePosition === "bottom-left" && "bottom-2 left-2"
+                  )}>
+                    {settings.categoryAutoSaleBadge && (
+                      <div className="px-2 py-1 bg-red-500 text-white text-xs font-semibold rounded shadow-sm">
+                        SALE
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* חצים על התמונה */}
+                {settings.categoryShowImageArrows && (
+                  <>
+                    <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm">
+                      <div className="w-0 h-0 border-r-4 border-r-gray-600 border-t-4 border-t-transparent border-b-4 border-b-transparent"></div>
+                    </div>
+                    <div className="absolute right-2 top-1/2 -translate-y-1/2 z-10 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm">
+                      <div className="w-0 h-0 border-l-4 border-l-gray-600 border-t-4 border-t-transparent border-b-4 border-b-transparent"></div>
+                    </div>
+                  </>
+                )}
+                
+                {/* נקודות תחתית התמונה */}
+                {settings.categoryShowImageDots && (
+                  <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-10 flex gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/90 shadow-sm"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/60 shadow-sm"></div>
+                    <div className="w-1.5 h-1.5 rounded-full bg-white/60 shadow-sm"></div>
+                  </div>
+                )}
+                
+                {/* כפתורי מידות על התמונה */}
+                {settings.categoryShowSizeButtons && settings.categorySizeButtonPosition === "on-image" && (
+                  <div className="absolute bottom-2 right-2 flex gap-1 z-10">
+                    {settings.categoryShowOnlyInStock ? (
+                      <>
+                        <div className="w-6 h-6 rounded bg-white/90 backdrop-blur-sm text-xs flex items-center justify-center text-gray-700 font-medium shadow-sm">
+                          S
+                        </div>
+                        <div className="w-6 h-6 rounded bg-white/90 backdrop-blur-sm text-xs flex items-center justify-center text-gray-700 font-medium shadow-sm">
+                          M
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="w-6 h-6 rounded bg-white/90 backdrop-blur-sm text-xs flex items-center justify-center text-gray-700 font-medium shadow-sm opacity-50">
+                          XS
+                        </div>
+                        <div className="w-6 h-6 rounded bg-white/90 backdrop-blur-sm text-xs flex items-center justify-center text-gray-700 font-medium shadow-sm">
+                          S
+                        </div>
+                        <div className="w-6 h-6 rounded bg-white/90 backdrop-blur-sm text-xs flex items-center justify-center text-gray-700 font-medium shadow-sm">
+                          M
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
               
-              <div className="grid grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">מוצרים בשורה - דסקטופ</Label>
-                  <Input
-                    type="number"
-                    value={settings.categoryProductsPerRowDesktop}
-                    onChange={(e) => updateSettings("categoryProductsPerRowDesktop", parseFloat(e.target.value) || 4)}
-                    min="1"
-                    max="6"
-                    className="text-center"
-                  />
+              {/* תוכן */}
+              <div className={cn(
+                "space-y-2",
+                settings.categoryRemoveMobilePadding ? "p-2 md:p-3" : "p-3",
+                settings.categoryContentAlignment === "right" && "text-right",
+                settings.categoryContentAlignment === "center" && "text-center",
+                settings.categoryContentAlignment === "left" && "text-left"
+              )}>
+                {/* שם מוצר */}
+                <div 
+                  className="font-medium truncate"
+                  style={{
+                    fontSize: `${settings.categoryProductNameFontSize}px`,
+                    color: settings.categoryProductNameColor
+                  }}
+                >
+                  שם המוצר לדוגמה
                 </div>
                 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">מוצרים בשורה - טאבלט</Label>
-                  <Input
-                    type="number"
-                    value={settings.categoryProductsPerRowTablet}
-                    onChange={(e) => updateSettings("categoryProductsPerRowTablet", parseFloat(e.target.value) || 3)}
-                    min="1"
-                    max="6"
-                    className="text-center"
-                  />
+                {/* מחירים */}
+                <div className="flex items-center gap-2 flex-wrap" style={{ justifyContent: settings.categoryContentAlignment === "center" ? "center" : settings.categoryContentAlignment === "right" ? "flex-end" : "flex-start" }}>
+                  {/* מחיר מבצע */}
+                  <span 
+                    className="font-semibold"
+                    style={{
+                      fontSize: `${settings.categorySalePriceFontSize}px`,
+                      color: settings.categorySalePriceColor
+                    }}
+                  >
+                    {settings.categoryRoundPrices 
+                      ? `₪${Math.round(99)}` 
+                      : settings.categoryShowDecimals 
+                        ? "₪99.00" 
+                        : "₪99"}
+                  </span>
+                  {/* מחיר מחוק */}
+                  <span 
+                    className="line-through"
+                    style={{
+                      fontSize: `${settings.categoryStrikePriceFontSize}px`,
+                      color: settings.categoryStrikePriceColor
+                    }}
+                  >
+                    {settings.categoryRoundPrices 
+                      ? `₪${Math.round(149)}` 
+                      : settings.categoryShowDecimals 
+                        ? "₪149.00" 
+                        : "₪149"}
+                  </span>
+                  {/* מחיר רגיל (אם אין מבצע) - להצגה בתצוגה מקדימה */}
+                  {!settings.categoryAutoSaleBadge && (
+                    <span 
+                      className="font-semibold"
+                      style={{
+                        fontSize: `${settings.categoryRegularPriceFontSize}px`,
+                        color: settings.categoryRegularPriceColor
+                      }}
+                    >
+                      {settings.categoryRoundPrices 
+                        ? `₪${Math.round(149)}` 
+                        : settings.categoryShowDecimals 
+                          ? "₪149.00" 
+                          : "₪149"}
+                    </span>
+                  )}
                 </div>
                 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">מוצרים בשורה - מובייל</Label>
-                  <Input
-                    type="number"
-                    value={settings.categoryProductsPerRowMobile}
-                    onChange={(e) => updateSettings("categoryProductsPerRowMobile", parseFloat(e.target.value) || 2)}
-                    min="1"
-                    max="4"
-                    className="text-center"
-                  />
-                </div>
+                {/* כפתורי מידות מתחת למחיר */}
+                {settings.categoryShowSizeButtons && settings.categorySizeButtonPosition === "below-image" && (
+                  <div className="flex gap-1 pt-1" style={{ justifyContent: settings.categoryContentAlignment === "center" ? "center" : settings.categoryContentAlignment === "right" ? "flex-end" : "flex-start" }}>
+                    <div className="w-7 h-7 rounded border border-gray-300 text-xs flex items-center justify-center text-gray-700 font-medium hover:border-gray-400 cursor-pointer">
+                      S
+                    </div>
+                    <div className="w-7 h-7 rounded border border-gray-300 text-xs flex items-center justify-center text-gray-700 font-medium hover:border-gray-400 cursor-pointer">
+                      M
+                    </div>
+                    <div className="w-7 h-7 rounded border border-gray-300 text-xs flex items-center justify-center text-gray-700 font-medium hover:border-gray-400 cursor-pointer">
+                      L
+                    </div>
+                  </div>
+                )}
+                
+                {/* דוגמאות צבע */}
+                {settings.categoryShowColorSamples && (
+                  <div className="flex gap-1.5 pt-1" style={{ justifyContent: settings.categoryContentAlignment === "center" ? "center" : settings.categoryContentAlignment === "right" ? "flex-end" : "flex-start" }}>
+                    <div className="w-4 h-4 rounded-full border border-gray-300 bg-red-500"></div>
+                    <div className="w-4 h-4 rounded-full border border-gray-300 bg-blue-500"></div>
+                    <div className="w-4 h-4 rounded-full border border-gray-300 bg-green-500"></div>
+                  </div>
+                )}
               </div>
             </div>
+          )
+        }
+        
+        return (
+          <div className="space-y-6">
+            {/* תצוגה מקדימה */}
+            <Card className="bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Eye className="w-5 h-5 text-purple-600" />
+                    <CardTitle className="text-lg">תצוגה מקדימה</CardTitle>
+                  </div>
+                  <span className="text-sm text-gray-600">השינויים יופיעו בזמן אמת</span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div 
+                  className="grid gap-4 p-4 bg-white rounded-lg"
+                  style={{
+                    gridTemplateColumns: `repeat(${settings.categoryProductsPerRowDesktop}, minmax(0, 1fr))`
+                  }}
+                >
+                  {Array.from({ length: Math.min(settings.categoryProductsPerRowDesktop, 4) }).map((_, i) => (
+                    <CategoryPreviewCard key={i} />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* פריסה */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Grid3x3 className="w-5 h-5 text-gray-600" />
+                  <CardTitle>פריסת רשת</CardTitle>
+                </div>
+                <CardDescription>הגדר כמה מוצרים יוצגו בכל שורה לפי סוג המכשיר</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="space-y-3 p-4 border border-gray-200 rounded-lg bg-gray-50/50">
+                    <div className="flex items-center gap-2">
+                      <Monitor className="w-4 h-4 text-gray-600" />
+                      <Label className="text-sm font-semibold">דסקטופ</Label>
+                    </div>
+                    <Input
+                      type="number"
+                      value={settings.categoryProductsPerRowDesktop}
+                      onChange={(e) => updateSettings("categoryProductsPerRowDesktop", parseFloat(e.target.value) || 4)}
+                      min="1"
+                      max="6"
+                      className="text-center font-medium text-lg"
+                    />
+                    <p className="text-xs text-gray-500">מוצרים בשורה</p>
+                  </div>
+                  
+                  <div className="space-y-3 p-4 border border-gray-200 rounded-lg bg-gray-50/50">
+                    <div className="flex items-center gap-2">
+                      <Tablet className="w-4 h-4 text-gray-600" />
+                      <Label className="text-sm font-semibold">טאבלט</Label>
+                    </div>
+                    <Input
+                      type="number"
+                      value={settings.categoryProductsPerRowTablet}
+                      onChange={(e) => updateSettings("categoryProductsPerRowTablet", parseFloat(e.target.value) || 3)}
+                      min="1"
+                      max="6"
+                      className="text-center font-medium text-lg"
+                    />
+                    <p className="text-xs text-gray-500">מוצרים בשורה</p>
+                  </div>
+                  
+                  <div className="space-y-3 p-4 border border-gray-200 rounded-lg bg-gray-50/50">
+                    <div className="flex items-center gap-2">
+                      <Smartphone className="w-4 h-4 text-gray-600" />
+                      <Label className="text-sm font-semibold">מובייל</Label>
+                    </div>
+                    <Input
+                      type="number"
+                      value={settings.categoryProductsPerRowMobile}
+                      onChange={(e) => updateSettings("categoryProductsPerRowMobile", parseFloat(e.target.value) || 2)}
+                      min="1"
+                      max="4"
+                      className="text-center font-medium text-lg"
+                    />
+                    <p className="text-xs text-gray-500">מוצרים בשורה</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* הגדרות כרטיס מוצר */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">הגדרות כרטיס מוצר</h3>
-              
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-medium">הפעל אפקט hover לתמונות</Label>
-                    <p className="text-xs text-gray-500">תמונה שנייה בעת מעבר עכבר</p>
-                  </div>
-                  <Switch
-                    checked={settings.categoryCardHoverEffect}
-                    onCheckedChange={(checked) => updateSettings("categoryCardHoverEffect", checked)}
-                  />
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Image className="w-5 h-5 text-gray-600" />
+                  <CardTitle>עיצוב כרטיס מוצר</CardTitle>
                 </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-medium">הצג כפתור מועדפים</Label>
-                    <p className="text-xs text-gray-500">כפתור הוספה לרשימת מועדפים</p>
-                  </div>
-                  <Switch
-                    checked={settings.categoryShowFavButton}
-                    onCheckedChange={(checked) => updateSettings("categoryShowFavButton", checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-medium">הוספה מהירה לעגלה</Label>
-                    <p className="text-xs text-gray-500">חלון קופץ לבחירת אפשרויות</p>
-                  </div>
-                  <Switch
-                    checked={settings.categoryQuickAddToCart}
-                    onCheckedChange={(checked) => updateSettings("categoryQuickAddToCart", checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-medium">הצג דוגמאות צבע</Label>
-                    <p className="text-xs text-gray-500">עיגולי צבע על כרטיס המוצר</p>
-                  </div>
-                  <Switch
-                    checked={settings.categoryShowColorSamples}
-                    onCheckedChange={(checked) => updateSettings("categoryShowColorSamples", checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-medium">הצג וידאו למוצרים</Label>
-                    <p className="text-xs text-gray-500">וידאו במקום תמונה (אם קיים)</p>
-                  </div>
-                  <Switch
-                    checked={settings.categoryShowVideo}
-                    onCheckedChange={(checked) => updateSettings("categoryShowVideo", checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-medium">הצג חצים על התמונה</Label>
-                    <p className="text-xs text-gray-500">חצי ניווט לגלריית התמונות</p>
-                  </div>
-                  <Switch
-                    checked={settings.categoryShowImageArrows}
-                    onCheckedChange={(checked) => updateSettings("categoryShowImageArrows", checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-medium">הצג נקודות תחתית התמונה</Label>
-                    <p className="text-xs text-gray-500">נקודות לניווט בגלריית התמונות</p>
-                  </div>
-                  <Switch
-                    checked={settings.categoryShowImageDots}
-                    onCheckedChange={(checked) => updateSettings("categoryShowImageDots", checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-medium">הסר פדינג מובייל</Label>
-                    <p className="text-xs text-gray-500">הסרת רווחים מצדי התמונות במובייל</p>
-                  </div>
-                  <Switch
-                    checked={settings.categoryRemoveMobilePadding}
-                    onCheckedChange={(checked) => updateSettings("categoryRemoveMobilePadding", checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-medium">הסר מסגרות מכרטיסים</Label>
-                    <p className="text-xs text-gray-500">עיצוב נקי ללא מסגרות סביב המוצרים</p>
-                  </div>
-                  <Switch
-                    checked={settings.categoryRemoveCardBorders}
-                    onCheckedChange={(checked) => updateSettings("categoryRemoveCardBorders", checked)}
-                  />
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="text-sm font-medium">הצג כפתורי מידות</Label>
-                    <p className="text-xs text-gray-500">הצגת מידות זמינות על כרטיס המוצר</p>
-                  </div>
-                  <Switch
-                    checked={settings.categoryShowSizeButtons}
-                    onCheckedChange={(checked) => updateSettings("categoryShowSizeButtons", checked)}
-                  />
-                </div>
-
-                {settings.categoryShowSizeButtons && (
-                  <>
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <Label className="text-sm font-medium">הצג רק מידות במלאי</Label>
-                        <p className="text-xs text-gray-500">הסתר מידות שאזלו מהמלאי</p>
+                <CardDescription>התאם את המראה והתנהגות של כרטיסי המוצרים</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* תמונה */}
+                <div className="space-y-4">
+                  <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <ImageIcon className="w-4 h-4" />
+                    תמונות
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-medium">עיגול פינות תמונה (px)</Label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="range"
+                          value={settings.categoryImageBorderRadius}
+                          onChange={(e) => updateSettings("categoryImageBorderRadius", parseFloat(e.target.value) || 0)}
+                          min="0"
+                          max="50"
+                          step="1"
+                          className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                        />
+                        <Input
+                          type="number"
+                          value={settings.categoryImageBorderRadius}
+                          onChange={(e) => updateSettings("categoryImageBorderRadius", parseFloat(e.target.value) || 0)}
+                          min="0"
+                          max="50"
+                          className="w-20 text-center"
+                        />
                       </div>
-                      <Switch
-                        checked={settings.categoryShowOnlyInStock}
-                        onCheckedChange={(checked) => updateSettings("categoryShowOnlyInStock", checked)}
-                      />
                     </div>
 
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium">מיקום כפתורי מידות</Label>
+                      <Label className="text-sm font-medium">יחס גובה-רוחב תמונות</Label>
                       <Select
-                        value={settings.categorySizeButtonPosition}
-                        onValueChange={(value) => updateSettings("categorySizeButtonPosition", value)}
+                        value={settings.categoryImageAspectRatio}
+                        onValueChange={(value) => updateSettings("categoryImageAspectRatio", value)}
                       >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="on-image">על התמונה מצד ימין</SelectItem>
-                          <SelectItem value="below-image">מתחת למחיר</SelectItem>
+                          <SelectItem value="1:1">ריבוע (1:1)</SelectItem>
+                          <SelectItem value="3:4">פורטרט (3:4)</SelectItem>
+                          <SelectItem value="6:9">גבוה (6:9)</SelectItem>
+                          <SelectItem value="9:16">מאורך גבוה (9:16)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
-                  </>
-                )}
-              </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium">אפקט hover לתמונות</Label>
+                        <p className="text-xs text-gray-500">תמונה שנייה בעת מעבר עכבר</p>
+                      </div>
+                      <Switch
+                        checked={settings.categoryCardHoverEffect}
+                        onCheckedChange={(checked) => updateSettings("categoryCardHoverEffect", checked)}
+                      />
+                    </div>
 
-              <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">עיגול פינות תמונה (px)</Label>
-                  <Input
-                    type="number"
-                    value={settings.categoryImageBorderRadius}
-                    onChange={(e) => updateSettings("categoryImageBorderRadius", parseFloat(e.target.value) || 0)}
-                    min="0"
-                    max="50"
-                  />
+                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium">הצג וידאו למוצרים</Label>
+                        <p className="text-xs text-gray-500">וידאו במקום תמונה (אם קיים)</p>
+                      </div>
+                      <Switch
+                        checked={settings.categoryShowVideo}
+                        onCheckedChange={(checked) => updateSettings("categoryShowVideo", checked)}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium">הצג חצים על התמונה</Label>
+                        <p className="text-xs text-gray-500">חצי ניווט לגלריית התמונות</p>
+                      </div>
+                      <Switch
+                        checked={settings.categoryShowImageArrows}
+                        onCheckedChange={(checked) => updateSettings("categoryShowImageArrows", checked)}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium">הצג נקודות תחתית התמונה</Label>
+                        <p className="text-xs text-gray-500">נקודות לניווט בגלריית התמונות</p>
+                      </div>
+                      <Switch
+                        checked={settings.categoryShowImageDots}
+                        onCheckedChange={(checked) => updateSettings("categoryShowImageDots", checked)}
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">יחס גובה-רוחב תמונות</Label>
-                  <Select
-                    value={settings.categoryImageAspectRatio}
-                    onValueChange={(value) => updateSettings("categoryImageAspectRatio", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1:1">ריבוע (1:1)</SelectItem>
-                      <SelectItem value="3:4">פורטרט (3:4)</SelectItem>
-                      <SelectItem value="6:9">גבוה (6:9)</SelectItem>
-                      <SelectItem value="9:16">מאוך גבוה (9:16)</SelectItem>
-                    </SelectContent>
-                  </Select>
+                {/* כפתורים ואינטראקציות */}
+                <div className="space-y-4 pt-4 border-t">
+                  <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <ShoppingCart className="w-4 h-4" />
+                    כפתורים ואינטראקציות
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium">כפתור מועדפים</Label>
+                        <p className="text-xs text-gray-500">כפתור הוספה לרשימת מועדפים</p>
+                      </div>
+                      <Switch
+                        checked={settings.categoryShowFavButton}
+                        onCheckedChange={(checked) => updateSettings("categoryShowFavButton", checked)}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium">הוספה מהירה לעגלה</Label>
+                        <p className="text-xs text-gray-500">חלון קופץ לבחירת אפשרויות</p>
+                      </div>
+                      <Switch
+                        checked={settings.categoryQuickAddToCart}
+                        onCheckedChange={(checked) => updateSettings("categoryQuickAddToCart", checked)}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium">דוגמאות צבע</Label>
+                        <p className="text-xs text-gray-500">עיגולי צבע על כרטיס המוצר</p>
+                      </div>
+                      <Switch
+                        checked={settings.categoryShowColorSamples}
+                        onCheckedChange={(checked) => updateSettings("categoryShowColorSamples", checked)}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium">כפתורי מידות</Label>
+                        <p className="text-xs text-gray-500">הצגת מידות זמינות על כרטיס המוצר</p>
+                      </div>
+                      <Switch
+                        checked={settings.categoryShowSizeButtons}
+                        onCheckedChange={(checked) => updateSettings("categoryShowSizeButtons", checked)}
+                      />
+                    </div>
+                  </div>
+
+                  {settings.categoryShowSizeButtons && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <Label className="text-sm font-medium">הצג רק מידות במלאי</Label>
+                          <p className="text-xs text-gray-500">הסתר מידות שאזלו מהמלאי</p>
+                        </div>
+                        <Switch
+                          checked={settings.categoryShowOnlyInStock}
+                          onCheckedChange={(checked) => updateSettings("categoryShowOnlyInStock", checked)}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium">מיקום כפתורי מידות</Label>
+                        <Select
+                          value={settings.categorySizeButtonPosition}
+                          onValueChange={(value) => updateSettings("categorySizeButtonPosition", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="on-image">על התמונה מצד ימין</SelectItem>
+                            <SelectItem value="below-image">מתחת למחיר</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
+
+                {/* עיצוב כללי */}
+                <div className="space-y-4 pt-4 border-t">
+                  <h4 className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    <Layout className="w-4 h-4" />
+                    עיצוב כללי
+                  </h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium">הסר מסגרות מכרטיסים</Label>
+                        <p className="text-xs text-gray-500">עיצוב נקי ללא מסגרות סביב המוצרים</p>
+                      </div>
+                      <Switch
+                        checked={settings.categoryRemoveCardBorders}
+                        onCheckedChange={(checked) => updateSettings("categoryRemoveCardBorders", checked)}
+                      />
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium">הסר פדינג מובייל</Label>
+                        <p className="text-xs text-gray-500">הסרת רווחים מצדי התמונות במובייל</p>
+                      </div>
+                      <Switch
+                        checked={settings.categoryRemoveMobilePadding}
+                        onCheckedChange={(checked) => updateSettings("categoryRemoveMobilePadding", checked)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* תצוגת מחירים ויישור */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">תצוגת מחירים</h3>
-              
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-sm font-medium">עיגול מחירים</Label>
-                  <p className="text-xs text-gray-500">הצגת מחירים ללא עשרוניות (₪52)</p>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <DollarSign className="w-5 h-5 text-gray-600" />
+                  <CardTitle>תצוגת מחירים ויישור</CardTitle>
                 </div>
-                <Switch
-                  checked={settings.categoryRoundPrices}
-                  onCheckedChange={(checked) => updateSettings("categoryRoundPrices", checked)}
-                />
-              </div>
+                <CardDescription>התאם את תצוגת המחירים ומיקום התוכן בכרטיסי המוצרים</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">יישור תוכן</Label>
+                    <p className="text-xs text-gray-500 mb-2">יישור שם המוצר, מחיר וצבעים</p>
+                    <Select
+                      value={settings.categoryContentAlignment}
+                      onValueChange={(value) => updateSettings("categoryContentAlignment", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="right">ימין</SelectItem>
+                        <SelectItem value="center">מרכז</SelectItem>
+                        <SelectItem value="left">שמאל</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label className="text-sm font-medium">מחירים עם עשרוניות</Label>
-                  <p className="text-xs text-gray-500">הצגת מחירים עם .00 (₪52.00)</p>
-                </div>
-                <Switch
-                  checked={settings.categoryShowDecimals}
-                  onCheckedChange={(checked) => updateSettings("categoryShowDecimals", checked)}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">יישור תוכן (שם, מחיר, צבעים)</Label>
-                  <Select
-                    value={settings.categoryContentAlignment}
-                    onValueChange={(value) => updateSettings("categoryContentAlignment", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="right">ימין</SelectItem>
-                      <SelectItem value="center">מרכז</SelectItem>
-                      <SelectItem value="left">שמאל</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">מיקום כפתור מועדפים</Label>
+                    <p className="text-xs text-gray-500 mb-2">מיקום כפתור המועדפים על התמונה</p>
+                    <Select
+                      value={settings.categoryFavButtonPosition}
+                      onValueChange={(value) => updateSettings("categoryFavButtonPosition", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="top-right">למעלה ימין</SelectItem>
+                        <SelectItem value="top-left">למעלה שמאל</SelectItem>
+                        <SelectItem value="bottom-right">למטה ימין</SelectItem>
+                        <SelectItem value="bottom-left">למטה שמאל</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">מיקום כפתור מועדפים</Label>
-                  <Select
-                    value={settings.categoryFavButtonPosition}
-                    onValueChange={(value) => updateSettings("categoryFavButtonPosition", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="top-right">למעלה ימין</SelectItem>
-                      <SelectItem value="top-left">למעלה שמאל</SelectItem>
-                      <SelectItem value="bottom-right">למטה ימין</SelectItem>
-                      <SelectItem value="bottom-left">למטה שמאל</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-4 border-t">
+                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">עיגול מחירים</Label>
+                      <p className="text-xs text-gray-500">הצגת מחירים ללא עשרוניות (₪52)</p>
+                    </div>
+                    <Switch
+                      checked={settings.categoryRoundPrices}
+                      onCheckedChange={(checked) => updateSettings("categoryRoundPrices", checked)}
+                    />
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
+                    <div>
+                      <Label className="text-sm font-medium">מחירים עם עשרוניות</Label>
+                      <p className="text-xs text-gray-500">הצגת מחירים עם .00 (₪52.00)</p>
+                    </div>
+                    <Switch
+                      checked={settings.categoryShowDecimals}
+                      onCheckedChange={(checked) => updateSettings("categoryShowDecimals", checked)}
+                    />
+                  </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* טיפוגרפיה */}
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-1">הגדרות טיפוגרפיה</h3>
-                <p className="text-sm text-gray-500">התאמת גדלים וצבעים של הטקסטים בכרטיסי המוצרים</p>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* שם המוצר */}
-                <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-4 hover:border-gray-300 transition-colors">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center">
-                      <span className="text-blue-600 text-sm font-bold">Aa</span>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Type className="w-5 h-5 text-gray-600" />
+                  <CardTitle>טיפוגרפיה</CardTitle>
+                </div>
+                <CardDescription>התאם את הגדלים והצבעים של הטקסטים בכרטיסי המוצרים</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* שם המוצר */}
+                  <div className="bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-200 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                        <span className="text-white text-sm font-bold">Aa</span>
+                      </div>
+                      <Label className="text-sm font-semibold text-gray-900">שם המוצר</Label>
                     </div>
-                    <Label className="text-base font-semibold text-gray-900">שם המוצר</Label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700 mb-2 block">גודל פונט (px)</Label>
-                      <Input
-                        type="number"
-                        value={settings.categoryProductNameFontSize}
-                        onChange={(e) => updateSettings("categoryProductNameFontSize", parseFloat(e.target.value) || 14)}
-                        min="10"
-                        max="24"
-                        className="text-center font-medium"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700 mb-2 block">צבע</Label>
-                      <div className="relative">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">גודל פונט (px)</Label>
                         <Input
-                          type="color"
-                          value={settings.categoryProductNameColor}
-                          onChange={(e) => updateSettings("categoryProductNameColor", e.target.value)}
-                          className="h-10 w-full cursor-pointer"
+                          type="number"
+                          value={settings.categoryProductNameFontSize}
+                          onChange={(e) => updateSettings("categoryProductNameFontSize", parseFloat(e.target.value) || 14)}
+                          min="10"
+                          max="24"
+                          className="text-center font-medium"
                         />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">צבע</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="color"
+                            value={settings.categoryProductNameColor}
+                            onChange={(e) => updateSettings("categoryProductNameColor", e.target.value)}
+                            className="h-9 w-16 cursor-pointer rounded"
+                          />
+                          <Input
+                            value={settings.categoryProductNameColor}
+                            onChange={(e) => updateSettings("categoryProductNameColor", e.target.value)}
+                            className="flex-1 text-xs"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* מחיר רגיל */}
-                <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-4 hover:border-gray-300 transition-colors">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 bg-green-50 rounded-lg flex items-center justify-center">
-                      <span className="text-green-600 text-sm font-bold">₪</span>
+                  {/* מחיר רגיל */}
+                  <div className="bg-gradient-to-br from-green-50 to-green-100/50 border border-green-200 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center">
+                        <span className="text-white text-sm font-bold">₪</span>
+                      </div>
+                      <Label className="text-sm font-semibold text-gray-900">מחיר רגיל</Label>
                     </div>
-                    <Label className="text-base font-semibold text-gray-900">מחיר רגיל</Label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700 mb-2 block">גודל פונט (px)</Label>
-                      <Input
-                        type="number"
-                        value={settings.categoryRegularPriceFontSize}
-                        onChange={(e) => updateSettings("categoryRegularPriceFontSize", parseFloat(e.target.value) || 16)}
-                        min="10"
-                        max="24"
-                        className="text-center font-medium"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700 mb-2 block">צבע</Label>
-                      <div className="relative">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">גודל פונט (px)</Label>
                         <Input
-                          type="color"
-                          value={settings.categoryRegularPriceColor}
-                          onChange={(e) => updateSettings("categoryRegularPriceColor", e.target.value)}
-                          className="h-10 w-full cursor-pointer"
+                          type="number"
+                          value={settings.categoryRegularPriceFontSize}
+                          onChange={(e) => updateSettings("categoryRegularPriceFontSize", parseFloat(e.target.value) || 16)}
+                          min="10"
+                          max="24"
+                          className="text-center font-medium"
                         />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">צבע</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="color"
+                            value={settings.categoryRegularPriceColor}
+                            onChange={(e) => updateSettings("categoryRegularPriceColor", e.target.value)}
+                            className="h-9 w-16 cursor-pointer rounded"
+                          />
+                          <Input
+                            value={settings.categoryRegularPriceColor}
+                            onChange={(e) => updateSettings("categoryRegularPriceColor", e.target.value)}
+                            className="flex-1 text-xs"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* מחיר מבצע */}
-                <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-4 hover:border-gray-300 transition-colors">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center">
-                      <span className="text-red-600 text-sm font-bold">%</span>
+                  {/* מחיר מבצע */}
+                  <div className="bg-gradient-to-br from-red-50 to-red-100/50 border border-red-200 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
+                        <span className="text-white text-sm font-bold">%</span>
+                      </div>
+                      <Label className="text-sm font-semibold text-gray-900">מחיר מבצע</Label>
                     </div>
-                    <Label className="text-base font-semibold text-gray-900">מחיר מבצע</Label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700 mb-2 block">גודל פונט (px)</Label>
-                      <Input
-                        type="number"
-                        value={settings.categorySalePriceFontSize}
-                        onChange={(e) => updateSettings("categorySalePriceFontSize", parseFloat(e.target.value) || 16)}
-                        min="10"
-                        max="24"
-                        className="text-center font-medium"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700 mb-2 block">צבע</Label>
-                      <div className="relative">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">גודל פונט (px)</Label>
                         <Input
-                          type="color"
-                          value={settings.categorySalePriceColor}
-                          onChange={(e) => updateSettings("categorySalePriceColor", e.target.value)}
-                          className="h-10 w-full cursor-pointer"
+                          type="number"
+                          value={settings.categorySalePriceFontSize}
+                          onChange={(e) => updateSettings("categorySalePriceFontSize", parseFloat(e.target.value) || 16)}
+                          min="10"
+                          max="24"
+                          className="text-center font-medium"
                         />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">צבע</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="color"
+                            value={settings.categorySalePriceColor}
+                            onChange={(e) => updateSettings("categorySalePriceColor", e.target.value)}
+                            className="h-9 w-16 cursor-pointer rounded"
+                          />
+                          <Input
+                            value={settings.categorySalePriceColor}
+                            onChange={(e) => updateSettings("categorySalePriceColor", e.target.value)}
+                            className="flex-1 text-xs"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
 
-                {/* מחיר מחוק */}
-                <div className="bg-white border border-gray-200 rounded-lg p-5 space-y-4 hover:border-gray-300 transition-colors">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-8 h-8 bg-gray-50 rounded-lg flex items-center justify-center">
-                      <span className="text-gray-400 text-sm font-bold line-through">₪</span>
+                  {/* מחיר מחוק */}
+                  <div className="bg-gradient-to-br from-gray-50 to-gray-100/50 border border-gray-200 rounded-lg p-4 space-y-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-gray-400 rounded-lg flex items-center justify-center">
+                        <span className="text-white text-sm font-bold line-through">₪</span>
+                      </div>
+                      <Label className="text-sm font-semibold text-gray-900">מחיר מחוק</Label>
                     </div>
-                    <Label className="text-base font-semibold text-gray-900">מחיר מחוק</Label>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700 mb-2 block">גודל פונט (px)</Label>
-                      <Input
-                        type="number"
-                        value={settings.categoryStrikePriceFontSize}
-                        onChange={(e) => updateSettings("categoryStrikePriceFontSize", parseFloat(e.target.value) || 14)}
-                        min="10"
-                        max="24"
-                        className="text-center font-medium"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-gray-700 mb-2 block">צבע</Label>
-                      <div className="relative">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">גודל פונט (px)</Label>
                         <Input
-                          type="color"
-                          value={settings.categoryStrikePriceColor}
-                          onChange={(e) => updateSettings("categoryStrikePriceColor", e.target.value)}
-                          className="h-10 w-full cursor-pointer"
+                          type="number"
+                          value={settings.categoryStrikePriceFontSize}
+                          onChange={(e) => updateSettings("categoryStrikePriceFontSize", parseFloat(e.target.value) || 14)}
+                          min="10"
+                          max="24"
+                          className="text-center font-medium"
                         />
+                      </div>
+                      <div>
+                        <Label className="text-xs text-gray-600 mb-1 block">צבע</Label>
+                        <div className="flex gap-2">
+                          <Input
+                            type="color"
+                            value={settings.categoryStrikePriceColor}
+                            onChange={(e) => updateSettings("categoryStrikePriceColor", e.target.value)}
+                            className="h-9 w-16 cursor-pointer rounded"
+                          />
+                          <Input
+                            value={settings.categoryStrikePriceColor}
+                            onChange={(e) => updateSettings("categoryStrikePriceColor", e.target.value)}
+                            className="flex-1 text-xs"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* מיון וסינון */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">מיון וסינון</h3>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">מיון ברירת מחדל</Label>
-                  <Select
-                    value={settings.categoryDefaultSort}
-                    onValueChange={(value) => updateSettings("categoryDefaultSort", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="default">סדר ברירת מחדל</SelectItem>
-                      <SelectItem value="price-asc">מחיר: נמוך לגבוה</SelectItem>
-                      <SelectItem value="price-desc">מחיר: גבוה לנמוך</SelectItem>
-                      <SelectItem value="name-asc">שם: א-ת</SelectItem>
-                      <SelectItem value="name-desc">שם: ת-א</SelectItem>
-                      <SelectItem value="newest">חדש ביותר</SelectItem>
-                    </SelectContent>
-                  </Select>
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Filter className="w-5 h-5 text-gray-600" />
+                  <CardTitle>מיון וסינון</CardTitle>
                 </div>
+                <CardDescription>הגדר את אופן המיון והסינון של המוצרים בעמוד הקטגוריה</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">מיון ברירת מחדל</Label>
+                    <Select
+                      value={settings.categoryDefaultSort}
+                      onValueChange={(value) => updateSettings("categoryDefaultSort", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="default">סדר ברירת מחדל</SelectItem>
+                        <SelectItem value="price-asc">מחיר: נמוך לגבוה</SelectItem>
+                        <SelectItem value="price-desc">מחיר: גבוה לנמוך</SelectItem>
+                        <SelectItem value="name-asc">שם: א-ת</SelectItem>
+                        <SelectItem value="name-desc">שם: ת-א</SelectItem>
+                        <SelectItem value="newest">חדש ביותר</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">מיקום פילטרים</Label>
-                  <Select
-                    value={settings.categoryFilterPosition}
-                    onValueChange={(value) => updateSettings("categoryFilterPosition", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="top">למעלה בדף</SelectItem>
-                      <SelectItem value="sidebar">סיידבר צדדי</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">מיקום פילטרים</Label>
+                    <Select
+                      value={settings.categoryFilterPosition}
+                      onValueChange={(value) => updateSettings("categoryFilterPosition", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="top">למעלה בדף</SelectItem>
+                        <SelectItem value="sidebar">סיידבר צדדי</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* באנרים ברשימת מוצרים */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">באנרים ברשימת מוצרים</h3>
-              
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <ImageIcon className="w-5 h-5 text-gray-600" />
+                  <CardTitle>באנרים ברשימת מוצרים</CardTitle>
+                </div>
+                <CardDescription>הוסף באנרים שיופיעו באמצע רשימת המוצרים</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                   <div>
                     <Label className="text-sm font-medium">הפעל באנרים ברשימה</Label>
                     <p className="text-xs text-gray-500">באנרים באמצע רשימת המוצרים</p>
@@ -2236,52 +2611,54 @@ export default function AppearancePage() {
                 </div>
 
                 {settings.categoryEnableBanners && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium">תדירות באנרים (אחרי כמה מוצרים)</Label>
-                    <Input
-                      type="number"
-                      value={settings.categoryBannerFrequency}
-                      onChange={(e) => updateSettings("categoryBannerFrequency", parseFloat(e.target.value) || 6)}
-                      min="2"
-                      max="20"
-                    />
-                    <p className="text-xs text-gray-500">באנר יופיע אחרי כל {settings.categoryBannerFrequency} מוצרים</p>
-                  </div>
-                )}
-              </div>
-
-              {/* ניהול באנרים */}
-              {settings.categoryEnableBanners && (
-                <div className="space-y-4 pt-6 border-t mt-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="text-base font-semibold text-gray-900">באנרים ברשימת מוצרים</h4>
-                      <p className="text-xs text-gray-500 mt-1">
-                        באנרים שיופיעו באמצע רשימת המוצרים אחרי כל {settings.categoryBannerFrequency} מוצרים
-                      </p>
+                  <>
+                    <div className="space-y-2 pt-4 border-t">
+                      <Label className="text-sm font-medium">תדירות באנרים</Label>
+                      <p className="text-xs text-gray-500 mb-2">באנר יופיע אחרי כל X מוצרים</p>
+                      <div className="flex items-center gap-3">
+                        <Input
+                          type="number"
+                          value={settings.categoryBannerFrequency}
+                          onChange={(e) => updateSettings("categoryBannerFrequency", parseFloat(e.target.value) || 6)}
+                          min="2"
+                          max="20"
+                          className="w-24"
+                        />
+                        <span className="text-sm text-gray-600">מוצרים</span>
+                      </div>
                     </div>
-                    <Button
-                      onClick={() => {
-                        const newBanner = {
-                          id: Date.now().toString(),
-                          title: "באנר חדש",
-                          description: "",
-                          image: "",
-                          link: "",
-                          buttonText: "לחץ כאן",
-                          bgColor: "#f3f4f6",
-                          textColor: "#111827",
-                          enabled: true,
-                        }
-                        updateSettings("categoryBanners", [...settings.categoryBanners, newBanner])
-                      }}
-                      size="sm"
-                      className="prodify-gradient text-white"
-                    >
-                      <Upload className="w-4 h-4 ml-2" />
-                      הוסף באנר
-                    </Button>
-                  </div>
+
+                    {/* ניהול באנרים */}
+                    <div className="space-y-4 pt-4 border-t">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h4 className="text-sm font-semibold text-gray-900">רשימת באנרים</h4>
+                          <p className="text-xs text-gray-500 mt-1">
+                            באנרים שיופיעו אחרי כל {settings.categoryBannerFrequency} מוצרים
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() => {
+                            const newBanner = {
+                              id: Date.now().toString(),
+                              title: "באנר חדש",
+                              description: "",
+                              image: "",
+                              link: "",
+                              buttonText: "לחץ כאן",
+                              bgColor: "#f3f4f6",
+                              textColor: "#111827",
+                              enabled: true,
+                            }
+                            updateSettings("categoryBanners", [...settings.categoryBanners, newBanner])
+                          }}
+                          size="sm"
+                          className="prodify-gradient text-white"
+                        >
+                          <Plus className="w-4 h-4 ml-2" />
+                          הוסף באנר
+                        </Button>
+                      </div>
 
                   {settings.categoryBanners.length === 0 ? (
                     <div className="text-center py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
@@ -2485,16 +2862,23 @@ export default function AppearancePage() {
                       ))}
                     </div>
                   )}
-                </div>
-              )}
-            </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
 
             {/* מדבקות על מוצרים */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">מדבקות על מוצרים</h3>
-              
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Tag className="w-5 h-5 text-gray-600" />
+                  <CardTitle>מדבקות על מוצרים</CardTitle>
+                </div>
+                <CardDescription>הגדר את תצוגת המדבקות על כרטיסי המוצרים</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                   <div>
                     <Label className="text-sm font-medium">הצג מדבקות</Label>
                     <p className="text-xs text-gray-500">מדבקות "חדש", "מבצע" וכו' על כרטיסי המוצרים</p>
@@ -2506,8 +2890,8 @@ export default function AppearancePage() {
                 </div>
 
                 {settings.categoryShowBadges && (
-                  <>
-                    <div className="flex items-center justify-between">
+                  <div className="space-y-4 pt-4 border-t">
+                    <div className="flex items-center justify-between p-3 border border-gray-200 rounded-lg">
                       <div>
                         <Label className="text-sm font-medium">מדבקת SALE אוטומטית</Label>
                         <p className="text-xs text-gray-500">הצג מדבקת "SALE" אוטומטית על מוצרים עם מחיר מבצע</p>
@@ -2535,46 +2919,55 @@ export default function AppearancePage() {
                         </SelectContent>
                       </Select>
                     </div>
-                  </>
+                  </div>
                 )}
-              </div>
-            </div>
+              </CardContent>
+            </Card>
 
             {/* הגדרות טעינה */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">הגדרות טעינה</h3>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">מוצרים בעמוד</Label>
-                  <Input
-                    type="number"
-                    value={settings.categoryProductsPerPage}
-                    onChange={(e) => updateSettings("categoryProductsPerPage", parseFloat(e.target.value) || 24)}
-                    min="12"
-                    max="100"
-                    step="4"
-                  />
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Loader className="w-5 h-5 text-gray-600" />
+                  <CardTitle>הגדרות טעינה</CardTitle>
                 </div>
+                <CardDescription>הגדר את אופן טעינת המוצרים בעמוד הקטגוריה</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">מוצרים בעמוד</Label>
+                    <Input
+                      type="number"
+                      value={settings.categoryProductsPerPage}
+                      onChange={(e) => updateSettings("categoryProductsPerPage", parseFloat(e.target.value) || 24)}
+                      min="12"
+                      max="100"
+                      step="4"
+                    />
+                    <p className="text-xs text-gray-500">מספר המוצרים שיוצגו בכל עמוד</p>
+                  </div>
 
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium">סוג טעינת מוצרים</Label>
-                  <Select
-                    value={settings.categoryLoadType}
-                    onValueChange={(value) => updateSettings("categoryLoadType", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="load-more">כפתור "טען עוד"</SelectItem>
-                      <SelectItem value="pagination">עמודים</SelectItem>
-                      <SelectItem value="infinite-scroll">גלילה אינסופית</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-medium">סוג טעינת מוצרים</Label>
+                    <Select
+                      value={settings.categoryLoadType}
+                      onValueChange={(value) => updateSettings("categoryLoadType", value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="load-more">כפתור "טען עוד"</SelectItem>
+                        <SelectItem value="pagination">עמודים</SelectItem>
+                        <SelectItem value="infinite-scroll">גלילה אינסופית</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-gray-500">אופן טעינת מוצרים נוספים</p>
+                  </div>
                 </div>
-              </div>
-            </div>
+              </CardContent>
+            </Card>
           </div>
         )
 
@@ -3680,6 +4073,39 @@ export default function AppearancePage() {
                           />
                           <Label htmlFor="checkoutNewsletterDefaultChecked" className="cursor-pointer">
                             מסומן כברירת מחדל
+                          </Label>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Zip Field Section */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-gray-900 border-b pb-2">שדה מיקוד</h3>
+                      
+                      <div className="flex items-center space-x-2 space-x-reverse">
+                        <Checkbox
+                          id="checkoutShowZipField"
+                          checked={settings.checkoutShowZipField}
+                          onCheckedChange={(checked) => 
+                            updateSettings("checkoutShowZipField", checked === true)
+                          }
+                        />
+                        <Label htmlFor="checkoutShowZipField" className="cursor-pointer">
+                          הצג שדה מיקוד בכתובת משלוח
+                        </Label>
+                      </div>
+
+                      {settings.checkoutShowZipField && (
+                        <div className="flex items-center space-x-2 space-x-reverse mr-6">
+                          <Checkbox
+                            id="checkoutZipRequired"
+                            checked={settings.checkoutZipRequired}
+                            onCheckedChange={(checked) => 
+                              updateSettings("checkoutZipRequired", checked === true)
+                            }
+                          />
+                          <Label htmlFor="checkoutZipRequired" className="cursor-pointer">
+                            שדה חובה
                           </Label>
                         </div>
                       )}

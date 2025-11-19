@@ -197,7 +197,7 @@ export async function POST(
           shopId: shop.id,
           customerId: customerId,
           status: {
-            in: ["COMPLETED", "FULFILLED"],
+            in: ["DELIVERED", "SHIPPED"],
           },
           items: {
             some: {

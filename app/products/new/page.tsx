@@ -101,6 +101,7 @@ export default function NewProductPage() {
     image: string
     optionValues: Record<string, string>
   }>>([])
+  const [defaultVariantId, setDefaultVariantId] = useState<string | null>(null)
 
   // Memoized callbacks
   const handleCustomFieldsChange = useCallback((values: Record<string, any>) => {
@@ -221,6 +222,7 @@ export default function NewProductPage() {
         categories: formData.categories,
         customFields: customFieldValues,
         addonIds: productAddonIds,
+        defaultVariantId: defaultVariantId,
       }
 
       // הוסף שדות אופציונליים רק אם יש להם ערך
@@ -540,9 +542,11 @@ export default function NewProductPage() {
               enabled={hasVariants}
               options={options}
               variants={variants}
+              defaultVariantId={defaultVariantId}
               onEnabledChange={setHasVariants}
               onOptionsChange={setOptions}
               onVariantsChange={setVariants}
+              onDefaultVariantChange={setDefaultVariantId}
             />
 
             {/* Product Add-ons */}

@@ -38,13 +38,9 @@ async function getCart(slug: string, customerId: string | null) {
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("cart_session")?.value || null
 
-    console.log(`[Checkout getCart] shopId: ${shop.id}, customerId: ${customerId || 'none'}, sessionId: ${sessionId || 'none'}`)
-
     // שימוש בפונקציה המרכזית למציאת עגלה
     // findCart ימזג אוטומטית session cart עם customer cart אם צריך
     const cart = await findCart(shop.id, sessionId, customerId)
-    
-    console.log(`[Checkout getCart] Cart found:`, cart ? { id: cart.id, itemsCount: (cart.items as any[]).length } : 'NOT FOUND')
 
     if (!hasValidCart(cart)) {
       return { shop, cart: null }
@@ -130,15 +126,6 @@ async function getCart(slug: string, customerId: string | null) {
       )
     }
 
-    // לוג לבדיקה - רק ב-development
-    if (process.env.NODE_ENV === 'development') {
-      console.log(`[Checkout getCart] Payment methods:`, {
-        hasPaymentProvider,
-        bankTransferEnabled,
-        cashEnabled,
-        companyId: shop.companyId,
-      })
-    }
 
     return {
       shop: {
@@ -230,15 +217,11 @@ export default async function CheckoutPage({
   let customerId: string | null = null
   let customerData: any = null
 
-  console.log(`[Checkout] Looking for cookie: storefront_customer_${slug}`)
-  console.log(`[Checkout] All cookies:`, cookieStore.getAll().map(c => c.name))
-  console.log(`[Checkout] customerId from query:`, customerIdFromQuery)
 
   if (customerCookie) {
     try {
       customerData = JSON.parse(customerCookie.value)
       customerId = customerData.id
-      console.log(`[Checkout] Customer found in cookie: ${customerId}`)
     } catch (error) {
       console.error("Error parsing customer cookie:", error)
     }
@@ -268,14 +251,12 @@ export default async function CheckoutPage({
         if (customer) {
           customerId = customer.id
           customerData = customer
-          console.log(`[Checkout] Customer found from query: ${customerId}`)
         }
       }
     } catch (error) {
       console.error("Error fetching customer from query:", error)
     }
   } else {
-    console.log(`[Checkout] No customer cookie or query param found for ${slug}`)
   }
 
   // אם יש cartId ב-query params, נטען את העגלה הזו ישירות
@@ -387,19 +368,9 @@ export default async function CheckoutPage({
                 (payplusIntegration && payplusIntegration.apiKey && payplusIntegration.apiSecret) ||
                 (paypalIntegration && paypalIntegration.apiKey && paypalIntegration.apiSecret)
               )
-            }
+          }
 
-            // לוג לבדיקה - רק ב-development
-            if (process.env.NODE_ENV === 'development') {
-              console.log(`[Checkout cartId path] Payment methods:`, {
-                hasPaymentProvider,
-                bankTransferEnabled,
-                cashEnabled,
-                companyId: shop.companyId,
-              })
-            }
-
-            data = {
+          data = {
               shop: {
                 ...shop,
                 shippingSettings,
@@ -475,15 +446,7 @@ export default async function CheckoutPage({
     data = await getCart(slug, customerId)
   }
 
-  console.log(`[Checkout] Cart data:`, {
-    hasData: !!data,
-    hasCart: !!data?.cart,
-    itemsCount: data?.cart?.items?.length || 0,
-    customerId,
-  })
-
   if (!data || !data.cart || data.cart.items.length === 0) {
-    console.log(`[Checkout] Redirecting to shop - no cart or empty cart`)
     // אם אין customerId ב-cookie אבל יש ב-query, ננסה שוב עם query
     if (!customerId && customerIdFromQuery) {
       // נשאיר את זה - כבר טענו את הלקוח מ-query

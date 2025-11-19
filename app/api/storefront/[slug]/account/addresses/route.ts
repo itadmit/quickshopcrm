@@ -6,9 +6,12 @@ import { jwtVerify } from "jose"
 const addressSchema = z.object({
   firstName: z.string().min(1, "שם פרטי הוא חובה"),
   lastName: z.string().optional(),
-  address: z.string().min(1, "כתובת היא חובה"),
   city: z.string().min(1, "עיר היא חובה"),
-  zip: z.string().min(1, "מיקוד הוא חובה"),
+  address: z.string().min(1, "רחוב הוא חובה"),
+  houseNumber: z.string().min(1, "מספר בית הוא חובה"),
+  apartment: z.string().optional(),
+  floor: z.string().optional(),
+  zip: z.string().optional(),
 })
 
 // GET - קבלת כתובות של לקוח
@@ -182,9 +185,12 @@ export async function POST(
       id: `addr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       firstName: data.firstName,
       lastName: data.lastName || "",
-      address: data.address,
       city: data.city,
-      zip: data.zip,
+      address: data.address,
+      houseNumber: data.houseNumber,
+      apartment: data.apartment || "",
+      floor: data.floor || "",
+      zip: data.zip || "",
       createdAt: new Date().toISOString(),
     }
 

@@ -84,6 +84,25 @@ export async function POST(req: NextRequest) {
 
     console.log(`✅ Created ${categories.length} categories`)
 
+    // תמונות חינמיות מ-Unsplash
+    const nikeShoeImages = [
+      'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=800',
+      'https://images.unsplash.com/photo-1606107557195-0e29a4b5b4aa?w=800',
+    ]
+    
+    const adidasShirtImages = [
+      'https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=800',
+      'https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?w=800',
+    ]
+    
+    const sportBagImages = [
+      'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=800',
+    ]
+    
+    const capImages = [
+      'https://images.unsplash.com/photo-1588850561407-ed78c282e89b?w=800',
+    ]
+
     // Create Nike Shoes with variants (black/yellow, sizes 38-42)
     const nikeShoes = await prisma.product.create({
       data: {
@@ -98,7 +117,7 @@ export async function POST(req: NextRequest) {
         lowStockAlert: 5,
         status: 'PUBLISHED',
         availability: 'IN_STOCK',
-        images: [],
+        images: nikeShoeImages,
         shopId: shop.id,
         categories: {
           create: {
@@ -170,7 +189,7 @@ export async function POST(req: NextRequest) {
         lowStockAlert: 3,
         status: 'PUBLISHED',
         availability: 'IN_STOCK',
-        images: [],
+        images: adidasShirtImages,
         shopId: shop.id,
         categories: {
           create: {
@@ -237,7 +256,7 @@ export async function POST(req: NextRequest) {
           lowStockAlert: 5,
           status: 'PUBLISHED',
           availability: 'IN_STOCK',
-          images: [],
+          images: sportBagImages,
           shopId: shop.id,
           categories: {
             create: {
@@ -265,7 +284,7 @@ export async function POST(req: NextRequest) {
           lowStockAlert: 5,
           status: 'PUBLISHED',
           availability: 'IN_STOCK',
-          images: [],
+          images: capImages,
           shopId: shop.id,
           categories: {
             create: {

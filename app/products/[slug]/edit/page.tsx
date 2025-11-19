@@ -135,6 +135,7 @@ export default function EditProductPage() {
     image: string
     optionValues: Record<string, string>
   }>>([])
+  const [defaultVariantId, setDefaultVariantId] = useState<string | null>(null)
 
   // Memoized callbacks
   const handleCustomFieldsChange = useCallback((values: Record<string, any>) => {
@@ -158,6 +159,9 @@ export default function EditProductPage() {
       if (response.ok) {
         const data = await response.json()
         setProduct(data)
+        
+        // טעינת defaultVariantId
+        setDefaultVariantId(data.defaultVariantId || null)
         
         // Format availableDate for datetime-local input
         let availableDateFormatted = ""
@@ -379,6 +383,7 @@ export default function EditProductPage() {
         badges: formData.badges.length > 0 ? formData.badges : null,
         addonIds: productAddonIds,
         pageTemplateId: formData.pageTemplateId || null,
+        defaultVariantId: defaultVariantId,
       }
 
       const response = await fetch(`/api/products/${product.id}`, {
@@ -526,9 +531,11 @@ export default function EditProductPage() {
               enabled={hasVariants}
               options={options}
               variants={variants}
+              defaultVariantId={defaultVariantId}
               onEnabledChange={setHasVariants}
               onOptionsChange={setOptions}
               onVariantsChange={setVariants}
+              onDefaultVariantChange={setDefaultVariantId}
             />
 
             {/* Product Add-ons */}

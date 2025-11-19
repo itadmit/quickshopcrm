@@ -310,6 +310,7 @@ model Product {
   customFields         Json?
   badges               Json? // מדבקות למוצר (טקסט, צבע, מיקום)
   pageTemplateId       String? // תבנית עמוד מוצר
+  defaultVariantId     String? // ווריאנט ברירת מחדל
   createdAt            DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
   bundles              BundleProduct[]

@@ -36,6 +36,7 @@ interface CartItem {
   variantId: string | null
   product: {
     id: string
+    slug: string
     name: string
     price: number
     images: string[]
@@ -182,8 +183,10 @@ export default function CartPage() {
         // ViewCart event
         if (data.items && data.items.length > 0) {
           const items = data.items.map((item: CartItem) => ({
-            id: item.productId,
-            name: item.product.name,
+            id: item.variantId || item.productId, // אם יש variant, נשלח את ה-variant ID
+            name: item.variant?.name 
+              ? `${item.product.name} - ${item.variant.name}` 
+              : item.product.name, // אם יש variant, נוסיף את שם הvariant
             price: item.variant?.price || item.product.price,
             quantity: item.quantity,
           }))
@@ -255,8 +258,10 @@ export default function CartPage() {
         // RemoveFromCart event
         if (itemToRemove) {
           trackRemoveFromCart(trackEvent, {
-            id: itemToRemove.productId,
-            name: itemToRemove.product.name,
+            id: itemToRemove.variantId || itemToRemove.productId, // אם יש variant, נשלח את ה-variant ID
+            name: itemToRemove.variant?.name 
+              ? `${itemToRemove.product.name} - ${itemToRemove.variant.name}` 
+              : itemToRemove.product.name, // אם יש variant, נוסיף את שם הvariant
           }, itemToRemove.quantity)
         }
         fetchCart()
@@ -381,7 +386,7 @@ export default function CartPage() {
                     <div className="flex flex-col sm:flex-row gap-4 p-4">
                       {/* Product Image */}
                       <Link 
-                        href={`/shop/${slug}/products/${item.product.id}`}
+                        href={`/shop/${slug}/products/${item.product.slug || item.product.id}`}
                         className="flex-shrink-0 mx-auto sm:mx-0"
                       >
                         {item.product.images && item.product.images.length > 0 ? (
@@ -402,7 +407,7 @@ export default function CartPage() {
                         <div className="flex-1">
                           <div className="flex items-start justify-between gap-2 mb-2">
                             <div className="flex-1 min-w-0">
-                              <Link href={`/shop/${slug}/products/${item.product.id}`}>
+                              <Link href={`/shop/${slug}/products/${item.product.slug || item.product.id}`}>
                                 <h3 className="font-semibold text-base sm:text-lg mb-1 hover:text-gray-700 transition-colors cursor-pointer line-clamp-2">
                                   {item.product.name}
                                 </h3>

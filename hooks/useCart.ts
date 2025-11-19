@@ -155,12 +155,8 @@ export function useCart(slug: string, customerId?: string | null) {
             }
           }))
         }
-      } else {
-        toast({
-          title: 'נוסף לעגלה',
-          description: 'המוצר נוסף לעגלה בהצלחה',
-        })
       }
+      // הערה: הטוסט להוספה לעגלה מטופל ב-useAddToCart.ts עם לוגיקה של autoOpenCart
     },
     onError: (error: Error) => {
       toast({

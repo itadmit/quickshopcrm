@@ -86,21 +86,28 @@ export function trackAddToCart(
   },
   quantity: number = 1,
   variantId?: string,
-  addonsTotal?: number
+  addonsTotal?: number,
+  variantName?: string
 ) {
   // המחיר כולל את התוספות אם יש
   const finalPrice = product.price + (addonsTotal || 0)
   
+  // אם יש variant, נשלח את ה-variant ID ושם
+  const contentId = variantId || product.id
+  const contentName = variantName ? `${product.name} - ${variantName}` : product.name
+  
   trackEvent("AddToCart", {
-    content_name: product.name,
-    content_ids: [product.id],
+    content_name: contentName,
+    content_ids: [contentId],
     content_type: "product",
     value: finalPrice * quantity,
     currency: "ILS",
+    ...(variantId && { variant_id: variantId }),
+    ...(variantName && { variant_name: variantName }),
     contents: [
       {
-        id: product.id,
-        name: product.name,
+        id: contentId,
+        name: contentName,
         price: finalPrice,
         quantity: quantity,
       },
@@ -237,14 +244,22 @@ export function trackAddToWishlist(
     id: string
     name: string
     price: number
-  }
+  },
+  variantId?: string,
+  variantName?: string
 ) {
+  // אם יש variant, נשלח את ה-variant ID ושם
+  const contentId = variantId || product.id
+  const contentName = variantName ? `${product.name} - ${variantName}` : product.name
+  
   trackEvent("AddToWishlist", {
-    content_name: product.name,
-    content_ids: [product.id],
+    content_name: contentName,
+    content_ids: [contentId],
     content_type: "product",
     value: product.price,
     currency: "ILS",
+    ...(variantId && { variant_id: variantId }),
+    ...(variantName && { variant_name: variantName }),
   })
 }
 
@@ -256,12 +271,20 @@ export function trackRemoveFromWishlist(
   product: {
     id: string
     name: string
-  }
+  },
+  variantId?: string,
+  variantName?: string
 ) {
+  // אם יש variant, נשלח את ה-variant ID ושם
+  const contentId = variantId || product.id
+  const contentName = variantName ? `${product.name} - ${variantName}` : product.name
+  
   trackEvent("RemoveFromWishlist", {
-    content_name: product.name,
-    content_ids: [product.id],
+    content_name: contentName,
+    content_ids: [contentId],
     content_type: "product",
+    ...(variantId && { variant_id: variantId }),
+    ...(variantName && { variant_name: variantName }),
   })
 }
 

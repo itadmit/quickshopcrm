@@ -347,7 +347,7 @@ export async function PUT(
               storeCreditId: newCredit.id,
               orderId: existingReturn.orderId,
               amount: returnRequest.refundAmount,
-              type: "CREDIT",
+              type: "CHARGE",
             },
           })
 

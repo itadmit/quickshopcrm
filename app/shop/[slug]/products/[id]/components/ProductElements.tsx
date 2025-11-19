@@ -135,12 +135,10 @@ export function ProductElements({
         }
         
         const url = `/api/storefront/${slug}/products/${productId}/discounts?${params.toString()}`
-        console.log('🎁 ProductElements - Fetching discounts from:', url)
         
         const response = await fetch(url)
         if (response.ok) {
           const data = await response.json()
-          console.log('🎁 ProductElements - Discounts received:', data)
           // עדכון המצב רק אם הקריאה לא בוטלה
           if (!isCancelled) {
             setApplicableDiscounts(data.discounts || [])
@@ -273,18 +271,6 @@ export function ProductElements({
           ? applicableDiscounts[applicableDiscounts.length - 1] 
           : null
         
-        // לוגים לדיבוג
-        if (applicableDiscounts.length > 0) {
-          console.log('🎁 ProductElements - Displaying discounts:', {
-            discounts: applicableDiscounts.map(d => d.title),
-            applicableDiscountsCount: applicableDiscounts.length,
-            basePrice,
-            addonsTotal,
-            currentPrice,
-            finalDiscount: finalDiscount?.title
-          })
-        }
-        
         // המחיר המוזל כולל את ה-addons (מההנחה האחרונה)
         const displayPrice = finalDiscount 
           ? finalDiscount.discountedPrice + addonsTotal 
@@ -379,6 +365,58 @@ export function ProductElements({
                       const valueLabel = typeof value === 'object' ? value.label : value
                       const isSelected = selectedOptionValues[option.id] === valueId
                       
+                      // בדיקת זמינות - האם יש variant זמין עם הערך הזה + הבחירות הקודמות
+                      const hasStock = (() => {
+                        // אם אין variants, הכל זמין
+                        if (!product.variants || product.variants.length === 0) return true
+                        
+                        // אם אין בחירות אחרות, בדוק רק את הערך הזה
+                        if (Object.keys(selectedOptionValues).length === 0) {
+                          return product.variants.some((variant) => {
+                            const matchesValue = 
+                              (variant.option1 === option.name && variant.option1Value === valueId) ||
+                              (variant.option2 === option.name && variant.option2Value === valueId) ||
+                              (variant.option3 === option.name && variant.option3Value === valueId)
+                            
+                            if (!matchesValue) return false
+                            return variant.inventoryQty === null || variant.inventoryQty === undefined || variant.inventoryQty > 0
+                          })
+                        }
+                        
+                        // יש בחירות קודמות - צריך לבדוק שהן תואמות
+                        return product.variants.some((v: any) => {
+                          // המרת variant ל-options structure
+                          const variantOptions: Record<string, string> = {}
+                          if (v.option1 && v.option1Value) {
+                            variantOptions[v.option1] = v.option1Value
+                          }
+                          if (v.option2 && v.option2Value) {
+                            variantOptions[v.option2] = v.option2Value
+                          }
+                          if (v.option3 && v.option3Value) {
+                            variantOptions[v.option3] = v.option3Value
+                          }
+                          
+                          // בדיקה שהבחירות הקודמות תואמות (מלבד האפשרות הנוכחית)
+                          const matchesCurrentSelections = Object.entries(selectedOptionValues)
+                            .filter(([key]) => key !== option.id)
+                            .every(([optionId, val]) => {
+                              // מצא את שם האפשרות לפי ה-ID
+                              const selectedOption = product.options?.find(opt => opt.id === optionId)
+                              const optionName = selectedOption?.name || optionId
+                              return variantOptions[optionName] === val
+                            })
+                          
+                          // בדיקה שהאפשרות הנוכחית תואמת
+                          const matchesThisOption = variantOptions[option.name] === valueId
+                          
+                          // בדיקת מלאי
+                          const hasStock = v.inventoryQty === null || v.inventoryQty === undefined || v.inventoryQty > 0
+                          
+                          return matchesCurrentSelections && matchesThisOption && hasStock
+                        })
+                      })()
+                      
                       // קביעת קוד הצבע
                       let colorCode: string | undefined = undefined
                       if (isColorOption) {
@@ -403,18 +441,32 @@ export function ProductElements({
                           <button
                             key={valueId}
                             onClick={() => setSelectedOptionValues({ ...selectedOptionValues, [option.id]: valueId })}
-                            className={`relative w-10 h-10 rounded-full border-2 transition-all ${
+                            className={`relative w-10 h-10 rounded-full border-2 transition-all overflow-hidden ${
                               isSelected
                                 ? "ring-2 ring-offset-2"
                                 : "border-gray-300 hover:border-gray-400"
-                            }`}
+                            } ${!hasStock ? "opacity-60" : ""}`}
                             style={{
                               backgroundColor: colorCode,
                               borderColor: isSelected ? theme.primaryColor : undefined,
                               ringColor: isSelected ? theme.primaryColor : undefined,
                             }}
                             title={valueLabel}
-                          />
+                          >
+                            {!hasStock && (
+                              <div 
+                                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                              >
+                                <div 
+                                  className="w-[150%] h-[2px] bg-red-500"
+                                  style={{
+                                    transform: 'rotate(-25deg)',
+                                    transformOrigin: 'center'
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </button>
                         )
                       }
                       
@@ -428,7 +480,7 @@ export function ProductElements({
                               isSelected
                                 ? "ring-2 ring-offset-2"
                                 : "border-gray-300 hover:border-gray-400"
-                            }`}
+                            } ${!hasStock ? "opacity-60" : ""}`}
                             style={{
                               borderColor: isSelected ? theme.primaryColor : undefined,
                               ringColor: isSelected ? theme.primaryColor : undefined,
@@ -437,7 +489,21 @@ export function ProductElements({
                               backgroundPosition: patternBackgroundPosition,
                             }}
                             title={valueLabel}
-                          />
+                          >
+                            {!hasStock && (
+                              <div 
+                                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                              >
+                                <div 
+                                  className="w-[150%] h-[2px] bg-red-500"
+                                  style={{
+                                    transform: 'rotate(-25deg)',
+                                    transformOrigin: 'center'
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </button>
                         )
                       }
                       
@@ -446,17 +512,31 @@ export function ProductElements({
                         <button
                           key={valueId}
                           onClick={() => setSelectedOptionValues({ ...selectedOptionValues, [option.id]: valueId })}
-                          className={`px-4 py-2 border-2 rounded-sm text-sm font-medium transition-all ${
+                          className={`relative px-4 py-2 border-2 rounded-sm text-sm font-medium transition-all ${
                             isSelected
-                              ? "text-white"
-                              : "border-gray-300 text-gray-700 hover:border-gray-400"
-                          }`}
+                              ? ""
+                              : "border-gray-300 text-gray-900 hover:border-gray-400 bg-white"
+                          } ${!hasStock ? "opacity-60" : ""}`}
                           style={isSelected ? {
                             borderColor: theme.primaryColor,
                             backgroundColor: theme.primaryColor,
+                            color: theme.primaryTextColor || '#ffffff',
                           } : {}}
                         >
                           {valueLabel}
+                          {!hasStock && (
+                            <div 
+                              className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden rounded-sm"
+                            >
+                              <div 
+                                className="w-[150%] h-[2px] bg-red-500"
+                                style={{
+                                  transform: 'rotate(-25deg)',
+                                  transformOrigin: 'center'
+                                }}
+                              />
+                            </div>
+                          )}
                         </button>
                       )
                     })}
@@ -549,8 +629,11 @@ export function ProductElements({
             <button
               onClick={() => onAddToCart(true)}
               disabled={product.availability === "OUT_OF_STOCK" || isAddingToCart}
-              className="w-full text-white rounded-sm h-11 px-8 font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              style={{ backgroundColor: theme.primaryColor || "#000000" }}
+              className="w-full rounded-sm h-11 px-8 font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+              style={{ 
+                backgroundColor: theme.primaryColor || "#000000",
+                color: theme.primaryTextColor || '#ffffff',
+              }}
             >
               {isAddingToCart ? (
                 <Loader2 className="w-5 h-5 ml-2 animate-spin" />
@@ -643,22 +726,24 @@ export function ProductElements({
         return relatedProducts.length > 0 ? (
           <div 
             key={element.id} 
-            className="mt-16 border-t border-gray-200 pt-12" 
+            className="w-full border-t border-gray-200"
             style={{
               ...elementStyle,
               backgroundColor: theme?.productRelatedBgColor || "#f8f9fa",
             }}
           >
-            <h2 className="text-2xl font-bold text-gray-900 mb-8" style={elementStyle}>מוצרים קשורים</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.map((relatedProduct) => (
-                <ProductCard
-                  key={relatedProduct.id}
-                  product={relatedProduct}
-                  slug={slug}
-                  theme={theme}
-                />
-              ))}
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+              <h2 className="text-2xl font-bold text-gray-900 mb-8" style={elementStyle}>מוצרים קשורים</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {relatedProducts.map((relatedProduct) => (
+                  <ProductCard
+                    key={relatedProduct.id}
+                    product={relatedProduct}
+                    slug={slug}
+                    theme={theme}
+                  />
+                ))}
+              </div>
             </div>
           </div>
         ) : null

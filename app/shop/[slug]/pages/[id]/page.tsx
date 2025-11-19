@@ -303,7 +303,7 @@ export default function StaticPage() {
                       </Link>
                       <CardContent className="flex-1 p-2 sm:p-4 flex flex-col justify-between">
                         <div>
-                          <Link href={`/shop/${slug}/products/${product.id}`}>
+                          <Link href={`/shop/${slug}/products/${product.slug || product.id}`}>
                             <h3 className="text-sm sm:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 hover:text-purple-600 transition-colors line-clamp-2">
                               {product.name}
                             </h3>
@@ -343,7 +343,7 @@ export default function StaticPage() {
                             asChild
                             className="w-full sm:w-auto sm:flex-1 text-xs sm:text-base h-8 sm:h-10 px-2 sm:px-4"
                           >
-                            <Link href={`/shop/${slug}/products/${product.id}`}>
+                            <Link href={`/shop/${slug}/products/${product.slug || product.id}`}>
                               צפה במוצר
                             </Link>
                           </Button>
@@ -358,7 +358,7 @@ export default function StaticPage() {
                 {page.products.map((product) => (
                   <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
                     <Link
-                      href={`/shop/${slug}/products/${product.id}`}
+                      href={`/shop/${slug}/products/${product.slug || product.id}`}
                       className="block"
                     >
                       <div className="aspect-square relative overflow-hidden bg-gray-100">

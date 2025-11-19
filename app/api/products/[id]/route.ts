@@ -39,6 +39,7 @@ const updateProductSchema = z.object({
   categories: z.array(z.string()).optional(),
   addonIds: z.array(z.string()).optional(),
   pageTemplateId: z.union([z.string(), z.null()]).optional(),
+  defaultVariantId: z.union([z.string(), z.null()]).optional(),
 })
 
 // GET - קבלת פרטי מוצר

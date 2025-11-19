@@ -50,6 +50,7 @@ interface Product {
 interface ThemeSettings {
   primaryColor: string
   secondaryColor: string
+  primaryTextColor?: string
   logoWidthMobile: number
   logoWidthDesktop: number
   logoPaddingMobile: number
@@ -891,8 +892,11 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
                 />
                 <button
                   type="submit"
-                  className="px-6 py-3 text-white rounded-sm transition-colors"
-                  style={{ backgroundColor: theme.primaryColor }}
+                  className="px-6 py-3 rounded-sm transition-colors"
+                  style={{ 
+                    backgroundColor: theme.primaryColor,
+                    color: theme.primaryTextColor || '#ffffff',
+                  }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.opacity = "0.9"
                   }}

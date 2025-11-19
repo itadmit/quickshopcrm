@@ -39,6 +39,7 @@ const createProductSchema = z.object({
   badges: z.any().optional(),
   categories: z.array(z.string()).optional(),
   addonIds: z.array(z.string()).optional(),
+  defaultVariantId: z.union([z.string(), z.null()]).optional(),
 })
 
 // GET - קבלת כל המוצרים

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import { useParams, useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -398,7 +398,7 @@ export default function CategoryPage() {
             <style dangerouslySetInnerHTML={{__html: `
               .category-products-grid {
                 display: grid;
-                gap: 1.5rem;
+                gap: 1rem;
                 grid-template-columns: repeat(${theme?.categoryProductsPerRowMobile || 2}, minmax(0, 1fr));
               }
               @media (min-width: 768px) {
@@ -428,16 +428,14 @@ export default function CategoryPage() {
               const banner = bannerIndex >= 0 ? activeBanners[bannerIndex] : null
 
               return (
-                <>
+                <React.Fragment key={product.id}>
                   <ProductCard
-                    key={product.id}
                     product={product}
                     slug={slug}
                     theme={theme}
                   />
                   {banner && (
                     <div 
-                      key={`banner-${index}`}
                       className="rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow"
                       style={{
                         gridColumn: '1 / -1',
@@ -477,13 +475,13 @@ export default function CategoryPage() {
                       </Link>
                     </div>
                   )}
-                </>
+                </React.Fragment>
               )
             })}
           </div>
           </>
         ) : viewMode === "compact-grid" ? (
-          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
             {products.map((product) => (
               <Link
                 key={product.id}
@@ -507,7 +505,7 @@ export default function CategoryPage() {
                     isSoldOut={product.availability === "OUT_OF_STOCK"}
                     comparePrice={(() => {
                       const priceInfo = getProductPrice(product)
-                      return priceInfo.comparePrice
+                      return priceInfo.comparePrice ?? undefined
                     })()}
                     price={(() => {
                       const priceInfo = getProductPrice(product)
@@ -535,7 +533,7 @@ export default function CategoryPage() {
             ))}
           </div>
         ) : viewMode === "large-grid" ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {products.map((product) => (
               <Link
                 key={product.id}
@@ -559,7 +557,7 @@ export default function CategoryPage() {
                     isSoldOut={product.availability === "OUT_OF_STOCK"}
                     comparePrice={(() => {
                       const priceInfo = getProductPrice(product)
-                      return priceInfo.comparePrice
+                      return priceInfo.comparePrice ?? undefined
                     })()}
                     price={(() => {
                       const priceInfo = getProductPrice(product)
@@ -611,7 +609,7 @@ export default function CategoryPage() {
                     isSoldOut={product.availability === "OUT_OF_STOCK"}
                     comparePrice={(() => {
                       const priceInfo = getProductPrice(product)
-                      return priceInfo.comparePrice
+                      return priceInfo.comparePrice ?? undefined
                     })()}
                     price={(() => {
                       const priceInfo = getProductPrice(product)
