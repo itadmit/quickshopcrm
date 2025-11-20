@@ -142,7 +142,7 @@ export default function LoginPage() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
                   disabled={loading}
-                  className="h-12 text-base border-gray-300 focus:border-purple-500 focus:ring-purple-500 pr-10"
+                  className="h-12 text-base border-gray-300 focus:border-[#15b981] focus:ring-[#15b981] pr-10"
                 />
               </div>
             </div>
@@ -160,25 +160,25 @@ export default function LoginPage() {
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
                   disabled={loading}
-                  className="h-12 text-base border-gray-300 focus:border-purple-500 focus:ring-purple-500 pr-10"
+                  className="h-12 text-base border-gray-300 focus:border-[#15b981] focus:ring-[#15b981] pr-10"
                 />
               </div>
             </div>
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center space-x-2 space-x-reverse">
-                <input type="checkbox" id="remember" className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500" />
+                <input type="checkbox" id="remember" className="w-4 h-4 text-[#15b981] border-gray-300 rounded focus:ring-[#15b981]" />
                 <Label htmlFor="remember" className="text-gray-600 cursor-pointer">
                   זכור ל-30 יום
                 </Label>
               </div>
-              <Link href="#" className="text-purple-600 hover:text-purple-700 hover:underline">
+              <Link href="#" className="text-[#15b981] hover:text-[#10b981] hover:underline">
                 שכחת סיסמה?
               </Link>
             </div>
             <div className="pt-2">
               <Button 
                 type="submit" 
-                className="w-full h-12 bg-gradient-to-l from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all" 
+                className="w-full h-12 bg-[#15b981] hover:bg-[#10b981] text-white font-semibold shadow-lg hover:shadow-xl transition-all" 
                 disabled={loading}
               >
                 {loading ? "מתחבר..." : "התחבר"}
@@ -218,7 +218,7 @@ export default function LoginPage() {
           <div className="mt-6">
             <div className="text-sm text-center text-gray-600">
               אין לך חשבון?{" "}
-              <Link href="/register" className="text-purple-600 hover:text-purple-700 hover:underline font-semibold">
+              <Link href="/register" className="text-[#15b981] hover:text-[#10b981] hover:underline font-semibold">
                 הירשם כעת
               </Link>
             </div>
@@ -238,31 +238,31 @@ export default function LoginPage() {
             priority
             sizes="(max-width: 1024px) 0vw, 60vw"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-900/85 via-purple-800/75 to-purple-900/85"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/85 via-emerald-800/75 to-emerald-900/85"></div>
         </div>
 
         <div className="relative z-10 w-full flex items-center justify-center p-12 lg:p-16">
           <div className="max-w-2xl text-white">
             <h2 className="text-4xl lg:text-5xl font-bold mb-4">Empowering your business</h2>
-            <p className="text-xl text-purple-100 mb-8">ניהול חנות אונליין מקצועי במקום אחד</p>
+            <p className="text-xl text-emerald-50 mb-8">ניהול חנות אונליין מקצועי במקום אחד</p>
             
             {/* Feature Cards */}
             <div className="grid grid-cols-2 gap-6">
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                 <h3 className="text-lg font-semibold mb-2">חנות מקצועית</h3>
-                <p className="text-sm text-purple-100">צור חנות אונליין מקצועית תוך דקות</p>
+                <p className="text-sm text-emerald-50">צור חנות אונליין מקצועית תוך דקות</p>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                 <h3 className="text-lg font-semibold mb-2">ניהול פשוט</h3>
-                <p className="text-sm text-purple-100">ממשק ניהול אינטואיטיבי ונוח</p>
+                <p className="text-sm text-emerald-50">ממשק ניהול אינטואיטיבי ונוח</p>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                 <h3 className="text-lg font-semibold mb-2">ניתוחים ודוחות</h3>
-                <p className="text-sm text-purple-100">מעקב אחר מכירות והכנסות</p>
+                <p className="text-sm text-emerald-50">מעקב אחר מכירות והכנסות</p>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                 <h3 className="text-lg font-semibold mb-2">תשלומים ומשלוחים</h3>
-                <p className="text-sm text-purple-100">תמיכה מלאה בתשלומים ומשלוחים</p>
+                <p className="text-sm text-emerald-50">תמיכה מלאה בתשלומים ומשלוחים</p>
               </div>
             </div>
           </div>
@@ -270,7 +270,7 @@ export default function LoginPage() {
       </div>
 
       {/* Mobile View */}
-      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 -z-10 opacity-20"></div>
+      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-[#15b981] via-emerald-600 to-emerald-700 -z-10 opacity-20"></div>
     </div>
   )
 }
