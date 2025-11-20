@@ -349,7 +349,7 @@ export default function SuperAdminPage() {
       <AppLayout title="לוח בקרת Super Admin">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
             <p className="text-gray-600">טוען...</p>
           </div>
         </div>
@@ -366,8 +366,8 @@ export default function SuperAdminPage() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-purple-100 rounded-lg">
-            <Shield className="h-6 w-6 text-purple-600" />
+          <div className="p-3 bg-emerald-100 rounded-lg">
+            <Shield className="h-6 w-6 text-emerald-600" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">לוח בקרת Super Admin</h1>
@@ -398,7 +398,7 @@ export default function SuperAdminPage() {
         <Card className="shadow-md">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-purple-600" />
+              <CreditCard className="h-5 w-5 text-emerald-600" />
               <CardTitle>הגדרות PayPlus - מנויי SaaS</CardTitle>
             </div>
             <CardDescription>
@@ -525,7 +525,7 @@ export default function SuperAdminPage() {
         <Card className="shadow-md">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-purple-600" />
+              <Mail className="h-5 w-5 text-emerald-600" />
               <CardTitle>הגדרות SendGrid - שליחת מיילים</CardTitle>
             </div>
             <CardDescription>

@@ -13,7 +13,7 @@ export function DashboardSkeleton() {
             <div className="h-10 w-40 bg-gray-200 rounded"></div>
             <div className="h-10 w-32 bg-gray-200 rounded"></div>
             <div className="h-10 w-32 bg-gray-200 rounded"></div>
-            <div className="h-10 w-32 bg-purple-200 rounded"></div>
+            <div className="h-10 w-32 bg-emerald-200 rounded"></div>
           </div>
         </div>
       </div>

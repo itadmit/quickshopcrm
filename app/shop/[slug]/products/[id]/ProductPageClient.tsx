@@ -812,7 +812,7 @@ export function ProductPageClient({
             <div className="space-y-4">
               {/* הודעת מתנה */}
               {isGift && (
-                <div className="bg-gradient-to-r from-pink-50 to-purple-50 border-2 border-pink-200 rounded-lg p-4 text-center">
+                <div className="bg-gradient-to-r from-pink-50 to-emerald-50 border-2 border-pink-200 rounded-lg p-4 text-center">
                   <div className="text-2xl mb-2">🎁</div>
                   <h3 className="text-lg font-bold text-pink-700">מזל טוב! קבלת מתנה</h3>
                 </div>

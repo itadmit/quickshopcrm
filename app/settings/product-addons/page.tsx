@@ -439,8 +439,8 @@ export default function ProductAddonsPage() {
                 subtitle,
                 meta,
                 icon: ShoppingBag,
-                iconBgColor: "bg-purple-100",
-                iconColor: "text-purple-600",
+                iconBgColor: "bg-emerald-100",
+                iconColor: "text-emerald-600",
                 badges: badges.length > 0 ? badges : undefined,
                 originalData: addon,
               }

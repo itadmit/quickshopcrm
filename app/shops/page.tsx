@@ -176,7 +176,7 @@ export default function ShopsPage() {
                           className="w-12 h-12 rounded-lg object-cover"
                         />
                       ) : (
-                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
+                        <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-emerald-400 to-emerald-600 flex items-center justify-center">
                           <Store className="w-6 h-6 text-white" />
                         </div>
                       )}

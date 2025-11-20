@@ -290,7 +290,7 @@ export default function HomePage() {
                   {/* Sidebar */}
                   <div className="w-48 bg-white border-l border-gray-200 p-3 hidden md:block shrink-0">
                     <div className="flex items-center gap-2 mb-6 px-2">
-                      <div className="w-6 h-6 bg-purple-600 rounded text-white flex items-center justify-center font-bold text-xs">QS</div>
+                      <div className="w-6 h-6 bg-emerald-600 rounded text-white flex items-center justify-center font-bold text-xs">QS</div>
                       <span className="font-bold text-gray-700 text-xs">Quick Shop</span>
                     </div>
                     <div className="space-y-4">
@@ -336,7 +336,7 @@ export default function HomePage() {
                          <div className="text-[10px] text-gray-500">איך אני יכול לעזור לך היום?</div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-purple-50 rounded-full flex items-center justify-center text-purple-600 text-xs font-bold">DA</div>
+                        <div className="w-8 h-8 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 text-xs font-bold">DA</div>
                       </div>
                     </div>
 
@@ -347,7 +347,7 @@ export default function HomePage() {
                          {[
                            { label: 'הכנסות', value: '₪12,450', icon: TrendingUp, color: 'text-emerald-600' },
                            { label: 'הזמנות', value: '42', icon: ShoppingBag, color: 'text-blue-600' },
-                           { label: 'מוצרים', value: '156', icon: Package, color: 'text-purple-600' },
+                           { label: 'מוצרים', value: '156', icon: Package, color: 'text-emerald-600' },
                            { label: 'לקוחות', value: '1,205', icon: Users, color: 'text-orange-600' },
                          ].map((stat, i) => (
                            <div key={i} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
@@ -386,9 +386,9 @@ export default function HomePage() {
                             התראות אחרונות
                           </div>
                           <div className="space-y-2">
-                            <div className="flex items-center gap-2 p-1.5 bg-purple-50 rounded-lg border border-purple-100">
-                               <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
-                               <div className="text-[10px] text-purple-700 font-medium">ברוכים הבאים ל-Quick Shop!</div>
+                            <div className="flex items-center gap-2 p-1.5 bg-emerald-50 rounded-lg border border-emerald-100">
+                               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                               <div className="text-[10px] text-emerald-700 font-medium">ברוכים הבאים ל-Quick Shop!</div>
                             </div>
                             <div className="flex items-center gap-2 p-1.5 bg-white border border-gray-100 rounded-lg">
                                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
@@ -554,8 +554,8 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-                    <CreditCard className="w-5 h-5 text-purple-500" />
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                    <CreditCard className="w-5 h-5 text-emerald-500" />
                   </div>
                   <div>
                     <h3 className="font-bold text-lg mb-1">סליקה ישראלית</h3>
@@ -582,7 +582,7 @@ export default function HomePage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-4 bg-gray-800 rounded-xl border border-gray-700">
-                  <Users className="w-6 h-6 text-purple-500 flex-shrink-0" />
+                  <Users className="w-6 h-6 text-emerald-500 flex-shrink-0" />
                   <div>
                      <div className="font-bold">קהילה תומכת</div>
                      <div className="text-sm text-gray-400">אלפי בעלי עסקים שכבר הצליחו</div>
@@ -598,7 +598,7 @@ export default function HomePage() {
       <section className="py-24 bg-white border-t border-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto mb-16">
-            <Badge className="bg-purple-50 text-purple-600 border-purple-100 mb-4">חוסכים לכם כסף</Badge>
+            <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 mb-4">חוסכים לכם כסף</Badge>
             <h2 className="text-4xl font-bold mb-6 text-gray-900">למה לשלם על אפליקציות?</h2>
             <p className="text-xl text-gray-500">
               בפלטפורמות אחרות כל פיצ'ר עולה כסף. אצלנו הכל מגיע Built-in.
@@ -609,7 +609,7 @@ export default function HomePage() {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
              {/* Card 1: Reviews */}
-             <div className="flex gap-4 p-6 rounded-2xl border border-gray-100 hover:border-purple-100 hover:shadow-lg hover:shadow-purple-50/50 transition-all duration-300 bg-white group">
+             <div className="flex gap-4 p-6 rounded-2xl border border-gray-100 hover:border-emerald-100 hover:shadow-lg hover:shadow-emerald-50/50 transition-all duration-300 bg-white group">
                 <div className="w-12 h-12 rounded-xl bg-yellow-50 text-yellow-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                    <Star className="w-6 h-6" />
                 </div>
@@ -620,7 +620,7 @@ export default function HomePage() {
              </div>
 
              {/* Card 2: Bundles */}
-             <div className="flex gap-4 p-6 rounded-2xl border border-gray-100 hover:border-purple-100 hover:shadow-lg hover:shadow-purple-50/50 transition-all duration-300 bg-white group">
+             <div className="flex gap-4 p-6 rounded-2xl border border-gray-100 hover:border-emerald-100 hover:shadow-lg hover:shadow-emerald-50/50 transition-all duration-300 bg-white group">
                 <div className="w-12 h-12 rounded-xl bg-pink-50 text-pink-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                    <PackagePlus className="w-6 h-6" />
                 </div>
@@ -631,7 +631,7 @@ export default function HomePage() {
              </div>
 
              {/* Card 3: Shop the Look */}
-             <div className="flex gap-4 p-6 rounded-2xl border border-gray-100 hover:border-purple-100 hover:shadow-lg hover:shadow-purple-50/50 transition-all duration-300 bg-white group">
+             <div className="flex gap-4 p-6 rounded-2xl border border-gray-100 hover:border-emerald-100 hover:shadow-lg hover:shadow-emerald-50/50 transition-all duration-300 bg-white group">
                 <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                    <ScanFace className="w-6 h-6" />
                 </div>
@@ -642,7 +642,7 @@ export default function HomePage() {
              </div>
 
              {/* Card 4: Marketing */}
-             <div className="flex gap-4 p-6 rounded-2xl border border-gray-100 hover:border-purple-100 hover:shadow-lg hover:shadow-purple-50/50 transition-all duration-300 bg-white group">
+             <div className="flex gap-4 p-6 rounded-2xl border border-gray-100 hover:border-emerald-100 hover:shadow-lg hover:shadow-emerald-50/50 transition-all duration-300 bg-white group">
                 <div className="w-12 h-12 rounded-xl bg-green-50 text-green-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                    <Megaphone className="w-6 h-6" />
                 </div>
@@ -653,8 +653,8 @@ export default function HomePage() {
              </div>
 
               {/* Card 5: Inventory */}
-             <div className="flex gap-4 p-6 rounded-2xl border border-gray-100 hover:border-purple-100 hover:shadow-lg hover:shadow-purple-50/50 transition-all duration-300 bg-white group">
-                <div className="w-12 h-12 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+             <div className="flex gap-4 p-6 rounded-2xl border border-gray-100 hover:border-emerald-100 hover:shadow-lg hover:shadow-emerald-50/50 transition-all duration-300 bg-white group">
+                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                    <Boxes className="w-6 h-6" />
                 </div>
                 <div>
@@ -664,7 +664,7 @@ export default function HomePage() {
              </div>
 
              {/* Card 6: Content */}
-             <div className="flex gap-4 p-6 rounded-2xl border border-gray-100 hover:border-purple-100 hover:shadow-lg hover:shadow-purple-50/50 transition-all duration-300 bg-white group">
+             <div className="flex gap-4 p-6 rounded-2xl border border-gray-100 hover:border-emerald-100 hover:shadow-lg hover:shadow-emerald-50/50 transition-all duration-300 bg-white group">
                 <div className="w-12 h-12 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                    <LayoutTemplate className="w-6 h-6" />
                 </div>

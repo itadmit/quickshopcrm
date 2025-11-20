@@ -362,7 +362,7 @@ export default function SearchPage() {
                           {product.name}
                         </h3>
                         <div className="flex items-center gap-2">
-                          <span className="text-lg font-bold text-purple-600">
+                          <span className="text-lg font-bold text-emerald-600">
                             {formatProductPrice(product)}
                           </span>
                           {formatComparePrice(product) && (

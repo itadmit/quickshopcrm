@@ -654,7 +654,7 @@ export default function EditDiscountPage() {
 
                 {/* BUY_X_GET_Y */}
                 {formData.type === "BUY_X_GET_Y" && (
-                  <div className="space-y-4 p-4 bg-purple-50 rounded-lg">
+                  <div className="space-y-4 p-4 bg-emerald-50 rounded-lg">
                     <div className="grid grid-cols-3 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="buyQuantity">קנה (X) *</Label>
@@ -696,7 +696,7 @@ export default function EditDiscountPage() {
 
                 {/* NTH_ITEM_DISCOUNT */}
                 {formData.type === "NTH_ITEM_DISCOUNT" && (
-                  <div className="space-y-4 p-4 bg-purple-50 rounded-lg">
+                  <div className="space-y-4 p-4 bg-emerald-50 rounded-lg">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="nthItem">מוצר מספר *</Label>
@@ -733,7 +733,7 @@ export default function EditDiscountPage() {
 
                 {/* VOLUME_DISCOUNT */}
                 {formData.type === "VOLUME_DISCOUNT" && (
-                  <div className="space-y-4 p-4 bg-purple-50 rounded-lg">
+                  <div className="space-y-4 p-4 bg-emerald-50 rounded-lg">
                     <Label>הנחת כמות</Label>
                     <p className="text-sm text-gray-600 mb-4">
                       הגדר הנחות לפי כמות פריטים בעגלה (למשל: קנה 3+ קבל 10% הנחה, קנה 5+ קבל 15% הנחה)
@@ -818,7 +818,7 @@ export default function EditDiscountPage() {
 
                 {/* FREE_GIFT */}
                 {formData.type === "FREE_GIFT" && (
-                  <div className="space-y-4 p-4 bg-purple-50 rounded-lg">
+                  <div className="space-y-4 p-4 bg-emerald-50 rounded-lg">
                     <Label>קבלת מתנה</Label>
                     <p className="text-sm text-gray-600 mb-4">
                       הגדר מתנה שתתווסף אוטומטית לעגלה כאשר התנאים מתקיימים

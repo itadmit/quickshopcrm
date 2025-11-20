@@ -346,7 +346,7 @@ export function Sidebar() {
                       className={cn(
                         "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                         isActive
-                          ? "bg-purple-100 text-purple-700"
+                          ? "bg-emerald-100 text-emerald-700"
                           : "text-gray-700 hover:bg-gray-200",
                         (item as any).disabled && "opacity-50 cursor-not-allowed"
                       )}
@@ -382,7 +382,7 @@ export function Sidebar() {
                           className={cn(
                             "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                             isActive
-                              ? "bg-purple-100 text-purple-700"
+                              ? "bg-emerald-100 text-emerald-700"
                               : "text-gray-700 hover:bg-gray-200"
                           )}
                         >
@@ -414,7 +414,7 @@ export function Sidebar() {
                           className={cn(
                             "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                             isActive
-                              ? "bg-purple-100 text-purple-700"
+                              ? "bg-emerald-100 text-emerald-700"
                               : "text-gray-700 hover:bg-gray-200"
                           )}
                         >
@@ -446,7 +446,7 @@ export function Sidebar() {
                           className={cn(
                             "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                             isActive
-                              ? "bg-purple-100 text-purple-700"
+                              ? "bg-emerald-100 text-emerald-700"
                               : "text-gray-700 hover:bg-gray-200"
                           )}
                         >
@@ -478,7 +478,7 @@ export function Sidebar() {
                           className={cn(
                             "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                             isActive
-                              ? "bg-purple-100 text-purple-700"
+                              ? "bg-emerald-100 text-emerald-700"
                               : "text-gray-700 hover:bg-gray-200"
                           )}
                         >
@@ -510,7 +510,7 @@ export function Sidebar() {
                           className={cn(
                             "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                             isActive
-                              ? "bg-purple-100 text-purple-700"
+                              ? "bg-emerald-100 text-emerald-700"
                               : "text-gray-700 hover:bg-gray-200"
                           )}
                         >
@@ -542,7 +542,7 @@ export function Sidebar() {
                           className={cn(
                             "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                             isActive
-                              ? "bg-purple-100 text-purple-700"
+                              ? "bg-emerald-100 text-emerald-700"
                               : "text-gray-700 hover:bg-gray-200"
                           )}
                         >
@@ -565,7 +565,7 @@ export function Sidebar() {
                           className={cn(
                             "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                             isActive
-                              ? "bg-purple-100 text-purple-700"
+                              ? "bg-emerald-100 text-emerald-700"
                               : "text-gray-700 hover:bg-gray-200"
                           )}
                         >
@@ -597,7 +597,7 @@ export function Sidebar() {
                           className={cn(
                             "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
                             isActive
-                              ? "bg-purple-100 text-purple-700"
+                              ? "bg-emerald-100 text-emerald-700"
                               : "text-gray-700 hover:bg-gray-200"
                           )}
                         >
@@ -692,7 +692,7 @@ export function Sidebar() {
       {/* Bottom Section - Trial Period */}
       <div className="p-4 border-t border-gray-200">
         <div className="rounded-xl p-4 text-white text-sm" style={{
-          background: 'linear-gradient(135deg, #6f65e2 0%, #b965e2 100%)'
+          background: 'linear-gradient(135deg, #15b981 0%, #10b981 100%)'
         }}>
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="w-5 h-5" />

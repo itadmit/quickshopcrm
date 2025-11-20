@@ -376,7 +376,7 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
 
   // פונקציה נפרדת לתפריט מובייל עם סגנון שונה ותמיכה במגה מניו
   const renderMobileNavigationItem = (item: NavigationItem, index: number, parentPath: string[] = []) => {
-    const linkClassName = "block px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-gray-50 transition-colors rounded-lg text-base font-medium"
+    const linkClassName = "block px-4 py-3 text-gray-700 hover:text-emerald-600 hover:bg-gray-50 transition-colors rounded-lg text-base font-medium"
     const hasChildren = item.children && item.children.length > 0
     const itemPath = [...parentPath, index.toString()]
     const itemKey = itemPath.join("-")
@@ -418,7 +418,7 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
         <div key={itemKey} className="border-b border-gray-100 last:border-b-0">
           <button
             onClick={toggleExpanded}
-            className="w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:text-purple-600 hover:bg-gray-50 transition-colors rounded-lg text-base font-medium"
+            className="w-full flex items-center justify-between px-4 py-3 text-gray-700 hover:text-emerald-600 hover:bg-gray-50 transition-colors rounded-lg text-base font-medium"
           >
             <span>{item.label}</span>
             <ChevronDown
@@ -1144,7 +1144,7 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
                       <Link
                         href={`/shop/${slug}/account`}
                         onClick={() => setMobileMenuOpen(false)}
-                        className="block px-3 py-2 text-gray-700 hover:text-purple-600 transition-colors rounded-lg hover:bg-gray-50"
+                        className="block px-3 py-2 text-gray-700 hover:text-emerald-600 transition-colors rounded-lg hover:bg-gray-50"
                       >
                         חשבון שלי
                       </Link>
@@ -1154,14 +1154,14 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
                       <Link
                         href={`/shop/${slug}/login`}
                         onClick={() => setMobileMenuOpen(false)}
-                        className="block px-3 py-2 text-gray-700 hover:text-purple-600 transition-colors rounded-lg hover:bg-gray-50"
+                        className="block px-3 py-2 text-gray-700 hover:text-emerald-600 transition-colors rounded-lg hover:bg-gray-50"
                       >
                         התחברות
                       </Link>
                       <Link
                         href={`/shop/${slug}/register`}
                         onClick={() => setMobileMenuOpen(false)}
-                        className="block px-3 py-2 text-gray-700 hover:text-purple-600 transition-colors rounded-lg hover:bg-gray-50"
+                        className="block px-3 py-2 text-gray-700 hover:text-emerald-600 transition-colors rounded-lg hover:bg-gray-50"
                       >
                         הרשמה
                       </Link>

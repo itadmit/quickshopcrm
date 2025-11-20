@@ -152,13 +152,13 @@ export async function POST(req: NextRequest) {
         subject: `הזמנה להצטרפות ל-Quick Shop ${roleText}`,
         html: `
           <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h2 style="color: #6f65e2;">הזמנה להצטרפות ל-Quick Shop</h2>
+            <h2 style="color: #15b981;">הזמנה להצטרפות ל-Quick Shop</h2>
             <p>שלום ${name || email},</p>
             <p>${session.user.name} הזמין אותך להצטרף לצוות ב-Quick Shop ${roleText}.</p>
             <p>${roleDescription}</p>
             <p>לחץ על הקישור הבא כדי לאשר את ההזמנה וליצור חשבון:</p>
             <p style="text-align: center; margin: 30px 0;">
-              <a href="${acceptUrl}" style="background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+              <a href="${acceptUrl}" style="background: linear-gradient(135deg, #15b981 0%, #10b981 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
                 אישור והצטרפות
               </a>
             </p>
@@ -167,7 +167,7 @@ export async function POST(req: NextRequest) {
             </p>
             <p style="color: #666; font-size: 12px; margin-top: 20px;">
               אם הכפתור לא עובד, תוכל/י להעתיק ולהדביק את הקישור הבא בדפדפן:<br>
-              <a href="${acceptUrl}" style="color: #6f65e2; word-break: break-all;">${acceptUrl}</a>
+              <a href="${acceptUrl}" style="color: #15b981; word-break: break-all;">${acceptUrl}</a>
             </p>
           </div>
         `,
@@ -288,13 +288,13 @@ export async function PATCH(req: NextRequest) {
           subject: `הזמנה להצטרפות ל-Quick Shop ${roleText}`,
           html: `
             <div dir="rtl" style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <h2 style="color: #6f65e2;">הזמנה להצטרפות ל-Quick Shop</h2>
+              <h2 style="color: #15b981;">הזמנה להצטרפות ל-Quick Shop</h2>
               <p>שלום ${invitation.name || invitation.email},</p>
               <p>${invitation.inviter?.name || session.user.name} הזמין אותך להצטרף לצוות ב-Quick Shop ${roleText}.</p>
               <p>${roleDescription}</p>
               <p>לחץ על הקישור הבא כדי לאשר את ההזמנה וליצור חשבון:</p>
               <p style="text-align: center; margin: 30px 0;">
-                <a href="${acceptUrl}" style="background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                <a href="${acceptUrl}" style="background: linear-gradient(135deg, #15b981 0%, #10b981 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">
                   אישור והצטרפות
                 </a>
               </p>
@@ -303,7 +303,7 @@ export async function PATCH(req: NextRequest) {
               </p>
               <p style="color: #666; font-size: 12px; margin-top: 20px;">
                 אם הכפתור לא עובד, תוכל/י להעתיק ולהדביק את הקישור הבא בדפדפן:<br>
-                <a href="${acceptUrl}" style="color: #6f65e2; word-break: break-all;">${acceptUrl}</a>
+                <a href="${acceptUrl}" style="color: #15b981; word-break: break-all;">${acceptUrl}</a>
               </p>
             </div>
           `,

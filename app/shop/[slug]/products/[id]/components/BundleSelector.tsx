@@ -140,7 +140,7 @@ export function BundleSelector({
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
-        <Package className="w-5 h-5 text-purple-600" />
+        <Package className="w-5 h-5 text-emerald-600" />
         <h3 className="text-lg font-semibold text-gray-900">חבילות מוצרים</h3>
       </div>
 
@@ -155,7 +155,7 @@ export function BundleSelector({
               key={bundle.id}
               className={cn(
                 "cursor-pointer transition-all hover:shadow-md",
-                isSelected && "ring-2 ring-purple-500 border-purple-500"
+                isSelected && "ring-2 ring-emerald-500 border-emerald-500"
               )}
               onClick={() => setSelectedBundle(bundle.id)}
             >
@@ -165,7 +165,7 @@ export function BundleSelector({
                     <div className={cn(
                       "w-5 h-5 rounded-full border-2 flex items-center justify-center",
                       isSelected 
-                        ? "bg-purple-500 border-purple-500" 
+                        ? "bg-emerald-500 border-emerald-500" 
                         : "border-gray-300"
                     )}>
                       {isSelected && <Check className="w-3 h-3 text-white" />}
@@ -177,7 +177,7 @@ export function BundleSelector({
                           {bundle.name}
                         </span>
                         {isBestValue && (
-                          <Badge className="bg-purple-100 text-purple-700 border-purple-200 text-xs">
+                          <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs">
                             הכי משתלם
                           </Badge>
                         )}

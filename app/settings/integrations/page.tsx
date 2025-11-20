@@ -731,11 +731,11 @@ export default function IntegrationsPage() {
                       onClick={() => setActiveCategory(category.key as any)}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-right transition-colors mb-1 ${
                         isActive
-                          ? "bg-purple-50 text-purple-700 font-medium border-r-2 border-purple-600"
+                          ? "bg-emerald-50 text-emerald-700 font-medium border-r-2 border-emerald-600"
                           : "text-gray-700 hover:bg-gray-50"
                       }`}
                     >
-                      <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-purple-600" : "text-gray-500"}`} />
+                      <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-emerald-600" : "text-gray-500"}`} />
                       <span className="text-sm">{category.label}</span>
                     </button>
                     {category.divider && <div className="border-t border-gray-200 my-2 mx-2" />}
@@ -772,7 +772,7 @@ export default function IntegrationsPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-3">
                             <h3 className="text-lg font-semibold text-gray-900">העברה בנקאית</h3>
-                            <Badge className="text-xs bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-100">
+                            <Badge className="text-xs bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100">
                               שיטת תשלום
                             </Badge>
                             {bankTransferEnabled && (
@@ -883,7 +883,7 @@ export default function IntegrationsPage() {
                         <div className="flex-1">
                           <div className="flex items-center gap-3">
                             <h3 className="text-lg font-semibold text-gray-900">מזומן בהזמנה</h3>
-                            <Badge className="text-xs bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-100">
+                            <Badge className="text-xs bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100">
                               שיטת תשלום
                             </Badge>
                             {cashEnabled && (
@@ -1038,7 +1038,7 @@ export default function IntegrationsPage() {
                             <div className="flex-1">
                               <div className="flex items-center gap-3">
                                 <h3 className="text-lg font-semibold text-gray-900">{provider.name}</h3>
-                                <Badge className="text-xs bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-100">
+                                <Badge className="text-xs bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100">
                                   {provider.type}
                                 </Badge>
                                 {isConnected && (
@@ -1370,7 +1370,7 @@ export default function IntegrationsPage() {
                             <div className="flex-1">
                               <div className="flex items-center gap-3">
                                 <h3 className="text-lg font-semibold text-gray-900">{provider.name}</h3>
-                                <Badge className="text-xs bg-purple-100 text-purple-700 border-purple-200 hover:bg-purple-100">
+                                <Badge className="text-xs bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100">
                                   {provider.type}
                                 </Badge>
                                 {isConnected && (

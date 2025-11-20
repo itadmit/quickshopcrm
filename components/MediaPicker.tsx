@@ -451,18 +451,18 @@ export function MediaPicker({
                   return (
                     <div
                       key={tempId}
-                      className="relative rounded-lg border-2 border-purple-300 overflow-hidden"
+                      className="relative rounded-lg border-2 border-emerald-300 overflow-hidden"
                     >
                       {/* Skeleton */}
                       <div className="aspect-square relative bg-gray-100 animate-pulse">
                         <div className="absolute inset-0 flex items-center justify-center">
-                          <Loader2 className="w-8 h-8 text-purple-500 animate-spin" />
+                          <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
                         </div>
                         
                         {/* Progress Bar */}
                         <div className="absolute bottom-0 left-0 right-0 h-2 bg-gray-200">
                           <div
-                            className="h-full bg-purple-500 transition-all duration-300"
+                            className="h-full bg-emerald-500 transition-all duration-300"
                             style={{ width: `${progress}%` }}
                           />
                         </div>
@@ -489,7 +489,7 @@ export function MediaPicker({
                       className={cn(
                         "relative group cursor-pointer rounded-lg border-2 transition-all",
                         isSelected
-                          ? "border-purple-500 ring-2 ring-purple-200"
+                          ? "border-emerald-500 ring-2 ring-emerald-200"
                           : "border-gray-200 hover:border-gray-300"
                       )}
                       onClick={() => handleToggleSelect(file.path)}
@@ -517,8 +517,8 @@ export function MediaPicker({
                           className={cn(
                             "w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all",
                             isSelected
-                              ? "bg-purple-500 border-purple-500"
-                              : "bg-white border-gray-300 group-hover:border-purple-400"
+                              ? "bg-emerald-500 border-emerald-500"
+                              : "bg-white border-gray-300 group-hover:border-emerald-400"
                           )}
                         >
                           {isSelected && <Check className="w-4 h-4 text-white" />}

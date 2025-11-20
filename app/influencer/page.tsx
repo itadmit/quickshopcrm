@@ -117,7 +117,7 @@ export default function InfluencerDashboard() {
       <AppLayout title="דשבורד משפיען">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
             <p className="text-gray-600">טוען נתונים...</p>
           </div>
         </div>
@@ -195,8 +195,8 @@ export default function InfluencerDashboard() {
                     ₪{(stats.averageOrderValue || 0).toFixed(2)}
                   </p>
                 </div>
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-purple-600" />
+                <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-emerald-600" />
                 </div>
               </div>
             </CardContent>
@@ -265,7 +265,7 @@ export default function InfluencerDashboard() {
                           </p>
                         </div>
                         <div className="text-right">
-                          <p className="text-lg font-bold text-purple-600">
+                          <p className="text-lg font-bold text-emerald-600">
                             {coupon.type === "PERCENTAGE"
                               ? `${coupon.value}%`
                               : `₪${coupon.value}`}

@@ -9,7 +9,7 @@ export function NewDiscountSkeleton() {
         </div>
         <div className="flex gap-2">
           <div className="h-10 w-20 bg-gray-200 rounded"></div>
-          <div className="h-10 w-24 bg-gradient-to-r from-purple-200 to-purple-300 rounded"></div>
+          <div className="h-10 w-24 bg-gradient-to-r from-emerald-200 to-emerald-300 rounded"></div>
         </div>
       </div>
 

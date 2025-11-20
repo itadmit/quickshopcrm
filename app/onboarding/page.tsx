@@ -408,7 +408,7 @@ export default function OnboardingPage() {
                 <span className="text-xs font-semibold text-gray-600">
                   שלב {currentStep} מתוך {STEPS.length}
                 </span>
-                <span className="text-xs font-bold text-purple-600">
+                <span className="text-xs font-bold text-emerald-600">
                   {Math.round(progress)}%
                 </span>
               </div>
@@ -444,7 +444,7 @@ export default function OnboardingPage() {
                       </div>
                       <span className={`mt-1.5 text-[10px] font-medium text-center transition-colors whitespace-nowrap ${
                         isActive 
-                          ? "font-bold text-purple-600" 
+                          ? "font-bold text-emerald-600" 
                           : isCompleted
                           ? "text-green-600"
                           : "text-gray-400"
@@ -508,7 +508,7 @@ export default function OnboardingPage() {
                         }
                       }}
                       placeholder="לדוגמה: חנות הבגדים שלי"
-                      className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                      className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                     />
                   </div>
 
@@ -531,7 +531,7 @@ export default function OnboardingPage() {
                           setSlugManuallyEdited(true) // סימן שהמשתמש ערך את ה-slug ידנית
                         }}
                         placeholder="my-shop"
-                        className={`h-10 text-sm pr-10 border-gray-300 focus:border-purple-500 focus:ring-purple-500 ${
+                        className={`h-10 text-sm pr-10 border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 ${
                           slugAvailability.available === false ? "border-red-500" : 
                           slugAvailability.available === true ? "border-green-500" : ""
                         }`}
@@ -575,7 +575,7 @@ export default function OnboardingPage() {
                       onChange={(e) => updateShopData("description", e.target.value)}
                       placeholder="תאר את החנות שלך בכמה מילים..."
                       rows={3}
-                      className="text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500 resize-none"
+                      className="text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 resize-none"
                     />
                     <p className="text-xs text-gray-500 flex items-start gap-1.5">
                       <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
@@ -588,7 +588,7 @@ export default function OnboardingPage() {
                       קטגוריה ראשית <span className="text-red-500">*</span>
                     </Label>
                     <Select value={shopData.category} onValueChange={(value) => updateShopData("category", value)}>
-                      <SelectTrigger className="h-12 text-base border-gray-300 focus:border-purple-500 focus:ring-purple-500">
+                      <SelectTrigger className="h-12 text-base border-gray-300 focus:border-emerald-500 focus:ring-emerald-500">
                         <SelectValue placeholder="בחר קטגוריה" />
                       </SelectTrigger>
                       <SelectContent>
@@ -611,7 +611,7 @@ export default function OnboardingPage() {
                           <img 
                             src={shopData.logo} 
                             alt="Logo" 
-                            className="w-28 h-28 object-cover rounded-xl shadow-md ring-2 ring-purple-100 transition-transform group-hover:scale-105" 
+                            className="w-28 h-28 object-cover rounded-xl shadow-md ring-2 ring-emerald-100 transition-transform group-hover:scale-105" 
                           />
                           <button
                             onClick={() => updateShopData("logo", null)}
@@ -621,9 +621,9 @@ export default function OnboardingPage() {
                           </button>
                         </div>
                       ) : (
-                        <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-purple-500 hover:bg-purple-50/50 transition-all duration-200 group">
-                          <Upload className="w-8 h-8 text-gray-400 group-hover:text-purple-500 transition-colors mb-2" />
-                          <span className="text-sm font-medium text-gray-600 group-hover:text-purple-600">העלה לוגו</span>
+                        <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/50 transition-all duration-200 group">
+                          <Upload className="w-8 h-8 text-gray-400 group-hover:text-emerald-500 transition-colors mb-2" />
+                          <span className="text-sm font-medium text-gray-600 group-hover:text-emerald-600">העלה לוגו</span>
                           <input
                             type="file"
                             className="hidden"
@@ -659,7 +659,7 @@ export default function OnboardingPage() {
                       value={shopData.email}
                       onChange={(e) => updateShopData("email", e.target.value)}
                       placeholder="shop@example.com"
-                      className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                      className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                     />
                   </div>
 
@@ -673,7 +673,7 @@ export default function OnboardingPage() {
                       value={shopData.phone}
                       onChange={(e) => updateShopData("phone", e.target.value)}
                       placeholder="050-1234567"
-                      className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                      className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                     />
                   </div>
 
@@ -686,7 +686,7 @@ export default function OnboardingPage() {
                       value={shopData.address}
                       onChange={(e) => updateShopData("address", e.target.value)}
                       placeholder="רחוב, עיר, מיקוד"
-                      className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                      className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                     />
                   </div>
 
@@ -841,7 +841,7 @@ export default function OnboardingPage() {
                                   })
                                 }
                                 min="0"
-                                className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                               />
                             </div>
                           )}
@@ -878,7 +878,7 @@ export default function OnboardingPage() {
                                   })
                                 }
                                 min="0"
-                                className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                               />
                             </div>
                           )}
@@ -892,7 +892,7 @@ export default function OnboardingPage() {
                           value={shopData.shippingTime}
                           onChange={(e) => updateShopData("shippingTime", e.target.value)}
                           placeholder="לדוגמה: 3-5 ימי עסקים"
-                          className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                          className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                         />
                       </div>
                     </>
@@ -922,7 +922,7 @@ export default function OnboardingPage() {
                           value={shopData.pickupAddress}
                           onChange={(e) => updateShopData("pickupAddress", e.target.value)}
                           placeholder="רחוב, עיר, מיקוד"
-                          className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                          className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                         />
                       </div>
                       <div>
@@ -936,7 +936,7 @@ export default function OnboardingPage() {
                           onChange={(e) => updateShopData("pickupCost", e.target.value ? parseFloat(e.target.value) : null)}
                           placeholder="0 - חינם (ברירת מחדל)"
                           min="0"
-                          className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                          className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                         />
                       </div>
                     </>
@@ -948,7 +948,7 @@ export default function OnboardingPage() {
               {currentStep === 5 && (
                 <div className="space-y-6">
                   <div className="text-center mb-6">
-                    <Palette className="w-12 h-12 mx-auto text-purple-500 mb-3" />
+                    <Palette className="w-12 h-12 mx-auto text-emerald-500 mb-3" />
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">בחר את צבעי המותג שלך</h3>
                     <p className="text-sm text-gray-600">הצבעים ישפיעו על מראה החנות שלך</p>
                   </div>
@@ -968,7 +968,7 @@ export default function OnboardingPage() {
                           <Input
                             value={shopData.primaryColor}
                             onChange={(e) => updateShopData("primaryColor", e.target.value)}
-                            className="h-12 text-base font-mono border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                            className="h-12 text-base font-mono border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                           />
                         </div>
                       </div>
@@ -988,7 +988,7 @@ export default function OnboardingPage() {
                           <Input
                             value={shopData.secondaryColor}
                             onChange={(e) => updateShopData("secondaryColor", e.target.value)}
-                            className="h-12 text-base font-mono border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                            className="h-12 text-base font-mono border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                           />
                         </div>
                       </div>
@@ -1005,7 +1005,7 @@ export default function OnboardingPage() {
                   </div>
                   <h2 className="text-2xl font-bold mb-2 text-gray-900">החנות שלך מוכנה! 🎉</h2>
                   <p className="text-base text-gray-600 mb-6 max-w-md mx-auto">
-                    החנות <span className="font-semibold text-purple-600">"{shopData.name}"</span> נוצרה בהצלחה. 
+                    החנות <span className="font-semibold text-emerald-600">"{shopData.name}"</span> נוצרה בהצלחה. 
                     <br />אתה יכול להתחיל להוסיף מוצרים ולהתחיל למכור!
                   </p>
                   <div className="flex gap-4 justify-center">
@@ -1014,7 +1014,7 @@ export default function OnboardingPage() {
                       onClick={() => {
                         window.open(`/shop/${shopData.slug}`, "_blank")
                       }}
-                      className="h-12 px-6 border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 transition-all"
+                      className="h-12 px-6 border-2 border-gray-300 hover:border-emerald-500 hover:bg-emerald-50 transition-all"
                     >
                       פתח את החנות
                     </Button>
@@ -1089,7 +1089,7 @@ export default function OnboardingPage() {
                     <span className="text-sm font-semibold text-gray-600">
                       שלב {currentStep} מתוך {STEPS.length}
                     </span>
-                    <span className="text-sm font-bold text-purple-600">
+                    <span className="text-sm font-bold text-emerald-600">
                       {Math.round(progress)}%
                     </span>
                   </div>
@@ -1134,7 +1134,7 @@ export default function OnboardingPage() {
                           <div className="flex-1 pt-1">
                             <div className={`text-sm font-medium transition-colors ${
                               isActive 
-                                ? "font-bold text-purple-600" 
+                                ? "font-bold text-emerald-600" 
                                 : isCompleted
                                 ? "text-green-600"
                                 : "text-gray-400"
@@ -1204,7 +1204,7 @@ export default function OnboardingPage() {
                             }
                           }}
                           placeholder="לדוגמה: חנות הבגדים שלי"
-                          className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                          className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                         />
                       </div>
 
@@ -1227,7 +1227,7 @@ export default function OnboardingPage() {
                               setSlugManuallyEdited(true) // סימן שהמשתמש ערך את ה-slug ידנית
                             }}
                             placeholder="my-shop"
-                            className={`h-10 text-sm pr-10 border-gray-300 focus:border-purple-500 focus:ring-purple-500 ${
+                            className={`h-10 text-sm pr-10 border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 ${
                               slugAvailability.available === false ? "border-red-500" : 
                               slugAvailability.available === true ? "border-green-500" : ""
                             }`}
@@ -1271,7 +1271,7 @@ export default function OnboardingPage() {
                           onChange={(e) => updateShopData("description", e.target.value)}
                           placeholder="תאר את החנות שלך בכמה מילים..."
                           rows={3}
-                          className="text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500 resize-none"
+                          className="text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 resize-none"
                         />
                         <p className="text-xs text-gray-500 flex items-start gap-1.5">
                           <AlertCircle className="w-3.5 h-3.5 mt-0.5 flex-shrink-0" />
@@ -1284,7 +1284,7 @@ export default function OnboardingPage() {
                           קטגוריה ראשית <span className="text-red-500">*</span>
                         </Label>
                         <Select value={shopData.category} onValueChange={(value) => updateShopData("category", value)}>
-                          <SelectTrigger className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500">
+                          <SelectTrigger className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500">
                             <SelectValue placeholder="בחר קטגוריה" />
                           </SelectTrigger>
                           <SelectContent>
@@ -1307,7 +1307,7 @@ export default function OnboardingPage() {
                               <img 
                                 src={shopData.logo} 
                                 alt="Logo" 
-                                className="w-28 h-28 object-cover rounded-xl shadow-md ring-2 ring-purple-100 transition-transform group-hover:scale-105" 
+                                className="w-28 h-28 object-cover rounded-xl shadow-md ring-2 ring-emerald-100 transition-transform group-hover:scale-105" 
                               />
                               <button
                                 onClick={() => updateShopData("logo", null)}
@@ -1317,9 +1317,9 @@ export default function OnboardingPage() {
                               </button>
                             </div>
                           ) : (
-                            <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-purple-500 hover:bg-purple-50/50 transition-all duration-200 group">
-                              <Upload className="w-8 h-8 text-gray-400 group-hover:text-purple-500 transition-colors mb-2" />
-                              <span className="text-sm font-medium text-gray-600 group-hover:text-purple-600">העלה לוגו</span>
+                            <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/50 transition-all duration-200 group">
+                              <Upload className="w-8 h-8 text-gray-400 group-hover:text-emerald-500 transition-colors mb-2" />
+                              <span className="text-sm font-medium text-gray-600 group-hover:text-emerald-600">העלה לוגו</span>
                               <input
                                 type="file"
                                 className="hidden"
@@ -1355,7 +1355,7 @@ export default function OnboardingPage() {
                           value={shopData.email}
                           onChange={(e) => updateShopData("email", e.target.value)}
                           placeholder="shop@example.com"
-                          className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                          className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                         />
                       </div>
 
@@ -1369,7 +1369,7 @@ export default function OnboardingPage() {
                           value={shopData.phone}
                           onChange={(e) => updateShopData("phone", e.target.value)}
                           placeholder="050-1234567"
-                          className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                          className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                         />
                       </div>
 
@@ -1382,7 +1382,7 @@ export default function OnboardingPage() {
                           value={shopData.address}
                           onChange={(e) => updateShopData("address", e.target.value)}
                           placeholder="רחוב, עיר, מיקוד"
-                          className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                          className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                         />
                       </div>
 
@@ -1537,7 +1537,7 @@ export default function OnboardingPage() {
                                       })
                                     }
                                     min="0"
-                                    className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                    className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                                   />
                                 </div>
                               )}
@@ -1574,7 +1574,7 @@ export default function OnboardingPage() {
                                       })
                                     }
                                     min="0"
-                                    className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                    className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                                   />
                                 </div>
                               )}
@@ -1588,7 +1588,7 @@ export default function OnboardingPage() {
                               value={shopData.shippingTime}
                               onChange={(e) => updateShopData("shippingTime", e.target.value)}
                               placeholder="לדוגמה: 3-5 ימי עסקים"
-                              className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                              className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                             />
                           </div>
                         </>
@@ -1618,7 +1618,7 @@ export default function OnboardingPage() {
                               value={shopData.pickupAddress}
                               onChange={(e) => updateShopData("pickupAddress", e.target.value)}
                               placeholder="רחוב, עיר, מיקוד"
-                              className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                              className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                             />
                           </div>
                           <div>
@@ -1632,7 +1632,7 @@ export default function OnboardingPage() {
                               onChange={(e) => updateShopData("pickupCost", e.target.value ? parseFloat(e.target.value) : null)}
                               placeholder="0 - חינם (ברירת מחדל)"
                               min="0"
-                              className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                              className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                             />
                           </div>
                         </>
@@ -1644,7 +1644,7 @@ export default function OnboardingPage() {
                   {currentStep === 5 && (
                     <div className="space-y-6">
                       <div className="text-center mb-6">
-                        <Palette className="w-12 h-12 mx-auto text-purple-500 mb-3" />
+                        <Palette className="w-12 h-12 mx-auto text-emerald-500 mb-3" />
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">בחר את צבעי המותג שלך</h3>
                         <p className="text-sm text-gray-600">הצבעים ישפיעו על מראה החנות שלך</p>
                       </div>
@@ -1664,7 +1664,7 @@ export default function OnboardingPage() {
                               <Input
                                 value={shopData.primaryColor}
                                 onChange={(e) => updateShopData("primaryColor", e.target.value)}
-                                className="h-12 text-base font-mono border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                className="h-12 text-base font-mono border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                               />
                             </div>
                           </div>
@@ -1684,7 +1684,7 @@ export default function OnboardingPage() {
                               <Input
                                 value={shopData.secondaryColor}
                                 onChange={(e) => updateShopData("secondaryColor", e.target.value)}
-                                className="h-12 text-base font-mono border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                                className="h-12 text-base font-mono border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                               />
                             </div>
                           </div>
@@ -1701,7 +1701,7 @@ export default function OnboardingPage() {
                       </div>
                       <h2 className="text-2xl font-bold mb-2 text-gray-900">החנות שלך מוכנה! 🎉</h2>
                       <p className="text-base text-gray-600 mb-6 max-w-md mx-auto">
-                        החנות <span className="font-semibold text-purple-600">"{shopData.name}"</span> נוצרה בהצלחה. 
+                        החנות <span className="font-semibold text-emerald-600">"{shopData.name}"</span> נוצרה בהצלחה. 
                         <br />אתה יכול להתחיל להוסיף מוצרים ולהתחיל למכור!
                       </p>
                       <div className="flex gap-4 justify-center">
@@ -1710,7 +1710,7 @@ export default function OnboardingPage() {
                           onClick={() => {
                             window.open(`/shop/${shopData.slug}`, "_blank")
                           }}
-                          className="h-12 px-6 border-2 border-gray-300 hover:border-purple-500 hover:bg-purple-50 transition-all"
+                          className="h-12 px-6 border-2 border-gray-300 hover:border-emerald-500 hover:bg-emerald-50 transition-all"
                         >
                           פתח את החנות
                         </Button>

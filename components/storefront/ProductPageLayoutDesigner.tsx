@@ -271,7 +271,7 @@ export function ProductPageLayoutDesigner({
                   className={cn(
                     "relative group border-2 rounded-lg p-4 transition-all duration-300 ease-in-out",
                     hoveredElementId === element.id
-                      ? "border-purple-500 bg-purple-50"
+                      ? "border-emerald-500 bg-emerald-50"
                       : element.visible
                       ? "border-gray-200 bg-white"
                       : "border-gray-200 bg-gray-50 opacity-60"

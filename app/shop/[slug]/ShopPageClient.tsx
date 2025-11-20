@@ -717,9 +717,9 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
         if (element) {
           element.scrollIntoView({ behavior: "smooth", block: "start" })
           // הוספת מסגרת סגולה זמנית
-          element.classList.add("ring-4", "ring-purple-500", "ring-opacity-50")
+          element.classList.add("ring-4", "ring-emerald-500", "ring-opacity-50")
           setTimeout(() => {
-            element.classList.remove("ring-4", "ring-purple-500", "ring-opacity-50")
+            element.classList.remove("ring-4", "ring-emerald-500", "ring-opacity-50")
           }, 2000)
         }
       }
@@ -785,13 +785,13 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
       >
         {/* Tooltip עם שם הסקשן - מופיע ב-hover רק בקסטומייזר */}
         {isInIframe && (
-          <div className="absolute top-0 right-0 bg-purple-600 text-white text-xs px-2 py-1 rounded z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="absolute top-0 right-0 bg-emerald-600 text-white text-xs px-2 py-1 rounded z-50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
             {sectionLabel}
           </div>
         )}
         {/* מסגרת סגולה ב-hover - רק בקסטומייזר */}
         {isInIframe && (
-          <div className="absolute inset-0 border-2 border-purple-500 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-40" />
+          <div className="absolute inset-0 border-2 border-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-40" />
         )}
         {sectionComponent}
       </div>

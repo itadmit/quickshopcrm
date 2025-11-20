@@ -115,7 +115,7 @@ export default function StoreCreditsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">סה"כ לקוחות עם קרדיט</CardTitle>
-              <User className="h-5 w-5 text-purple-600" />
+              <User className="h-5 w-5 text-emerald-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{credits.length}</div>
@@ -125,7 +125,7 @@ export default function StoreCreditsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">סה"כ יתרה</CardTitle>
-              <DollarSign className="h-5 w-5 text-purple-600" />
+              <DollarSign className="h-5 w-5 text-emerald-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">₪{totalBalance.toFixed(2)}</div>
@@ -135,7 +135,7 @@ export default function StoreCreditsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">יתרה ממוצעת</CardTitle>
-              <CreditCard className="h-5 w-5 text-purple-600" />
+              <CreditCard className="h-5 w-5 text-emerald-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">

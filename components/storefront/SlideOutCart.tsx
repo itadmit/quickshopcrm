@@ -284,7 +284,7 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                               </h3>
                             </Link>
                             {(item as any).bundleName && (
-                              <p className="text-xs text-purple-600 mb-1 font-medium">
+                              <p className="text-xs text-emerald-600 mb-1 font-medium">
                                 חלק מחבילה: {(item as any).bundleName}
                               </p>
                             )}

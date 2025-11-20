@@ -304,7 +304,7 @@ export default function StaticPage() {
                       <CardContent className="flex-1 p-2 sm:p-4 flex flex-col justify-between">
                         <div>
                           <Link href={`/shop/${slug}/products/${product.slug || product.id}`}>
-                            <h3 className="text-sm sm:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 hover:text-purple-600 transition-colors line-clamp-2">
+                            <h3 className="text-sm sm:text-xl font-semibold text-gray-900 mb-1 sm:mb-2 hover:text-emerald-600 transition-colors line-clamp-2">
                               {product.name}
                             </h3>
                           </Link>
@@ -375,7 +375,7 @@ export default function StaticPage() {
                         )}
                       </div>
                       <CardContent className="p-4">
-                        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-purple-600 transition-colors">
+                        <h3 className="font-semibold text-gray-900 mb-2 line-clamp-2 group-hover:text-emerald-600 transition-colors">
                           {product.name}
                         </h3>
                         <div className="flex items-center gap-2 mb-3">

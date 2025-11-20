@@ -481,10 +481,10 @@ export default function ForMarketersPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <div className="order-2 lg:order-1">
-              <Badge className="bg-purple-50 text-purple-600 border-purple-100 mb-6">מערכת משפיעניות מובנית</Badge>
+              <Badge className="bg-emerald-50 text-emerald-600 border-emerald-100 mb-6">מערכת משפיעניות מובנית</Badge>
               <h2 className="text-4xl font-bold mb-6 text-gray-900">
                 תנו למשפיעניות שלכם <br/>
-                <span className="text-purple-600">גישה לנתונים בזמן אמת</span>
+                <span className="text-emerald-600">גישה לנתונים בזמן אמת</span>
               </h2>
               <p className="text-xl text-gray-500 mb-10 leading-relaxed">
                 במקום לשלוח צילומי מסך ואקסלים בסוף חודש, תנו למשפיעניות שלכם גישה לאזור אישי משלהן.
@@ -493,8 +493,8 @@ export default function ForMarketersPage() {
               
               <div className="space-y-8">
                 <div className="flex gap-5">
-                  <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center shrink-0">
-                    <Users className="w-6 h-6 text-purple-600" />
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0">
+                    <Users className="w-6 h-6 text-emerald-600" />
                   </div>
                   <div>
                     <h3 className="font-bold text-xl text-gray-900 mb-2">אזור אישי לכל משפיענית</h3>
@@ -505,8 +505,8 @@ export default function ForMarketersPage() {
                 </div>
                 
                 <div className="flex gap-5">
-                  <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center shrink-0">
-                    <BarChart3 className="w-6 h-6 text-purple-600" />
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0">
+                    <BarChart3 className="w-6 h-6 text-emerald-600" />
                   </div>
                   <div>
                     <h3 className="font-bold text-xl text-gray-900 mb-2">מעקב מכירות LIVE</h3>
@@ -517,8 +517,8 @@ export default function ForMarketersPage() {
                 </div>
 
                 <div className="flex gap-5">
-                  <div className="w-12 h-12 rounded-2xl bg-purple-50 flex items-center justify-center shrink-0">
-                    <MousePointerClick className="w-6 h-6 text-purple-600" />
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center shrink-0">
+                    <MousePointerClick className="w-6 h-6 text-emerald-600" />
                   </div>
                   <div>
                     <h3 className="font-bold text-xl text-gray-900 mb-2">מחולל לינקים חכם</h3>
@@ -532,13 +532,13 @@ export default function ForMarketersPage() {
 
             {/* Visual representation of the Influencer Dashboard */}
             <div className="order-1 lg:order-2 relative">
-               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-purple-100 to-pink-100 rounded-full blur-3xl opacity-40 animate-pulse"></div>
+               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-gradient-to-tr from-emerald-100 to-pink-100 rounded-full blur-3xl opacity-40 animate-pulse"></div>
                
                <div className="relative bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden transform rotate-[-2deg] hover:rotate-0 transition-transform duration-500">
                  {/* Mock Dashboard Header */}
                  <div className="bg-gray-50 border-b border-gray-100 p-4 flex items-center justify-between">
                    <div className="flex items-center gap-3">
-                     <div className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center text-purple-600 font-bold text-xs">
+                     <div className="w-8 h-8 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 font-bold text-xs">
                        AN
                      </div>
                      <span className="font-bold text-gray-700 text-sm">אנה זק - דשבורד</span>
@@ -549,8 +549,8 @@ export default function ForMarketersPage() {
                  {/* Dashboard Content Mock */}
                  <div className="p-6 space-y-6">
                    <div className="grid grid-cols-2 gap-4">
-                     <div className="p-4 bg-purple-50 rounded-2xl">
-                       <div className="text-xs text-purple-600 font-medium mb-1">סך עמלות</div>
+                     <div className="p-4 bg-emerald-50 rounded-2xl">
+                       <div className="text-xs text-emerald-600 font-medium mb-1">סך עמלות</div>
                        <div className="text-2xl font-bold text-gray-900">₪4,250</div>
                      </div>
                      <div className="p-4 bg-pink-50 rounded-2xl">
@@ -699,8 +699,8 @@ export default function ForMarketersPage() {
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center flex-shrink-0">
-                    <CreditCard className="w-5 h-5 text-purple-500" />
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
+                    <CreditCard className="w-5 h-5 text-emerald-500" />
                   </div>
                   <div>
                     <h3 className="font-bold text-lg mb-1">סליקה ותשלומים</h3>

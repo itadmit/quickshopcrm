@@ -491,7 +491,7 @@ export default function ProductsPage() {
                   router.push(`/products/bulk-edit?ids=${ids}`)
                 }}
                 variant="default"
-                className="bg-purple-600 hover:bg-purple-700"
+                className="bg-emerald-600 hover:bg-emerald-700"
               >
                 <Edit3 className="w-4 h-4 ml-2" />
                 עריכה קבוצתית ({selectedProducts.size})
@@ -566,7 +566,7 @@ export default function ProductsPage() {
               />
               {isSearching && (
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                  <Loader2 className="w-4 h-4 text-[#6f65e2] animate-spin" />
+                  <Loader2 className="w-4 h-4 text-[#15b981] animate-spin" />
                 </div>
               )}
             </div>

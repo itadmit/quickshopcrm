@@ -798,7 +798,7 @@ export default function NavigationPage() {
                         key={nav.id}
                         className={`p-3 rounded-lg border cursor-pointer transition-colors ${
                           isSelected
-                            ? "border-purple-500 bg-purple-50"
+                            ? "border-emerald-500 bg-emerald-50"
                             : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
                         }`}
                         onClick={() => handleNavigationSelect(nav)}
@@ -867,14 +867,14 @@ export default function NavigationPage() {
                 <CardContent className="space-y-4">
                   {/* הצעה להעתקה מתפריט מחשב */}
                   {shouldShowCopySuggestion() && (
-                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4">
                       <div className="flex items-start gap-3">
-                        <AlertCircle className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                        <AlertCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
                         <div className="flex-1">
-                          <h4 className="text-sm font-semibold text-purple-900 mb-1">
+                          <h4 className="text-sm font-semibold text-emerald-900 mb-1">
                             תפריט המחשב מכיל פריטים
                           </h4>
-                          <p className="text-sm text-purple-700 mb-3">
+                          <p className="text-sm text-emerald-700 mb-3">
                             האם תרצה להעתיק את הפריטים מתפריט המחשב לתפריט המובייל?
                           </p>
                           <Button
@@ -1005,7 +1005,7 @@ export default function NavigationPage() {
                       onClick={() => setNewNavigationLocation(option.value)}
                       className={`p-3 border rounded-lg text-right transition-colors ${
                         newNavigationLocation === option.value
-                          ? "border-purple-500 bg-purple-50"
+                          ? "border-emerald-500 bg-emerald-50"
                           : "border-gray-200 hover:border-gray-300"
                       }`}
                     >

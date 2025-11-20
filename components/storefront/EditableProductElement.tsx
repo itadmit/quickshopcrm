@@ -49,7 +49,7 @@ export function EditableProductElement({
     >
       {/* מסגרת סגולה ב-hover */}
       {isHovered && (
-        <div className="absolute inset-0 border-2 border-purple-500 rounded-lg pointer-events-none z-10" />
+        <div className="absolute inset-0 border-2 border-emerald-500 rounded-lg pointer-events-none z-10" />
       )}
 
       {/* מדבקה עם שם האלמנט - לחיצה פותחת הגדרות */}
@@ -59,7 +59,7 @@ export function EditableProductElement({
             e.stopPropagation()
             onOpenSettings?.()
           }}
-          className="absolute top-0 right-0 bg-purple-500 text-white text-xs font-medium px-2 py-1 rounded-bl-lg rounded-tr-lg z-20 cursor-pointer hover:bg-purple-600 transition-colors flex items-center gap-1"
+          className="absolute top-0 right-0 bg-emerald-500 text-white text-xs font-medium px-2 py-1 rounded-bl-lg rounded-tr-lg z-20 cursor-pointer hover:bg-emerald-600 transition-colors flex items-center gap-1"
           title="לחץ לפתיחת הגדרות"
         >
           {elementName}

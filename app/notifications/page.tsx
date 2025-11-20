@@ -213,7 +213,7 @@ export default function NotificationsPage() {
       case 'task':
         return 'text-blue-600 bg-blue-100'
       case 'meeting':
-        return 'text-purple-600 bg-purple-100'
+        return 'text-emerald-600 bg-emerald-100'
       case 'lead':
         return 'text-green-600 bg-green-100'
       case 'document':
@@ -338,7 +338,7 @@ export default function NotificationsPage() {
 
         {/* Filter Tabs */}
         <div className="flex gap-2 border-b">
-          <button className="px-4 py-2 border-b-2 border-purple-600 text-purple-600 font-medium">
+          <button className="px-4 py-2 border-b-2 border-emerald-600 text-emerald-600 font-medium">
             הכל ({notifications.length})
           </button>
           <button className="px-4 py-2 text-gray-500 hover:text-gray-700">
@@ -380,7 +380,7 @@ export default function NotificationsPage() {
                   key={notification.id} 
                   onClick={() => handleNotificationClick(notification)}
                   className={`shadow-sm hover:shadow-md transition-all cursor-pointer bg-white ${
-                    !notification.isRead ? "border-r-4 border-r-purple-600" : ""
+                    !notification.isRead ? "border-r-4 border-r-emerald-600" : ""
                   } hover:bg-gray-50`}
                 >
                   <CardContent className="py-3 px-4">
@@ -402,7 +402,7 @@ export default function NotificationsPage() {
                             )}
                           </div>
                           {!notification.isRead && (
-                            <div className="w-2 h-2 bg-purple-600 rounded-full flex-shrink-0 mt-1"></div>
+                            <div className="w-2 h-2 bg-emerald-600 rounded-full flex-shrink-0 mt-1"></div>
                           )}
                         </div>
                         <div className="flex items-center gap-4 mt-2">

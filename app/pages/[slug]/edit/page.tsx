@@ -799,13 +799,13 @@ export default function EditPagePage() {
                           {getSelectedProductsData().map((product) => (
                             <div
                               key={product.id}
-                              className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2"
+                              className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2"
                             >
                               <span className="text-sm font-medium">{product.name}</span>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 p-0 hover:bg-purple-100"
+                                className="h-6 w-6 p-0 hover:bg-emerald-100"
                                 onClick={() => toggleProductSelection(product.id)}
                               >
                                 <X className="w-3 h-3" />
@@ -1006,7 +1006,7 @@ export default function EditPagePage() {
                         כדי לשנות את הסדר, עבור לעמוד{" "}
                         <button
                           onClick={() => router.push("/navigation")}
-                          className="text-purple-600 hover:underline"
+                          className="text-emerald-600 hover:underline"
                         >
                           תפריטים
                         </button>
@@ -1040,7 +1040,7 @@ export default function EditPagePage() {
                     setAddToMenuDialogOpen(false)
                     router.push("/navigation")
                   }}
-                  className="text-purple-600 hover:underline"
+                  className="text-emerald-600 hover:underline"
                 >
                   צור תפריט חדש
                 </button>

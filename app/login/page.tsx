@@ -114,7 +114,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md">
           {/* Logo */}
           <div className="mb-8 overflow-visible pt-2 pb-1">
-            <h1 className="text-3xl font-pacifico prodify-gradient-text mb-2 whitespace-nowrap overflow-visible" style={{ letterSpacing: '2px', lineHeight: '1.5', paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>
+            <h1 className="text-3xl font-pacifico text-gray-900 mb-2 whitespace-nowrap overflow-visible" style={{ letterSpacing: '2px', lineHeight: '1.5', paddingTop: '0.5rem', paddingBottom: '0.5rem' }}>
               Quick Shop
             </h1>
             <p className="text-sm text-gray-500 whitespace-nowrap">מערכת ניהול חנויות אונליין</p>
@@ -142,7 +142,7 @@ export default function LoginPage() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
                   disabled={loading}
-                  className="h-12 text-base border-gray-300 focus:border-[#15b981] focus:ring-[#15b981] pr-10"
+                  className="h-12 text-base border-gray-300 focus:!border-[#15b981] focus:!ring-[#15b981] focus-visible:!ring-[#15b981] focus-visible:!border-[#15b981] pr-10"
                 />
               </div>
             </div>
@@ -160,7 +160,7 @@ export default function LoginPage() {
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   required
                   disabled={loading}
-                  className="h-12 text-base border-gray-300 focus:border-[#15b981] focus:ring-[#15b981] pr-10"
+                  className="h-12 text-base border-gray-300 focus:!border-[#15b981] focus:!ring-[#15b981] focus-visible:!ring-[#15b981] focus-visible:!border-[#15b981] pr-10"
                 />
               </div>
             </div>
@@ -178,7 +178,7 @@ export default function LoginPage() {
             <div className="pt-2">
               <Button 
                 type="submit" 
-                className="w-full h-12 bg-[#15b981] hover:bg-[#10b981] text-white font-semibold shadow-lg hover:shadow-xl transition-all" 
+                className="w-full h-12 !bg-[#15b981] hover:!bg-[#10b981] !bg-none text-white font-semibold shadow-lg hover:shadow-xl transition-all border-0" 
                 disabled={loading}
               >
                 {loading ? "מתחבר..." : "התחבר"}
@@ -238,7 +238,7 @@ export default function LoginPage() {
             priority
             sizes="(max-width: 1024px) 0vw, 60vw"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/85 via-emerald-800/75 to-emerald-900/85"></div>
+          <div className="absolute inset-0 bg-black/70"></div>
         </div>
 
         <div className="relative z-10 w-full flex items-center justify-center p-12 lg:p-16">

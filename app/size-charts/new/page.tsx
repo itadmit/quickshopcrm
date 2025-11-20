@@ -453,7 +453,7 @@ export default function NewSizeChartPage() {
                             type="button"
                             onClick={() => toggleProduct(product.id)}
                             className={`w-full text-right p-2 rounded hover:bg-gray-50 ${
-                              formData.productIds.includes(product.id) ? "bg-purple-50" : ""
+                              formData.productIds.includes(product.id) ? "bg-emerald-50" : ""
                             }`}
                           >
                             {product.name}

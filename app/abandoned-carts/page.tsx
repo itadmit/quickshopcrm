@@ -156,7 +156,7 @@ export default function AbandonedCartsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">סה"כ עגלות נטושות</CardTitle>
-              <ShoppingBag className="h-5 w-5 text-purple-600" />
+              <ShoppingBag className="h-5 w-5 text-emerald-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{carts.length}</div>
@@ -166,7 +166,7 @@ export default function AbandonedCartsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">ערך כולל</CardTitle>
-              <DollarSign className="h-5 w-5 text-purple-600" />
+              <DollarSign className="h-5 w-5 text-emerald-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
@@ -178,7 +178,7 @@ export default function AbandonedCartsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">שוחזרו</CardTitle>
-              <Mail className="h-5 w-5 text-purple-600" />
+              <Mail className="h-5 w-5 text-emerald-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">

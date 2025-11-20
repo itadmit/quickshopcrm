@@ -72,7 +72,7 @@ export default async function PaymentFailurePage({
         <div className="space-y-3">
           <Link
             href={`/shop/${order.shop.slug || order.shop.id}/checkout`}
-            className="inline-block w-full px-6 py-3 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
+            className="inline-block w-full px-6 py-3 bg-emerald-600 text-white rounded-lg font-medium hover:bg-emerald-700 transition-colors"
           >
             נסה שוב
           </Link>

@@ -23,7 +23,7 @@ input[type="number"] {
     --card-foreground: 222.2 84% 4.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 222.2 84% 4.9%;
-    --primary: 262.1 83.3% 57.8%;
+    --primary: 160 76% 40%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96.1%;
     --secondary-foreground: 222.2 47.4% 11.2%;
@@ -35,7 +35,7 @@ input[type="number"] {
     --destructive-foreground: 210 40% 98%;
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
-    --ring: 262.1 83.3% 57.8%;
+    --ring: 160 76% 40%;
     --radius: 0.5rem;
   }
 }
@@ -102,24 +102,24 @@ body {
 
 /* Prodify-like styling */
 .prodify-gradient {
-  background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%) !important;
+  background: linear-gradient(135deg, #15b981 0%, #10b981 100%) !important;
 }
 
 /* Switch gradient when checked */
 button[role="switch"][data-state="checked"],
 [role="switch"][data-state="checked"] {
-  background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%) !important;
+  background: linear-gradient(135deg, #15b981 0%, #10b981 100%) !important;
 }
 
 .prodify-gradient-text {
-  background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%);
+  background: linear-gradient(135deg, #15b981 0%, #10b981 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 .prodify-gradient-horizontal {
-  background: linear-gradient(to left, #93f0e1 0%, #6374c5 100%);
+  background: linear-gradient(to left, #34d399 0%, #10b981 100%);
 }
 
 .sidebar-gradient {
@@ -183,8 +183,8 @@ button[role="switch"][data-state="checked"],
 }
 
 /* Project colors */
-.project-purple {
-  @apply bg-purple-500;
+.project-emerald {
+  @apply bg-emerald-500;
 }
 
 .project-blue {
@@ -215,7 +215,7 @@ button[role="switch"][data-state="checked"],
 
 /* Checkbox gradient */
 .checkbox-gradient[data-state="checked"] {
-  background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%) !important;
+  background: linear-gradient(135deg, #15b981 0%, #10b981 100%) !important;
   background-color: transparent !important;
 }
 

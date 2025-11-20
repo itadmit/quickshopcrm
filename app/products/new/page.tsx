@@ -599,7 +599,7 @@ export default function NewProductPage() {
                   </h3>
                   {!hasVariants && (
                   <div className="flex items-center gap-2 mb-2">
-                    <span className="text-xl font-bold text-purple-600">
+                    <span className="text-xl font-bold text-emerald-600">
                       ₪{formData.price ? parseFloat(formData.price).toFixed(2) : "0.00"}
                     </span>
                     {formData.comparePrice && (
@@ -610,7 +610,7 @@ export default function NewProductPage() {
                   </div>
                   )}
                   {hasVariants && (
-                    <p className="text-sm text-purple-600 font-medium mb-2">
+                    <p className="text-sm text-emerald-600 font-medium mb-2">
                       מחיר משתנה לפי וריאציה
                     </p>
                   )}

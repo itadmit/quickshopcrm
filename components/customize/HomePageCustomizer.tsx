@@ -551,17 +551,17 @@ export function HomePageCustomizer({ shopSlug, shopId, initialSections, onSave }
                     className={cn(
                       "flex flex-col items-center gap-1 p-3 border-2 rounded-lg transition-all",
                       config.icon === value
-                        ? "border-purple-500 bg-purple-50"
+                        ? "border-emerald-500 bg-emerald-50"
                         : "border-gray-200 hover:border-gray-300"
                     )}
                   >
                     <Icon className={cn(
                       "w-5 h-5",
-                      config.icon === value ? "text-purple-600" : "text-gray-600"
+                      config.icon === value ? "text-emerald-600" : "text-gray-600"
                     )} />
                     <span className={cn(
                       "text-xs",
-                      config.icon === value ? "text-purple-600 font-medium" : "text-gray-600"
+                      config.icon === value ? "text-emerald-600 font-medium" : "text-gray-600"
                     )}>
                       {label}
                     </span>
@@ -727,8 +727,8 @@ export function HomePageCustomizer({ shopSlug, shopId, initialSections, onSave }
               className={cn(
                 "border rounded-lg transition-all",
                 section.visible ? "bg-white border-gray-200" : "bg-gray-50 border-gray-200 opacity-60",
-                isSelected && "ring-2 ring-purple-500",
-                isHovered && "ring-2 ring-purple-400"
+                isSelected && "ring-2 ring-emerald-500",
+                isHovered && "ring-2 ring-emerald-400"
               )}
               onMouseEnter={() => setHoveredSection(section.id)}
               onMouseLeave={() => setHoveredSection(null)}

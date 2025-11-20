@@ -190,7 +190,7 @@ export default function CustomerDetailPage() {
   const getTierBadge = (tier: string) => {
     const tierMap: Record<string, { label: string; className: string }> = {
       REGULAR: { label: "רגיל", className: "bg-gray-100 text-gray-800 border-gray-300" },
-      VIP: { label: "VIP", className: "bg-purple-100 text-purple-800 border-purple-300" },
+      VIP: { label: "VIP", className: "bg-emerald-100 text-emerald-800 border-emerald-300" },
       PREMIUM: { label: "Premium", className: "bg-yellow-100 text-yellow-800 border-yellow-300" },
     }
     const tierInfo = tierMap[tier] || { label: tier, className: "bg-gray-100 text-gray-800" }
@@ -205,7 +205,7 @@ export default function CustomerDetailPage() {
     const statusMap: Record<string, { label: string; className: string }> = {
       PENDING: { label: "ממתין", className: "bg-yellow-100 text-yellow-800" },
       CONFIRMED: { label: "מאושר", className: "bg-blue-100 text-blue-800" },
-      PROCESSING: { label: "מעובד", className: "bg-purple-100 text-purple-800" },
+      PROCESSING: { label: "מעובד", className: "bg-emerald-100 text-emerald-800" },
       SHIPPED: { label: "נשלח", className: "bg-cyan-100 text-cyan-800" },
       DELIVERED: { label: "נמסר", className: "bg-green-100 text-green-800" },
       CANCELLED: { label: "בוטל", className: "bg-red-100 text-red-800" },
@@ -524,10 +524,10 @@ export default function CustomerDetailPage() {
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <ShoppingBag className="w-5 h-5 text-purple-600" />
+                    <ShoppingBag className="w-5 h-5 text-emerald-600" />
                     <span className="text-sm text-gray-600">מספר הזמנות</span>
                   </div>
-                  <span className="text-lg font-bold text-purple-600">
+                  <span className="text-lg font-bold text-emerald-600">
                     {customer.orderCount}
                   </span>
                 </div>

@@ -66,8 +66,8 @@ export default async function PaymentPage({
             {/* Header */}
             <div className="text-center">
               <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center">
-                  <CreditCard className="w-8 h-8 text-purple-600" />
+                <div className="w-16 h-16 rounded-full bg-emerald-100 flex items-center justify-center">
+                  <CreditCard className="w-8 h-8 text-emerald-600" />
                 </div>
               </div>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">
@@ -126,7 +126,7 @@ export default async function PaymentPage({
                 )}
                 <div className="flex justify-between text-xl font-bold text-gray-900 pt-2 border-t border-gray-200">
                   <span>סה"כ לתשלום:</span>
-                  <span className="text-purple-600">₪{order.total.toFixed(2)}</span>
+                  <span className="text-emerald-600">₪{order.total.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -137,7 +137,7 @@ export default async function PaymentPage({
                 href={paymentLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full flex items-center justify-center gap-3 bg-purple-600 hover:bg-purple-700 text-white font-medium py-4 px-6 rounded-lg transition-colors"
+                className="w-full flex items-center justify-center gap-3 bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-4 px-6 rounded-lg transition-colors"
               >
                 <span>המשך לתשלום מאובטח</span>
                 <ExternalLink className="w-5 h-5" />
@@ -195,7 +195,7 @@ export default async function PaymentPage({
           <div className="space-y-3">
             <a
               href={`/shop/${params.slug}/payment/${params.id}`}
-              className="block w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-6 rounded-lg transition-colors text-center"
+              className="block w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3 px-6 rounded-lg transition-colors text-center"
             >
               רענן דף
             </a>

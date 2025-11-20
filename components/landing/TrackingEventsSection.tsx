@@ -24,7 +24,7 @@ export function TrackingEventsSection() {
       icon: Eye, 
       title: "ViewContent", 
       desc: "צפייה במוצר עם variant מלא",
-      color: "text-purple-600 bg-purple-50",
+      color: "text-emerald-600 bg-emerald-50",
       featured: true
     },
     { 

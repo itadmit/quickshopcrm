@@ -195,8 +195,8 @@ export default function TrackingPixelsPage() {
                   <CardHeader>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className="p-2 bg-purple-100 rounded-lg">
-                          <Icon className="w-5 h-5 text-purple-600" />
+                        <div className="p-2 bg-emerald-100 rounded-lg">
+                          <Icon className="w-5 h-5 text-emerald-600" />
                         </div>
                         <div>
                           <CardTitle className="text-lg">

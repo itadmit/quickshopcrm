@@ -149,7 +149,7 @@ export default function CommissionsPage() {
       <AppLayout title="גביית עמלות">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto mb-4"></div>
             <p className="text-gray-600">טוען נתונים...</p>
           </div>
         </div>
@@ -210,8 +210,8 @@ export default function CommissionsPage() {
                   <div className="flex items-center justify-between">
                     {/* Company Info */}
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-purple-100 rounded-lg">
-                        <Store className="h-6 w-6 text-purple-600" />
+                      <div className="p-3 bg-emerald-100 rounded-lg">
+                        <Store className="h-6 w-6 text-emerald-600" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">

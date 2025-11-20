@@ -656,7 +656,7 @@ export default function EditProductPage() {
                       <button
                         type="button"
                         onClick={() => window.open(`/customize?page=product&id=${product?.id}`, '_blank')}
-                        className="text-purple-600 hover:underline"
+                        className="text-emerald-600 hover:underline"
                       >
                         התאמה אישית
                       </button>

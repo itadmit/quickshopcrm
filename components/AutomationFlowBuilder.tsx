@@ -72,17 +72,17 @@ interface AutomationCondition {
 // Custom Node Components
 const TriggerNode = ({ data }: { data: any }) => {
   return (
-    <div className="px-5 py-4 bg-white border-2 border-purple-200 rounded-xl shadow-md hover:shadow-lg transition-shadow min-w-[220px] cursor-move group">
+    <div className="px-5 py-4 bg-white border-2 border-emerald-200 rounded-xl shadow-md hover:shadow-lg transition-shadow min-w-[220px] cursor-move group">
       <div className="flex items-center gap-2.5 mb-3">
-        <div className="p-1.5 bg-purple-50 rounded-lg">
-          <Play className="w-4 h-4 text-purple-600" />
+        <div className="p-1.5 bg-emerald-50 rounded-lg">
+          <Play className="w-4 h-4 text-emerald-600" />
         </div>
         <div className="font-semibold text-gray-900 text-sm">התחל כאשר...</div>
       </div>
       <div className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg border border-gray-200 font-medium">
         {data.label || "בחר אירוע"}
       </div>
-      <Handle type="source" position={Position.Bottom} className="!bg-purple-500 !w-3.5 !h-3.5 !border-2 !border-white shadow-md" />
+      <Handle type="source" position={Position.Bottom} className="!bg-emerald-500 !w-3.5 !h-3.5 !border-2 !border-white shadow-md" />
       <div className="text-xs text-gray-400 text-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity">לחיצה כפולה לעריכה</div>
     </div>
   )
@@ -781,7 +781,7 @@ export default function AutomationFlowBuilder({
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     }
     .header {
-      background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%);
+      background: linear-gradient(135deg, #15b981 0%, #10b981 100%);
       padding: 30px 20px;
       text-align: center;
       color: white;
@@ -969,7 +969,7 @@ export default function AutomationFlowBuilder({
                       }}
                       className="text-left p-2 bg-white border border-gray-200 rounded hover:bg-gray-100 transition-colors text-xs"
                     >
-                      <code className="text-purple-600 font-semibold">{item.variable}</code>
+                      <code className="text-emerald-600 font-semibold">{item.variable}</code>
                       <div className="text-gray-500 mt-1">{item.description}</div>
                     </button>
                   ))}
@@ -1285,7 +1285,7 @@ export default function AutomationFlowBuilder({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Play className="w-5 h-5 text-purple-600" />
+            <Play className="w-5 h-5 text-emerald-600" />
             התחל כאשר...
           </CardTitle>
         </CardHeader>

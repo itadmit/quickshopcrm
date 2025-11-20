@@ -188,7 +188,7 @@ export default function DashboardPage() {
           <Card className="shadow-sm hover-lift cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{t('dashboard.stats.activeShops')}</CardTitle>
-              <Store className="h-5 w-5 text-purple-600" />
+              <Store className="h-5 w-5 text-emerald-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{stats.shops.active}</div>
@@ -203,7 +203,7 @@ export default function DashboardPage() {
           <Card className="shadow-sm hover-lift cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{t('dashboard.stats.activeProducts')}</CardTitle>
-              <Package className="h-5 w-5 text-purple-600" />
+              <Package className="h-5 w-5 text-emerald-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{stats.products.published}</div>
@@ -218,7 +218,7 @@ export default function DashboardPage() {
           <Card className="shadow-sm hover-lift cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">{t('dashboard.stats.pendingOrders')}</CardTitle>
-              <ShoppingBag className="h-5 w-5 text-purple-600" />
+              <ShoppingBag className="h-5 w-5 text-emerald-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">{stats.orders.pending}</div>
@@ -232,7 +232,7 @@ export default function DashboardPage() {
         <Card className="shadow-sm hover-lift">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">{t('dashboard.stats.revenue')}</CardTitle>
-            <TrendingUp className="h-5 w-5 text-purple-600" />
+            <TrendingUp className="h-5 w-5 text-emerald-600" />
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold">
@@ -257,7 +257,7 @@ export default function DashboardPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Store className="w-5 h-5 text-purple-600" />
+                  <Store className="w-5 h-5 text-emerald-600" />
                   <CardTitle>{t('dashboard.quickActions.title')}</CardTitle>
                 </div>
               </div>
@@ -265,10 +265,10 @@ export default function DashboardPage() {
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Link href="/shops/new" prefetch={true} className="block">
-                  <div className="p-4 border-2 border-gray-200 hover:border-purple-300 rounded-lg cursor-pointer transition-all group">
+                  <div className="p-4 border-2 border-gray-200 hover:border-emerald-300 rounded-lg cursor-pointer transition-all group">
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center group-hover:scale-110 transition-transform">
-                        <Store className="w-5 h-5 text-purple-600" />
+                      <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <Store className="w-5 h-5 text-emerald-600" />
                       </div>
                       <h3 className="font-semibold text-gray-900">{t('dashboard.quickActions.createStore.title')}</h3>
                     </div>
@@ -334,7 +334,7 @@ export default function DashboardPage() {
           <Card className="shadow-sm hover-lift">
             <CardHeader>
               <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-purple-600" />
+                <TrendingUp className="w-5 h-5 text-emerald-600" />
                 <CardTitle>{t('dashboard.quickStats.title')}</CardTitle>
               </div>
             </CardHeader>
@@ -342,7 +342,7 @@ export default function DashboardPage() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">{t('dashboard.quickStats.activeShops')}</span>
-                  <span className="text-lg font-bold text-purple-600">
+                  <span className="text-lg font-bold text-emerald-600">
                     {stats.shops.active}
                   </span>
                 </div>
@@ -375,14 +375,14 @@ export default function DashboardPage() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Bell className="w-5 h-5 text-purple-600" />
+                  <Bell className="w-5 h-5 text-emerald-600" />
                   <CardTitle>{t('dashboard.notifications.title')}</CardTitle>
                 </div>
                 <Link href="/notifications" prefetch={true}>
                   <Button 
                     variant="link" 
                     size="sm"
-                    className="text-purple-600 hover:text-purple-700 p-0 h-auto font-normal"
+                    className="text-emerald-600 hover:text-emerald-700 p-0 h-auto font-normal"
                   >
                     {t('dashboard.notifications.seeAll')} ←
                   </Button>
@@ -422,11 +422,11 @@ export default function DashboardPage() {
                         key={notif.id}
                         href="/notifications" 
                         prefetch={true}
-                        className={`block p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors border-r-2 ${notif.isRead ? 'border-gray-200 opacity-60' : 'border-purple-500'}`}
+                        className={`block p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors border-r-2 ${notif.isRead ? 'border-gray-200 opacity-60' : 'border-emerald-500'}`}
                       >
                         <div className="flex items-start gap-3">
-                          <div className={`mt-0.5 p-1.5 rounded-full ${notif.isRead ? 'bg-gray-100' : 'bg-purple-100'}`}>
-                            <NotifIcon className={`w-3 h-3 ${notif.isRead ? 'text-gray-600' : 'text-purple-600'}`} />
+                          <div className={`mt-0.5 p-1.5 rounded-full ${notif.isRead ? 'bg-gray-100' : 'bg-emerald-100'}`}>
+                            <NotifIcon className={`w-3 h-3 ${notif.isRead ? 'text-gray-600' : 'text-emerald-600'}`} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="font-medium text-gray-900 text-sm mb-0.5">{notif.title}</div>

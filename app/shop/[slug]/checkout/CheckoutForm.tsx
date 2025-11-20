@@ -1004,7 +1004,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                     borderBottom: `1px solid #e5e7eb`
                   }}
                 >
-                  <div className="flex items-center space-x-2 space-x-reverse border border-purple-200 rounded-lg p-4 bg-purple-50">
+                  <div className="flex items-center space-x-2 space-x-reverse border border-emerald-200 rounded-lg p-4 bg-emerald-50">
                     <Checkbox
                       id="useStoreCredit"
                       checked={useStoreCredit}
@@ -1014,13 +1014,13 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                       <div className="flex items-center justify-between">
                         <div>
                           <div className="font-medium flex items-center gap-2">
-                            <Coins className="w-4 h-4 text-purple-600" />
+                            <Coins className="w-4 h-4 text-emerald-600" />
                             השתמש בקרדיט בחנות
                           </div>
                           <div className="text-sm text-gray-600 mt-1">
                             יתרה זמינה: ₪{storeCredit.balance.toFixed(2)}
                             {storeCreditAmount > 0 && (
-                              <span className="text-purple-700 font-semibold mr-2">
+                              <span className="text-emerald-700 font-semibold mr-2">
                                 • ינוכה: ₪{storeCreditAmount.toFixed(2)}
                               </span>
                             )}
@@ -1295,7 +1295,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                   )}
                   
                   {storeCreditAmount > 0 && (
-                    <div className="flex justify-between text-purple-600">
+                    <div className="flex justify-between text-emerald-600">
                       <span className="flex items-center gap-1">
                         <Coins className="w-3 h-3" />
                         קרדיט בחנות

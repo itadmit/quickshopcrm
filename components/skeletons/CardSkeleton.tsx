@@ -7,7 +7,7 @@ export function CardSkeleton() {
           <div className="h-8 w-48 bg-gray-200 rounded mb-2"></div>
           <div className="h-4 w-64 bg-gray-200 rounded"></div>
         </div>
-        <div className="h-10 w-32 bg-purple-200 rounded"></div>
+        <div className="h-10 w-32 bg-emerald-200 rounded"></div>
       </div>
 
       {/* Content */}

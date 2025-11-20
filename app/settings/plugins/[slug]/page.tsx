@@ -414,9 +414,9 @@ export default function PluginSettingsPage() {
               <p className="text-sm text-gray-500 mt-1">{plugin.name}</p>
             </div>
             <nav className="p-2">
-              <div className="px-4 py-3 rounded-lg bg-purple-50 text-purple-700 font-medium border-r-2 border-purple-600">
+              <div className="px-4 py-3 rounded-lg bg-emerald-50 text-emerald-700 font-medium border-r-2 border-emerald-600">
                 <div className="flex items-center gap-3">
-                  <Settings className="w-5 h-5 flex-shrink-0 text-purple-600" />
+                  <Settings className="w-5 h-5 flex-shrink-0 text-emerald-600" />
                   <span className="text-sm">הגדרות</span>
                 </div>
               </div>
@@ -433,8 +433,8 @@ export default function PluginSettingsPage() {
                 {plugin.icon ? (
                   <img src={plugin.icon} alt={plugin.name} className="w-10 h-10 rounded-lg" />
                 ) : (
-                  <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                    <Plug className="w-5 h-5 text-purple-600" />
+                  <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                    <Plug className="w-5 h-5 text-emerald-600" />
                   </div>
                 )}
                 <div>
@@ -445,7 +445,7 @@ export default function PluginSettingsPage() {
                     </Badge>
                     <Badge 
                       variant="outline"
-                      className="text-xs bg-purple-100 text-purple-700 border-purple-200"
+                      className="text-xs bg-emerald-100 text-emerald-700 border-emerald-200"
                     >
                       {plugin.type === "CORE" ? "ליבה" : "סקריפט"}
                     </Badge>

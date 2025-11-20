@@ -21,8 +21,8 @@ export async function getShopEmailSettings(shopId: string): Promise<{
     if (!shop) {
       return {
         senderName: 'Quick Shop',
-        color1: '#6f65e2',
-        color2: '#b965e2',
+        color1: '#15b981',
+        color2: '#10b981',
       }
     }
 
@@ -31,8 +31,8 @@ export async function getShopEmailSettings(shopId: string): Promise<{
     // הגדרות המיילים נשמרות ב-themeSettings מ-appearance page
     const emailSettings = {
       senderName: themeSettings.emailSenderName || shop.name || 'Quick Shop',
-      color1: themeSettings.emailColor1 || '#6f65e2',
-      color2: themeSettings.emailColor2 || '#b965e2',
+      color1: themeSettings.emailColor1 || '#15b981',
+      color2: themeSettings.emailColor2 || '#10b981',
     }
     
     // לוג לבדיקה שההגדרות נטענות נכון
@@ -52,8 +52,8 @@ export async function getShopEmailSettings(shopId: string): Promise<{
     console.error('Error fetching shop email settings:', error)
     return {
       senderName: 'Quick Shop',
-      color1: '#6f65e2',
-      color2: '#b965e2',
+      color1: '#15b981',
+      color2: '#10b981',
     }
   }
 }
@@ -271,8 +271,8 @@ export function getEmailTemplate({
   title,
   content,
   footer,
-  color1 = '#6f65e2',
-  color2 = '#b965e2',
+  color1 = '#15b981',
+  color2 = '#10b981',
   senderName = 'Quick Shop',
 }: {
   title: string

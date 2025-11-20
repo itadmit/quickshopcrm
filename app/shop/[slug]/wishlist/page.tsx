@@ -255,7 +255,7 @@ export default function WishlistPage() {
                       {/* Product Info */}
                       <div className="flex-1">
                         <Link href={`/shop/${slug}/products/${product.slug || product.id}`}>
-                          <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-purple-600">
+                          <h3 className="text-lg font-semibold text-gray-900 mb-2 hover:text-emerald-600">
                             {product.name}
                           </h3>
                         </Link>
@@ -263,7 +263,7 @@ export default function WishlistPage() {
                           <p className="text-sm text-gray-600 mb-2">{variant.name}</p>
                         )}
                         <div className="flex items-center gap-2 mb-4">
-                          <span className="text-xl font-bold text-purple-600">
+                          <span className="text-xl font-bold text-emerald-600">
                             ₪{displayPrice.toFixed(2)}
                           </span>
                           {priceInfo.comparePrice && (

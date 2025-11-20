@@ -138,9 +138,9 @@ export default function AcceptInvitationPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex items-center justify-center p-4">
         <div className="flex items-center justify-center min-h-[400px]">
-          <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-600" />
         </div>
       </div>
     )
@@ -148,7 +148,7 @@ export default function AcceptInvitationPage() {
 
   if (error || !invitation) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <Card className="shadow-xl border-0">
             <CardContent className="pt-6">
@@ -182,12 +182,12 @@ export default function AcceptInvitationPage() {
     : "משתמש"
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 via-white to-emerald-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <Card className="shadow-xl border-0">
           <CardHeader className="text-center pb-2">
             <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-700 rounded-full flex items-center justify-center shadow-lg">
+              <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-full flex items-center justify-center shadow-lg">
                 <UserPlus className="w-8 h-8 text-white" />
               </div>
             </div>
@@ -196,9 +196,9 @@ export default function AcceptInvitationPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-          <div className="mb-6 p-4 bg-purple-50 rounded-lg">
+          <div className="mb-6 p-4 bg-emerald-50 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle2 className="w-5 h-5 text-purple-600" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
               <span className="font-medium text-gray-900">
                 {invitation.inviter.name} הזמין אותך להצטרף
               </span>
@@ -211,7 +211,7 @@ export default function AcceptInvitationPage() {
                 <div>הרשאות: {permissionsCount} פריטים</div>
               )}
               {invitation.role === "INFLUENCER" && (
-                <div className="text-purple-700 font-medium mt-2">
+                <div className="text-emerald-700 font-medium mt-2">
                   תקבל/י גישה לדשבורד משפיען/ית ייעודי
                 </div>
               )}

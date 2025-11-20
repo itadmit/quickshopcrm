@@ -199,7 +199,7 @@ export default function OrdersPage() {
     const statusMap: Record<string, { label: string; className: string }> = {
       PENDING: { label: "ממתין", className: "bg-yellow-100 text-yellow-800 border-yellow-300" },
       CONFIRMED: { label: "מאושר", className: "bg-blue-100 text-blue-800 border-blue-300" },
-      PROCESSING: { label: "מעובד", className: "bg-purple-100 text-purple-800 border-purple-300" },
+      PROCESSING: { label: "מעובד", className: "bg-emerald-100 text-emerald-800 border-emerald-300" },
       SHIPPED: { label: "נשלח", className: "bg-cyan-100 text-cyan-800 border-cyan-300" },
       DELIVERED: { label: "נמסר", className: "bg-green-100 text-green-800 border-green-300" },
       CANCELLED: { label: "בוטל", className: "bg-red-100 text-red-800 border-red-300" },

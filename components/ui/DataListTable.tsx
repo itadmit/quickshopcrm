@@ -120,8 +120,8 @@ export function DataListTable({
               }
 
               const Icon = item.icon
-              const iconBgColor = item.iconBgColor || "bg-purple-100"
-              const iconColor = item.iconColor || "text-purple-600"
+              const iconBgColor = item.iconBgColor || "bg-emerald-100"
+              const iconColor = item.iconColor || "text-emerald-600"
 
               return (
                 <div

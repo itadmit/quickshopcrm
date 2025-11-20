@@ -304,9 +304,9 @@ export default function CouponsPage() {
                         <td className="p-4">
                           <div className="flex items-center gap-2">
                             {coupon.type === "PERCENTAGE" ? (
-                              <Percent className="w-4 h-4 text-purple-600" />
+                              <Percent className="w-4 h-4 text-emerald-600" />
                             ) : (
-                              <DollarSign className="w-4 h-4 text-purple-600" />
+                              <DollarSign className="w-4 h-4 text-emerald-600" />
                             )}
                             <span className="text-sm">
                               {coupon.type === "PERCENTAGE"

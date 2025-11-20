@@ -613,9 +613,9 @@ export default function CustomizePage() {
                     className={cn(
                       "w-full text-right p-3 border rounded-lg transition-all",
                       isSelected
-                        ? "border-purple-500 bg-purple-50"
+                        ? "border-emerald-500 bg-emerald-50"
                         : "border-gray-200 hover:border-gray-300",
-                      isPending && "ring-2 ring-purple-300"
+                      isPending && "ring-2 ring-emerald-300"
                     )}
                   >
                     <div className="flex items-center justify-between">
@@ -855,9 +855,9 @@ export default function CustomizePage() {
                     className={cn(
                       "w-full text-right p-3 border rounded-lg transition-all",
                       isSelected
-                        ? "border-purple-500 bg-purple-50"
+                        ? "border-emerald-500 bg-emerald-50"
                         : "border-gray-200 hover:border-gray-300",
-                      isPending && "ring-2 ring-purple-300"
+                      isPending && "ring-2 ring-emerald-300"
                     )}
                   >
                     <div className="flex items-center justify-between">
@@ -991,7 +991,7 @@ export default function CustomizePage() {
           </Button>
           <div className="h-6 w-px bg-gray-300" />
           <div className="flex items-center gap-2">
-            <Palette className="w-5 h-5 text-purple-600" />
+            <Palette className="w-5 h-5 text-emerald-600" />
             <span className="font-semibold text-gray-900">התאמה אישית</span>
             <Badge variant="outline" className="text-xs">
               {selectedShop.name}
@@ -1229,10 +1229,10 @@ export default function CustomizePage() {
                 <div className="space-y-3">
                   <button
                     onClick={() => handlePageTypeSelect("home")}
-                    className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all text-right"
+                    className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg hover:border-emerald-500 hover:bg-emerald-50 transition-all text-right"
                   >
-                    <div className="p-3 bg-purple-100 rounded-lg">
-                      <Home className="w-6 h-6 text-purple-600" />
+                    <div className="p-3 bg-emerald-100 rounded-lg">
+                      <Home className="w-6 h-6 text-emerald-600" />
                     </div>
                     <div className="flex-1">
                       <h3 className="font-semibold text-gray-900">דף בית</h3>
@@ -1244,7 +1244,7 @@ export default function CustomizePage() {
                   <button
                     onClick={() => handlePageTypeSelect("product")}
                     disabled={products.length === 0}
-                    className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all text-right disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg hover:border-emerald-500 hover:bg-emerald-50 transition-all text-right disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="p-3 bg-blue-100 rounded-lg">
                       <Package className="w-6 h-6 text-blue-600" />
@@ -1263,7 +1263,7 @@ export default function CustomizePage() {
                   <button
                     onClick={() => handlePageTypeSelect("category")}
                     disabled={categories.length === 0}
-                    className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all text-right disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full flex items-center gap-4 p-4 border-2 border-gray-200 rounded-lg hover:border-emerald-500 hover:bg-emerald-50 transition-all text-right disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="p-3 bg-green-100 rounded-lg">
                       <FolderOpen className="w-6 h-6 text-green-600" />

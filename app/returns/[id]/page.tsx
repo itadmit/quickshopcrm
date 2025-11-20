@@ -177,7 +177,7 @@ export default function ReturnDetailPage() {
       PENDING: { label: "ממתין", className: "bg-yellow-100 text-yellow-800" },
       APPROVED: { label: "אושר", className: "bg-blue-100 text-blue-800" },
       REJECTED: { label: "נדחה", className: "bg-red-100 text-red-800" },
-      PROCESSING: { label: "בטיפול", className: "bg-purple-100 text-purple-800" },
+      PROCESSING: { label: "בטיפול", className: "bg-emerald-100 text-emerald-800" },
       COMPLETED: { label: "הושלם", className: "bg-green-100 text-green-800" },
       CANCELLED: { label: "בוטל", className: "bg-gray-100 text-gray-800" },
     }
@@ -251,7 +251,7 @@ export default function ReturnDetailPage() {
                   <span className="text-sm text-gray-600">מספר הזמנה</span>
                   <Link
                     href={`/orders/${returnItem.orderId}`}
-                    className="text-purple-600 hover:underline font-medium"
+                    className="text-emerald-600 hover:underline font-medium"
                   >
                     #{returnItem.order.orderNumber}
                   </Link>

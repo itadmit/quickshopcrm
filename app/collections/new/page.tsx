@@ -1031,7 +1031,7 @@ export default function NewCollectionPage() {
                     setAddToMenuDialogOpen(false)
                     router.push("/navigation")
                   }}
-                  className="text-purple-600 hover:underline"
+                  className="text-emerald-600 hover:underline"
                 >
                   צור תפריט חדש
                 </button>

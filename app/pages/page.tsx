@@ -191,7 +191,7 @@ export default function PagesPage() {
                         <td className="p-4">
                           <button
                             onClick={() => router.push(`/pages/${page.slug}/edit`)}
-                            className="text-sm text-purple-600 hover:text-purple-800 hover:underline cursor-pointer font-mono"
+                            className="text-sm text-emerald-600 hover:text-emerald-800 hover:underline cursor-pointer font-mono"
                           >
                             {page.slug}
                           </button>

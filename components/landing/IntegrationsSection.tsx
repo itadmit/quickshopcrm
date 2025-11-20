@@ -92,7 +92,7 @@ export function IntegrationsSection() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
-          <Badge className="mb-4 bg-purple-100 text-purple-600 text-sm px-4 py-2">
+          <Badge className="mb-4 bg-emerald-100 text-emerald-600 text-sm px-4 py-2">
             <Globe className="h-4 w-4 inline ml-1" />
             אינטגרציות
           </Badge>
@@ -137,7 +137,7 @@ export function IntegrationsSection() {
           <div className="space-y-5">
             <h3 className="text-2xl font-bold mb-6">מה זה אומר בשבילך?</h3>
             {benefits.map((benefit, index) => (
-              <div key={index} className="flex gap-4 bg-gradient-to-r from-purple-50 to-white p-5 rounded-xl border border-purple-100 hover:shadow-lg transition-shadow">
+              <div key={index} className="flex gap-4 bg-gradient-to-r from-emerald-50 to-white p-5 rounded-xl border border-emerald-100 hover:shadow-lg transition-shadow">
                 <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0 mt-1" />
                 <div>
                   <h4 className="font-bold text-lg mb-1">{benefit.title}</h4>
@@ -153,7 +153,7 @@ export function IntegrationsSection() {
           <div className="text-center mb-10">
             <Zap className="h-12 w-12 text-yellow-300 mx-auto mb-4" />
             <h3 className="text-3xl font-bold mb-3">תהליך אוטומטי 100%</h3>
-            <p className="text-purple-100 text-lg">לקוח מבצע פעולה ← המערכת שלנו תופסת ← נשלח לכל הפלטפורמות מיד</p>
+            <p className="text-emerald-100 text-lg">לקוח מבצע פעולה ← המערכת שלנו תופסת ← נשלח לכל הפלטפורמות מיד</p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-6 text-center">
@@ -162,7 +162,7 @@ export function IntegrationsSection() {
                 <Zap className="h-10 w-10 text-yellow-300 mx-auto" />
               </div>
               <div className="text-xl font-bold mb-2">שליחה מיידית</div>
-              <div className="text-sm text-purple-100">לכל הפלטפורמות בו-אמנית</div>
+              <div className="text-sm text-emerald-100">לכל הפלטפורמות בו-אמנית</div>
             </div>
             
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
@@ -170,7 +170,7 @@ export function IntegrationsSection() {
                 <CheckCircle className="h-10 w-10 text-green-300 mx-auto" />
               </div>
               <div className="text-xl font-bold mb-2">עיבוד אוטומטי</div>
-              <div className="text-sm text-purple-100">המרה לפורמט כל פלטפורמה</div>
+              <div className="text-sm text-emerald-100">המרה לפורמט כל פלטפורמה</div>
             </div>
             
             <div className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
@@ -178,7 +178,7 @@ export function IntegrationsSection() {
                 <Globe className="h-10 w-10 text-blue-300 mx-auto" />
               </div>
               <div className="text-xl font-bold mb-2">אירוע מתרחש</div>
-              <div className="text-sm text-purple-100">AddToCart, Purchase, etc</div>
+              <div className="text-sm text-emerald-100">AddToCart, Purchase, etc</div>
             </div>
           </div>
         </div>

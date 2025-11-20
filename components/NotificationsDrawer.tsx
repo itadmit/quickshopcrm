@@ -157,7 +157,7 @@ export function NotificationsDrawer({ open, onOpenChange }: NotificationsDrawerP
       case 'task':
         return 'text-blue-600 bg-blue-100'
       case 'meeting':
-        return 'text-purple-600 bg-purple-100'
+        return 'text-emerald-600 bg-emerald-100'
       case 'lead':
         return 'text-green-600 bg-green-100'
       case 'document':
@@ -262,10 +262,10 @@ export function NotificationsDrawer({ open, onOpenChange }: NotificationsDrawerP
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center gap-2">
-              <Bell className="w-5 h-5 text-purple-600" />
+              <Bell className="w-5 h-5 text-emerald-600" />
               <h2 className="text-xl font-bold">התראות</h2>
               {unreadCount > 0 && (
-                <span className="bg-purple-600 text-white text-xs rounded-full px-2 py-0.5">
+                <span className="bg-emerald-600 text-white text-xs rounded-full px-2 py-0.5">
                   {unreadCount}
                 </span>
               )}
@@ -311,7 +311,7 @@ export function NotificationsDrawer({ open, onOpenChange }: NotificationsDrawerP
                       key={notification.id} 
                       onClick={() => handleNotificationClick(notification)}
                       className={`shadow-sm hover:shadow-md transition-all cursor-pointer ${
-                        !notification.isRead ? "border-r-4 border-r-purple-600 bg-purple-50/30" : ""
+                        !notification.isRead ? "border-r-4 border-r-emerald-600 bg-emerald-50/30" : ""
                       } hover:bg-gray-50`}
                     >
                       <CardContent className="p-4">
@@ -333,7 +333,7 @@ export function NotificationsDrawer({ open, onOpenChange }: NotificationsDrawerP
                                 )}
                               </div>
                               {!notification.isRead && (
-                                <div className="w-2 h-2 bg-purple-600 rounded-full flex-shrink-0 mt-1"></div>
+                                <div className="w-2 h-2 bg-emerald-600 rounded-full flex-shrink-0 mt-1"></div>
                               )}
                             </div>
                             <div className="flex items-center gap-4 mt-3">

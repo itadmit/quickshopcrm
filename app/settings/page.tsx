@@ -507,11 +507,11 @@ export default function SettingsPage() {
                     onClick={() => setActiveTab(tab.key as any)}
                     className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-right transition-colors mb-1 ${
                       isActive
-                        ? "bg-purple-50 text-purple-700 font-medium border-r-2 border-purple-600"
+                        ? "bg-emerald-50 text-emerald-700 font-medium border-r-2 border-emerald-600"
                         : "text-gray-700 hover:bg-gray-50"
                     }`}
                   >
-                    <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-purple-600" : "text-gray-500"}`} />
+                    <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-emerald-600" : "text-gray-500"}`} />
                     <span className="text-sm">{tab.label}</span>
                   </button>
                 )
@@ -594,8 +594,8 @@ export default function SettingsPage() {
           <Card className="shadow-sm">
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                  <SettingsIcon className="w-5 h-5 text-purple-600" />
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                  <SettingsIcon className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
                   <CardTitle>הגדרות מערכת</CardTitle>
@@ -745,8 +745,8 @@ export default function SettingsPage() {
             <Card className="shadow-sm">
               <CardHeader>
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                    <Bell className="w-5 h-5 text-purple-600" />
+                  <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                    <Bell className="w-5 h-5 text-emerald-600" />
                   </div>
                   <div>
                     <CardTitle>התראות</CardTitle>
@@ -1045,8 +1045,8 @@ export default function SettingsPage() {
               <Card className="shadow-sm">
                 <CardHeader>
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                      <Users className="w-5 h-5 text-purple-600" />
+                    <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                      <Users className="w-5 h-5 text-emerald-600" />
                     </div>
                     <div>
                       <CardTitle>ניהול הרשאות משתמשים</CardTitle>
@@ -1072,8 +1072,8 @@ export default function SettingsPage() {
                           <div key={user.id} className="border rounded-lg p-4">
                             <div className="flex items-center justify-between mb-4">
                               <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                                  <User className="w-5 h-5 text-purple-600" />
+                                <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                                  <User className="w-5 h-5 text-emerald-600" />
                                 </div>
                                 <div>
                                   <h3 className="font-medium text-gray-900">{user.name}</h3>
@@ -1148,7 +1148,7 @@ export default function SettingsPage() {
                                           id={`perm-${user.id}-${perm.key}`}
                                           checked={hasPermission}
                                           onChange={() => handleTogglePermission(user.id, perm.key, hasPermission)}
-                                          className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                                          className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
                                         />
                                         <label
                                           htmlFor={`perm-${user.id}-${perm.key}`}
@@ -1229,8 +1229,8 @@ export default function SettingsPage() {
           <Card className="shadow-sm">
             <CardHeader>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                  <Database className="w-5 h-5 text-purple-600" />
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                  <Database className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
                   <CardTitle>מתקדם</CardTitle>
@@ -1702,8 +1702,8 @@ function SubscriptionTab() {
           </Card>
 
           {/* Quick Shop Plan */}
-          <Card className="shadow-sm border-2 border-purple-300 relative">
-            <div className="absolute top-4 left-4 bg-purple-600 text-white text-xs px-2 py-1 rounded">
+          <Card className="shadow-sm border-2 border-emerald-300 relative">
+            <div className="absolute top-4 left-4 bg-emerald-600 text-white text-xs px-2 py-1 rounded">
               מומלץ
             </div>
             <CardHeader>

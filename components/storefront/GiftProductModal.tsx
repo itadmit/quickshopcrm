@@ -284,9 +284,9 @@ export function GiftProductModal({
       <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto" dir="rtl">
         {/* Header עדין */}
         <DialogHeader className="relative pb-2">
-          <div className="absolute inset-0 bg-gradient-to-br from-pink-50/30 via-purple-50/30 to-blue-50/30 rounded-t-lg -mx-6 -mt-6 h-20" />
+          <div className="absolute inset-0 bg-gradient-to-br from-pink-50/30 via-emerald-50/30 to-blue-50/30 rounded-t-lg -mx-6 -mt-6 h-20" />
           <div className="relative text-center py-2">
-            <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-pink-400 via-purple-400 to-blue-400 rounded-full mb-1.5">
+            <div className="inline-flex items-center justify-center w-12 h-12 bg-gradient-to-br from-pink-400 via-emerald-400 to-blue-400 rounded-full mb-1.5">
               <Gift className="w-6 h-6 text-white" />
             </div>
             <DialogTitle className="text-xl font-bold text-gray-900 mb-0.5">
@@ -306,7 +306,7 @@ export function GiftProductModal({
         <div className="space-y-3 mt-2">
           {/* תמונה */}
           <div className="relative max-w-[200px] mx-auto">
-            <div className="aspect-square rounded-lg overflow-hidden bg-gray-50 relative border-2 border-purple-100">
+            <div className="aspect-square rounded-lg overflow-hidden bg-gray-50 relative border-2 border-emerald-100">
               {product.images && product.images.length > 0 && !imageError ? (
                 <img
                   src={product.images[0]}
@@ -440,9 +440,9 @@ export function GiftProductModal({
                             disabled={!isAvailable}
                             className={`px-4 py-2 border-2 rounded-sm text-sm font-medium transition-all ${
                               isSelected
-                                ? "text-white bg-purple-500 border-purple-500"
+                                ? "text-white bg-emerald-500 border-emerald-500"
                                 : isAvailable
-                                ? "border-gray-300 text-gray-700 hover:border-purple-300 hover:bg-purple-50"
+                                ? "border-gray-300 text-gray-700 hover:border-emerald-300 hover:bg-emerald-50"
                                 : "border-gray-200 text-gray-400 opacity-50 cursor-not-allowed"
                             }`}
                           >
@@ -475,7 +475,7 @@ export function GiftProductModal({
             <Button
               onClick={handleAddGiftToCart}
               disabled={!canAddToCart || isAdding}
-              className="w-full h-11 text-base font-semibold bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white shadow-md hover:shadow-lg transition-all"
+              className="w-full h-11 text-base font-semibold bg-gradient-to-r from-emerald-500 to-pink-500 hover:from-emerald-600 hover:to-pink-600 text-white shadow-md hover:shadow-lg transition-all"
             >
               <Gift className="w-5 h-5 ml-2" />
               {isAdding ? "מוסיף מתנה..." : "קבל את המתנה!"}

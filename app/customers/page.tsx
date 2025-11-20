@@ -126,7 +126,7 @@ export default function CustomersPage() {
   const getTierBadge = (tier: string) => {
     const tierMap: Record<string, { label: string; className: string }> = {
       REGULAR: { label: "רגיל", className: "bg-gray-100 text-gray-800 border-gray-300" },
-      VIP: { label: "VIP", className: "bg-purple-100 text-purple-800 border-purple-300" },
+      VIP: { label: "VIP", className: "bg-emerald-100 text-emerald-800 border-emerald-300" },
       PREMIUM: { label: "Premium", className: "bg-yellow-100 text-yellow-800 border-yellow-300" },
     }
     const tierInfo = tierMap[tier] || { label: tier, className: "bg-gray-100 text-gray-800" }
@@ -548,8 +548,8 @@ export default function CustomersPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                              <Users className="w-5 h-5 text-purple-600" />
+                            <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center">
+                              <Users className="w-5 h-5 text-emerald-600" />
                             </div>
                             <div>
                               <div className="font-medium text-gray-900">

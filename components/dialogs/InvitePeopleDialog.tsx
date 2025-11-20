@@ -258,7 +258,7 @@ export function InvitePeopleDialog({ triggerButton, open: controlledOpen, onOpen
                       id="select-all"
                       checked={allNonRequiredSelected}
                       onChange={handleSelectAll}
-                      className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500"
+                      className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500"
                     />
                     <label
                       htmlFor="select-all"
@@ -278,7 +278,7 @@ export function InvitePeopleDialog({ triggerButton, open: controlledOpen, onOpen
                         checked={permissions[perm.key] || false}
                         onChange={() => handleTogglePermission(perm.key, perm.required)}
                         disabled={perm.required}
-                        className="w-4 h-4 text-purple-600 rounded focus:ring-purple-500 disabled:opacity-50"
+                        className="w-4 h-4 text-emerald-600 rounded focus:ring-emerald-500 disabled:opacity-50"
                       />
                       <label
                         htmlFor={`perm-${perm.key}`}

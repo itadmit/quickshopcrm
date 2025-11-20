@@ -273,8 +273,8 @@ export default function AdminPluginsPage() {
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <Shield className="h-6 w-6 text-purple-600" />
+            <div className="p-3 bg-emerald-100 rounded-lg">
+              <Shield className="h-6 w-6 text-emerald-600" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">ניהול תוספים</h1>
@@ -321,7 +321,7 @@ export default function AdminPluginsPage() {
                           variant="outline"
                           className={plugin.isFree 
                             ? "text-green-600 border-green-600 bg-green-50" 
-                            : "text-purple-700 border-purple-200 bg-purple-100"
+                            : "text-emerald-700 border-emerald-200 bg-emerald-100"
                           }
                         >
                           {plugin.isFree ? "חינמי" : `₪${plugin.price?.toFixed(2) || "0.00"}/חודש`}

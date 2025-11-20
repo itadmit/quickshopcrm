@@ -451,8 +451,8 @@ export default function AppearancePage() {
     
     // הגדרות מיילים
     emailSenderName: "",
-    emailColor1: "#6f65e2",
-    emailColor2: "#b965e2",
+    emailColor1: "#15b981",
+    emailColor2: "#10b981",
   })
 
   useEffect(() => {
@@ -627,8 +627,8 @@ export default function AppearancePage() {
           
           // הגדרות מיילים
           emailSenderName: themeSettings.emailSenderName || shop.name || "",
-          emailColor1: themeSettings.emailColor1 || "#6f65e2",
-          emailColor2: themeSettings.emailColor2 || "#b965e2",
+          emailColor1: themeSettings.emailColor1 || "#15b981",
+          emailColor2: themeSettings.emailColor2 || "#10b981",
         })
       }
     } catch (error) {
@@ -1262,7 +1262,7 @@ export default function AppearancePage() {
                       min="0"
                       max="50"
                       step="1"
-                      className="w-1/2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                      className="w-1/2 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                     />
                     <div className="flex items-center gap-2">
                       <Input
@@ -1351,7 +1351,7 @@ export default function AppearancePage() {
                     <img 
                       src={settings.logo} 
                       alt="Logo" 
-                      className="w-28 h-28 object-cover rounded-xl shadow-md ring-2 ring-purple-100 transition-transform group-hover:scale-105" 
+                      className="w-28 h-28 object-cover rounded-xl shadow-md ring-2 ring-emerald-100 transition-transform group-hover:scale-105" 
                     />
                     <button
                       onClick={async () => {
@@ -1390,9 +1390,9 @@ export default function AppearancePage() {
                     </button>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-purple-500 hover:bg-purple-50/50 transition-all duration-200 group">
-                    <Upload className="w-8 h-8 text-gray-400 group-hover:text-purple-500 transition-colors mb-2" />
-                    <span className="text-sm font-medium text-gray-600 group-hover:text-purple-600">העלה לוגו</span>
+                  <label className="flex flex-col items-center justify-center w-32 h-32 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/50 transition-all duration-200 group">
+                    <Upload className="w-8 h-8 text-gray-400 group-hover:text-emerald-500 transition-colors mb-2" />
+                    <span className="text-sm font-medium text-gray-600 group-hover:text-emerald-600">העלה לוגו</span>
                     <input
                       type="file"
                       className="hidden"
@@ -1454,7 +1454,7 @@ export default function AppearancePage() {
                     <img 
                       src={settings.favicon} 
                       alt="Favicon" 
-                      className="w-16 h-16 object-contain rounded-lg shadow-md ring-2 ring-purple-100 transition-transform group-hover:scale-105" 
+                      className="w-16 h-16 object-contain rounded-lg shadow-md ring-2 ring-emerald-100 transition-transform group-hover:scale-105" 
                     />
                     <button
                       onClick={async () => {
@@ -1493,9 +1493,9 @@ export default function AppearancePage() {
                     </button>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50/50 transition-all duration-200 group">
-                    <Upload className="w-6 h-6 text-gray-400 group-hover:text-purple-500 transition-colors mb-1" />
-                    <span className="text-xs font-medium text-gray-600 group-hover:text-purple-600 text-center px-2">העלה Favicon</span>
+                  <label className="flex flex-col items-center justify-center w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-emerald-500 hover:bg-emerald-50/50 transition-all duration-200 group">
+                    <Upload className="w-6 h-6 text-gray-400 group-hover:text-emerald-500 transition-colors mb-1" />
+                    <span className="text-xs font-medium text-gray-600 group-hover:text-emerald-600 text-center px-2">העלה Favicon</span>
                     <input
                       type="file"
                       className="hidden"
@@ -1566,7 +1566,7 @@ export default function AppearancePage() {
                     min="20"
                     max="300"
                     step="5"
-                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                   />
                   <Input
                     type="number"
@@ -1596,7 +1596,7 @@ export default function AppearancePage() {
                     min="30"
                     max="500"
                     step="5"
-                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                   />
                   <Input
                     type="number"
@@ -1626,7 +1626,7 @@ export default function AppearancePage() {
                     min="0"
                     max="100"
                     step="2"
-                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                   />
                   <Input
                     type="number"
@@ -1656,7 +1656,7 @@ export default function AppearancePage() {
                     min="0"
                     max="100"
                     step="2"
-                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                    className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                   />
                   <Input
                     type="number"
@@ -1985,11 +1985,11 @@ export default function AppearancePage() {
         return (
           <div className="space-y-6">
             {/* תצוגה מקדימה */}
-            <Card className="bg-gradient-to-br from-purple-50 to-blue-50 border-purple-200">
+            <Card className="bg-gradient-to-br from-emerald-50 to-blue-50 border-emerald-200">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Eye className="w-5 h-5 text-purple-600" />
+                    <Eye className="w-5 h-5 text-emerald-600" />
                     <CardTitle className="text-lg">תצוגה מקדימה</CardTitle>
                   </div>
                   <span className="text-sm text-gray-600">השינויים יופיעו בזמן אמת</span>
@@ -2098,7 +2098,7 @@ export default function AppearancePage() {
                           min="0"
                           max="50"
                           step="1"
-                          className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-600"
+                          className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600"
                         />
                         <Input
                           type="number"
@@ -3239,11 +3239,11 @@ export default function AppearancePage() {
                       onClick={() => setActiveTab(tab.key as any)}
                       className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg text-right transition-colors mb-1 ${
                         isActive
-                          ? "bg-purple-50 text-purple-700 font-medium border-r-2 border-purple-600"
+                          ? "bg-emerald-50 text-emerald-700 font-medium border-r-2 border-emerald-600"
                           : "text-gray-700 hover:bg-gray-50"
                       }`}
                     >
-                      <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-purple-600" : "text-gray-500"}`} />
+                      <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? "text-emerald-600" : "text-gray-500"}`} />
                       <span className="text-sm">{tab.label}</span>
                     </button>
                     {tab.divider && <div className="border-t border-gray-200 my-2 mx-2" />}
@@ -3293,8 +3293,8 @@ export default function AppearancePage() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                        <Palette className="w-5 h-5 text-purple-600" />
+                      <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                        <Palette className="w-5 h-5 text-emerald-600" />
                       </div>
                       <div>
                         <CardTitle>טיפוגרפיה וצבעים</CardTitle>
@@ -3597,7 +3597,7 @@ export default function AppearancePage() {
                               onClick={() => updateSettings("productImageButtonsColor", "white")}
                               className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
                                 settings.productImageButtonsColor === "white"
-                                  ? "border-purple-600 bg-purple-50"
+                                  ? "border-emerald-600 bg-emerald-50"
                                   : "border-gray-200 hover:border-gray-300"
                               }`}
                             >
@@ -3608,7 +3608,7 @@ export default function AppearancePage() {
                               onClick={() => updateSettings("productImageButtonsColor", "black")}
                               className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
                                 settings.productImageButtonsColor === "black"
-                                  ? "border-purple-600 bg-purple-50"
+                                  ? "border-emerald-600 bg-emerald-50"
                                   : "border-gray-200 hover:border-gray-300"
                               }`}
                             >
@@ -3635,7 +3635,7 @@ export default function AppearancePage() {
                                 onClick={() => updateSettings("productDiscountBadgeColor", colorOption.value)}
                                 className={`p-2 rounded-lg border-2 transition-all ${
                                   settings.productDiscountBadgeColor === colorOption.value
-                                    ? "border-purple-600 bg-purple-50"
+                                    ? "border-emerald-600 bg-emerald-50"
                                     : "border-gray-200 hover:border-gray-300"
                                 }`}
                                 title={colorOption.label}
@@ -3673,7 +3673,7 @@ export default function AppearancePage() {
                                 onClick={() => updateSettings("productGalleryArrowsColor", "white")}
                                 className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
                                   settings.productGalleryArrowsColor === "white"
-                                    ? "border-purple-600 bg-purple-50"
+                                    ? "border-emerald-600 bg-emerald-50"
                                     : "border-gray-200 hover:border-gray-300"
                                 }`}
                               >
@@ -3684,7 +3684,7 @@ export default function AppearancePage() {
                                 onClick={() => updateSettings("productGalleryArrowsColor", "black")}
                                 className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all ${
                                   settings.productGalleryArrowsColor === "black"
-                                    ? "border-purple-600 bg-purple-50"
+                                    ? "border-emerald-600 bg-emerald-50"
                                     : "border-gray-200 hover:border-gray-300"
                                 }`}
                               >
@@ -3748,7 +3748,7 @@ export default function AppearancePage() {
                             <button
                               key={color}
                               onClick={() => updateSettings("productRelatedBgColor", color)}
-                              className="w-8 h-8 rounded border-2 border-gray-300 hover:border-purple-500"
+                              className="w-8 h-8 rounded border-2 border-gray-300 hover:border-emerald-500"
                               style={{ backgroundColor: color }}
                             />
                           ))}
@@ -3783,7 +3783,7 @@ export default function AppearancePage() {
                             <button
                               key={color}
                               onClick={() => updateSettings("productCompleteLookBgColor", color)}
-                              className="w-8 h-8 rounded border-2 border-gray-300 hover:border-purple-500"
+                              className="w-8 h-8 rounded border-2 border-gray-300 hover:border-emerald-500"
                               style={{ backgroundColor: color }}
                             />
                           ))}
@@ -3910,8 +3910,8 @@ export default function AppearancePage() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                        <CreditCard className="w-5 h-5 text-purple-600" />
+                      <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                        <CreditCard className="w-5 h-5 text-emerald-600" />
                       </div>
                       <div>
                         <CardTitle>עמוד קופה</CardTitle>
@@ -4386,7 +4386,7 @@ export default function AppearancePage() {
                           onClick={() => updateSettings("thankYouPageTemplate", "minimal")}
                           className={`p-4 border-2 rounded-lg text-center transition-colors ${
                             settings.thankYouPageTemplate === "minimal"
-                              ? "border-purple-600 bg-purple-50"
+                              ? "border-emerald-600 bg-emerald-50"
                               : "border-gray-200 hover:border-gray-300"
                           }`}
                         >
@@ -4397,7 +4397,7 @@ export default function AppearancePage() {
                           onClick={() => updateSettings("thankYouPageTemplate", "detailed")}
                           className={`p-4 border-2 rounded-lg text-center transition-colors ${
                             settings.thankYouPageTemplate === "detailed"
-                              ? "border-purple-600 bg-purple-50"
+                              ? "border-emerald-600 bg-emerald-50"
                               : "border-gray-200 hover:border-gray-300"
                           }`}
                         >
@@ -4408,7 +4408,7 @@ export default function AppearancePage() {
                           onClick={() => updateSettings("thankYouPageTemplate", "celebration")}
                           className={`p-4 border-2 rounded-lg text-center transition-colors ${
                             settings.thankYouPageTemplate === "celebration"
-                              ? "border-purple-600 bg-purple-50"
+                              ? "border-emerald-600 bg-emerald-50"
                               : "border-gray-200 hover:border-gray-300"
                           }`}
                         >
@@ -4602,7 +4602,7 @@ export default function AppearancePage() {
                               value={settings.emailColor1}
                               onChange={(e) => updateSettings("emailColor1", e.target.value)}
                               className="flex-1"
-                              placeholder="#6f65e2"
+                              placeholder="#15b981"
                             />
                           </div>
                         </div>
@@ -4622,7 +4622,7 @@ export default function AppearancePage() {
                               value={settings.emailColor2}
                               onChange={(e) => updateSettings("emailColor2", e.target.value)}
                               className="flex-1"
-                              placeholder="#b965e2"
+                              placeholder="#10b981"
                             />
                           </div>
                         </div>

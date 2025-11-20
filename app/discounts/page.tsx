@@ -381,7 +381,7 @@ export default function DiscountsPage() {
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium">{discount.title}</span>
                             {discount.isAutomatic && (
-                              <Badge className="bg-purple-100 text-purple-800 text-xs">
+                              <Badge className="bg-emerald-100 text-emerald-800 text-xs">
                                 <Zap className="w-3 h-3 ml-1" />
                                 אוטומטי
                               </Badge>
@@ -391,9 +391,9 @@ export default function DiscountsPage() {
                         <td className="p-4">
                           <div className="flex items-center gap-2">
                             {discount.type === "PERCENTAGE" ? (
-                              <Percent className="w-4 h-4 text-purple-600" />
+                              <Percent className="w-4 h-4 text-emerald-600" />
                             ) : discount.type === "FIXED" ? (
-                              <DollarSign className="w-4 h-4 text-purple-600" />
+                              <DollarSign className="w-4 h-4 text-emerald-600" />
                             ) : null}
                             <span className="text-sm">{getTypeLabel(discount.type)}</span>
                           </div>

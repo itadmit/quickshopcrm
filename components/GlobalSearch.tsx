@@ -485,7 +485,7 @@ export function GlobalSearch() {
         className={cn(
           "w-full flex items-center gap-4 px-5 py-3.5 text-right transition-all duration-150",
           selectedIndex === index
-            ? "bg-gradient-to-r from-purple-50 to-pink-50 border-r-3 border-[#6f65e2] shadow-sm"
+            ? "bg-gradient-to-r from-emerald-50 to-pink-50 border-r-3 border-[#15b981] shadow-sm"
             : "hover:bg-gray-50"
         )}
       >
@@ -569,7 +569,7 @@ export function GlobalSearch() {
           <div className="overflow-y-auto max-h-[600px]">
             {loading && query.length >= 1 && (
               <div className="px-5 py-12 text-center text-gray-500">
-                <div className="animate-spin w-8 h-8 border-3 border-[#6f65e2] border-t-transparent rounded-full mx-auto"></div>
+                <div className="animate-spin w-8 h-8 border-3 border-[#15b981] border-t-transparent rounded-full mx-auto"></div>
                 <p className="mt-3 text-base font-medium">{t('search.searching')}</p>
               </div>
             )}
@@ -670,8 +670,8 @@ export function GlobalSearch() {
             {/* Empty state - show quick links */}
             {!query && totalResults === 0 && (
               <div className="px-5 py-12 text-center text-gray-500">
-                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-purple-100 to-pink-100 rounded-2xl flex items-center justify-center mb-4">
-                  <Search className="w-8 h-8 text-[#6f65e2]" />
+                <div className="w-16 h-16 mx-auto bg-gradient-to-br from-emerald-100 to-pink-100 rounded-2xl flex items-center justify-center mb-4">
+                  <Search className="w-8 h-8 text-[#15b981]" />
                 </div>
                 <p className="text-base font-medium text-gray-700">{t('search.startTyping')}</p>
                 <p className="text-sm text-gray-500 mt-1">{t('search.startTypingDescription')}</p>

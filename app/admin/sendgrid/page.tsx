@@ -212,7 +212,7 @@ export default function SendGridSettingsPage() {
       <AppLayout>
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto mb-4"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-600 mx-auto mb-4"></div>
             <p className="text-gray-600">טוען...</p>
           </div>
         </div>
@@ -232,7 +232,7 @@ export default function SendGridSettingsPage() {
         <Card className="shadow-md">
           <CardHeader>
             <div className="flex items-center gap-2">
-              <Mail className="h-5 w-5 text-purple-600" />
+              <Mail className="h-5 w-5 text-emerald-600" />
               <CardTitle>הגדרות SendGrid - שליחת מיילים</CardTitle>
             </div>
             <CardDescription>

@@ -530,7 +530,7 @@ export default function BulkEditPage() {
               value={row.name}
               onChange={(e) => updateRow(row.id, column.key, e.target.value)}
               onKeyDown={(e) => handleKeyDown(e, row.id, column.key)}
-              className="h-9 flex-1 border border-gray-200 rounded-md bg-white px-3 py-2 text-sm hover:border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
+              className="h-9 flex-1 border border-gray-200 rounded-md bg-white px-3 py-2 text-sm hover:border-gray-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
               ref={(el) => {
                 if (el) cellRefs.current.set(cellKey, el)
               }}
@@ -595,7 +595,7 @@ export default function BulkEditPage() {
           }}
           onKeyDown={(e) => handleKeyDown(e, row.id, column.key)}
           placeholder="פורסם / טיוטה / ארכיון"
-          className="h-9 w-full border border-gray-200 rounded-md bg-white px-3 py-2 text-sm hover:border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
+          className="h-9 w-full border border-gray-200 rounded-md bg-white px-3 py-2 text-sm hover:border-gray-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
           ref={(el) => {
             if (el) cellRefs.current.set(cellKey, el)
           }}
@@ -611,7 +611,7 @@ export default function BulkEditPage() {
           onChange={(e) => updateRow(row.id, column.key, e.target.value)}
           onKeyDown={(e) => handleKeyDown(e, row.id, column.key)}
           placeholder="הזן קטגוריה"
-          className="h-9 w-full border border-gray-200 rounded-md bg-white px-3 py-2 text-sm hover:border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-colors"
+          className="h-9 w-full border border-gray-200 rounded-md bg-white px-3 py-2 text-sm hover:border-gray-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
           ref={(el) => {
             if (el) cellRefs.current.set(cellKey, el)
           }}
@@ -642,7 +642,7 @@ export default function BulkEditPage() {
         className={`h-9 w-full border rounded-md bg-white px-3 py-2 text-sm transition-colors ${
           isComparePriceInvalid
             ? "border-red-300 bg-red-50 focus:border-red-500 focus:ring-1 focus:ring-red-500"
-            : "border-gray-200 hover:border-gray-300 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+            : "border-gray-200 hover:border-gray-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
         }`}
         ref={(el) => {
           if (el) cellRefs.current.set(cellKey, el)

@@ -259,7 +259,7 @@ export function NavigationItemEditor({
                     <Button
                       type="button"
                       variant="outline"
-                      className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 hover:border-purple-500 hover:bg-purple-50 transition-colors h-auto"
+                      className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 hover:border-emerald-500 hover:bg-emerald-50 transition-colors h-auto"
                       onClick={() => {
                         setMediaPickerOpen(true)
                       }}

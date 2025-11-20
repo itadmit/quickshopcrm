@@ -36,10 +36,10 @@ export function CommissionPlans() {
         "אידיאלי לסוכנויות ומשווקי שותפים",
         "אפשרות לבניית מודל עסקי ייחודי"
       ],
-      color: "from-purple-500 to-pink-500",
-      bgColor: "bg-purple-50",
-      borderColor: "border-purple-300",
-      buttonColor: "bg-purple-600 hover:bg-purple-700",
+      color: "from-emerald-500 to-pink-500",
+      bgColor: "bg-emerald-50",
+      borderColor: "border-emerald-300",
+      buttonColor: "bg-emerald-600 hover:bg-emerald-700",
       popular: true
     },
     {
@@ -74,11 +74,11 @@ export function CommissionPlans() {
   ]
 
   return (
-    <section className="py-20 lg:py-28 bg-gradient-to-br from-purple-50 via-indigo-50 to-blue-50">
+    <section className="py-20 lg:py-28 bg-gradient-to-br from-emerald-50 via-indigo-50 to-blue-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
-          <Badge className="mb-4 bg-purple-100 text-purple-600 text-sm px-4 py-2">
+          <Badge className="mb-4 bg-emerald-100 text-emerald-600 text-sm px-4 py-2">
             <DollarSign className="h-4 w-4 inline ml-1" />
             תוכניות עמלה
           </Badge>
@@ -96,7 +96,7 @@ export function CommissionPlans() {
             <Card 
               key={plan.id}
               className={`relative overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 ${
-                plan.popular ? 'border-4 border-purple-400 scale-105' : 'border-2'
+                plan.popular ? 'border-4 border-emerald-400 scale-105' : 'border-2'
               } ${plan.borderColor}`}
             >
               {/* Gradient Header */}
@@ -104,7 +104,7 @@ export function CommissionPlans() {
               
               {/* Popular Badge */}
               {plan.popular && (
-                <div className="absolute top-6 left-6 bg-purple-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg z-10">
+                <div className="absolute top-6 left-6 bg-emerald-600 text-white px-4 py-1 rounded-full text-sm font-bold shadow-lg z-10">
                   הכי פופולרי 🔥
                 </div>
               )}
@@ -145,7 +145,7 @@ export function CommissionPlans() {
         </div>
 
         {/* Calculator Section */}
-        <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-2xl border-2 border-purple-200 mb-20">
+        <div className="bg-white rounded-3xl p-8 lg:p-12 shadow-2xl border-2 border-emerald-200 mb-20">
           <div className="text-center mb-10">
             <h3 className="text-3xl font-bold mb-4">חשבו כמה תרוויחו</h3>
             <p className="text-gray-600 text-lg">דוגמאות אמיתיות מהשטח</p>
@@ -172,10 +172,10 @@ export function CommissionPlans() {
               </div>
             </div>
 
-            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-6 border-2 border-purple-300 scale-105 shadow-xl">
+            <div className="bg-gradient-to-br from-emerald-50 to-pink-50 rounded-2xl p-6 border-2 border-emerald-300 scale-105 shadow-xl">
               <div className="text-4xl mb-3">💼</div>
               <div className="text-sm text-gray-600 mb-2">סוכנות קטנה</div>
-              <div className="text-3xl font-bold text-purple-600 mb-4">₪15,200</div>
+              <div className="text-3xl font-bold text-emerald-600 mb-4">₪15,200</div>
               <div className="space-y-2 text-sm text-gray-600">
                 <div className="flex justify-between">
                   <span>15 לקוחות חדשים</span>

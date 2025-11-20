@@ -245,7 +245,7 @@ export function MegaMenu({ item, slug, onClose }: MegaMenuProps) {
                             >
                               {/* Item Content */}
                               <div className="flex-1 min-w-0">
-                                <div className="text-sm font-medium text-gray-900 group-hover:text-purple-600 transition-colors">
+                                <div className="text-sm font-medium text-gray-900 group-hover:text-emerald-600 transition-colors">
                                   {childItem.label}
                                 </div>
                                 {childItem.children && childItem.children.length > 0 && (

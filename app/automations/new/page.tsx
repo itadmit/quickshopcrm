@@ -242,11 +242,11 @@ export default function NewAutomationPage() {
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; direction: rtl; }
     .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
-    .header { background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%); padding: 30px 20px; text-align: center; color: white; }
+    .header { background: linear-gradient(135deg, #15b981 0%, #10b981 100%); padding: 30px 20px; text-align: center; color: white; }
     .content { padding: 30px 20px; color: #333; line-height: 1.6; }
-    .coupon { background: #f0f9ff; border: 2px dashed #6f65e2; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px; }
-    .coupon-code { font-size: 32px; font-weight: bold; color: #6f65e2; margin: 10px 0; }
-    .button { display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%); color: white !important; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: 600; }
+    .coupon { background: #f0f9ff; border: 2px dashed #15b981; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px; }
+    .coupon-code { font-size: 32px; font-weight: bold; color: #15b981; margin: 10px 0; }
+    .button { display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #15b981 0%, #10b981 100%); color: white !important; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: 600; }
     .footer { background-color: #f9f9f9; padding: 20px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #eee; }
   </style>
 </head>
@@ -298,9 +298,9 @@ export default function NewAutomationPage() {
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5; margin: 0; padding: 20px; direction: rtl; }
     .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); }
-    .header { background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%); padding: 30px 20px; text-align: center; color: white; }
+    .header { background: linear-gradient(135deg, #15b981 0%, #10b981 100%); padding: 30px 20px; text-align: center; color: white; }
     .content { padding: 30px 20px; color: #333; line-height: 1.6; }
-    .button { display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #6f65e2 0%, #b965e2 100%); color: white !important; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: 600; }
+    .button { display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #15b981 0%, #10b981 100%); color: white !important; text-decoration: none; border-radius: 5px; margin: 20px 0; font-weight: 600; }
     .footer { background-color: #f9f9f9; padding: 20px; text-align: center; color: #666; font-size: 12px; border-top: 1px solid #eee; }
   </style>
 </head>

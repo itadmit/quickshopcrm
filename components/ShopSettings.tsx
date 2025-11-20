@@ -468,8 +468,8 @@ export function ShopSettings() {
         <Card className="shadow-sm">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                <Store className="w-5 h-5 text-purple-600" />
+              <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                <Store className="w-5 h-5 text-emerald-600" />
               </div>
               <div>
                 <CardTitle>פרטי בסיס</CardTitle>
@@ -480,7 +480,7 @@ export function ShopSettings() {
           <CardContent>
             <div className="space-y-4">
               {/* פרסם חנות - למעלה מעל הכל */}
-              <div className="bg-gradient-to-r from-purple-50 to-pink-50 border-2 border-purple-200 rounded-xl p-4">
+              <div className="bg-gradient-to-r from-emerald-50 to-pink-50 border-2 border-emerald-200 rounded-xl p-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-1 flex-1">
                     <div className="flex items-center gap-2">
@@ -508,7 +508,7 @@ export function ShopSettings() {
                     {!shopData.isPublished && (
                       <Dialog>
                         <DialogTrigger asChild>
-                          <Button variant="outline" size="sm" className="border-purple-300">
+                          <Button variant="outline" size="sm" className="border-emerald-300">
                             <Edit className="w-4 h-4 ml-2" />
                             ערוך הודעת תחזוקה
                           </Button>
@@ -563,7 +563,7 @@ export function ShopSettings() {
                   value={shopData.name}
                   onChange={(e) => updateShopData("name", e.target.value)}
                   placeholder="לדוגמה: חנות הבגדים שלי"
-                  className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                  className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                 />
               </div>
 
@@ -585,7 +585,7 @@ export function ShopSettings() {
                       updateShopData("slug", cleaned)
                     }}
                     placeholder="my-shop"
-                    className={`h-10 text-sm flex-1 border-gray-300 focus:border-purple-500 focus:ring-purple-500 ${
+                    className={`h-10 text-sm flex-1 border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 ${
                       slugAvailability.available === false ? "border-red-500" : 
                       slugAvailability.available === true ? "border-green-500" : ""
                     }`}
@@ -629,7 +629,7 @@ export function ShopSettings() {
                   onChange={(e) => updateShopData("description", e.target.value)}
                   placeholder="תאר את החנות שלך בכמה מילים..."
                   rows={3}
-                  className="text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500 resize-none"
+                  className="text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 resize-none"
                 />
               </div>
 
@@ -638,7 +638,7 @@ export function ShopSettings() {
                   קטגוריה ראשית <span className="text-red-500">*</span>
                 </Label>
                 <Select value={shopData.category} onValueChange={(value) => updateShopData("category", value)}>
-                  <SelectTrigger className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500">
+                  <SelectTrigger className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500">
                     <SelectValue placeholder="בחר קטגוריה" />
                   </SelectTrigger>
                   <SelectContent>
@@ -680,7 +680,7 @@ export function ShopSettings() {
                   value={shopData.email}
                   onChange={(e) => updateShopData("email", e.target.value)}
                   placeholder="shop@example.com"
-                  className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                  className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                 />
               </div>
 
@@ -694,7 +694,7 @@ export function ShopSettings() {
                   value={shopData.phone}
                   onChange={(e) => updateShopData("phone", e.target.value)}
                   placeholder="050-1234567"
-                  className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                  className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                 />
               </div>
 
@@ -707,7 +707,7 @@ export function ShopSettings() {
                   value={shopData.address}
                   onChange={(e) => updateShopData("address", e.target.value)}
                   placeholder="רחוב, עיר, מיקוד"
-                  className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                  className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                 />
               </div>
 
@@ -806,7 +806,7 @@ export function ShopSettings() {
                               })
                             }
                             min="0"
-                            className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                            className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                           />
                         </div>
                       )}
@@ -843,7 +843,7 @@ export function ShopSettings() {
                               })
                             }
                             min="0"
-                            className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                            className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                           />
                         </div>
                       )}
@@ -857,7 +857,7 @@ export function ShopSettings() {
                       value={shopData.shippingTime}
                       onChange={(e) => updateShopData("shippingTime", e.target.value)}
                       placeholder="לדוגמה: 3-5 ימי עסקים"
-                      className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                      className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                     />
                   </div>
                 </>
@@ -887,7 +887,7 @@ export function ShopSettings() {
                       value={shopData.pickupAddress}
                       onChange={(e) => updateShopData("pickupAddress", e.target.value)}
                       placeholder="רחוב, עיר, מיקוד"
-                      className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                      className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                     />
                   </div>
                   <div>
@@ -901,7 +901,7 @@ export function ShopSettings() {
                       onChange={(e) => updateShopData("pickupCost", e.target.value ? parseFloat(e.target.value) : null)}
                       placeholder="0 - חינם (ברירת מחדל)"
                       min="0"
-                      className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500"
+                      className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
                     />
                   </div>
                 </>
@@ -930,7 +930,7 @@ export function ShopSettings() {
                   מטבע <span className="text-red-500">*</span>
                 </Label>
                 <Select value={shopData.currency} onValueChange={(value) => updateShopData("currency", value)}>
-                  <SelectTrigger className="h-10 text-sm border-gray-300 focus:border-purple-500 focus:ring-purple-500">
+                  <SelectTrigger className="h-10 text-sm border-gray-300 focus:border-emerald-500 focus:ring-emerald-500">
                     <SelectValue placeholder="בחר מטבע" />
                   </SelectTrigger>
                   <SelectContent>

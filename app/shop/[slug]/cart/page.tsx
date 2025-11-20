@@ -415,7 +415,7 @@ export default function CartPage() {
                               
                               {/* Bundle Name */}
                               {item.bundleName && (
-                                <p className="text-xs text-purple-600 mb-1 font-medium">
+                                <p className="text-xs text-emerald-600 mb-1 font-medium">
                                   חלק מחבילה: {item.bundleName}
                                 </p>
                               )}

@@ -121,8 +121,8 @@ export default function RegisterPage() {
           </div>
 
           <div className="mb-8">
-            <div className="mb-4 inline-flex items-center rounded-full border border-purple-200 bg-purple-50 px-4 py-2 text-sm">
-              <span className="text-purple-700 font-semibold">✨ 7 ימי נסיון חינם - ללא צורך באשראי</span>
+            <div className="mb-4 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm">
+              <span className="text-emerald-700 font-semibold">✨ 7 ימי נסיון חינם - ללא צורך באשראי</span>
             </div>
             <h2 className="text-3xl font-bold text-gray-900 mb-2">צור חשבון חדש</h2>
             <p className="text-sm text-gray-600">
@@ -145,7 +145,7 @@ export default function RegisterPage() {
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
                   disabled={loading}
-                  className="h-12 text-base border-gray-300 focus:border-purple-500 focus:ring-purple-500 pr-10"
+                  className="h-12 text-base border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 pr-10"
                 />
               </div>
             </div>
@@ -163,7 +163,7 @@ export default function RegisterPage() {
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   required
                   disabled={loading}
-                  className="h-12 text-base border-gray-300 focus:border-purple-500 focus:ring-purple-500 pr-10"
+                  className="h-12 text-base border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 pr-10"
                 />
               </div>
             </div>
@@ -182,7 +182,7 @@ export default function RegisterPage() {
                   required
                   disabled={loading}
                   minLength={8}
-                  className="h-12 text-base border-gray-300 focus:border-purple-500 focus:ring-purple-500 pr-10"
+                  className="h-12 text-base border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 pr-10"
                 />
               </div>
             </div>
@@ -200,7 +200,7 @@ export default function RegisterPage() {
                   onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
                   required
                   disabled={loading}
-                  className="h-12 text-base border-gray-300 focus:border-purple-500 focus:ring-purple-500 pr-10"
+                  className="h-12 text-base border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 pr-10"
                 />
               </div>
             </div>
@@ -217,14 +217,14 @@ export default function RegisterPage() {
                   value={formData.phone}
                   onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                   disabled={loading}
-                  className="h-12 text-base border-gray-300 focus:border-purple-500 focus:ring-purple-500 pr-10"
+                  className="h-12 text-base border-gray-300 focus:border-emerald-500 focus:ring-emerald-500 pr-10"
                 />
               </div>
             </div>
             <div className="pt-2">
               <Button 
                 type="submit" 
-                className="w-full h-12 bg-gradient-to-l from-purple-600 to-purple-500 hover:from-purple-700 hover:to-purple-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all" 
+                className="w-full h-12 bg-gradient-to-l from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white font-semibold shadow-lg hover:shadow-xl transition-all" 
                 disabled={loading}
               >
                 {loading ? "יוצר חשבון..." : "צור חשבון"}
@@ -267,7 +267,7 @@ export default function RegisterPage() {
           <div className="mt-6">
             <div className="text-sm text-center text-gray-600">
               כבר יש לך חשבון?{" "}
-              <Link href="/login" className="text-purple-600 hover:text-purple-700 hover:underline font-semibold">
+              <Link href="/login" className="text-emerald-600 hover:text-emerald-700 hover:underline font-semibold">
                 התחבר
               </Link>
             </div>
@@ -287,31 +287,31 @@ export default function RegisterPage() {
             priority
             sizes="(max-width: 1024px) 0vw, 60vw"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-900/85 via-purple-800/75 to-purple-900/85"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-emerald-900/85 via-emerald-800/75 to-emerald-900/85"></div>
         </div>
 
         <div className="relative z-10 w-full flex items-center justify-center p-12 lg:p-16">
           <div className="max-w-2xl text-white">
             <h2 className="text-4xl lg:text-5xl font-bold mb-4">Start your journey</h2>
-            <p className="text-xl text-purple-100 mb-8">התחל ליצור את החנות האונליין שלך היום</p>
+            <p className="text-xl text-emerald-100 mb-8">התחל ליצור את החנות האונליין שלך היום</p>
             
             {/* Feature Cards */}
             <div className="grid grid-cols-2 gap-6">
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                 <h3 className="text-lg font-semibold mb-2">התחלה מהירה</h3>
-                <p className="text-sm text-purple-100">הקמת חנות אונליין תוך דקות</p>
+                <p className="text-sm text-emerald-100">הקמת חנות אונליין תוך דקות</p>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                 <h3 className="text-lg font-semibold mb-2">עיצוב מקצועי</h3>
-                <p className="text-sm text-purple-100">תבניות מוכנות ועיצוב מודרני</p>
+                <p className="text-sm text-emerald-100">תבניות מוכנות ועיצוב מודרני</p>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                 <h3 className="text-lg font-semibold mb-2">תמיכה מלאה</h3>
-                <p className="text-sm text-purple-100">כל הכלים לניהול החנות שלך</p>
+                <p className="text-sm text-emerald-100">כל הכלים לניהול החנות שלך</p>
               </div>
               <div className="bg-white/10 backdrop-blur-sm rounded-xl p-6 border border-white/20">
                 <h3 className="text-lg font-semibold mb-2">גדל בקלות</h3>
-                <p className="text-sm text-purple-100">פתרון שמתאים לכל גודל עסק</p>
+                <p className="text-sm text-emerald-100">פתרון שמתאים לכל גודל עסק</p>
               </div>
             </div>
           </div>
@@ -319,7 +319,7 @@ export default function RegisterPage() {
       </div>
 
       {/* Mobile View */}
-      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-purple-600 via-purple-700 to-purple-800 -z-10 opacity-20"></div>
+      <div className="lg:hidden fixed inset-0 bg-gradient-to-br from-emerald-600 via-emerald-700 to-emerald-800 -z-10 opacity-20"></div>
     </div>
   )
 }

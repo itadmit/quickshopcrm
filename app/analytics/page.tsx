@@ -669,7 +669,7 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">מכירות היום</CardTitle>
-              <DollarSign className="h-5 w-5 text-purple-600" />
+              <DollarSign className="h-5 w-5 text-emerald-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
@@ -681,7 +681,7 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">מכירות השבוע</CardTitle>
-              <TrendingUp className="h-5 w-5 text-purple-600" />
+              <TrendingUp className="h-5 w-5 text-emerald-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
@@ -693,7 +693,7 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">מכירות החודש</CardTitle>
-              <Calendar className="h-5 w-5 text-purple-600" />
+              <Calendar className="h-5 w-5 text-emerald-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
@@ -705,7 +705,7 @@ export default function AnalyticsPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">מכירות השנה</CardTitle>
-              <TrendingUp className="h-5 w-5 text-purple-600" />
+              <TrendingUp className="h-5 w-5 text-emerald-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
@@ -848,10 +848,10 @@ export default function AnalyticsPage() {
                     key={report.type}
                     onClick={() => handleReportClick(report.type)}
                     disabled={reportLoading}
-                    className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all text-right disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="p-4 border-2 border-gray-200 rounded-lg hover:border-emerald-500 hover:bg-emerald-50 transition-all text-right disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <div className="flex items-start gap-3">
-                      <Icon className="w-6 h-6 text-purple-600 flex-shrink-0 mt-1" />
+                      <Icon className="w-6 h-6 text-emerald-600 flex-shrink-0 mt-1" />
                       <div className="flex-1">
                         <h3 className="font-semibold text-gray-900 mb-1">
                           {report.label}

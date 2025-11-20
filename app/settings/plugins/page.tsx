@@ -450,8 +450,8 @@ export default function PluginsPage() {
                         {plugin.icon ? (
                           <img src={plugin.icon} alt={plugin.name} className="w-10 h-10 rounded-lg" />
                         ) : (
-                          <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                            <CategoryIcon className="w-5 h-5 text-purple-600" />
+                          <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center">
+                            <CategoryIcon className="w-5 h-5 text-emerald-600" />
                           </div>
                         )}
                         <div className="flex-1">
@@ -464,7 +464,7 @@ export default function PluginsPage() {
                               variant="outline" 
                               className={`text-xs ${
                                 plugin.type === "CORE" 
-                                  ? "bg-purple-100 text-purple-700 border-purple-200" 
+                                  ? "bg-emerald-100 text-emerald-700 border-emerald-200" 
                                   : "bg-gray-100 text-gray-700 border-gray-200"
                               }`}
                             >

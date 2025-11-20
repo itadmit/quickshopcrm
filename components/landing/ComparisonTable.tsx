@@ -58,7 +58,7 @@ export function ComparisonTable() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-16">
-          <Badge className="mb-4 bg-purple-100 text-purple-600 text-sm px-4 py-2">
+          <Badge className="mb-4 bg-emerald-100 text-emerald-600 text-sm px-4 py-2">
             השוואה מפורטת
           </Badge>
           <h2 className="text-4xl lg:text-5xl font-bold mb-6">
@@ -73,7 +73,7 @@ export function ComparisonTable() {
         <div className="hidden lg:block overflow-hidden rounded-2xl border-2 border-gray-200 shadow-xl">
           <table className="w-full">
             <thead>
-              <tr className="bg-gradient-to-r from-purple-50 to-indigo-50">
+              <tr className="bg-gradient-to-r from-emerald-50 to-indigo-50">
                 <th className="p-6 text-right font-semibold text-gray-900 text-lg border-b-2 border-gray-200">
                   תכונה
                 </th>
@@ -157,8 +157,8 @@ export function ComparisonTable() {
               <p className="text-sm text-gray-600 mb-4">{item.description}</p>
               
               <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-purple-50 rounded-lg">
-                  <div className="text-xs text-purple-600 font-semibold mb-2">קוויק שופ</div>
+                <div className="text-center p-3 bg-emerald-50 rounded-lg">
+                  <div className="text-xs text-emerald-600 font-semibold mb-2">קוויק שופ</div>
                   {item.quickshop === true ? (
                     <CheckCircle className="h-6 w-6 text-green-500 mx-auto" />
                   ) : (
