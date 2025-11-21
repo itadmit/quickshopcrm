@@ -212,7 +212,9 @@ export function ShopSettings() {
         const settings = shop.settings || {}
         const shipping = settings.shipping || {}
         const pickup = settings.pickup || {}
-        const paymentMethods = settings.paymentMethods || []
+        const paymentMethods = Array.isArray(settings.paymentMethods) 
+          ? settings.paymentMethods 
+          : []
         const shippingOptions = shipping.options || {
           fixed: false,
           fixedCost: null,
