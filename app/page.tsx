@@ -5,6 +5,7 @@ import {
   Rocket, 
   CheckCircle, 
   ArrowLeft, 
+  ArrowRight,
   Users, 
   TrendingUp, 
   BarChart3, 
@@ -36,6 +37,10 @@ import {
   Banknote,
   ScanFace
 } from "lucide-react"
+
+import { LandingHeader } from "@/components/landing/LandingHeader"
+import { LandingFooter } from "@/components/landing/LandingFooter"
+import { HeroProductShowcase } from "@/components/landing/HeroProductShowcase"
 
 export const metadata = {
   title: "קוויק שופ - לבנות חנות אונליין בקלות | תמיכה מלאה בעברית",
@@ -198,36 +203,7 @@ export default function HomePage() {
   return (
     <div className="min-h-screen bg-white font-sans text-gray-900" dir="rtl">
       {/* Header */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-20">
-            <Link href="/" className="flex flex-col overflow-visible">
-              <h1 className="text-2xl font-pacifico text-gray-900 whitespace-nowrap overflow-visible" style={{ letterSpacing: '2px', lineHeight: '1.5' }}>
-                Quick Shop
-              </h1>
-              <p className="text-xs text-gray-500 whitespace-nowrap">מערכת ניהול חנויות אונליין</p>
-            </Link>
-            
-            <nav className="hidden md:flex items-center gap-8">
-              <a href="#features" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">פיצ'רים</a>
-              <a href="#comparison" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">למה אנחנו?</a>
-              <a href="#pricing" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">מחירים</a>
-              <Link href="/for-marketers" className="text-gray-600 hover:text-emerald-600 font-medium transition-colors">למשווקים</Link>
-            </nav>
-
-            <div className="flex items-center gap-4">
-              <Link href="/login" className="text-gray-600 hover:text-gray-900 font-medium hidden sm:block">
-                התחברות
-              </Link>
-              <Link href="/register">
-                <Button variant="outline" className="bg-emerald-500 hover:bg-emerald-600 text-white rounded-full px-6 font-bold shadow-lg shadow-emerald-100 transition-all hover:shadow-emerald-200 border-0">
-                  נסו בחינם
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </header>
+      <LandingHeader />
 
       {/* Hero Section */}
       <section className="relative py-20 lg:py-32 overflow-hidden">
@@ -278,130 +254,8 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Hero Visual - Store Dashboard Simulation */}
-            <div className="relative lg:h-[600px] w-full flex items-center justify-center">
-              <div className="relative w-full max-w-[800px] perspective-1000">
-                {/* Abstract decorative elements */}
-                <div className="absolute top-0 right-0 w-72 h-72 bg-blue-100 rounded-full filter blur-3xl opacity-30 animate-pulse" />
-                <div className="absolute bottom-0 left-0 w-72 h-72 bg-emerald-100 rounded-full filter blur-3xl opacity-30 animate-pulse delay-700" />
-                
-                {/* Dashboard Interface Mockup */}
-                <div className="relative bg-gray-50 rounded-xl shadow-2xl border border-gray-200 overflow-hidden flex text-right" dir="rtl">
-                  {/* Sidebar */}
-                  <div className="w-48 bg-white border-l border-gray-200 p-3 hidden md:block shrink-0">
-                    <div className="flex items-center gap-2 mb-6 px-2">
-                      <div className="w-6 h-6 bg-emerald-600 rounded text-white flex items-center justify-center font-bold text-xs">QS</div>
-                      <span className="font-bold text-gray-700 text-xs">Quick Shop</span>
-                    </div>
-                    <div className="space-y-4">
-                      <div>
-                        <div className="text-[10px] text-gray-400 px-2 mb-1">מכירות</div>
-                        <div className="space-y-0.5">
-                          {['מוצרים', 'הזמנות', 'לקוחות'].map(item => (
-                            <div key={item} className="text-xs text-gray-600 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer flex items-center justify-between group">
-                                {item}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-gray-400 px-2 mb-1">שיווק</div>
-                        <div className="space-y-0.5">
-                          {['הנחות וקופונים', 'עגלות נטושות'].map(item => (
-                            <div key={item} className="text-xs text-gray-600 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
-                                {item}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-[10px] text-gray-400 px-2 mb-1">תוספים</div>
-                        <div className="space-y-0.5">
-                          {['ביקורות', 'באנדלים', 'Shop the Look'].map(item => (
-                            <div key={item} className="text-xs text-gray-600 px-2 py-1.5 rounded hover:bg-gray-50 cursor-pointer">
-                                {item}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Main Content */}
-                  <div className="flex-1 flex flex-col min-w-0 bg-gray-50/50">
-                    {/* Top Bar */}
-                    <div className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4">
-                      <div>
-                         <div className="text-sm font-bold text-gray-800">שלום, דניאל</div>
-                         <div className="text-[10px] text-gray-500">איך אני יכול לעזור לך היום?</div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-emerald-50 rounded-full flex items-center justify-center text-emerald-600 text-xs font-bold">DA</div>
-                      </div>
-                    </div>
-
-                    {/* Dashboard Content */}
-                    <div className="p-4 space-y-4 overflow-hidden">
-                      {/* Stats Grid */}
-                      <div className="grid grid-cols-4 gap-3">
-                         {[
-                           { label: 'הכנסות', value: '₪12,450', icon: TrendingUp, color: 'text-emerald-600' },
-                           { label: 'הזמנות', value: '42', icon: ShoppingBag, color: 'text-blue-600' },
-                           { label: 'מוצרים', value: '156', icon: Package, color: 'text-emerald-600' },
-                           { label: 'לקוחות', value: '1,205', icon: Users, color: 'text-orange-600' },
-                         ].map((stat, i) => (
-                           <div key={i} className="bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                             <div className="flex justify-between items-start mb-1">
-                               <span className="text-[10px] text-gray-500">{stat.label}</span>
-                               <stat.icon className={`w-3 h-3 ${stat.color}`} />
-                             </div>
-                             <div className="text-sm font-bold text-gray-900">{stat.value}</div>
-                           </div>
-                         ))}
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        {/* Quick Actions */}
-                        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                          <div className="flex items-center gap-2 mb-3 text-gray-800 font-bold text-xs">
-                            <Zap className="w-3 h-3 text-yellow-500" />
-                            פעולות מהירות
-                          </div>
-                          <div className="grid grid-cols-2 gap-2">
-                            <div className="bg-gray-50 p-2 rounded-lg text-center cursor-pointer hover:bg-gray-100 transition-colors">
-                               <Package className="w-4 h-4 text-gray-400 mx-auto mb-1" />
-                               <div className="text-[10px] text-gray-600">הוסף מוצר</div>
-                            </div>
-                            <div className="bg-gray-50 p-2 rounded-lg text-center cursor-pointer hover:bg-gray-100 transition-colors">
-                               <ShoppingBag className="w-4 h-4 text-gray-400 mx-auto mb-1" />
-                               <div className="text-[10px] text-gray-600">צור הזמנה</div>
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Recent Notifications */}
-                        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-                           <div className="flex items-center gap-2 mb-3 text-gray-800 font-bold text-xs">
-                            <MessageCircle className="w-3 h-3 text-blue-500" />
-                            התראות אחרונות
-                          </div>
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 p-1.5 bg-emerald-50 rounded-lg border border-emerald-100">
-                               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                               <div className="text-[10px] text-emerald-700 font-medium">ברוכים הבאים ל-Quick Shop!</div>
-                            </div>
-                            <div className="flex items-center gap-2 p-1.5 bg-white border border-gray-100 rounded-lg">
-                               <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
-                               <div className="text-[10px] text-gray-600">החנות מוכנה לשימוש</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            {/* Hero Visual - iPhone Product Page Simulation */}
+            <HeroProductShowcase />
           </div>
         </div>
       </section>
@@ -492,6 +346,126 @@ export default function HomePage() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Shop Payments Section - NEW */}
+      <section className="py-20 bg-gradient-to-br from-emerald-900 to-slate-900 text-white overflow-hidden relative">
+        {/* Background decorations */}
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-emerald-500/10 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 animate-pulse" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            <div>
+              <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 mb-6 px-4 py-1.5 text-sm font-medium rounded-full backdrop-blur-sm">
+                 חדש! סליקה מובנית 💳
+              </Badge>
+              
+              <h2 className="text-4xl md:text-5xl font-bold mb-6 leading-tight">
+                תשכחו מחברות אשראי.
+                <br />
+                <span className="text-emerald-400">Quick Shop Payments</span> כאן.
+              </h2>
+              
+              <p className="text-xl text-gray-300 mb-8 leading-relaxed">
+                אין צורך לעשות סקר שוק בחברות האשראי. קבלו תשלומים בקלות דרכנו, עם חוויית סליקה חלקה שמגדילה המרות ב-15%.
+              </p>
+
+              <div className="space-y-4 mb-10">
+                <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/10 backdrop-blur-sm">
+                  <div className="bg-emerald-500/20 p-2 rounded-lg">
+                    <Smartphone className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm">Bit & Apple Pay & Google Pay</div>
+                    <div className="text-xs text-gray-400">מופעל אוטומטית לכולם</div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/10 backdrop-blur-sm">
+                  <div className="bg-blue-500/20 p-2 rounded-lg">
+                    <Banknote className="w-5 h-5 text-blue-400" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm">חשבוניות אוטומטיות</div>
+                    <div className="text-xs text-gray-400">נשלחות ללקוח מייד עם הרכישה</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 bg-white/5 p-3 rounded-xl border border-white/10 backdrop-blur-sm">
+                   <div className="bg-purple-500/20 p-2 rounded-lg">
+                    <TrendingUp className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <div className="font-bold text-sm">הכסף אצלכם מהר</div>
+                    <div className="text-xs text-gray-400">זיכוי חודשי כל 2 לחודש בפעימה אחת בלבד!</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <Link href="/quickshop-payments">
+                  <Button size="lg" className="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-8 h-12 rounded-full shadow-lg shadow-emerald-500/20 border-0 w-full sm:w-auto">
+                    לפרטים נוספים והרשמה
+                    <ArrowLeft className="mr-2 h-5 w-5" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+
+            {/* Visual */}
+            <div className="relative">
+              <div className="relative bg-white rounded-3xl shadow-2xl overflow-hidden transform rotate-3 hover:rotate-0 transition-all duration-700">
+                 <div className="bg-gray-50 p-4 border-b border-gray-100 flex justify-between items-center">
+                    <div className="font-bold text-gray-900">סיכום הזמנה</div>
+                    <Badge className="bg-green-100 text-green-700 border-0">שולם בהצלחה</Badge>
+                 </div>
+                 <div className="p-8 space-y-6">
+                    <div className="flex justify-between items-center pb-6 border-b border-gray-100">
+                       <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center">
+                             <ShoppingBag className="w-6 h-6 text-gray-400" />
+                          </div>
+                          <div>
+                             <div className="font-bold text-gray-900">Nike Air Max</div>
+                             <div className="text-sm text-gray-500">מידה: 42 | צבע: לבן</div>
+                          </div>
+                       </div>
+                       <div className="font-bold text-gray-900">₪450.00</div>
+                    </div>
+                    
+                    <div className="space-y-3">
+                       <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">אמצעי תשלום</span>
+                          <div className="flex items-center gap-2 font-bold text-gray-900">
+                             <img src="https://cdn2.downdetector.com/static/uploads/logo/apple-pay.png" alt="Apple Pay" className="w-8 h-5 object-contain" />
+                             Apple Pay
+                          </div>
+                       </div>
+                       <div className="flex justify-between text-sm">
+                          <span className="text-gray-500">חשבונית מס</span>
+                          <span className="text-emerald-600 font-medium cursor-pointer">#INV-2024-001</span>
+                       </div>
+                    </div>
+
+                    <div className="bg-emerald-50 rounded-xl p-4 text-center">
+                       <p className="text-emerald-800 text-sm font-medium">
+                          התשלום עבר בהצלחה! החשבונית נשלחה למייל.
+                       </p>
+                    </div>
+                 </div>
+              </div>
+              
+              {/* Floating Badges */}
+              <div className="absolute -bottom-6 -right-6 bg-white p-4 rounded-2xl shadow-xl animate-bounce delay-700">
+                 <div className="flex items-center gap-2 font-bold text-gray-900">
+                    <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
+                    סליקה מאובטחת SSL
+                 </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -842,52 +816,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-white border-t border-gray-100 pt-16 pb-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid md:grid-cols-4 gap-8 mb-12">
-            <div className="col-span-1">
-              <h3 className="font-bold text-xl text-gray-900 mb-4">קוויק שופ</h3>
-              <p className="text-gray-500 text-sm leading-relaxed">
-                הפלטפורמה הישראלית לבניית חנויות אונליין. פשוט, חכם, ובעברית.
-              </p>
-            </div>
-            
-            <div>
-              <h4 className="font-bold text-gray-900 mb-4">מוצר</h4>
-              <ul className="space-y-3 text-sm text-gray-500">
-                <li><Link href="/" className="hover:text-emerald-600 transition-colors">דף הבית</Link></li>
-                <li><Link href="/#pricing" className="hover:text-emerald-600 transition-colors">מחירים</Link></li>
-                <li><Link href="/#features" className="hover:text-emerald-600 transition-colors">פיצ'רים</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-bold text-gray-900 mb-4">שותפים</h4>
-              <ul className="space-y-3 text-sm text-gray-500">
-                <li><Link href="/for-marketers" className="hover:text-emerald-600 transition-colors">למשווקים</Link></li>
-                <li><Link href="/for-developers" className="hover:text-emerald-600 transition-colors">למפתחים</Link></li>
-                <li><Link href="/login" className="hover:text-emerald-600 transition-colors">התחברות שותפים</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h4 className="font-bold text-gray-900 mb-4">תמיכה</h4>
-              <ul className="space-y-3 text-sm text-gray-500">
-                <li>support@quickshop.co.il</li>
-                <li>וואטסאפ זמין 09:00-18:00</li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="border-t border-gray-100 pt-8 flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400">
-            <p>© {new Date().getFullYear()} קוויק שופ. כל הזכויות שמורות.</p>
-            <div className="flex gap-6">
-              <Link href="/privacy" className="hover:text-gray-600">פרטיות</Link>
-              <Link href="/terms" className="hover:text-gray-600">תנאי שימוש</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <LandingFooter />
     </div>
   )
 }

@@ -17,10 +17,10 @@ export function Footer() {
           </div>
           <div className="flex items-center gap-6">
             <span>© {new Date().getFullYear()} כל הזכויות שמורות</span>
-            <a href="#" className="prodify-gradient-text transition-colors hover:opacity-80">
+            <a href="/terms" className="prodify-gradient-text transition-colors hover:opacity-80">
               תנאי שימוש
             </a>
-            <a href="#" className="prodify-gradient-text transition-colors hover:opacity-80">
+            <a href="/privacy" className="prodify-gradient-text transition-colors hover:opacity-80">
               מדיניות פרטיות
             </a>
             <a href="#" className="prodify-gradient-text transition-colors hover:opacity-80">
