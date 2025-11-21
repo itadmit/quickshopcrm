@@ -99,6 +99,7 @@ export default function DashboardPage() {
 
   return (
     <AppLayout>
+      <div className="pb-24 md:pb-0">
       {/* Subscription Warning */}
       {subscriptionInfo && (subscriptionInfo.isExpiringSoon || !subscriptionInfo.isActive) && (
         <div className={`mb-6 rounded-lg border-2 p-4 ${
@@ -144,10 +145,10 @@ export default function DashboardPage() {
             <div className="text-sm text-gray-500">
               {new Date().toLocaleDateString('he-IL', { weekday: 'long', day: 'numeric', month: 'long' })}
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mt-1">
+            <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mt-1">
               {t('dashboard.welcome.greeting', { name: session?.user?.name || t('dashboard.welcome.user') })}
             </h1>
-            <h2 className="text-2xl mt-1" style={{
+            <h2 className="text-lg md:text-2xl mt-1" style={{
               background: 'linear-gradient(to left, #93f0e1, #6374c5)',
               WebkitBackgroundClip: 'text',
               WebkitTextFillColor: 'transparent',
@@ -157,7 +158,7 @@ export default function DashboardPage() {
               {t('dashboard.welcome.question')}
             </h2>
           </div>
-          <div className="flex gap-2">
+          <div className="hidden md:flex gap-2">
             <Link href="/shops" prefetch={true}>
               <Button variant="outline">
                 {t('dashboard.actions.createStore')}
@@ -183,7 +184,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
         <Link href="/shops" prefetch={true} className="block">
           <Card className="shadow-sm hover-lift cursor-pointer">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -263,16 +264,16 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                 <Link href="/shops/new" prefetch={true} className="block">
-                  <div className="p-4 border-2 border-gray-200 hover:border-emerald-300 rounded-lg cursor-pointer transition-all group">
-                    <div className="flex items-center gap-3 mb-3">
+                  <div className="p-3 md:p-4 border-0 md:border-2 md:border-gray-200 hover:border-emerald-300 rounded-xl md:rounded-lg cursor-pointer transition-all group shadow-sm md:shadow-none bg-white">
+                    <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <Store className="w-5 h-5 text-emerald-600" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">{t('dashboard.quickActions.createStore.title')}</h3>
+                      <h3 className="font-semibold text-sm md:text-base text-gray-900">{t('dashboard.quickActions.createStore.title')}</h3>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs md:text-sm text-gray-600 pr-13">
                       {t('dashboard.quickActions.createStore.description')}
                     </p>
                   </div>
@@ -283,42 +284,42 @@ export default function DashboardPage() {
                   prefetch={true} 
                   className="block"
                 >
-                  <div className="p-4 border-2 border-gray-200 hover:border-blue-300 rounded-lg cursor-pointer transition-all group">
-                    <div className="flex items-center gap-3 mb-3">
+                  <div className="p-3 md:p-4 border-0 md:border-2 md:border-gray-200 hover:border-blue-300 rounded-xl md:rounded-lg cursor-pointer transition-all group shadow-sm md:shadow-none bg-white">
+                    <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <Package className="w-5 h-5 text-blue-600" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">{t('dashboard.quickActions.addProducts.title')}</h3>
+                      <h3 className="font-semibold text-sm md:text-base text-gray-900">{t('dashboard.quickActions.addProducts.title')}</h3>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs md:text-sm text-gray-600 pr-13">
                       {t('dashboard.quickActions.addProducts.description')}
                     </p>
                   </div>
                 </Link>
 
                 <Link href="/orders" prefetch={true} className="block">
-                  <div className="p-4 border-2 border-gray-200 hover:border-green-300 rounded-lg cursor-pointer transition-all group">
-                    <div className="flex items-center gap-3 mb-3">
+                  <div className="p-3 md:p-4 border-0 md:border-2 md:border-gray-200 hover:border-green-300 rounded-xl md:rounded-lg cursor-pointer transition-all group shadow-sm md:shadow-none bg-white">
+                    <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <ShoppingBag className="w-5 h-5 text-green-600" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">{t('dashboard.quickActions.manageOrders.title')}</h3>
+                      <h3 className="font-semibold text-sm md:text-base text-gray-900">{t('dashboard.quickActions.manageOrders.title')}</h3>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs md:text-sm text-gray-600 pr-13">
                       {t('dashboard.quickActions.manageOrders.description')}
                     </p>
                   </div>
                 </Link>
 
                 <Link href="/settings" prefetch={true} className="block">
-                  <div className="p-4 border-2 border-gray-200 hover:border-orange-300 rounded-lg cursor-pointer transition-all group">
-                    <div className="flex items-center gap-3 mb-3">
+                  <div className="p-3 md:p-4 border-0 md:border-2 md:border-gray-200 hover:border-orange-300 rounded-xl md:rounded-lg cursor-pointer transition-all group shadow-sm md:shadow-none bg-white">
+                    <div className="flex items-center gap-3 mb-2">
                       <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center group-hover:scale-110 transition-transform">
                         <TrendingUp className="w-5 h-5 text-orange-600" />
                       </div>
-                      <h3 className="font-semibold text-gray-900">{t('dashboard.quickActions.setupPayments.title')}</h3>
+                      <h3 className="font-semibold text-sm md:text-base text-gray-900">{t('dashboard.quickActions.setupPayments.title')}</h3>
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-xs md:text-sm text-gray-600 pr-13">
                       {t('dashboard.quickActions.setupPayments.description')}
                     </p>
                   </div>
@@ -441,6 +442,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </div>
+      </div>
       </div>
     </AppLayout>
   )

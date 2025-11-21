@@ -19,6 +19,7 @@
   },
   "sidebar": {
     "home": "Home",
+    "menu": "Menu",
     "notifications": "Notifications",
     "products": "Products",
     "orders": "Orders",

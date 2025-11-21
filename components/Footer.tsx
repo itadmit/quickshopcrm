@@ -4,7 +4,7 @@ import { Heart } from "lucide-react"
 
 export function Footer() {
   return (
-    <footer className="border-t border-gray-200 bg-white mt-auto">
+    <footer className="hidden md:block border-t border-gray-200 bg-white mt-auto">
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between text-sm text-gray-600">
           <div className="flex items-center gap-1">

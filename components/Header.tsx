@@ -2,8 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
-import { useTranslations } from "next-intl"
-import { Bell, ChevronDown, Settings, LogOut, User, ExternalLink, UserPlus, Plug } from "lucide-react"
+import { useTranslations, useLocale } from "next-intl"
+import { Bell, ChevronDown, Settings, LogOut, User, ExternalLink, UserPlus, Plug, Menu, Search, X } from "lucide-react"
 import { useShop } from "@/components/providers/ShopProvider"
 import Link from "next/link"
 import {
@@ -14,6 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { Sheet, SheetContent } from "@/components/ui/sheet"
+import { Sidebar } from "@/components/Sidebar"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { NotificationsDrawer } from "@/components/NotificationsDrawer"
@@ -30,9 +32,12 @@ export function Header({ title }: HeaderProps) {
   const { data: session } = useSession()
   const { selectedShop, shops, setSelectedShop, loading: shopsLoading } = useShop()
   const t = useTranslations()
+  const locale = useLocale()
   const [notificationsOpen, setNotificationsOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   useEffect(() => {
     const fetchUnreadCount = async () => {
@@ -63,23 +68,43 @@ export function Header({ title }: HeaderProps) {
   }
 
   return (
-    <header className="h-16 border-b border-gray-200 bg-white flex items-center justify-between px-6 sticky top-0 z-50">
-      {/* Quick Actions - Left */}
-      <div className="flex items-center gap-2">
+    <header className="h-16 border-b border-gray-200/50 bg-white/80 backdrop-blur-xl flex items-center justify-between px-2 md:px-6 sticky top-0 z-40 transition-all duration-200 supports-[backdrop-filter]:bg-white/60">
+      {/* Mobile: Logo and Hamburger */}
+      <div className="flex md:hidden items-center gap-2">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-9 w-9"
+          onClick={() => setSidebarOpen(true)}
+        >
+          <Menu className="w-5 h-5" />
+        </Button>
+        <Link href="/dashboard" className="flex items-center">
+          <span 
+            className="text-lg font-pacifico text-gray-900" 
+            style={{ letterSpacing: '1px' }}
+          >
+            Quick Shop
+          </span>
+        </Link>
+      </div>
+
+      {/* Desktop: Quick Actions */}
+      <div className="hidden md:flex items-center gap-2">
         <QuickActions />
       </div>
 
-      {/* Global Search - Center */}
-      <div className="flex-1 max-w-2xl mx-8">
+      {/* Desktop: Global Search */}
+      <div className="hidden md:block flex-1 max-w-2xl mx-4 md:mx-8">
         <GlobalSearch />
       </div>
 
-      <div className="flex items-center gap-4">
-        {/* Marketplace Link */}
+      <div className="flex items-center gap-1 md:gap-4">
+        {/* Marketplace Link - Hidden on Mobile */}
         <Button
           variant="outline"
           size="sm"
-          className="gap-2"
+          className="hidden md:flex gap-2"
           asChild
         >
           <Link href="/settings/plugins">
@@ -88,12 +113,12 @@ export function Header({ title }: HeaderProps) {
           </Link>
         </Button>
 
-        {/* View Store Button */}
+        {/* View Store Button - Hidden on Mobile */}
         {selectedShop && (
           <Button
             variant="outline"
             size="sm"
-            className="gap-2"
+            className="hidden md:flex gap-2"
             onClick={() => {
               const shopUrl = getShopBaseUrl(selectedShop)
               window.open(shopUrl, '_blank')
@@ -104,11 +129,21 @@ export function Header({ title }: HeaderProps) {
           </Button>
         )}
 
+        {/* Mobile: Search Icon */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden h-9 w-9"
+          onClick={() => setSearchOpen(true)}
+        >
+          <Search className="w-5 h-5" />
+        </Button>
+
         {/* Notifications */}
         <Button 
           variant="ghost" 
           size="icon" 
-          className="relative"
+          className="relative h-9 w-9"
           onClick={() => setNotificationsOpen(true)}
         >
           <Bell className="w-5 h-5" />
@@ -132,13 +167,13 @@ export function Header({ title }: HeaderProps) {
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <button className="flex items-center gap-2 hover:bg-gray-100 rounded-lg p-2 transition-colors">
+            <button className="flex items-center gap-2 hover:bg-gray-100 rounded-lg p-1 md:p-2 transition-colors">
               <Avatar className="w-8 h-8">
                 <AvatarFallback className="prodify-gradient text-white text-sm">
                   {session?.user?.name ? getUserInitials(session.user.name) : "U"}
                 </AvatarFallback>
               </Avatar>
-              <div className="text-right">
+              <div className="text-right hidden md:block">
                 <div className="text-sm font-medium text-gray-900">
                   {session?.user?.name || t("header.user")}
                 </div>
@@ -149,10 +184,10 @@ export function Header({ title }: HeaderProps) {
                   {session?.user?.role === "USER" && t("header.userRole")}
                 </div>
               </div>
-              <ChevronDown className="w-4 h-4 text-gray-400" />
+              <ChevronDown className="w-4 h-4 text-gray-400 hidden md:block" />
             </button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-56">
+          <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel>
               <div className="flex flex-col space-y-1">
                 <p className="text-sm font-medium">{session?.user?.name}</p>
@@ -190,8 +225,46 @@ export function Header({ title }: HeaderProps) {
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* Mobile Sidebar */}
+      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen} side="right">
+        <SheetContent onClose={() => setSidebarOpen(false)} className="p-0">
+          <div className="h-full overflow-y-auto">
+            <Sidebar hideLogo={true} />
+          </div>
+        </SheetContent>
+      </Sheet>
+
+      {/* Mobile Search Dropdown */}
+      {searchOpen && (
+        <>
+          {/* Overlay */}
+          <div 
+            className="fixed inset-0 bg-black/20 z-[45] md:hidden"
+            onClick={() => setSearchOpen(false)}
+          />
+          {/* Search Panel */}
+          <div className="fixed top-16 left-0 right-0 bg-white shadow-2xl z-[46] md:hidden animate-in slide-in-from-top-4 duration-200 max-h-[80vh] overflow-y-auto">
+            <div className="p-4 relative">
+              {/* Close Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute left-2 top-2 z-10"
+                onClick={() => setSearchOpen(false)}
+              >
+                <X className="w-5 h-5" />
+              </Button>
+              
+              <GlobalSearch 
+                isMobile={true} 
+                autoFocus={true} 
+                onSelect={() => setSearchOpen(false)}
+              />
+            </div>
+          </div>
+        </>
+      )}
     </header>
   )
 }
-
-

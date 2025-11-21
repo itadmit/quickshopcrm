@@ -7,6 +7,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { NotificationsSkeleton } from "@/components/skeletons/NotificationsSkeleton"
+import { useMediaQuery } from "@/hooks/useMediaQuery"
+import { cn } from "@/lib/utils"
 import { 
   Bell, 
   CheckCircle2, 
@@ -39,6 +41,7 @@ interface Notification {
 export default function NotificationsPage() {
   const { toast } = useToast()
   const router = useRouter()
+  const isMobile = useMediaQuery("(max-width: 768px)")
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -315,20 +318,37 @@ export default function NotificationsPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className={cn("space-y-4", isMobile && "pb-20")}>
+        <div className={cn(
+          "flex items-center justify-between",
+          isMobile && "flex-col items-start gap-3"
+        )}>
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">התראות</h1>
-            <p className="text-gray-500 mt-1">עדכונים חשובים ותזכורות</p>
+            <h1 className={cn(
+              "font-bold text-gray-900",
+              isMobile ? "text-2xl" : "text-3xl"
+            )}>התראות</h1>
+            <p className={cn(
+              "text-gray-500 mt-1",
+              isMobile && "text-sm"
+            )}>עדכונים חשובים ותזכורות</p>
           </div>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={markAllAsRead}>
+          <div className={cn(
+            "flex gap-2",
+            isMobile && "w-full flex-col"
+          )}>
+            <Button 
+              variant="outline" 
+              onClick={markAllAsRead}
+              className={cn(isMobile && "w-full")}
+            >
               סמן הכל כנקרא
             </Button>
             <Button 
               variant="destructive" 
               onClick={deleteAllNotifications}
               disabled={notifications.length === 0}
+              className={cn(isMobile && "w-full")}
             >
               <Trash2 className="w-4 h-4 mr-2" />
               מחק את הכל
@@ -337,17 +357,32 @@ export default function NotificationsPage() {
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex gap-2 border-b">
-          <button className="px-4 py-2 border-b-2 border-emerald-600 text-emerald-600 font-medium">
+        <div className={cn(
+          "flex gap-2 border-b overflow-x-auto",
+          isMobile && "pb-2 -mx-4 px-4"
+        )} style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <button className={cn(
+            "border-b-2 border-emerald-600 text-emerald-600 font-medium whitespace-nowrap",
+            isMobile ? "px-3 py-2 text-sm" : "px-4 py-2"
+          )}>
             הכל ({notifications.length})
           </button>
-          <button className="px-4 py-2 text-gray-500 hover:text-gray-700">
+          <button className={cn(
+            "text-gray-500 hover:text-gray-700 whitespace-nowrap",
+            isMobile ? "px-3 py-2 text-sm" : "px-4 py-2"
+          )}>
             לא נקראו ({unreadNotifications.length})
           </button>
-          <button className="px-4 py-2 text-gray-500 hover:text-gray-700">
+          <button className={cn(
+            "text-gray-500 hover:text-gray-700 whitespace-nowrap",
+            isMobile ? "px-3 py-2 text-sm" : "px-4 py-2"
+          )}>
             משימות
           </button>
-          <button className="px-4 py-2 text-gray-500 hover:text-gray-700">
+          <button className={cn(
+            "text-gray-500 hover:text-gray-700 whitespace-nowrap",
+            isMobile ? "px-3 py-2 text-sm" : "px-4 py-2"
+          )}>
             פגישות
           </button>
         </div>
@@ -379,24 +414,43 @@ export default function NotificationsPage() {
                 <Card 
                   key={notification.id} 
                   onClick={() => handleNotificationClick(notification)}
-                  className={`shadow-sm hover:shadow-md transition-all cursor-pointer bg-white ${
-                    !notification.isRead ? "border-r-4 border-r-emerald-600" : ""
-                  } hover:bg-gray-50`}
+                  className={cn(
+                    "transition-all cursor-pointer bg-white hover:bg-gray-50",
+                    !notification.isRead && "border-r-4 border-r-emerald-600",
+                    isMobile ? "shadow-none border-0" : "shadow-sm hover:shadow-md"
+                  )}
                 >
-                  <CardContent className="py-3 px-4">
-                    <div className="flex items-start gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}`}>
-                        <Icon className="w-5 h-5" />
+                  <CardContent className={cn(isMobile ? "py-2 px-3" : "py-3 px-4")}>
+                    <div className={cn(
+                      "flex items-start",
+                      isMobile ? "gap-2" : "gap-3"
+                    )}>
+                      <div className={cn(
+                        "rounded-full flex items-center justify-center flex-shrink-0",
+                        colorClass,
+                        isMobile ? "w-8 h-8" : "w-10 h-10"
+                      )}>
+                        <Icon className={cn(isMobile ? "w-4 h-4" : "w-5 h-5")} />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-start justify-between gap-2">
                           <div className="flex-1 min-w-0">
-                            <h3 className={`font-medium text-sm ${!notification.isRead ? "text-gray-900" : "text-gray-600"}`}>
+                            <h3 className={cn(
+                              "font-medium",
+                              !notification.isRead ? "text-gray-900" : "text-gray-600",
+                              isMobile ? "text-xs" : "text-sm"
+                            )}>
                               {notification.title}
                             </h3>
-                            <p className="text-sm text-gray-600 mt-0.5">{notification.message}</p>
+                            <p className={cn(
+                              "text-gray-600 mt-0.5",
+                              isMobile ? "text-xs" : "text-sm"
+                            )}>{notification.message}</p>
                             {details && (
-                              <div className="mt-1.5 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                              <div className={cn(
+                                "bg-gray-50 rounded-lg border border-gray-200",
+                                isMobile ? "mt-1 p-1.5" : "mt-1.5 p-2"
+                              )}>
                                 {details}
                               </div>
                             )}
@@ -405,13 +459,19 @@ export default function NotificationsPage() {
                             <div className="w-2 h-2 bg-emerald-600 rounded-full flex-shrink-0 mt-1"></div>
                           )}
                         </div>
-                        <div className="flex items-center gap-4 mt-2">
+                        <div className={cn(
+                          "flex items-center gap-4",
+                          isMobile ? "mt-1" : "mt-2"
+                        )}>
                           <span className="text-xs text-gray-500">{timeAgo}</span>
                           {!notification.isRead && (
                             <Button 
                               variant="ghost" 
                               size="sm" 
-                              className="h-6 text-xs"
+                              className={cn(
+                                "h-6 text-xs",
+                                isMobile && "px-2"
+                              )}
                               onClick={(e) => {
                                 e.stopPropagation()
                                 markAsRead(notification.id)

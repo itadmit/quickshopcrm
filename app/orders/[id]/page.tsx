@@ -32,6 +32,8 @@ import {
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
+import { useMediaQuery } from "@/hooks/useMediaQuery"
+import { cn } from "@/lib/utils"
 
 interface OrderItem {
   id: string
@@ -98,6 +100,7 @@ export default function OrderDetailPage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
+  const isMobile = useMediaQuery("(max-width: 768px)")
   const [order, setOrder] = useState<Order | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -231,9 +234,54 @@ export default function OrderDetailPage() {
   if (loading) {
     return (
       <AppLayout>
-        <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-          <div className="h-64 bg-gray-200 rounded"></div>
+        <div className="animate-pulse space-y-0">
+          {/* Header Skeleton */}
+          {!isMobile ? (
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className="h-8 w-16 bg-gray-200 rounded"></div>
+                <div>
+                  <div className="h-8 w-48 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-4 w-32 bg-gray-100 rounded"></div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-6 w-16 bg-gray-100 rounded-full"></div>
+                <div className="h-6 w-20 bg-gray-100 rounded-full"></div>
+                <div className="h-9 w-20 bg-gray-200 rounded"></div>
+              </div>
+            </div>
+          ) : (
+            <div className="mb-4">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-8 w-8 bg-gray-200 rounded"></div>
+                <div className="flex-1">
+                  <div className="h-6 w-32 bg-gray-200 rounded mb-2"></div>
+                  <div className="h-4 w-24 bg-gray-100 rounded"></div>
+                </div>
+              </div>
+              <div className="flex gap-2 mb-3">
+                <div className="h-6 w-16 bg-gray-100 rounded-full"></div>
+                <div className="h-6 w-20 bg-gray-100 rounded-full"></div>
+              </div>
+              <div className="h-10 w-full bg-gray-200 rounded"></div>
+            </div>
+          )}
+
+          {/* Content Skeleton */}
+          <div className={cn(
+            "grid grid-cols-1 gap-4",
+            !isMobile && "lg:grid-cols-3 gap-6"
+          )}>
+            <div className={cn(!isMobile && "lg:col-span-2")}>
+              <div className="h-64 bg-gray-100 rounded mb-4"></div>
+              <div className="h-48 bg-gray-100 rounded"></div>
+            </div>
+            <div>
+              <div className="h-48 bg-gray-100 rounded mb-4"></div>
+              <div className="h-32 bg-gray-100 rounded"></div>
+            </div>
+          </div>
         </div>
       </AppLayout>
     )
@@ -253,31 +301,92 @@ export default function OrderDetailPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => router.push("/orders")}
-            >
-              <ArrowRight className="w-4 h-4 ml-1" />
-              חזור
-            </Button>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">הזמנה #{order.orderNumber}</h1>
-              <p className="text-gray-600 mt-1">
-                {format(new Date(order.createdAt), "dd/MM/yyyy HH:mm", { locale: he })}
-              </p>
+      <div className={cn("space-y-0", isMobile && "pb-20")}>
+        {/* Header - Desktop */}
+        {!isMobile && (
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push("/orders")}
+              >
+                <ArrowRight className="w-4 h-4 ml-1" />
+                חזור
+              </Button>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">הזמנה #{order.orderNumber}</h1>
+                <p className="text-gray-600 mt-1">
+                  {format(new Date(order.createdAt), "dd/MM/yyyy HH:mm", { locale: he })}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {getStatusBadge(order.status)}
+              {getPaymentStatusBadge(order.paymentStatus)}
+              {!editing ? (
+                <Button onClick={() => setEditing(true)} className="prodify-gradient text-white">
+                  ערוך
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setEditing(false)
+                      fetchOrder()
+                    }}
+                  >
+                    <X className="w-4 h-4 ml-1" />
+                    ביטול
+                  </Button>
+                  <Button
+                    onClick={handleSave}
+                    disabled={saving}
+                    className="prodify-gradient text-white"
+                  >
+                    <Save className="w-4 h-4 ml-1" />
+                    שמור
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {getStatusBadge(order.status)}
-            {getPaymentStatusBadge(order.paymentStatus)}
+        )}
+
+        {/* Header - Mobile */}
+        {isMobile && (
+          <div className="mb-4">
+            <div className="flex items-center gap-3 mb-3">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => router.push("/orders")}
+                className="p-2 h-8 w-8"
+              >
+                <ArrowRight className="w-5 h-5" />
+              </Button>
+              <div className="flex-1">
+                <h1 className="text-xl font-bold text-gray-900">הזמנה #{order.orderNumber}</h1>
+                <p className="text-sm text-gray-600">
+                  {format(new Date(order.createdAt), "dd/MM/yyyy HH:mm", { locale: he })}
+                </p>
+              </div>
+            </div>
+            
+            {/* Status Badges - Mobile */}
+            <div className="flex gap-2 mb-3">
+              {getStatusBadge(order.status)}
+              {getPaymentStatusBadge(order.paymentStatus)}
+            </div>
+
+            {/* Action Buttons - Mobile */}
             {!editing ? (
-              <Button onClick={() => setEditing(true)} className="prodify-gradient text-white">
-                ערוך
+              <Button 
+                onClick={() => setEditing(true)} 
+                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+              >
+                ערוך הזמנה
               </Button>
             ) : (
               <div className="flex gap-2">
@@ -287,6 +396,7 @@ export default function OrderDetailPage() {
                     setEditing(false)
                     fetchOrder()
                   }}
+                  className="flex-1"
                 >
                   <X className="w-4 h-4 ml-1" />
                   ביטול
@@ -294,7 +404,7 @@ export default function OrderDetailPage() {
                 <Button
                   onClick={handleSave}
                   disabled={saving}
-                  className="prodify-gradient text-white"
+                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
                 >
                   <Save className="w-4 h-4 ml-1" />
                   שמור
@@ -302,29 +412,47 @@ export default function OrderDetailPage() {
               </div>
             )}
           </div>
-        </div>
+        )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className={cn(
+          "grid grid-cols-1 gap-4",
+          !isMobile && "lg:grid-cols-3 gap-6"
+        )}>
           {/* Left Column - Order Details */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className={cn(
+            "space-y-4",
+            !isMobile && "lg:col-span-2 space-y-6"
+          )}>
             {/* Order Items */}
-            <Card>
-              <CardHeader>
-                <CardTitle>פריטים בהזמנה</CardTitle>
+            <Card className={cn(isMobile && "border-0 shadow-sm")}>
+              <CardHeader className={cn(isMobile && "px-3 py-3")}>
+                <CardTitle className={cn(isMobile && "text-base")}>פריטים בהזמנה</CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+              <CardContent className={cn(isMobile && "px-3 pb-3")}>
+                <div className={cn(
+                  "space-y-4",
+                  isMobile && "space-y-3"
+                )}>
                   {order.items.map((item) => (
-                    <div key={item.id} className="flex items-center gap-4 p-4 border rounded-lg">
+                    <div key={item.id} className={cn(
+                      "flex items-center gap-4 p-4 border rounded-lg",
+                      isMobile && "gap-3 p-3"
+                    )}>
                       {item.product?.images?.[0] && (
                         <img
                           src={item.product.images[0]}
                           alt={item.name}
-                          className="w-16 h-16 object-cover rounded"
+                          className={cn(
+                            "w-16 h-16 object-cover rounded",
+                            isMobile && "w-14 h-14"
+                          )}
                         />
                       )}
-                      <div className="flex-1">
-                        <h4 className="font-medium text-gray-900">{item.name}</h4>
+                      <div className="flex-1 min-w-0">
+                        <h4 className={cn(
+                          "font-medium text-gray-900",
+                          isMobile && "text-sm"
+                        )}>{item.name}</h4>
                         {item.variant && (
                           <p className="text-sm text-gray-500">{item.variant.name}</p>
                         )}
@@ -332,9 +460,12 @@ export default function OrderDetailPage() {
                           <p className="text-xs text-gray-400">SKU: {item.sku}</p>
                         )}
                       </div>
-                      <div className="text-left">
+                      <div className="text-left flex-shrink-0">
                         <p className="text-sm text-gray-600">כמות: {item.quantity}</p>
-                        <p className="font-semibold text-gray-900">₪{item.total.toFixed(2)}</p>
+                        <p className={cn(
+                          "font-semibold text-gray-900",
+                          isMobile && "text-sm"
+                        )}>₪{item.total.toFixed(2)}</p>
                       </div>
                     </div>
                   ))}
@@ -343,33 +474,33 @@ export default function OrderDetailPage() {
             </Card>
 
             {/* Order Summary */}
-            <Card>
-              <CardHeader>
-                <CardTitle>סיכום הזמנה</CardTitle>
+            <Card className={cn(isMobile && "border-0 shadow-sm")}>
+              <CardHeader className={cn(isMobile && "px-3 py-3")}>
+                <CardTitle className={cn(isMobile && "text-base")}>סיכום הזמנה</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className={cn(isMobile && "px-3 pb-3")}>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">סכום ביניים</span>
-                    <span className="font-medium">₪{order.subtotal.toFixed(2)}</span>
+                    <span className={cn("text-gray-600", isMobile && "text-sm")}>סכום ביניים</span>
+                    <span className={cn("font-medium", isMobile && "text-sm")}>₪{order.subtotal.toFixed(2)}</span>
                   </div>
                   {order.discount > 0 && (
-                    <div className="flex justify-between text-green-600">
+                    <div className={cn("flex justify-between text-green-600", isMobile && "text-sm")}>
                       <span>הנחה</span>
                       <span>-₪{order.discount.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-gray-600">משלוח</span>
-                    <span className="font-medium">₪{order.shipping.toFixed(2)}</span>
+                    <span className={cn("text-gray-600", isMobile && "text-sm")}>משלוח</span>
+                    <span className={cn("font-medium", isMobile && "text-sm")}>₪{order.shipping.toFixed(2)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">מע"מ</span>
-                    <span className="font-medium">₪{order.tax.toFixed(2)}</span>
+                    <span className={cn("text-gray-600", isMobile && "text-sm")}>מע"מ</span>
+                    <span className={cn("font-medium", isMobile && "text-sm")}>₪{order.tax.toFixed(2)}</span>
                   </div>
                   <div className="border-t pt-3 flex justify-between">
-                    <span className="text-lg font-bold">סה"כ</span>
-                    <span className="text-lg font-bold">₪{order.total.toFixed(2)}</span>
+                    <span className={cn("text-lg font-bold", isMobile && "text-base")}>סה"כ</span>
+                    <span className={cn("text-lg font-bold", isMobile && "text-base")}>₪{order.total.toFixed(2)}</span>
                   </div>
                 </div>
               </CardContent>
@@ -377,28 +508,37 @@ export default function OrderDetailPage() {
           </div>
 
           {/* Right Column - Customer & Shipping Info */}
-          <div className="space-y-6">
+          <div className={cn(
+            "space-y-6",
+            isMobile && "space-y-4"
+          )}>
             {/* Customer Info */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+            <Card className={cn(isMobile && "border-0 shadow-sm")}>
+              <CardHeader className={cn(isMobile && "px-3 py-3")}>
+                <CardTitle className={cn(
+                  "flex items-center gap-2",
+                  isMobile && "text-base"
+                )}>
                   <User className="w-5 h-5" />
                   פרטי לקוח
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3">
+              <CardContent className={cn(
+                "space-y-3",
+                isMobile && "px-3 pb-3"
+              )}>
                 <div>
                   <p className="text-sm text-gray-600">שם</p>
-                  <p className="font-medium">{order.customerName}</p>
+                  <p className={cn("font-medium", isMobile && "text-sm")}>{order.customerName}</p>
                 </div>
                 <div>
                   <p className="text-sm text-gray-600">אימייל</p>
-                  <p className="font-medium">{order.customerEmail}</p>
+                  <p className={cn("font-medium", isMobile && "text-sm")}>{order.customerEmail}</p>
                 </div>
                 {order.customerPhone && (
                   <div>
                     <p className="text-sm text-gray-600">טלפון</p>
-                    <p className="font-medium">{order.customerPhone}</p>
+                    <p className={cn("font-medium", isMobile && "text-sm")}>{order.customerPhone}</p>
                   </div>
                 )}
                 {order.customer && (
@@ -415,14 +555,17 @@ export default function OrderDetailPage() {
             </Card>
 
             {/* Shipping Address */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+            <Card className={cn(isMobile && "border-0 shadow-sm")}>
+              <CardHeader className={cn(isMobile && "px-3 py-3")}>
+                <CardTitle className={cn(
+                  "flex items-center gap-2",
+                  isMobile && "text-base"
+                )}>
                   <MapPin className="w-5 h-5" />
                   כתובת משלוח
                 </CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className={cn(isMobile && "px-3 pb-3")}>
                 {order.shippingAddress && typeof order.shippingAddress === 'object' ? (
                   <div className="space-y-1 text-sm">
                     {order.shippingAddress.street && <p>{order.shippingAddress.street}</p>}
@@ -439,14 +582,20 @@ export default function OrderDetailPage() {
 
             {/* Custom Fields */}
             {order.customFields && typeof order.customFields === 'object' && Object.keys(order.customFields).length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+              <Card className={cn(isMobile && "border-0 shadow-sm")}>
+                <CardHeader className={cn(isMobile && "px-3 py-3")}>
+                  <CardTitle className={cn(
+                    "flex items-center gap-2",
+                    isMobile && "text-base"
+                  )}>
                     <Package className="w-5 h-5" />
                     פרטים נוספים
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-3">
+                <CardContent className={cn(
+                  "space-y-3",
+                  isMobile && "px-3 pb-3"
+                )}>
                   {Object.entries(order.customFields).map(([key, value]) => {
                     // נסה למצוא את התווית של השדה מה-shop settings
                     let fieldLabel = key
@@ -468,7 +617,7 @@ export default function OrderDetailPage() {
                     return (
                       <div key={key}>
                         <p className="text-sm text-gray-600">{fieldLabel}</p>
-                        <p className="font-medium">{displayValue}</p>
+                        <p className={cn("font-medium", isMobile && "text-sm")}>{displayValue}</p>
                       </div>
                     )
                   })}
@@ -478,11 +627,14 @@ export default function OrderDetailPage() {
 
             {/* Order Status (Editable) */}
             {editing && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>עדכון סטטוס</CardTitle>
+              <Card className={cn(isMobile && "border-0 shadow-sm")}>
+                <CardHeader className={cn(isMobile && "px-3 py-3")}>
+                  <CardTitle className={cn(isMobile && "text-base")}>עדכון סטטוס</CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className={cn(
+                  "space-y-4",
+                  isMobile && "px-3 pb-3"
+                )}>
                   <div>
                     <Label>סטטוס הזמנה</Label>
                     <Select value={status} onValueChange={setStatus}>
@@ -563,28 +715,34 @@ export default function OrderDetailPage() {
 
             {/* Payment Info */}
             {order.paymentMethod && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
+              <Card className={cn(isMobile && "border-0 shadow-sm")}>
+                <CardHeader className={cn(isMobile && "px-3 py-3")}>
+                  <CardTitle className={cn(
+                    "flex items-center gap-2",
+                    isMobile && "text-base"
+                  )}>
                     <CreditCard className="w-5 h-5" />
                     פרטי תשלום
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="space-y-2">
+                <CardContent className={cn(
+                  "space-y-2",
+                  isMobile && "px-3 pb-3"
+                )}>
                   <div>
                     <p className="text-sm text-gray-600">שיטת תשלום</p>
-                    <p className="font-medium">{order.paymentMethod}</p>
+                    <p className={cn("font-medium", isMobile && "text-sm")}>{order.paymentMethod}</p>
                   </div>
                   {order.transactionId && (
                     <div>
                       <p className="text-sm text-gray-600">מספר עסקה</p>
-                      <p className="font-medium">{order.transactionId}</p>
+                      <p className={cn("font-medium", isMobile && "text-sm")}>{order.transactionId}</p>
                     </div>
                   )}
                   {order.paidAt && (
                     <div>
                       <p className="text-sm text-gray-600">תאריך תשלום</p>
-                      <p className="font-medium">
+                      <p className={cn("font-medium", isMobile && "text-sm")}>
                         {format(new Date(order.paidAt), "dd/MM/yyyy HH:mm", { locale: he })}
                       </p>
                     </div>

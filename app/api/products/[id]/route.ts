@@ -204,15 +204,15 @@ async function updateProduct(
       },
     })
 
-    // עדכון קטגוריות (collections)
+    // עדכון קולקציות (collections)
     if (categories !== undefined) {
       try {
-        // מחיקת כל הקטגוריות הקיימות
+        // מחיקת כל הקולקציות הקיימות
         await prisma.productCollection.deleteMany({
           where: { productId: product.id },
         })
 
-        // הוספת קטגוריות חדשות
+        // הוספת קולקציות חדשות
         if (Array.isArray(categories) && categories.length > 0) {
           await Promise.all(
             categories.map(async (collectionId: string) => {

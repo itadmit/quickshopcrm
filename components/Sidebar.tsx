@@ -112,7 +112,11 @@ const getSuperAdminItems = (t: any) => [
   { icon: Plug, labelKey: "sidebar.superAdmin.pluginManagement", href: "/admin/plugins", permission: "super_admin" },
 ]
 
-export function Sidebar() {
+interface SidebarProps {
+  hideLogo?: boolean
+}
+
+export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
   const pathname = usePathname()
   const { data: session, status } = useSession()
   const t = useTranslations()
@@ -301,21 +305,27 @@ export function Sidebar() {
   }
 
   return (
-    <div className={`w-64 h-screen bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col ${isRTL ? 'border-l' : 'border-r'} border-gray-200`}>
-      {/* Logo */}
-      <div className="h-16 border-b border-gray-200 flex items-center justify-center px-4 py-2">
-        <Link href="/dashboard" className="flex items-center justify-center overflow-visible">
-          <span 
-            className="text-2xl font-pacifico prodify-gradient-text block" 
-            style={{ letterSpacing: '2px', lineHeight: '1.5', paddingBottom: '4px' }}
-          >
-            Quick Shop
-          </span>
-        </Link>
-      </div>
+    <div className={cn(
+      "w-full h-full bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col border-gray-200",
+      !hideLogo && "md:w-64",
+      isRTL ? 'border-l' : 'border-r'
+    )}>
+      {/* Logo - Hidden on mobile when hideLogo is true */}
+      {!hideLogo && (
+        <div className="h-16 border-b border-gray-200 flex items-center justify-center px-4 py-2">
+          <Link href="/dashboard" className="flex items-center justify-center overflow-visible">
+            <span 
+              className="text-2xl font-pacifico text-gray-900 block" 
+              style={{ letterSpacing: '2px', lineHeight: '1.5', paddingBottom: '4px' }}
+            >
+              Quick Shop
+            </span>
+          </Link>
+        </div>
+      )}
 
       {/* Main Navigation */}
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className={cn("flex-1 overflow-y-auto p-4", hideLogo && "pt-4")}>
         <Accordion 
           storageKey="sidebar-accordions" 
           className="space-y-1"

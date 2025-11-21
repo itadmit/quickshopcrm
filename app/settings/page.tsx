@@ -8,6 +8,7 @@ import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { useSession } from "next-auth/react"
 import { useTranslations, useLocale } from "next-intl"
 import { useRouter } from "next/navigation"
+import { useMediaQuery } from "@/hooks/useMediaQuery"
 import { Globe } from "lucide-react"
 import {
   Select,
@@ -55,6 +56,7 @@ export default function SettingsPage() {
   const t = useTranslations()
   const locale = useLocale()
   const router = useRouter()
+  const isMobile = useMediaQuery("(max-width: 768px)")
   const [activeTab, setActiveTab] = useState<"shop" | "shipping" | "general" | "communication" | "security" | "subscription" | "advanced">("shop")
   const [systemLanguage, setSystemLanguage] = useState(locale)
 
@@ -489,7 +491,7 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="flex gap-6">
+      <div className={`flex gap-6 ${isMobile ? "pb-20" : ""}`}>
         {/* Sidebar Navigation */}
         <div className="w-64 flex-shrink-0">
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm sticky top-6">

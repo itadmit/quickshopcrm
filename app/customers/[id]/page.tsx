@@ -33,6 +33,8 @@ import {
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
+import { useMediaQuery } from "@/hooks/useMediaQuery"
+import { cn } from "@/lib/utils"
 
 interface Order {
   id: string
@@ -75,6 +77,7 @@ export default function CustomerDetailPage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
+  const isMobile = useMediaQuery("(max-width: 768px)")
   const [customer, setCustomer] = useState<Customer | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -253,7 +256,7 @@ export default function CustomerDetailPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className={cn("space-y-6", isMobile && "pb-20")}>
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">

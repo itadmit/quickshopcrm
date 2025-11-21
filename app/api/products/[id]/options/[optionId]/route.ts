@@ -6,7 +6,12 @@ import { z } from "zod"
 
 const updateOptionSchema = z.object({
   name: z.string().min(1).optional(),
-  values: z.array(z.string()).optional(),
+  type: z.enum(["button", "color", "image", "pattern"]).optional(),
+  values: z.array(z.object({
+    id: z.string(),
+    label: z.string(),
+    metadata: z.any().optional(),
+  })).optional(),
   position: z.number().int().optional(),
 })
 

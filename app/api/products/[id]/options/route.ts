@@ -6,28 +6,22 @@ import { z } from "zod"
 
 const createOptionSchema = z.object({
   name: z.string().min(1, "שם האפשרות הוא חובה"),
-  type: z.enum(["button", "color", "image"]).default("button"),
+  type: z.enum(["button", "color", "image", "pattern"]).default("button"),
   values: z.array(z.object({
     id: z.string(),
     label: z.string(),
-    metadata: z.object({
-      color: z.string().optional(),
-      image: z.string().optional(),
-    }).optional(),
+    metadata: z.any().optional(),
   })).min(1, "יש להוסיף לפחות ערך אחד"),
   position: z.number().int().default(0),
 })
 
 const updateOptionSchema = z.object({
   name: z.string().min(1).optional(),
-  type: z.enum(["button", "color", "image"]).optional(),
+  type: z.enum(["button", "color", "image", "pattern"]).optional(),
   values: z.array(z.object({
     id: z.string(),
     label: z.string(),
-    metadata: z.object({
-      color: z.string().optional(),
-      image: z.string().optional(),
-    }).optional(),
+    metadata: z.any().optional(),
   })).optional(),
   position: z.number().int().optional(),
 })

@@ -55,12 +55,12 @@ const Sheet = ({ open, onOpenChange, children, side = "right", className }: Shee
       {/* Overlay */}
       <div
         className={cn(
-          "fixed z-40 bg-black/10 backdrop-blur-sm transition-opacity duration-300",
+          "fixed z-40 bg-black/30 backdrop-blur-sm transition-opacity duration-300",
           open && isAnimating ? "opacity-100" : "opacity-0"
         )}
         onClick={() => onOpenChange(false)}
         style={{
-          top: '40px',
+          top: '64px',
           left: 0,
           right: 0,
           bottom: 0,
@@ -69,7 +69,7 @@ const Sheet = ({ open, onOpenChange, children, side = "right", className }: Shee
       {/* Sheet */}
       <div
         className={cn(
-          "fixed z-40 w-full max-w-lg bg-white shadow-xl transform transition-transform duration-300 ease-in-out",
+          "fixed z-50 w-full max-w-sm bg-white shadow-xl transform transition-transform duration-300 ease-in-out overflow-hidden",
           side === "right" ? "right-0" : "left-0",
           open && isAnimating
             ? "translate-x-0" 
@@ -80,8 +80,8 @@ const Sheet = ({ open, onOpenChange, children, side = "right", className }: Shee
         )}
         dir="rtl"
         style={{
-          top: '40px',
-          height: 'calc(100vh - 40px)',
+          top: '64px',
+          height: 'calc(100vh - 64px)',
         }}
       >
         {children}

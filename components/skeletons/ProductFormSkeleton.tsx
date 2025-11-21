@@ -3,13 +3,16 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export function ProductFormSkeleton() {
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20 md:pb-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-8 w-64" />
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-6 md:h-8 w-48 md:w-64" />
+          <Skeleton className="h-4 w-32 md:w-48" />
+        </div>
         <div className="flex gap-2">
-          <Skeleton className="h-10 w-24" />
-          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-20 md:w-24 flex-1 md:flex-none" />
+          <Skeleton className="h-10 w-24 md:w-32 flex-1 md:flex-none" />
         </div>
       </div>
 
@@ -188,6 +191,11 @@ export function ProductFormSkeleton() {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Sticky Save Button - Mobile Only */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-4 shadow-lg">
+        <Skeleton className="h-12 w-full" />
       </div>
     </div>
   )

@@ -252,12 +252,18 @@ interface SearchResults {
   plugins: SearchResult[]
 }
 
-export function GlobalSearch() {
+interface GlobalSearchProps {
+  isMobile?: boolean
+  autoFocus?: boolean
+  onSelect?: () => void
+}
+
+export function GlobalSearch({ isMobile = false, autoFocus = false, onSelect }: GlobalSearchProps) {
   const router = useRouter()
   const { selectedShop } = useShop()
   const t = useTranslations()
   const quickLinks = getQuickLinks(t)
-  const [isOpen, setIsOpen] = useState(false)
+  const [isOpen, setIsOpen] = useState(isMobile ? true : false)
   const [query, setQuery] = useState("")
   const [results, setResults] = useState<SearchResults>({
     products: [],
@@ -385,8 +391,19 @@ export function GlobalSearch() {
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [isOpen, selectedIndex, filteredQuickLinks, results])
 
-  // Click outside to close
+  // Auto focus on mobile
   useEffect(() => {
+    if (isMobile && autoFocus && inputRef.current) {
+      setTimeout(() => {
+        inputRef.current?.focus()
+      }, 100)
+    }
+  }, [isMobile, autoFocus])
+
+  // Click outside to close (not on mobile)
+  useEffect(() => {
+    if (isMobile) return
+
     const handleClickOutside = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
         setIsOpen(false)
@@ -397,7 +414,7 @@ export function GlobalSearch() {
       document.addEventListener("mousedown", handleClickOutside)
       return () => document.removeEventListener("mousedown", handleClickOutside)
     }
-  }, [isOpen])
+  }, [isOpen, isMobile])
 
   const handleSelect = (index: number) => {
     let currentIndex = 0
@@ -463,8 +480,8 @@ export function GlobalSearch() {
     if (!isQuickLink && (result as SearchResult).type === 'order' && (result as any).titleKey) {
       title = t((result as any).titleKey, (result as any).titleParams || {})
     }
-    const subtitle = isQuickLink && 'categoryKey' in result ? t(result.categoryKey) : (isQuickLink && 'category' in result ? result.category : (result as SearchResult).subtitle)
-    let meta = isQuickLink ? undefined : (result as SearchResult).meta
+    const subtitle: string | undefined = isQuickLink && 'categoryKey' in result ? t(result.categoryKey) : (isQuickLink && 'category' in result ? (result as any).category : (result as SearchResult).subtitle)
+    let meta: string | undefined = isQuickLink ? undefined : (result as SearchResult).meta
     // Translate meta for customers
     if (!isQuickLink && (result as SearchResult).type === 'customer' && meta) {
       const match = meta.match(/(\d+) orders • (₪[\d.]+)/)
@@ -480,6 +497,7 @@ export function GlobalSearch() {
           router.push(url)
           setIsOpen(false)
           setQuery("")
+          onSelect?.()
         }}
         onMouseEnter={() => setSelectedIndex(index)}
         className={cn(
@@ -551,21 +569,31 @@ export function GlobalSearch() {
           ref={inputRef}
           type="search"
           placeholder={t('search.placeholder')}
-          className="pr-11 pl-20 h-11 text-sm"
+          className={cn(
+            "pr-11 h-11 text-sm",
+            isMobile ? "pl-3" : "pl-20"
+          )}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsOpen(true)}
         />
-        <div className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
-          <kbd className="px-2 py-1 text-xs bg-gray-100 border border-gray-200 rounded flex items-center justify-center h-5">
-            <Command className="w-3 h-3" />
-          </kbd>
-          <kbd className="px-2 py-1 text-xs bg-gray-100 border border-gray-200 rounded flex items-center justify-center h-5">K</kbd>
-        </div>
+        {!isMobile && (
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+            <kbd className="px-2 py-1 text-xs bg-gray-100 border border-gray-200 rounded flex items-center justify-center h-5">
+              <Command className="w-3 h-3" />
+            </kbd>
+            <kbd className="px-2 py-1 text-xs bg-gray-100 border border-gray-200 rounded flex items-center justify-center h-5">K</kbd>
+          </div>
+        )}
       </div>
 
       {isOpen && (
-        <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-white rounded-xl shadow-2xl border border-gray-200 max-h-[600px] overflow-hidden z-50 w-[650px]">
+        <div className={cn(
+          "bg-white rounded-xl shadow-2xl border border-gray-200 max-h-[600px] overflow-hidden z-50",
+          isMobile 
+            ? "w-full mt-2" 
+            : "absolute top-full left-1/2 transform -translate-x-1/2 mt-2 w-[650px]"
+        )}>
           <div className="overflow-y-auto max-h-[600px]">
             {loading && query.length >= 1 && (
               <div className="px-5 py-12 text-center text-gray-500">

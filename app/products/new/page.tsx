@@ -6,7 +6,7 @@ import { useShop } from "@/components/providers/ShopProvider"
 import { AppLayout } from "@/components/AppLayout"
 import { Button } from "@/components/ui/button"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
-import { FormSkeleton } from "@/components/skeletons/FormSkeleton"
+import { ProductFormSkeleton } from "@/components/skeletons/ProductFormSkeleton"
 import { Save, Eye } from "lucide-react"
 
 // Import all the new shared components
@@ -442,7 +442,7 @@ export default function NewProductPage() {
   if (loading || shopsLoading) {
     return (
       <AppLayout title="מוצר חדש">
-        <FormSkeleton />
+        <ProductFormSkeleton />
       </AppLayout>
     )
   }
@@ -459,24 +459,28 @@ export default function NewProductPage() {
 
   return (
     <AppLayout title="מוצר חדש">
-      <div className="space-y-6">
+      <div className="space-y-6 pb-20 md:pb-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold">מוצר חדש</h1>
-            <p className="text-gray-600">צור מוצר חדש לחנות {selectedShop.name}</p>
+            <h1 className="text-2xl md:text-3xl font-bold">מוצר חדש</h1>
+            <p className="text-sm md:text-base text-gray-600">צור מוצר חדש לחנות {selectedShop.name}</p>
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => router.back()}>
+            <Button 
+              variant="outline" 
+              onClick={() => router.back()}
+              className="flex-1 md:flex-none"
+            >
               ביטול
             </Button>
             <Button
               onClick={handleSubmit} 
               disabled={saving}
-              className="prodify-gradient text-white"
+              className="prodify-gradient text-white flex-1 md:flex-none"
             >
               <Save className="w-4 h-4 ml-2" />
-              {saving ? "שומר..." : "פרסם מוצר"}
+              {saving ? "שומר..." : "פרסם"}
             </Button>
           </div>
         </div>
@@ -697,6 +701,18 @@ export default function NewProductPage() {
               onChange={(data) => setFormData(prev => ({ ...prev, ...data }))}
             />
           </div>
+        </div>
+
+        {/* Sticky Save Button - Mobile Only */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-4 shadow-lg">
+          <Button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="w-full prodify-gradient text-white h-12"
+          >
+            <Save className="w-4 h-4 ml-2" />
+            {saving ? "שומר..." : "פרסם מוצר"}
+          </Button>
         </div>
       </div>
     </AppLayout>

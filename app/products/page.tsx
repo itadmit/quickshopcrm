@@ -52,6 +52,9 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { getShopProductUrl } from "@/lib/utils"
 import { formatProductPrice, formatComparePrice } from "@/lib/product-price"
+import { MobileListView, MobileListItem } from "@/components/MobileListView"
+import { MobileFilters, FilterConfig } from "@/components/MobileFilters"
+import { useMediaQuery } from "@/hooks/useMediaQuery"
 
 interface Product {
   id: string
@@ -122,6 +125,9 @@ export default function ProductsPage() {
   
   // Collections
   const [collections, setCollections] = useState<Array<{ id: string; name: string }>>([])
+
+  // Mobile detection
+  const isMobile = useMediaQuery("(max-width: 768px)")
 
   // Import dialog state
   const [importDialogOpen, setImportDialogOpen] = useState(false)
@@ -465,6 +471,129 @@ export default function ProductsPage() {
     }
   }
 
+  // Convert products to mobile list format
+  const convertToMobileList = (): MobileListItem[] => {
+    return products.map((product) => {
+      // Get first collection name (קולקציה = קטגוריה במערכת)
+      const categoryName = (product as any).collections && (product as any).collections.length > 0 
+        ? (product as any).collections[0].collection?.name 
+        : null;
+
+      const formattedPrice = formatProductPrice(product as any);
+      const formattedComparePrice = formatComparePrice(product as any);
+      
+      // Calculate total inventory (product + all variants)
+      let totalInventory = product.inventoryQty || 0;
+      if (product.variants && product.variants.length > 0) {
+        totalInventory = product.variants.reduce((sum, variant: any) => {
+          return sum + (variant.inventoryQty || 0);
+        }, 0);
+      }
+      
+      // Build metadata array
+      const metadata = [];
+      if (categoryName && product.sku) {
+        metadata.push({
+          label: categoryName,
+          value: product.sku
+        });
+      } else if (categoryName) {
+        metadata.push({
+          label: "",
+          value: categoryName
+        });
+      } else if (product.sku) {
+        metadata.push({
+          label: "",
+          value: product.sku
+        });
+      }
+      
+      return {
+        id: product.id,
+        title: product.name,
+        image: product.images && product.images.length > 0 ? product.images[0] : undefined,
+        icon: !product.images || product.images.length === 0 ? <Package className="w-6 h-6 text-gray-400" /> : undefined,
+        price: formattedPrice,
+        comparePrice: formattedComparePrice || undefined,
+        inventory: totalInventory,
+        status: product.status,
+        metadata: metadata,
+      actions: [
+        {
+          label: "עריכה",
+          icon: <Edit className="w-4 h-4" />,
+          onClick: () => router.push(`/products/${product.slug}/edit`)
+        },
+        {
+          label: "צפייה בחנות",
+          icon: <Eye className="w-4 h-4" />,
+          onClick: () => handleViewProduct(product)
+        },
+        {
+          label: "שכפול",
+          icon: <Copy className="w-4 h-4" />,
+          onClick: () => handleDuplicate(product)
+        },
+        {
+          label: "מחיקה",
+          icon: <Trash2 className="w-4 h-4" />,
+          onClick: () => handleDelete(product.id),
+          variant: "destructive"
+        }
+      ]
+      }
+    })
+  }
+
+  const mobileFilters: FilterConfig[] = [
+    {
+      id: "collection",
+      label: "קולקציה",
+      type: "select",
+      value: collectionFilter,
+      onChange: setCollectionFilter,
+      options: [
+        { value: "all", label: "כל הקולקציות" },
+        ...collections.map(c => ({ value: c.id, label: c.name }))
+      ]
+    },
+    {
+      id: "status",
+      label: "סטטוס",
+      type: "select",
+      value: statusFilter,
+      onChange: setStatusFilter,
+      options: [
+        { value: "all", label: "כל המוצרים" },
+        { value: "PUBLISHED", label: "פורסם" },
+        { value: "DRAFT", label: "טיוטה" },
+        { value: "ARCHIVED", label: "ארכיון" }
+      ]
+    },
+    {
+      id: "sort",
+      label: "מיון",
+      type: "select",
+      value: `${sortBy}-${sortOrder}`,
+      onChange: (value) => {
+        const [field, order] = value.split("-")
+        setSortBy(field)
+        setSortOrder(order as "asc" | "desc")
+      },
+      options: [
+        { value: "createdAt-desc", label: "תאריך (חדש לישן)" },
+        { value: "createdAt-asc", label: "תאריך (ישן לחדש)" },
+        { value: "name-asc", label: "שם (א-ת)" },
+        { value: "name-desc", label: "שם (ת-א)" },
+        { value: "price-asc", label: "מחיר (נמוך לגבוה)" },
+        { value: "price-desc", label: "מחיר (גבוה לנמוך)" },
+        { value: "inventoryQty-asc", label: "מלאי (נמוך לגבוה)" },
+        { value: "inventoryQty-desc", label: "מלאי (גבוה לנמוך)" }
+      ]
+    }
+  ]
+
   // הצגת skeleton רק בזמן טעינה ראשונית
   if (loading) {
     return (
@@ -476,6 +605,7 @@ export default function ProductsPage() {
 
   return (
     <AppLayout title="מוצרים">
+      <div className={isMobile ? "pb-20" : ""}>
       {/* Header */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -491,7 +621,7 @@ export default function ProductsPage() {
                   router.push(`/products/bulk-edit?ids=${ids}`)
                 }}
                 variant="default"
-                className="bg-emerald-600 hover:bg-emerald-700"
+                className="bg-emerald-600 hover:bg-emerald-700 hidden md:flex"
               >
                 <Edit3 className="w-4 h-4 ml-2" />
                 עריכה קבוצתית ({selectedProducts.size})
@@ -499,35 +629,37 @@ export default function ProductsPage() {
               <Button
                 onClick={handleBulkDelete}
                 variant="destructive"
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-red-600 hover:bg-red-700 hidden md:flex"
               >
                 <Trash2 className="w-4 h-4 ml-2" />
                 מחיקה קבוצתית ({selectedProducts.size})
               </Button>
             </>
           )}
-          <Button 
-            variant="outline" 
-            onClick={() => {
-              if (!selectedShop) {
-                toast({
-                  title: "שגיאה",
-                  description: "יש לבחור חנות מההדר לפני ייבוא מוצרים",
-                  variant: "destructive",
-                })
-                return
-              }
-              setImportDialogOpen(true)
-            }}
-            disabled={!selectedShop}
-          >
-            <Upload className="w-4 h-4 ml-2" />
-            ייבוא
-          </Button>
-          <Button variant="outline" onClick={() => toast({ title: "בפיתוח", description: "תכונת ייצוא תהיה זמינה בקרוב" })}>
-            <Download className="w-4 h-4 ml-2" />
-            ייצוא
-          </Button>
+          <div className="hidden md:flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                if (!selectedShop) {
+                  toast({
+                    title: "שגיאה",
+                    description: "יש לבחור חנות מההדר לפני ייבוא מוצרים",
+                    variant: "destructive",
+                  })
+                  return
+                }
+                setImportDialogOpen(true)
+              }}
+              disabled={!selectedShop}
+            >
+              <Upload className="w-4 h-4 ml-2" />
+              ייבוא
+            </Button>
+            <Button variant="outline" onClick={() => toast({ title: "בפיתוח", description: "תכונת ייצוא תהיה זמינה בקרוב" })}>
+              <Download className="w-4 h-4 ml-2" />
+              ייצוא
+            </Button>
+          </div>
           <Button 
             onClick={() => {
               if (selectedShop) {
@@ -541,108 +673,143 @@ export default function ProductsPage() {
               }
             }} 
             disabled={!selectedShop}
+            className="whitespace-nowrap"
           >
             <Plus className="w-4 h-4 ml-2" />
-            מוצר חדש
+            <span className="hidden md:inline">מוצר חדש</span>
+            <span className="md:hidden">חדש</span>
           </Button>
         </div>
       </div>
 
-      {/* Filters */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row gap-3 items-center justify-between w-full">
-            {/* Search */}
-            <div className="relative flex-1 min-w-0">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-              <Input
-                placeholder="חיפוש לפי שם, SKU..."
-                value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value)
-                  setPagination((prev) => ({ ...prev, page: 1 }))
-                }}
-                className="pr-10 pl-10"
-              />
-              {isSearching && (
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
-                  <Loader2 className="w-4 h-4 text-[#15b981] animate-spin" />
-                </div>
-              )}
+      {/* Filters - Mobile vs Desktop */}
+      {isMobile ? (
+        <div className="mb-6">
+          <MobileFilters
+            searchValue={search}
+            onSearchChange={(value) => {
+              setSearch(value)
+              setPagination((prev) => ({ ...prev, page: 1 }))
+            }}
+            searchPlaceholder="חיפוש לפי שם, SKU..."
+            filters={mobileFilters}
+            isSearching={isSearching}
+          />
+        </div>
+      ) : (
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row gap-3 items-center justify-between w-full">
+              {/* Search */}
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Input
+                  placeholder="חיפוש לפי שם, SKU..."
+                  value={search}
+                  onChange={(e) => {
+                    setSearch(e.target.value)
+                    setPagination((prev) => ({ ...prev, page: 1 }))
+                  }}
+                  className="pr-10 pl-10"
+                />
+                {isSearching && (
+                  <div className="absolute left-3 top-1/2 transform -translate-y-1/2">
+                    <Loader2 className="w-4 h-4 text-[#15b981] animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              {/* Collection Filter */}
+              <Select value={collectionFilter} onValueChange={setCollectionFilter}>
+                <SelectTrigger className="w-full md:w-[200px] flex-shrink-0">
+                  <SelectValue placeholder="כל הקולקציות" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל הקולקציות</SelectItem>
+                  {collections.map((collection) => (
+                    <SelectItem key={collection.id} value={collection.id}>
+                      {collection.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Status Filter */}
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger className="w-full md:w-[160px] flex-shrink-0">
+                  <SelectValue placeholder="תאריך (חדש לישן)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">כל המוצרים</SelectItem>
+                  <SelectItem value="PUBLISHED">פורסם</SelectItem>
+                  <SelectItem value="DRAFT">טיוטה</SelectItem>
+                  <SelectItem value="ARCHIVED">ארכיון</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* Sort */}
+              <Select value={`${sortBy}-${sortOrder}`} onValueChange={(value) => {
+                const [field, order] = value.split("-")
+                setSortBy(field)
+                setSortOrder(order as "asc" | "desc")
+              }}>
+                <SelectTrigger className="w-full md:w-[180px] flex-shrink-0">
+                  <SelectValue placeholder="מיון" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="createdAt-desc">תאריך (חדש לישן)</SelectItem>
+                  <SelectItem value="createdAt-asc">תאריך (ישן לחדש)</SelectItem>
+                  <SelectItem value="name-asc">שם (א-ת)</SelectItem>
+                  <SelectItem value="name-desc">שם (ת-א)</SelectItem>
+                  <SelectItem value="price-asc">מחיר (נמוך לגבוה)</SelectItem>
+                  <SelectItem value="price-desc">מחיר (גבוה לנמוך)</SelectItem>
+                  <SelectItem value="inventoryQty-asc">מלאי (נמוך לגבוה)</SelectItem>
+                  <SelectItem value="inventoryQty-desc">מלאי (גבוה לנמוך)</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {/* View Mode Toggle */}
+              <div className="flex gap-2 border rounded-lg p-1 flex-shrink-0">
+                <Button
+                  variant={viewMode === "table" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("table")}
+                >
+                  <List className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "grid" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setViewMode("grid")}
+                >
+                  <Grid className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
+          </CardContent>
+        </Card>
+      )}
 
-            {/* Collection Filter */}
-            <Select value={collectionFilter} onValueChange={setCollectionFilter}>
-              <SelectTrigger className="w-[200px] flex-shrink-0">
-                <SelectValue placeholder="כל הקולקציות" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל הקולקציות</SelectItem>
-                {collections.map((collection) => (
-                  <SelectItem key={collection.id} value={collection.id}>
-                    {collection.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            {/* Status Filter */}
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[160px] flex-shrink-0">
-                <SelectValue placeholder="תאריך (חדש לישן)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">כל המוצרים</SelectItem>
-                <SelectItem value="PUBLISHED">פורסם</SelectItem>
-                <SelectItem value="DRAFT">טיוטה</SelectItem>
-                <SelectItem value="ARCHIVED">ארכיון</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* Sort */}
-            <Select value={`${sortBy}-${sortOrder}`} onValueChange={(value) => {
-              const [field, order] = value.split("-")
-              setSortBy(field)
-              setSortOrder(order as "asc" | "desc")
-            }}>
-              <SelectTrigger className="w-[180px] flex-shrink-0">
-                <SelectValue placeholder="מיון" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt-desc">תאריך (חדש לישן)</SelectItem>
-                <SelectItem value="createdAt-asc">תאריך (ישן לחדש)</SelectItem>
-                <SelectItem value="name-asc">שם (א-ת)</SelectItem>
-                <SelectItem value="name-desc">שם (ת-א)</SelectItem>
-                <SelectItem value="price-asc">מחיר (נמוך לגבוה)</SelectItem>
-                <SelectItem value="price-desc">מחיר (גבוה לנמוך)</SelectItem>
-                <SelectItem value="inventoryQty-asc">מלאי (נמוך לגבוה)</SelectItem>
-                <SelectItem value="inventoryQty-desc">מלאי (גבוה לנמוך)</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {/* View Mode Toggle */}
-            <div className="flex gap-2 border rounded-lg p-1 flex-shrink-0">
-              <Button
-                variant={viewMode === "table" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("table")}
-              >
-                <List className="w-4 h-4" />
-              </Button>
-              <Button
-                variant={viewMode === "grid" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setViewMode("grid")}
-              >
-                <Grid className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Products Table/Grid */}
-      {products.length === 0 ? (
+      {/* Products List - Mobile vs Desktop */}
+      {isMobile ? (
+        <MobileListView
+          items={convertToMobileList()}
+          onItemClick={(item) => router.push(`/products/${products.find(p => p.id === item.id)?.slug}/edit`)}
+          selectedItems={selectedProducts}
+          onSelectionChange={setSelectedProducts}
+          showCheckbox={selectedProducts.size > 0}
+          settingsType="products"
+          emptyState={{
+            icon: <Package className="w-12 h-12 text-gray-400" />,
+            title: "אין מוצרים",
+            description: "התחל ליצור את המוצר הראשון שלך",
+            action: selectedShop ? {
+              label: "צור מוצר חדש",
+              onClick: () => router.push("/products/new")
+            } : undefined
+          }}
+        />
+      ) : products.length === 0 ? (
         <Card>
           <CardContent className="pt-6">
             <div className="text-center py-12">
@@ -820,16 +987,16 @@ export default function ProductsPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {product.categories && product.categories.length > 0 ? (
+                        {(product as any).collections && (product as any).collections.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
-                            {product.categories.slice(0, 2).map((cat: any) => (
-                              <Badge key={cat.categoryId} variant="outline" className="text-xs">
-                                {cat.category?.name || 'קטגוריה'}
+                            {(product as any).collections.slice(0, 2).map((col: any) => (
+                              <Badge key={col.collectionId} variant="outline" className="text-xs">
+                                {col.collection?.name || 'קטגוריה'}
                               </Badge>
                             ))}
-                            {product.categories.length > 2 && (
+                            {(product as any).collections.length > 2 && (
                               <Badge variant="outline" className="text-xs">
-                                +{product.categories.length - 2}
+                                +{(product as any).collections.length - 2}
                               </Badge>
                             )}
                           </div>
@@ -1125,6 +1292,7 @@ export default function ProductsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </AppLayout>
   )
 }

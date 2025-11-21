@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation"
 import {
   Dialog,
   DialogContent,
+  DialogPortal,
+  DialogOverlay,
 } from "@/components/ui/dialog"
+import * as DialogPrimitive from "@radix-ui/react-dialog"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { 
@@ -22,6 +25,8 @@ import {
   Phone,
   MapPin
 } from "lucide-react"
+import { useMediaQuery } from "@/hooks/useMediaQuery"
+import { cn } from "@/lib/utils"
 
 interface Notification {
   id: string
@@ -42,6 +47,7 @@ interface NotificationsDrawerProps {
 
 export function NotificationsDrawer({ open, onOpenChange }: NotificationsDrawerProps) {
   const router = useRouter()
+  const isMobile = useMediaQuery("(max-width: 768px)")
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -249,51 +255,92 @@ export function NotificationsDrawer({ open, onOpenChange }: NotificationsDrawerP
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent 
-        className="fixed left-0 top-0 h-full w-full max-w-md translate-x-0 translate-y-0 p-0 rounded-none border-l border-r-0 z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left" 
-        dir="rtl"
-        style={{ 
-          right: 'auto',
-          left: 0,
-          transform: 'none',
-        }}
-      >
+      <DialogPortal>
+        <DialogOverlay className="bg-black/20 backdrop-blur-[2px]" />
+        <DialogPrimitive.Content
+          className={cn(
+            "fixed left-0 top-0 h-full w-full translate-x-0 translate-y-0 p-0 rounded-none border-l border-r-0 z-[101] bg-white",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out",
+            "data-[state=closed]:slide-out-to-left data-[state=open]:slide-in-from-left",
+            !isMobile && "max-w-md"
+          )}
+          dir="rtl"
+          style={{ 
+            right: 'auto',
+            left: 0,
+            transform: 'none',
+          }}
+        >
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b">
+          <div className={cn(
+            "flex items-center justify-between border-b",
+            isMobile ? "p-3" : "p-4"
+          )}>
             <div className="flex items-center gap-2">
-              <Bell className="w-5 h-5 text-emerald-600" />
-              <h2 className="text-xl font-bold">התראות</h2>
+              <Bell className={cn(
+                "text-emerald-600",
+                isMobile ? "w-4 h-4" : "w-5 h-5"
+              )} />
+              <h2 className={cn(
+                "font-bold",
+                isMobile ? "text-lg" : "text-xl"
+              )}>התראות</h2>
               {unreadCount > 0 && (
                 <span className="bg-emerald-600 text-white text-xs rounded-full px-2 py-0.5">
                   {unreadCount}
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
               {unreadCount > 0 && (
-                <Button variant="ghost" size="sm" onClick={markAllAsRead}>
-                  סמן הכל כנקרא
+                <Button 
+                  variant="ghost" 
+                  size={isMobile ? "sm" : "sm"}
+                  onClick={markAllAsRead}
+                  className={cn(isMobile && "text-xs px-2")}
+                >
+                  {isMobile ? "סמן הכל" : "סמן הכל כנקרא"}
                 </Button>
               )}
-              <Button variant="ghost" size="icon" onClick={() => onOpenChange(false)}>
-                <X className="w-4 h-4" />
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                onClick={() => onOpenChange(false)}
+                className={cn(isMobile && "h-8 w-8")}
+              >
+                <X className={cn(isMobile ? "w-4 h-4" : "w-5 h-5")} />
               </Button>
             </div>
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className={cn(
+            "flex-1 overflow-y-auto",
+            isMobile ? "p-3" : "p-4"
+          )}>
             {loading ? (
               <div className="text-center text-gray-500 py-8">טוען...</div>
             ) : notifications.length === 0 ? (
-              <div className="text-center py-12">
-                <Bell className="w-16 h-16 mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">אין התראות חדשות</h3>
-                <p className="text-gray-500">כל ההתראות שלך יופיעו כאן</p>
+              <div className={cn(
+                "text-center",
+                isMobile ? "py-8" : "py-12"
+              )}>
+                <Bell className={cn(
+                  "mx-auto text-gray-300 mb-4",
+                  isMobile ? "w-12 h-12" : "w-16 h-16"
+                )} />
+                <h3 className={cn(
+                  "font-medium text-gray-900 mb-2",
+                  isMobile ? "text-base" : "text-lg"
+                )}>אין התראות חדשות</h3>
+                <p className={cn(
+                  "text-gray-500",
+                  isMobile && "text-sm"
+                )}>כל ההתראות שלך יופיעו כאן</p>
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className={cn(isMobile ? "space-y-2" : "space-y-3")}>
                 {notifications.map((notification) => {
                   const Icon = getNotificationIcon(notification.type)
                   const colorClass = getNotificationColor(notification.type)
@@ -310,24 +357,43 @@ export function NotificationsDrawer({ open, onOpenChange }: NotificationsDrawerP
                     <Card 
                       key={notification.id} 
                       onClick={() => handleNotificationClick(notification)}
-                      className={`shadow-sm hover:shadow-md transition-all cursor-pointer ${
-                        !notification.isRead ? "border-r-4 border-r-emerald-600 bg-emerald-50/30" : ""
-                      } hover:bg-gray-50`}
+                      className={cn(
+                        "shadow-sm hover:shadow-md transition-all cursor-pointer hover:bg-gray-50",
+                        !notification.isRead && "border-r-4 border-r-emerald-600 bg-emerald-50/30",
+                        isMobile && "border-0 shadow-none"
+                      )}
                     >
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-4">
-                          <div className={`w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0 ${colorClass}`}>
-                            <Icon className="w-6 h-6" />
+                      <CardContent className={cn(isMobile ? "p-3" : "p-4")}>
+                        <div className={cn(
+                          "flex items-start",
+                          isMobile ? "gap-3" : "gap-4"
+                        )}>
+                          <div className={cn(
+                            "rounded-full flex items-center justify-center flex-shrink-0",
+                            colorClass,
+                            isMobile ? "w-10 h-10" : "w-12 h-12"
+                          )}>
+                            <Icon className={cn(isMobile ? "w-5 h-5" : "w-6 h-6")} />
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
-                                <h3 className={`font-medium ${!notification.isRead ? "text-gray-900" : "text-gray-600"}`}>
+                                <h3 className={cn(
+                                  "font-medium",
+                                  !notification.isRead ? "text-gray-900" : "text-gray-600",
+                                  isMobile && "text-sm"
+                                )}>
                                   {notification.title}
                                 </h3>
-                                <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
+                                <p className={cn(
+                                  "text-gray-600 mt-1",
+                                  isMobile ? "text-xs" : "text-sm"
+                                )}>{notification.message}</p>
                                 {details && (
-                                  <div className="mt-2 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                                  <div className={cn(
+                                    "mt-2 bg-gray-50 rounded-lg border border-gray-200",
+                                    isMobile ? "p-1.5 text-xs" : "p-2"
+                                  )}>
                                     {details}
                                   </div>
                                 )}
@@ -336,19 +402,25 @@ export function NotificationsDrawer({ open, onOpenChange }: NotificationsDrawerP
                                 <div className="w-2 h-2 bg-emerald-600 rounded-full flex-shrink-0 mt-1"></div>
                               )}
                             </div>
-                            <div className="flex items-center gap-4 mt-3">
+                            <div className={cn(
+                              "flex items-center gap-4",
+                              isMobile ? "mt-2" : "mt-3"
+                            )}>
                               <span className="text-xs text-gray-500">{timeAgo}</span>
                               {!notification.isRead && (
                                 <Button 
                                   variant="ghost" 
                                   size="sm" 
-                                  className="h-6 text-xs"
+                                  className={cn(
+                                    "h-6 text-xs",
+                                    isMobile && "px-2"
+                                  )}
                                   onClick={(e) => {
                                     e.stopPropagation()
                                     markAsRead(notification.id)
                                   }}
                                 >
-                                  סמן כנקרא
+                                  {isMobile ? "סמן" : "סמן כנקרא"}
                                 </Button>
                               )}
                             </div>
@@ -362,7 +434,8 @@ export function NotificationsDrawer({ open, onOpenChange }: NotificationsDrawerP
             )}
           </div>
         </div>
-      </DialogContent>
+        </DialogPrimitive.Content>
+      </DialogPortal>
     </Dialog>
   )
 }

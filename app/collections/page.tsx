@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { Plus, Search, Edit, Trash2, Copy, FolderOpen, Image as ImageIcon } from "lucide-react"
 import { CollectionsSkeleton } from "@/components/skeletons/CollectionsSkeleton"
+import { useMediaQuery } from "@/hooks/useMediaQuery"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,6 +37,7 @@ export default function CollectionsPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { selectedShop } = useShop()
+  const isMobile = useMediaQuery("(max-width: 768px)")
   const [collections, setCollections] = useState<Collection[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -128,7 +130,7 @@ export default function CollectionsPage() {
 
   return (
     <AppLayout title="קטגוריות">
-      <div className="space-y-6">
+      <div className={`space-y-6 ${isMobile ? "pb-20" : ""}`}>
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

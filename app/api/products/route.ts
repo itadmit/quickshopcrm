@@ -125,6 +125,7 @@ export async function GET(req: NextRequest) {
               name: true,
               price: true,
               comparePrice: true,
+              inventoryQty: true,
             },
           },
           options: {
@@ -137,10 +138,10 @@ export async function GET(req: NextRequest) {
               position: 'asc',
             },
           },
-          categories: {
+          collections: {
             select: {
-              categoryId: true,
-              category: {
+              collectionId: true,
+              collection: {
                 select: {
                   name: true,
                 },

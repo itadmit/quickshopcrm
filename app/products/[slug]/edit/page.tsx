@@ -393,6 +393,196 @@ export default function EditProductPage() {
       })
 
       if (response.ok) {
+        // אם יש variants, סנכרן אותם עם השרת
+        if (hasVariants && options.length > 0) {
+          try {
+            // קבל את כל האפשרויות והוריאציות הקיימות מהשרת
+            const [existingOptionsRes, existingVariantsRes] = await Promise.all([
+              fetch(`/api/products/${product.id}/options`),
+              fetch(`/api/products/${product.id}/variants`),
+            ])
+
+            const existingOptions = existingOptionsRes.ok ? await existingOptionsRes.json() : []
+            const existingVariants = existingVariantsRes.ok ? await existingVariantsRes.json() : []
+
+            // מחק אפשרויות שלא קיימות יותר
+            const optionsToDelete = existingOptions.filter((existingOpt: any) => 
+              !options.some(opt => opt.id === existingOpt.id)
+            )
+            
+            await Promise.all(
+              optionsToDelete.map((opt: any) =>
+                fetch(`/api/products/${product.id}/options/${opt.id}`, { method: "DELETE" })
+              )
+            )
+
+            // עדכן או צור אפשרויות
+            const safeParseInt = (value: string) => {
+              if (!value || !value.trim()) return null
+              const parsed = parseInt(value)
+              return isNaN(parsed) ? null : parsed
+            }
+            
+            const safeParseFloat = (value: string) => {
+              if (!value || !value.trim()) return null
+              const parsed = parseFloat(value)
+              return isNaN(parsed) ? null : parsed
+            }
+
+            await Promise.all(
+              options.map(async (option, i) => {
+                // המרת values לפורמט הנכון
+                const formattedValues = option.values.map((value: any) => {
+                  if (typeof value === 'string') {
+                    return { id: value, label: value }
+                  }
+                  return {
+                    id: value.id || String(value),
+                    label: value.label || value.id || String(value),
+                    metadata: value.metadata || {}
+                  }
+                })
+
+                const optionPayload = {
+                  name: option.name,
+                  type: option.type || "button",
+                  values: formattedValues,
+                  position: i,
+                }
+
+                // בדוק אם זה ID אמיתי מהשרת (מתחיל עם 'clxxxx') או ID זמני
+                const isExistingOption = option.id && !option.id.startsWith('option-')
+                
+                if (isExistingOption) {
+                  // עדכן אפשרות קיימת
+                  await fetch(`/api/products/${product.id}/options/${option.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(optionPayload),
+                  })
+                } else {
+                  // צור אפשרות חדשה
+                  await fetch(`/api/products/${product.id}/options`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(optionPayload),
+                  })
+                }
+              })
+            )
+
+            // מחק וריאציות שלא קיימות יותר
+            const variantsToDelete = existingVariants.filter((existingVar: any) => 
+              !variants.some(v => v.id === existingVar.id)
+            )
+            
+            await Promise.all(
+              variantsToDelete.map((v: any) =>
+                fetch(`/api/products/${product.id}/variants/${v.id}`, { method: "DELETE" })
+              )
+            )
+
+            // עדכן או צור וריאציות
+            await Promise.all(
+              variants.map(async (variant) => {
+                const optionEntries = Object.entries(variant.optionValues || {})
+                const variantPayload: any = {
+                  name: variant.name,
+                  inventoryQty: safeParseInt(variant.inventoryQty) ?? 0,
+                }
+
+                const price = safeParseFloat(variant.price)
+                if (price !== null && price !== undefined) {
+                  variantPayload.price = price
+                }
+                
+                const comparePrice = safeParseFloat(variant.comparePrice)
+                if (comparePrice !== null && comparePrice !== undefined) {
+                  variantPayload.comparePrice = comparePrice
+                }
+                
+                const cost = safeParseFloat(variant.cost)
+                if (cost !== null && cost !== undefined) {
+                  variantPayload.cost = cost
+                }
+                
+                if (variant.sku && variant.sku.trim()) {
+                  variantPayload.sku = variant.sku
+                }
+                
+                if (variant.barcode && variant.barcode.trim()) {
+                  variantPayload.barcode = variant.barcode
+                }
+                
+                const weight = safeParseFloat(variant.weight)
+                if (weight !== null && weight !== undefined) {
+                  variantPayload.weight = weight
+                }
+                
+                if (variant.image && variant.image.trim()) {
+                  variantPayload.image = variant.image
+                }
+
+                // המרת optionValues לפורמט הנכון
+                optionEntries.forEach(([optionName, optionValue], index) => {
+                  if (index < 3 && optionValue) {
+                    variantPayload[`option${index + 1}`] = optionName
+                    variantPayload[`option${index + 1}Value`] = String(optionValue)
+                  }
+                })
+
+                // בדוק אם זה ID אמיתי מהשרת או ID זמני
+                const isExistingVariant = variant.id && !variant.id.startsWith('variant-')
+                
+                if (isExistingVariant) {
+                  // עדכן וריאציה קיימת
+                  await fetch(`/api/products/${product.id}/variants/${variant.id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(variantPayload),
+                  })
+                } else {
+                  // צור וריאציה חדשה
+                  await fetch(`/api/products/${product.id}/variants`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(variantPayload),
+                  })
+                }
+              })
+            )
+          } catch (variantsError) {
+            console.error("Error syncing variants:", variantsError)
+            toast({
+              title: "אזהרה",
+              description: "המוצר עודכן אבל הייתה בעיה בסנכרון הוריאציות",
+              variant: "destructive",
+            })
+          }
+        } else if (!hasVariants) {
+          // אם אין variants, מחק את כל האפשרויות והוריאציות הקיימות
+          try {
+            const [existingOptionsRes, existingVariantsRes] = await Promise.all([
+              fetch(`/api/products/${product.id}/options`),
+              fetch(`/api/products/${product.id}/variants`),
+            ])
+
+            const existingOptions = existingOptionsRes.ok ? await existingOptionsRes.json() : []
+            const existingVariants = existingVariantsRes.ok ? await existingVariantsRes.json() : []
+
+            await Promise.all([
+              ...existingOptions.map((opt: any) =>
+                fetch(`/api/products/${product.id}/options/${opt.id}`, { method: "DELETE" })
+              ),
+              ...existingVariants.map((v: any) =>
+                fetch(`/api/products/${product.id}/variants/${v.id}`, { method: "DELETE" })
+              ),
+            ])
+          } catch (error) {
+            console.error("Error deleting variants:", error)
+          }
+        }
+
         toast({
           title: "הצלחה",
           description: "המוצר עודכן בהצלחה",
@@ -441,33 +631,39 @@ export default function EditProductPage() {
 
   return (
     <AppLayout title={`עריכת ${product.name}`}>
-      <div className="space-y-6">
+      <div className="space-y-6 pb-20 md:pb-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
-            <h1 className="text-3xl font-bold">עריכת מוצר</h1>
-            <p className="text-gray-600">עדכן את פרטי המוצר {product.name}</p>
+            <h1 className="text-2xl md:text-3xl font-bold">עריכת מוצר</h1>
+            <p className="text-sm md:text-base text-gray-600">עדכן את פרטי המוצר {product.name}</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             {shopUrl && (
               <Button
                 variant="outline"
                 onClick={() => window.open(shopUrl, "_blank")}
+                className="flex-1 md:flex-none"
               >
                 <ExternalLink className="w-4 h-4 ml-2" />
-                צפייה בחנות
+                <span className="hidden sm:inline">צפייה בחנות</span>
+                <span className="sm:hidden">חנות</span>
               </Button>
             )}
-            <Button variant="outline" onClick={() => router.back()}>
+            <Button 
+              variant="outline" 
+              onClick={() => router.back()}
+              className="flex-1 md:flex-none"
+            >
               ביטול
             </Button>
             <Button
               onClick={handleSubmit}
               disabled={saving}
-              className="prodify-gradient text-white"
+              className="prodify-gradient text-white flex-1 md:flex-none"
             >
               <Save className="w-4 h-4 ml-2" />
-              {saving ? "שומר..." : "שמור שינויים"}
+              {saving ? "שומר..." : "שמור"}
             </Button>
           </div>
         </div>
@@ -666,6 +862,18 @@ export default function EditProductPage() {
               </CardContent>
             </Card>
           </div>
+        </div>
+
+        {/* Sticky Save Button - Mobile Only */}
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 p-4 shadow-lg">
+          <Button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="w-full prodify-gradient text-white h-12"
+          >
+            <Save className="w-4 h-4 ml-2" />
+            {saving ? "שומר..." : "שמור שינויים"}
+          </Button>
         </div>
       </div>
     </AppLayout>

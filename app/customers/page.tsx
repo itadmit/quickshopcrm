@@ -37,6 +37,7 @@ import { format } from "date-fns"
 import { he } from "date-fns/locale"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { useShop } from "@/components/providers/ShopProvider"
+import { useMediaQuery } from "@/hooks/useMediaQuery"
 
 interface Customer {
   id: string
@@ -61,6 +62,7 @@ export default function CustomersPage() {
   const { data: session } = useSession()
   const { selectedShop } = useShop()
   const { toast } = useToast()
+  const isMobile = useMediaQuery("(max-width: 768px)")
   const [customers, setCustomers] = useState<Customer[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -304,7 +306,7 @@ export default function CustomersPage() {
 
   return (
     <AppLayout title="לקוחות">
-      <div className="space-y-6">
+      <div className={`space-y-6 ${isMobile ? "pb-20" : ""}`}>
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

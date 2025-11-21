@@ -828,14 +828,14 @@ export function VariantsCard({
                           החל
                         </Button>
                       </div>
-                      <div className="grid grid-cols-4 gap-3">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div className="space-y-1">
                           <Label className="text-xs text-blue-900">מחיר</Label>
                           <Input
                             type="number"
                             step="0.01"
                             placeholder="0.00"
-                            className="bg-white"
+                            className="bg-white h-9"
                             id="bulk-price"
                           />
                         </div>
@@ -845,7 +845,7 @@ export function VariantsCard({
                             type="number"
                             step="0.01"
                             placeholder="0.00"
-                            className="bg-white"
+                            className="bg-white h-9"
                             id="bulk-compare-price"
                           />
                         </div>
@@ -855,7 +855,7 @@ export function VariantsCard({
                             type="number"
                             step="0.01"
                             placeholder="0.00"
-                            className="bg-white"
+                            className="bg-white h-9"
                             id="bulk-cost"
                           />
                         </div>
@@ -864,7 +864,7 @@ export function VariantsCard({
                           <Input
                             type="number"
                             placeholder="0"
-                            className="bg-white"
+                            className="bg-white h-9"
                             id="bulk-inventory"
                           />
                         </div>
@@ -873,7 +873,8 @@ export function VariantsCard({
                   </CardContent>
                 </Card>
 
-                <div className="border rounded-lg overflow-x-auto">
+                {/* Desktop Table View */}
+                <div className="hidden md:block border rounded-lg overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50">
                       <tr>
@@ -974,6 +975,107 @@ export function VariantsCard({
                       ))}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Mobile Card View */}
+                <div className="md:hidden space-y-3">
+                  {variants.map((variant, variantIndex) => (
+                    <Card key={variant.id} className="border-2">
+                      <CardContent className="p-4 space-y-3">
+                        {/* Header with name and default checkbox */}
+                        <div className="flex items-center justify-between border-b pb-3">
+                          <div className="font-semibold text-sm">{variant.name}</div>
+                          <div className="flex items-center gap-2">
+                            <Label className="text-xs text-gray-600">ברירת מחדל</Label>
+                            <Checkbox
+                              checked={defaultVariantId === variant.id}
+                              onCheckedChange={(checked) => {
+                                if (onDefaultVariantChange) {
+                                  onDefaultVariantChange(checked ? variant.id : null)
+                                }
+                              }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Fields */}
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-gray-600">מחיר (₪)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={variant.price}
+                              onChange={(e) => {
+                                const updated = [...variants]
+                                updated[variantIndex].price = e.target.value
+                                onVariantsChange(updated)
+                              }}
+                              placeholder="0.00"
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-gray-600">לפני הנחה (₪)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={variant.comparePrice}
+                              onChange={(e) => {
+                                const updated = [...variants]
+                                updated[variantIndex].comparePrice = e.target.value
+                                onVariantsChange(updated)
+                              }}
+                              placeholder="0.00"
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-gray-600">עלות (₪)</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={variant.cost}
+                              onChange={(e) => {
+                                const updated = [...variants]
+                                updated[variantIndex].cost = e.target.value
+                                onVariantsChange(updated)
+                              }}
+                              placeholder="0.00"
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs text-gray-600">מלאי</Label>
+                            <Input
+                              type="number"
+                              value={variant.inventoryQty}
+                              onChange={(e) => {
+                                const updated = [...variants]
+                                updated[variantIndex].inventoryQty = e.target.value
+                                onVariantsChange(updated)
+                              }}
+                              placeholder="0"
+                              className="h-9"
+                            />
+                          </div>
+                          <div className="space-y-1.5 col-span-2">
+                            <Label className="text-xs text-gray-600">SKU</Label>
+                            <Input
+                              value={variant.sku}
+                              onChange={(e) => {
+                                const updated = [...variants]
+                                updated[variantIndex].sku = e.target.value
+                                onVariantsChange(updated)
+                              }}
+                              placeholder="מק״ט"
+                              className="h-9"
+                            />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </div>
             )}

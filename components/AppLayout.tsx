@@ -8,6 +8,7 @@ import { Sidebar } from "./Sidebar"
 import { Header } from "./Header"
 import { Footer } from "./Footer"
 import { SubscriptionBlock } from "./SubscriptionBlock"
+import { MobileBottomNav } from "./MobileBottomNav"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 
 interface AppLayoutProps {
@@ -104,12 +105,16 @@ function AppLayoutContent({ children, title, hideSidebar, hideHeader }: AppLayou
     <>
       {shouldShowBlock && <SubscriptionBlock subscriptionInfo={subscriptionInfo} />}
       <div className="flex h-screen" style={{ backgroundColor: '#f7f9fe' }} dir={dir}>
-        {!hideSidebar && <Sidebar />}
+        {!hideSidebar && (
+          <div className="hidden md:block">
+            <Sidebar />
+          </div>
+        )}
         <div className="flex-1 flex flex-col overflow-hidden">
           {!hideHeader && <Header title={title} />}
           <main className="flex-1 overflow-y-auto">
             <div className="min-h-full flex flex-col">
-              <div className="flex-1 p-6">
+              <div className="flex-1 p-4 md:p-6">
                 <div className="max-w-7xl mx-auto">
                   {children}
                 </div>
@@ -118,6 +123,7 @@ function AppLayoutContent({ children, title, hideSidebar, hideHeader }: AppLayou
             </div>
           </main>
         </div>
+        <MobileBottomNav />
       </div>
     </>
   )
@@ -130,12 +136,16 @@ export function AppLayout({ children, title, hideSidebar = false, hideHeader = f
   return (
     <Suspense fallback={
       <div className="flex h-screen" style={{ backgroundColor: '#f7f9fe' }} dir={dir}>
-        {!hideSidebar && <Sidebar />}
+        {!hideSidebar && (
+          <div className="hidden md:block">
+            <Sidebar />
+          </div>
+        )}
         <div className="flex-1 flex flex-col overflow-hidden">
           {!hideHeader && <Header title={title} />}
           <main className="flex-1 overflow-y-auto">
             <div className="min-h-full flex flex-col">
-              <div className="flex-1 p-6">
+              <div className="flex-1 p-4 md:p-6">
                 <div className="max-w-7xl mx-auto">
                   <div className="animate-pulse space-y-4">
                     <div className="h-8 bg-gray-200 rounded w-1/4"></div>

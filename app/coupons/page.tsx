@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
+import { useMediaQuery } from "@/hooks/useMediaQuery"
 import {
   Plus,
   Search,
@@ -54,6 +55,7 @@ export default function CouponsPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { selectedShop } = useShop()
+  const isMobile = useMediaQuery("(max-width: 768px)")
   const [coupons, setCoupons] = useState<Coupon[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -200,7 +202,7 @@ export default function CouponsPage() {
 
   return (
     <AppLayout title="קופונים">
-      <div className="space-y-6">
+      <div className={`space-y-6 ${isMobile ? "pb-20" : ""}`}>
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
