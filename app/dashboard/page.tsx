@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { DashboardSkeleton } from "@/components/skeletons/DashboardSkeleton"
 import { useTranslations } from "next-intl"
 import Link from "next/link"
+import { SalesChart } from "@/components/SalesChart"
 
 interface Stats {
   shops: { total: number; active: number }
@@ -184,77 +185,106 @@ export default function DashboardPage() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 md:gap-6 mb-4 md:mb-8">
         <Link href="/shops" prefetch={true} className="block">
-          <Card className="shadow-sm hover-lift cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('dashboard.stats.activeShops')}</CardTitle>
-              <Store className="h-5 w-5 text-emerald-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.shops.active}</div>
-              <p className="text-xs text-gray-500 mt-1">
-                {t('dashboard.stats.totalShops', { count: stats.shops.total })}
-              </p>
+          <Card className="shadow-sm hover-lift cursor-pointer border-0 md:border">
+            <CardContent className="p-3 md:p-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0">
+                <div className="flex items-center gap-2 md:flex-col md:items-start">
+                  <Store className="h-4 w-4 md:h-5 md:w-5 text-emerald-600 flex-shrink-0" />
+                  <CardTitle className="text-xs md:text-sm font-medium text-gray-600 md:text-gray-900 leading-tight">
+                    {t('dashboard.stats.activeShops')}
+                  </CardTitle>
+                </div>
+                <div className="mt-1 md:mt-2">
+                  <div className="text-xl md:text-3xl font-bold text-right md:text-left">{stats.shops.active}</div>
+                  <p className="text-[10px] md:text-xs text-gray-500 mt-0.5 md:mt-1 text-right md:text-left">
+                    סה"כ {stats.shops.total}
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </Link>
 
         <Link href="/products" prefetch={true} className="block">
-          <Card className="shadow-sm hover-lift cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('dashboard.stats.activeProducts')}</CardTitle>
-              <Package className="h-5 w-5 text-emerald-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.products.published}</div>
-              <p className="text-xs text-gray-500 mt-1">
-                {t('dashboard.stats.totalProducts', { count: stats.products.total })}
-              </p>
+          <Card className="shadow-sm hover-lift cursor-pointer border-0 md:border">
+            <CardContent className="p-3 md:p-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0">
+                <div className="flex items-center gap-2 md:flex-col md:items-start">
+                  <Package className="h-4 w-4 md:h-5 md:w-5 text-emerald-600 flex-shrink-0" />
+                  <CardTitle className="text-xs md:text-sm font-medium text-gray-600 md:text-gray-900 leading-tight">
+                    {t('dashboard.stats.activeProducts')}
+                  </CardTitle>
+                </div>
+                <div className="mt-1 md:mt-2">
+                  <div className="text-xl md:text-3xl font-bold text-right md:text-left">{stats.products.published}</div>
+                  <p className="text-[10px] md:text-xs text-gray-500 mt-0.5 md:mt-1 text-right md:text-left">
+                    סה"כ {stats.products.total}
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </Link>
 
         <Link href="/orders" prefetch={true} className="block">
-          <Card className="shadow-sm hover-lift cursor-pointer">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">{t('dashboard.stats.pendingOrders')}</CardTitle>
-              <ShoppingBag className="h-5 w-5 text-emerald-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">{stats.orders.pending}</div>
-              <p className="text-xs text-gray-500 mt-1">
-                {t('dashboard.stats.totalOrders', { count: stats.orders.total })}
-              </p>
+          <Card className="shadow-sm hover-lift cursor-pointer border-0 md:border">
+            <CardContent className="p-3 md:p-6">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0">
+                <div className="flex items-center gap-2 md:flex-col md:items-start">
+                  <ShoppingBag className="h-4 w-4 md:h-5 md:w-5 text-emerald-600 flex-shrink-0" />
+                  <CardTitle className="text-xs md:text-sm font-medium text-gray-600 md:text-gray-900 leading-tight">
+                    {t('dashboard.stats.pendingOrders')}
+                  </CardTitle>
+                </div>
+                <div className="mt-1 md:mt-2">
+                  <div className="text-xl md:text-3xl font-bold text-right md:text-left">{stats.orders.pending}</div>
+                  <p className="text-[10px] md:text-xs text-gray-500 mt-0.5 md:mt-1 text-right md:text-left">
+                    סה"כ {stats.orders.total}
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </Link>
 
-        <Card className="shadow-sm hover-lift">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">{t('dashboard.stats.revenue')}</CardTitle>
-            <TrendingUp className="h-5 w-5 text-emerald-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">
-              ₪{stats.revenue.thisMonth >= 1000 
-                ? (stats.revenue.thisMonth / 1000).toFixed(0) + 'K'
-                : stats.revenue.thisMonth.toFixed(0)}
+        <Card className="shadow-sm hover-lift border-0 md:border">
+          <CardContent className="p-3 md:p-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-0">
+              <div className="flex items-center gap-2 md:flex-col md:items-start">
+                <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-emerald-600 flex-shrink-0" />
+                <CardTitle className="text-xs md:text-sm font-medium text-gray-600 md:text-gray-900 leading-tight">
+                  {t('dashboard.stats.revenue')}
+                </CardTitle>
+              </div>
+              <div className="mt-1 md:mt-2">
+                <div className="text-xl md:text-3xl font-bold text-right md:text-left">
+                  ₪{stats.revenue.thisMonth >= 1000 
+                    ? (stats.revenue.thisMonth / 1000).toFixed(0) + 'K'
+                    : stats.revenue.thisMonth.toFixed(0)}
+                </div>
+                <p className="text-[10px] md:text-xs text-gray-500 mt-0.5 md:mt-1 text-right md:text-left">
+                  ₪{stats.revenue.total >= 1000 
+                    ? (stats.revenue.total / 1000).toFixed(0) + 'K'
+                    : stats.revenue.total.toFixed(0)} סה"כ
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-gray-500 mt-1">
-              ₪{stats.revenue.total >= 1000 
-                ? (stats.revenue.total / 1000).toFixed(0) + 'K'
-                : stats.revenue.total.toFixed(0)} {t('dashboard.stats.totalRevenue')}
-            </p>
           </CardContent>
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      {/* Sales Chart */}
+      <div className="mb-4 md:mb-6">
+        <SalesChart />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
         {/* Left Column - Quick Actions */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-4 md:space-y-6">
           {/* Quick Actions Card */}
-          <Card className="shadow-sm hover-lift">
+          <Card className="shadow-sm hover-lift hidden md:block">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -329,51 +359,11 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Right Column - Quick Stats & Notifications */}
-        <div className="space-y-6">
-          {/* Quick Stats */}
-          <Card className="shadow-sm hover-lift">
-            <CardHeader>
-              <div className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-emerald-600" />
-                <CardTitle>{t('dashboard.quickStats.title')}</CardTitle>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">{t('dashboard.quickStats.activeShops')}</span>
-                  <span className="text-lg font-bold text-emerald-600">
-                    {stats.shops.active}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">{t('dashboard.quickStats.activeProducts')}</span>
-                  <span className="text-lg font-bold text-blue-600">
-                    {stats.products.published}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">{t('dashboard.quickStats.pendingOrders')}</span>
-                  <span className="text-lg font-bold text-cyan-600">
-                    {stats.orders.pending}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">{t('dashboard.quickStats.monthlyRevenue')}</span>
-                  <span className="text-lg font-bold text-orange-600">
-                    ₪{stats.revenue.thisMonth >= 1000 
-                      ? (stats.revenue.thisMonth / 1000).toFixed(0) + 'K'
-                      : stats.revenue.thisMonth.toFixed(0)}
-                  </span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
+        {/* Right Column - Notifications */}
+        <div className="space-y-4 md:space-y-6">
           {/* Notifications Card */}
-          <Card className="shadow-sm hover-lift">
-            <CardHeader>
+          <Card className="shadow-sm hover-lift border-0 md:border">
+            <CardHeader className="p-3 md:p-6">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Bell className="w-5 h-5 text-emerald-600" />

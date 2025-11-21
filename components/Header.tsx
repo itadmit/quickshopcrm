@@ -90,42 +90,42 @@ export function Header({ title }: HeaderProps) {
       </div>
 
       {/* Desktop: Quick Actions */}
-      <div className="hidden md:flex items-center gap-2">
+      <div className="hidden lg:flex items-center gap-2">
         <QuickActions />
       </div>
 
       {/* Desktop: Global Search */}
-      <div className="hidden md:block flex-1 max-w-2xl mx-4 md:mx-8">
+      <div className="hidden md:block flex-1 max-w-md lg:max-w-xl xl:max-w-2xl mx-2 lg:mx-4 xl:mx-8">
         <GlobalSearch />
       </div>
 
-      <div className="flex items-center gap-1 md:gap-4">
-        {/* Marketplace Link - Hidden on Mobile */}
+      <div className="flex items-center gap-1 lg:gap-3">
+        {/* Marketplace Link - Hidden on Mobile and Small Laptops */}
         <Button
           variant="outline"
           size="sm"
-          className="hidden md:flex gap-2"
+          className="hidden xl:flex gap-2"
           asChild
         >
           <Link href="/settings/plugins">
             <Plug className="w-4 h-4" />
-            <span>{t("header.marketplace")}</span>
+            <span className="text-sm">{t("header.marketplace")}</span>
           </Link>
         </Button>
 
-        {/* View Store Button - Hidden on Mobile */}
+        {/* View Store Button - Hidden on Mobile and Small Laptops */}
         {selectedShop && (
           <Button
             variant="outline"
             size="sm"
-            className="hidden md:flex gap-2"
+            className="hidden lg:flex gap-2"
             onClick={() => {
               const shopUrl = getShopBaseUrl(selectedShop)
               window.open(shopUrl, '_blank')
             }}
           >
             <ExternalLink className="w-4 h-4" />
-            <span>{t("header.viewStore")}</span>
+            <span className="text-sm">{t("header.viewStore")}</span>
           </Button>
         )}
 
