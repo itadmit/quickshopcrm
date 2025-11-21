@@ -154,7 +154,7 @@ export function QuickActions() {
   return (
     <div className="flex items-center gap-2">
       {/* כיתוב הסבר */}
-      <span className="text-xs text-gray-500 hidden xl:inline whitespace-nowrap">
+      <span className="text-xs text-gray-500 hidden 2xl:inline whitespace-nowrap">
         {t("header.quickActions.title")}
       </span>
       
@@ -173,7 +173,7 @@ export function QuickActions() {
               title={t(action.labelKey)}
             >
               <Icon className="w-4 h-4" />
-              <span className="hidden xl:inline text-sm">{t(action.labelKey)}</span>
+              <span className="hidden 2xl:inline text-sm">{t(action.labelKey)}</span>
             </Button>
           )
         })}
@@ -186,7 +186,7 @@ export function QuickActions() {
               key={action.id}
               variant="ghost"
               size="sm"
-              className="gap-2 h-8 px-3 hidden xl:flex"
+              className="gap-2 h-8 px-3 hidden 2xl:flex"
               onClick={() => handleActionClick(action)}
               title={t(action.labelKey)}
             >
@@ -208,7 +208,7 @@ export function QuickActions() {
                 title={t("header.quickActions.moreActions")}
               >
                 <Plus className="w-4 h-4" />
-                <span className="hidden xl:inline text-xs">
+                <span className="hidden 2xl:inline text-xs">
                   {t("header.quickActions.more")}
                 </span>
                 <ChevronDown className="w-3 h-3" />
