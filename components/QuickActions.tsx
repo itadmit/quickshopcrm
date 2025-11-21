@@ -152,73 +152,91 @@ export function QuickActions() {
   const remainingActionsCount = AVAILABLE_ACTIONS.length - displayActions.length
 
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2">
       {/* כיתוב הסבר */}
-      <span className="text-xs text-gray-500 hidden lg:inline whitespace-nowrap">
+      <span className="text-xs text-gray-500 hidden xl:inline whitespace-nowrap">
         {t("header.quickActions.title")}
       </span>
       
-      {/* קיצורים מהירים - עד 3 */}
+      {/* קיצורים מהירים */}
       <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-2 py-1 bg-gray-50">
-        {displayActions.map((action) => {
+        {/* במסכי laptop קטנים - רק הפעולה הראשונה */}
+        {displayActions.slice(0, 1).map((action) => {
           const Icon = action.icon
           return (
             <Button
               key={action.id}
               variant="ghost"
               size="sm"
-              className="gap-2 h-8 px-3"
+              className="gap-2 h-8 px-2 lg:px-3"
               onClick={() => handleActionClick(action)}
               title={t(action.labelKey)}
             >
               <Icon className="w-4 h-4" />
-              <span className="hidden sm:inline">{t(action.labelKey)}</span>
+              <span className="hidden xl:inline text-sm">{t(action.labelKey)}</span>
+            </Button>
+          )
+        })}
+        
+        {/* במסכים גדולים - הצג את כל הפעולות */}
+        {displayActions.slice(1).map((action) => {
+          const Icon = action.icon
+          return (
+            <Button
+              key={action.id}
+              variant="ghost"
+              size="sm"
+              className="gap-2 h-8 px-3 hidden xl:flex"
+              onClick={() => handleActionClick(action)}
+              title={t(action.labelKey)}
+            >
+              <Icon className="w-4 h-4" />
+              <span>{t(action.labelKey)}</span>
             </Button>
           )
         })}
 
         {/* תפריט נפתח לפעולות נוספות */}
-        {remainingActionsCount > 0 && (
-          <>
-            <div className="h-6 w-px bg-gray-300 mx-1" />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="h-8 px-3 gap-2 text-gray-600 hover:text-gray-900"
-                  title={`${t("header.quickActions.moreActions")} (${remainingActionsCount})`}
-                >
-                  <Plus className="w-4 h-4" />
-                  <span className="hidden sm:inline text-xs">
-                    {t("header.quickActions.more")} ({remainingActionsCount})
-                  </span>
-                  <ChevronDown className="w-3 h-3" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="min-w-[200px]">
-                <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-b border-gray-200">
-                  {t("header.quickActions.moreActions")}
-                </div>
-                {AVAILABLE_ACTIONS
-                  .filter(action => !displayActions.some(da => da.id === action.id))
-                  .map((action) => {
-                    const Icon = action.icon
-                    return (
-                      <DropdownMenuItem
-                        key={action.id}
-                        onClick={() => handleActionClick(action)}
-                        className="gap-2"
-                      >
-                        <Icon className="w-4 h-4" />
-                        <span>{t(action.labelKey)}</span>
-                      </DropdownMenuItem>
-                    )
-                  })}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </>
-        )}
+        <>
+          <div className="h-6 w-px bg-gray-300" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 gap-1 text-gray-600 hover:text-gray-900"
+                title={t("header.quickActions.moreActions")}
+              >
+                <Plus className="w-4 h-4" />
+                <span className="hidden xl:inline text-xs">
+                  {t("header.quickActions.more")}
+                </span>
+                <ChevronDown className="w-3 h-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="min-w-[200px]" dir="rtl">
+              <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-b border-gray-200">
+                {t("header.quickActions.moreActions")}
+              </div>
+              {/* הצג את כל הפעולות שלא מוצגות כבר */}
+              {AVAILABLE_ACTIONS
+                .filter(action => !displayActions.slice(0, 1).some(da => da.id === action.id))
+                .map((action) => {
+                  const Icon = action.icon
+                  return (
+                    <DropdownMenuItem
+                      key={action.id}
+                      onClick={() => handleActionClick(action)}
+                      className="gap-2"
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span>{t(action.labelKey)}</span>
+                    </DropdownMenuItem>
+                  )
+                })}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </>
       </div>
     </div>
   )

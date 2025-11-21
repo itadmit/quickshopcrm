@@ -39,6 +39,7 @@ import {
   Plus,
   Ruler,
   Edit,
+  X,
 } from "lucide-react"
 import {
   Accordion,
@@ -127,6 +128,7 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
   const [loadingPermissions, setLoadingPermissions] = useState(true)
   const [subscriptionInfo, setSubscriptionInfo] = useState<any>(null)
   const [pluginMenuItems, setPluginMenuItems] = useState<any[]>([])
+  const [hideTrialCard, setHideTrialCard] = useState(false)
   
   // Get menu items with translations
   const menuItems = getMenuItems(t)
@@ -147,6 +149,12 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
       fetchUnreadCount()
       fetchSubscriptionInfo()
       fetchActivePlugins()
+    }
+    
+    // טעינת הגדרת הסתרת כרטיס Trial
+    if (typeof window !== 'undefined') {
+      const hidden = localStorage.getItem('hide-trial-card')
+      setHideTrialCard(hidden === 'true')
     }
   }, [status])
 
@@ -302,6 +310,14 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
     // אם אין הרשאות כלל, נציג הכל (לצורך בדיקה)
     if (Object.keys(permissions).length === 0) return true
     return permissions[permission] === true
+  }
+
+  // פונקציה להסתרת כרטיס ה-Trial
+  const handleHideTrialCard = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hide-trial-card', 'true')
+      setHideTrialCard(true)
+    }
   }
 
   return (
@@ -700,43 +716,54 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
       </div>
 
       {/* Bottom Section - Trial Period */}
-      <div className="p-4 border-t border-gray-200">
-        <div className="rounded-xl p-4 text-white text-sm" style={{
-          background: 'linear-gradient(135deg, #15b981 0%, #10b981 100%)'
-        }}>
-          <div className="flex items-center gap-2 mb-2">
-            <Sparkles className="w-5 h-5" />
-            <span className="font-pacifico text-lg" style={{ letterSpacing: '1px' }}>Quick Shop</span>
-          </div>
-          <p className="text-white/80 text-xs mb-3">
-            {t("sidebar.trial.title")}
-          </p>
-          {subscriptionInfo && subscriptionInfo.isTrial && subscriptionInfo.daysRemaining !== undefined && (
-            <div className="mb-3 pb-3 border-b border-white/20">
-              <p className="text-white/90 text-xs font-medium mb-1">
-                {subscriptionInfo.daysRemaining > 0 ? (
-                  <>
-                    {t("sidebar.trial.daysRemaining", { count: subscriptionInfo.daysRemaining })}
-                  </>
-                ) : (
-                  <span className="text-red-200">{t("sidebar.trial.trialEnded")}</span>
-                )}
-              </p>
-              {subscriptionInfo.daysRemaining <= 3 && subscriptionInfo.daysRemaining > 0 && (
-                <p className="text-yellow-200 text-xs">
-                  {t("sidebar.trial.timeRunningOut")}
-                </p>
-              )}
+      {!hideTrialCard && (
+        <div className="p-4 border-t border-gray-200">
+          <div className="rounded-xl p-4 text-white text-sm relative" style={{
+            background: 'linear-gradient(135deg, #15b981 0%, #10b981 100%)'
+          }}>
+            {/* כפתור סגירה */}
+            <button
+              onClick={handleHideTrialCard}
+              className="absolute top-3 left-3 text-white/60 hover:text-white hover:bg-white/10 rounded-full p-1 transition-colors"
+              title="הסתר כרטיס"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex items-center gap-2 mb-2">
+              <Sparkles className="w-5 h-5" />
+              <span className="font-pacifico text-lg" style={{ letterSpacing: '1px' }}>Quick Shop</span>
             </div>
-          )}
-          <button 
-            onClick={() => window.location.href = '/settings?tab=subscription'}
-            className="w-full bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
-          >
-            {t("sidebar.trial.trialPeriod")}
-          </button>
+            <p className="text-white/80 text-xs mb-3">
+              {t("sidebar.trial.title")}
+            </p>
+            {subscriptionInfo && subscriptionInfo.isTrial && subscriptionInfo.daysRemaining !== undefined && (
+              <div className="mb-3 pb-3 border-b border-white/20">
+                <p className="text-white/90 text-xs font-medium mb-1">
+                  {subscriptionInfo.daysRemaining > 0 ? (
+                    <>
+                      {t("sidebar.trial.daysRemaining", { count: subscriptionInfo.daysRemaining })}
+                    </>
+                  ) : (
+                    <span className="text-red-200">{t("sidebar.trial.trialEnded")}</span>
+                  )}
+                </p>
+                {subscriptionInfo.daysRemaining <= 3 && subscriptionInfo.daysRemaining > 0 && (
+                  <p className="text-yellow-200 text-xs">
+                    {t("sidebar.trial.timeRunningOut")}
+                  </p>
+                )}
+              </div>
+            )}
+            <button 
+              onClick={() => window.location.href = '/settings?tab=subscription'}
+              className="w-full bg-white/20 hover:bg-white/30 rounded-lg px-3 py-1.5 text-xs font-medium transition-colors"
+            >
+              {t("sidebar.trial.trialPeriod")}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
