@@ -83,7 +83,8 @@ export async function POST(
       },
     })
 
-    return NextResponse.json({
+    // יצירת response
+    const response = NextResponse.json({
       token,
       customer: {
         id: customer.id,
@@ -91,8 +92,29 @@ export async function POST(
         firstName: customer.firstName,
         lastName: customer.lastName,
         phone: customer.phone,
+        preferredPaymentMethod: customer.preferredPaymentMethod,
       },
     })
+
+    // שמירת cookie עם פרטי הלקוח
+    const customerData = JSON.stringify({
+      id: customer.id,
+      email: customer.email,
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      phone: customer.phone,
+      preferredPaymentMethod: customer.preferredPaymentMethod,
+    })
+    
+    response.cookies.set(`storefront_customer_${params.slug}`, customerData, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30, // 30 ימים
+      httpOnly: false, // צריך להיות נגיש מ-JavaScript
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+    })
+
+    return response
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

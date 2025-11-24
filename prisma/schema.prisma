@@ -14,6 +14,7 @@ model Company {
   apiKey              String               @unique @default(cuid())
   hmacSecret          String?
   settings            Json?
+  storageLimitMB      Int? // הגבלת שטח אחסון במגה בייט - null = אין הגבלה
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   auditLogs           AuditLog[]
@@ -269,6 +270,8 @@ model Shop {
   sizeCharts               SizeChart[]
   productPageTemplates     ProductPageTemplate[]
   otpTokens                OtpToken[]
+  waitlist                 Waitlist[]
+  popups                   Popup[]
 
   @@index([companyId])
   @@index([slug])
@@ -294,6 +297,7 @@ model Product {
   priceByWeight        Boolean              @default(false) // זהו מוצר נמכר לפי משקל (ק"ג)
   showPricePer100ml    Boolean              @default(false) // האם להציג מחיר ל-100 מ״ל
   pricePer100ml        Float? // מחיר ל-100 מ״ל (אם showPricePer100ml = true)
+  isGiftCard           Boolean              @default(false) // האם זה מוצר gift card
   weight               Float?
   dimensions           Json?
   status               ProductStatus        @default(DRAFT)
@@ -326,6 +330,7 @@ model Product {
   wishlistItems        WishlistItem[]
   customFieldValues    CustomFieldValue[]
   pageTemplate         ProductPageTemplate? @relation(fields: [pageTemplateId], references: [id], onDelete: SetNull)
+  waitlist             Waitlist[]
 
   @@index([shopId])
   @@index([slug])
@@ -356,6 +361,7 @@ model ProductVariant {
   orderItems    OrderItem[]
   product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
   wishlistItems WishlistItem[]
+  waitlist      Waitlist[]
 
   @@index([productId])
   @@map("product_variants")
@@ -473,36 +479,38 @@ model ProductCollection {
 }
 
 model Customer {
-  id               String            @id @default(cuid())
-  shopId           String
-  email            String
-  password         String?
-  firstName        String?
-  lastName         String?
-  phone            String?
-  dateOfBirth      DateTime?
-  addresses        Json?
-  totalSpent       Float             @default(0)
-  orderCount       Int               @default(0)
-  tier             CustomerTier      @default(REGULAR)
-  tags             String[]
-  notes            String?
-  isSubscribed     Boolean           @default(false)
-  emailVerified    Boolean           @default(false)
-  lastLoginAt      DateTime?
-  createdAt        DateTime          @default(now())
-  updatedAt        DateTime          @updatedAt
-  blogComments     BlogComment[]
-  carts            Cart[]
-  shop             Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  orders           Order[]
-  Return           Return[]
-  reviews          Review[]
-  reviewReplies    ReviewReply[]
-  productQuestions ProductQuestion[]
-  productAnswers   ProductAnswer[]
-  storeCredits     StoreCredit[]
-  wishlistItems    WishlistItem[]
+  id                     String            @id @default(cuid())
+  shopId                 String
+  email                  String
+  password               String?
+  firstName              String?
+  lastName               String?
+  phone                  String?
+  dateOfBirth            DateTime?
+  addresses              Json?
+  preferredPaymentMethod String? // שיטת תשלום מועדפת: credit_card, bank_transfer, cash
+  totalSpent             Float             @default(0)
+  orderCount             Int               @default(0)
+  tier                   CustomerTier      @default(REGULAR)
+  tags                   String[]
+  notes                  String?
+  isSubscribed           Boolean           @default(false)
+  emailVerified          Boolean           @default(false)
+  lastLoginAt            DateTime?
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+  blogComments           BlogComment[]
+  carts                  Cart[]
+  shop                   Shop              @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orders                 Order[]
+  Return                 Return[]
+  reviews                Review[]
+  reviewReplies          ReviewReply[]
+  productQuestions       ProductQuestion[]
+  productAnswers         ProductAnswer[]
+  storeCredits           StoreCredit[]
+  wishlistItems          WishlistItem[]
+  waitlist               Waitlist[]
 
   @@index([shopId])
   @@index([email])
@@ -575,20 +583,21 @@ model Order {
 }
 
 model OrderItem {
-  id        String          @id @default(cuid())
-  orderId   String
-  productId String?
-  variantId String?
-  name      String
-  sku       String?
-  quantity  Int
-  price     Float
-  total     Float
-  addons    Json? // Add-ons that were selected: [{ addonId, valueId, label, price, quantity }]
-  createdAt DateTime        @default(now())
-  order     Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product?        @relation(fields: [productId], references: [id])
-  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+  id           String          @id @default(cuid())
+  orderId      String
+  productId    String?
+  variantId    String?
+  name         String
+  sku          String?
+  quantity     Int
+  price        Float
+  total        Float
+  addons       Json? // Add-ons that were selected: [{ addonId, valueId, label, price, quantity }]
+  giftCardData Json? // נתוני gift card אם זה מוצר gift card: { recipientName, recipientEmail, recipientPhone, message, senderName }
+  createdAt    DateTime        @default(now())
+  order        Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product      Product?        @relation(fields: [productId], references: [id])
+  variant      ProductVariant? @relation(fields: [variantId], references: [id])
 
   @@index([orderId])
   @@map("order_items")
@@ -1715,4 +1724,57 @@ model ProductPageTemplate {
   @@index([isDefault])
   @@index([isActive])
   @@map("product_page_templates")
+}
+
+// ===== Waitlist (רשימת המתנה) =====
+
+model Waitlist {
+  id         String          @id @default(cuid())
+  shopId     String
+  productId  String
+  variantId  String? // אם זה וריאציה ספציפית
+  email      String
+  customerId String? // אם הלקוח רשום במערכת
+  notifiedAt DateTime? // מתי נשלח המייל שהמוצר חזר למלאי
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  shop       Shop            @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  product    Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant    ProductVariant? @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  customer   Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  @@unique([shopId, productId, variantId, email]) // מניעת כפילויות
+  @@index([shopId])
+  @@index([productId])
+  @@index([variantId])
+  @@index([email])
+  @@index([notifiedAt])
+  @@map("waitlist")
+}
+
+model Popup {
+  id               String   @id @default(cuid())
+  shopId           String
+  name             String
+  layout           String   @default("one-column") // one-column, two-column
+  borderRadius     Int      @default(0) // עיגול פינות בפיקסלים
+  isActive         Boolean  @default(true)
+  content          Json // תוכן הפופאפ (טקסט, תמונות, טפסים)
+  displayFrequency String   @default("every-visit") // every-visit, once-daily, once-weekly, once-monthly
+  displayLocation  String   @default("all-pages") // all-pages, specific-pages
+  specificPages    Json? // רשימת עמודים ספציפיים אם displayLocation = specific-pages
+  delay            Int?     @default(0) // עיכוב בהצגה בשניות
+  trigger          String   @default("on-load") // on-load, on-exit-intent, on-scroll
+  scrollPercentage Int? // אחוז גלילה להצגה (אם trigger = on-scroll)
+  backgroundColor  String?  @default("#ffffff")
+  textColor        String?  @default("#000000")
+  overlayColor     String?  @default("#000000")
+  overlayOpacity   Float?   @default(0.5)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  shop             Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@index([shopId])
+  @@index([isActive])
+  @@map("popups")
 }

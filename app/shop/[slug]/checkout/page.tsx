@@ -84,12 +84,13 @@ async function getCart(slug: string, customerId: string | null) {
     const checkoutSettings = settings?.checkoutPage || {}
     
     // קריאת הגדרות שיטות תשלום
-    const paymentMethods = settings?.paymentMethods || {}
-    const bankTransferEnabled = paymentMethods.bankTransfer?.enabled === true
-    const bankTransferInstructions = paymentMethods.bankTransfer?.instructions || ""
-    const cashEnabled = paymentMethods.cash?.enabled === true
-    const cashMinOrderEnabled = paymentMethods.cash?.minOrderEnabled === true
-    const cashMinOrderAmount = paymentMethods.cash?.minOrderAmount || null
+    const bankTransferPayment = settings?.bankTransferPayment || {}
+    const cashPayment = settings?.cashPayment || {}
+    const bankTransferEnabled = bankTransferPayment.enabled === true
+    const bankTransferInstructions = bankTransferPayment.instructions || ""
+    const cashEnabled = cashPayment.enabled === true
+    const cashMinOrderEnabled = cashPayment.minOrderEnabled === true
+    const cashMinOrderAmount = cashPayment.minOrderAmount || null
     
     // בדיקה אם יש אינטגרציה פעילה עם ספק תשלום
     let hasPaymentProvider = false
@@ -154,6 +155,15 @@ async function getCart(slug: string, customerId: string | null) {
             minOrderEnabled: cashMinOrderEnabled,
             minOrderAmount: cashMinOrderAmount,
           },
+        },
+        bankTransferPayment: {
+          enabled: bankTransferEnabled,
+          instructions: bankTransferInstructions,
+        },
+        cashPayment: {
+          enabled: cashEnabled,
+          minOrderEnabled: cashMinOrderEnabled,
+          minOrderAmount: cashMinOrderAmount,
         },
       },
       cart: {
@@ -245,6 +255,7 @@ export default async function CheckoutPage({
             firstName: true,
             lastName: true,
             phone: true,
+            preferredPaymentMethod: true,
           },
         })
         
@@ -314,12 +325,13 @@ export default async function CheckoutPage({
             const checkoutSettings = settings?.checkoutPage || {}
             
             // קריאת הגדרות שיטות תשלום
-            const paymentMethods = settings?.paymentMethods || {}
-            const bankTransferEnabled = paymentMethods.bankTransfer?.enabled === true
-            const bankTransferInstructions = paymentMethods.bankTransfer?.instructions || ""
-            const cashEnabled = paymentMethods.cash?.enabled === true
-            const cashMinOrderEnabled = paymentMethods.cash?.minOrderEnabled === true
-            const cashMinOrderAmount = paymentMethods.cash?.minOrderAmount || null
+            const bankTransferPayment = settings?.bankTransferPayment || {}
+            const cashPayment = settings?.cashPayment || {}
+            const bankTransferEnabled = bankTransferPayment.enabled === true
+            const bankTransferInstructions = bankTransferPayment.instructions || ""
+            const cashEnabled = cashPayment.enabled === true
+            const cashMinOrderEnabled = cashPayment.minOrderEnabled === true
+            const cashMinOrderAmount = cashPayment.minOrderAmount || null
             
             let shipping = 0
             if (shippingSettings.enabled) {
@@ -397,6 +409,15 @@ export default async function CheckoutPage({
                     minOrderEnabled: cashMinOrderEnabled,
                     minOrderAmount: cashMinOrderAmount,
                   },
+                },
+                bankTransferPayment: {
+                  enabled: bankTransferEnabled,
+                  instructions: bankTransferInstructions,
+                },
+                cashPayment: {
+                  enabled: cashEnabled,
+                  minOrderEnabled: cashMinOrderEnabled,
+                  minOrderAmount: cashMinOrderAmount,
                 },
               },
               cart: {

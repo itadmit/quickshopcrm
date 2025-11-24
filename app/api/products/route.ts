@@ -22,6 +22,7 @@ const createProductSchema = z.object({
   priceByWeight: z.boolean().default(false),
   showPricePer100ml: z.boolean().default(false),
   pricePer100ml: z.union([z.number(), z.null()]).optional(),
+  isGiftCard: z.boolean().default(false),
   weight: z.union([z.number(), z.null()]).optional(),
   dimensions: z.any().optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).default("DRAFT"),

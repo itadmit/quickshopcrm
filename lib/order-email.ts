@@ -97,10 +97,6 @@ export async function sendOrderConfirmationEmail(orderId: string) {
           <span>משלוח:</span>
           <strong>₪${order.shipping.toFixed(2)}</strong>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
-          <span>מע"מ:</span>
-          <strong>₪${order.tax.toFixed(2)}</strong>
-        </div>
         <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 2px solid #ddd; font-size: 18px;">
           <strong>סה"כ ששולם:</strong>
           <strong style="color: #059669;">₪${order.total.toFixed(2)}</strong>

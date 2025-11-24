@@ -155,21 +155,20 @@ export default function IntegrationsPage() {
       .then(data => {
         if (data.shop && data.shop.settings) {
           const settings = data.shop.settings as any
-          const paymentMethods = settings.paymentMethods || {}
           
-          // Bank Transfer
-          if (paymentMethods.bankTransfer?.enabled) {
+          // Bank Transfer - נקרא מ-bankTransferPayment
+          const bankTransferPayment = settings.bankTransferPayment || {}
+          if (bankTransferPayment.enabled) {
             setBankTransferEnabled(true)
-            setBankTransferInstructions(paymentMethods.bankTransfer.instructions || "")
+            setBankTransferInstructions(bankTransferPayment.instructions || "")
           }
           
-          // Cash on Delivery
-          if (paymentMethods.cash?.enabled) {
+          // Cash on Delivery - נקרא מ-cashPayment
+          const cashPayment = settings.cashPayment || {}
+          if (cashPayment.enabled) {
             setCashEnabled(true)
-            if (paymentMethods.cash.minOrderEnabled) {
-              setCashMinOrderEnabled(true)
-              setCashMinOrderAmount(paymentMethods.cash.minOrderAmount?.toString() || "")
-            }
+            setCashMinOrderEnabled(cashPayment.minOrderEnabled || false)
+            setCashMinOrderAmount(cashPayment.minOrderAmount?.toString() || "")
           }
         }
       })
@@ -546,22 +545,28 @@ export default function IntegrationsPage() {
 
     setCashLoading(true)
     try {
+      const cashSettings = {
+        enabled: true,
+        minOrderEnabled: cashMinOrderEnabled,
+        minOrderAmount: cashMinOrderEnabled ? parseFloat(cashMinOrderAmount) : null,
+      }
+
       const res = await fetch(`/api/shops/${selectedShop.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           paymentMethods: {
-            cash: {
-              enabled: true,
-              minOrderEnabled: cashMinOrderEnabled,
-              minOrderAmount: cashMinOrderEnabled ? parseFloat(cashMinOrderAmount) : null,
-            },
+            cash: cashSettings,
           },
         }),
       })
 
       if (res.ok) {
         setCashEnabled(true)
+        // עדכון המצב המקומי
+        if (!cashMinOrderEnabled) {
+          setCashMinOrderAmount("")
+        }
         toast({
           title: "הצלחה!",
           description: "מזומן בהזמנה הופעל בהצלחה",

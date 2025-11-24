@@ -74,6 +74,59 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No file provided" }, { status: 400 })
     }
 
+    // בדיקת גודל קובץ - מקסימום 25 מגה בייט
+    const MAX_FILE_SIZE = 25 * 1024 * 1024 // 25 מגה בייט
+    if (file.size > MAX_FILE_SIZE) {
+      return NextResponse.json(
+        { 
+          error: "File size exceeds maximum allowed size of 25MB",
+          received: { 
+            fileName: file.name,
+            fileSize: file.size,
+            maxSize: MAX_FILE_SIZE
+          }
+        },
+        { status: 400 }
+      )
+    }
+
+    // בדיקת הגבלת שטח אחסון כולל (אם יש)
+    const company = await prisma.company.findUnique({
+      where: { id: session.user.companyId },
+      select: { storageLimitMB: true } as any,
+    })
+
+    const storageLimitMB = (company as any)?.storageLimitMB as number | null | undefined
+
+    if (storageLimitMB) {
+      // חישוב שטח אחסון נוכחי
+      const storageStats = await prisma.file.aggregate({
+        where: { companyId: session.user.companyId },
+        _sum: { size: true },
+      })
+
+      const currentStorageBytes = storageStats._sum.size || 0
+      const currentStorageMB = currentStorageBytes / (1024 * 1024)
+      const newFileSizeMB = file.size / (1024 * 1024)
+      const totalAfterUpload = currentStorageMB + newFileSizeMB
+
+      if (totalAfterUpload > storageLimitMB) {
+        return NextResponse.json(
+          { 
+            error: "Storage limit exceeded",
+            message: `הגעת למגבלת שטח האחסון (${storageLimitMB} MB). נא למחוק קבצים קיימים או לשדרג את התוכנית.`,
+            storage: {
+              used: currentStorageMB,
+              limit: storageLimitMB,
+              newFileSize: newFileSizeMB,
+              totalAfterUpload: totalAfterUpload
+            }
+          },
+          { status: 400 }
+        )
+      }
+    }
+
     if (!entityType || !entityId) {
       return NextResponse.json({ 
         error: "Missing entityType or entityId",
@@ -115,9 +168,52 @@ export async function POST(req: NextRequest) {
       let finalEntityType = entityType
       let finalIdentifier: string | null = entityId !== 'new' ? entityId : null
       
+      // טיפול מיוחד עבור מדיה כללית (לא קשורה לחנות ספציפית)
+      if (entityType === 'media') {
+        // עבור מדיה כללית, נשתמש ב-companyId ישירות
+        // יצירת נתיב ב-S3 עבור מדיה כללית: media/{companyId}/{timestamp}-{fileName}
+        const timestamp = Date.now()
+        const s3Key = `media/${session.user.companyId}/${timestamp}-${sanitizedFileName}`
+        const finalMimeType = extension === 'webp' 
+          ? 'image/webp' 
+          : (file.type || 'application/octet-stream')
+        filePath = await uploadToS3(buffer, s3Key, finalMimeType)
+        
+        // שמירת הקובץ במסד הנתונים
+        const finalMimeTypeForDB = extension === 'webp' 
+          ? 'image/webp' 
+          : (file.type || null)
+        const fileRecord = await prisma.file.create({
+          data: {
+            companyId: session.user.companyId,
+            entityType: 'media',
+            entityId: 'general',
+            path: filePath,
+            name: sanitizedFileName,
+            size: buffer.length,
+            mimeType: finalMimeTypeForDB,
+            uploadedBy: session.user.id,
+          },
+        })
+
+        return NextResponse.json({
+          success: true,
+          file: {
+            id: fileRecord.id,
+            name: fileRecord.name,
+            path: fileRecord.path,
+            size: fileRecord.size,
+            mimeType: fileRecord.mimeType,
+            createdAt: fileRecord.createdAt,
+          },
+        })
+      }
+      
       if (entityType === 'shops') {
         // עבור shops - logo, favicon, builders וכו'
         let targetShopId = entityId !== 'new' ? entityId : shopId
+        
+        console.log('🔍 Shops upload - checking shop:', { entityId, shopId, targetShopId, fileType })
         
         if (!targetShopId) {
           return NextResponse.json(
@@ -128,14 +224,23 @@ export async function POST(req: NextRequest) {
         
         const shop = await prisma.shop.findUnique({
           where: { id: targetShopId },
-          select: { slug: true },
+          select: { slug: true, id: true },
         })
+        
+        console.log('🔍 Shop found:', { shop, hasSlug: !!shop?.slug })
         
         if (shop?.slug) {
           shopSlug = shop.slug
           // עבור shops, נשתמש ב-fileType (logo, favicon, builders) או entityType
           finalEntityType = fileType || 'logo' // ברירת מחדל logo
           finalIdentifier = null
+          console.log('✅ Shop slug set:', shopSlug, 'finalEntityType:', finalEntityType)
+        } else {
+          console.error('❌ Shop not found or missing slug:', { targetShopId, shop, entityId, shopId })
+          return NextResponse.json(
+            { error: "Shop not found or missing slug", details: { targetShopId, shopExists: !!shop } },
+            { status: 400 }
+          )
         }
       } else {
         // עבור products, collections, pages וכו' - צריך למצוא את ה-shopId

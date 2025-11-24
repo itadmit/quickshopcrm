@@ -272,15 +272,47 @@ export async function PATCH(
     const updateData: any = {}
     const currentSettings = (existingShop.settings as any) || {}
     
-    // אם יש paymentMethods, נשמור אותם ב-settings
+    // אם יש paymentMethods מההגדרות המתקדמות (cash, bankTransfer וכו')
     if (data.paymentMethods) {
-      updateData.settings = {
-        ...currentSettings,
-        paymentMethods: {
-          ...(currentSettings.paymentMethods || {}),
-          ...data.paymentMethods,
-        },
+      // נשמור את ההגדרות המתקדמות בנפרד מהמערך של paymentMethods
+      const updatedSettings = { ...currentSettings }
+      
+      // עדכון כל שיטת תשלום מתקדמת
+      for (const [key, value] of Object.entries(data.paymentMethods)) {
+        if (typeof value === 'object' && value !== null) {
+          // Deep merge לאובייקטים מקוננים
+          const settingsKey = key === 'cash' ? 'cashPayment' : 
+                             key === 'bankTransfer' ? 'bankTransferPayment' : 
+                             `${key}Payment`
+          
+          updatedSettings[settingsKey] = {
+            ...(currentSettings[settingsKey] || {}),
+            ...(value as object),
+          }
+          
+          // עדכון המערך של paymentMethods
+          const paymentMethodId = key === 'cash' ? 'cash_on_delivery' : 
+                                 key === 'bankTransfer' ? 'bank_transfer' : key
+          
+          const currentPaymentMethods = Array.isArray(currentSettings.paymentMethods) 
+            ? currentSettings.paymentMethods 
+            : []
+          
+          if ((value as any).enabled) {
+            // הוספה למערך אם מופעל ולא קיים
+            if (!currentPaymentMethods.includes(paymentMethodId)) {
+              updatedSettings.paymentMethods = [...currentPaymentMethods, paymentMethodId]
+            }
+          } else {
+            // הסרה מהמערך אם כבוי
+            updatedSettings.paymentMethods = currentPaymentMethods.filter(
+              (id: string) => id !== paymentMethodId
+            )
+          }
+        }
       }
+      
+      updateData.settings = updatedSettings
     }
     
     // אם יש settings (shipping zones, fulfillment location וכו'), נשמור אותם

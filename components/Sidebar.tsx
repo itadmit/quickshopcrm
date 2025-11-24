@@ -40,6 +40,9 @@ import {
   Ruler,
   Edit,
   X,
+  Bell,
+  Image,
+  Megaphone,
 } from "lucide-react"
 import {
   Accordion,
@@ -72,12 +75,15 @@ const getMarketingItems = (t: any) => [
   { icon: FolderOpen, labelKey: "sidebar.collections", href: "/collections", permission: "collections" },
   { icon: Gift, labelKey: "sidebar.giftCards", href: "/gift-cards", permission: "gift_cards" },
   { icon: ShoppingBag, labelKey: "sidebar.abandonedCarts", href: "/abandoned-carts", permission: "abandoned_carts" },
+  { icon: Bell, labelKey: "sidebar.waitlist", href: "/waitlist", permission: "products" },
 ]
 
 const getContentItems = (t: any) => [
   { icon: FileText, labelKey: "sidebar.pages", href: "/pages", permission: "pages" },
   { icon: Menu, labelKey: "sidebar.navigation", href: "/navigation", permission: "navigation" },
   { icon: BookOpen, labelKey: "sidebar.blog", href: "/blog", permission: "blog" },
+  { icon: Megaphone, labelKey: "sidebar.popups", href: "/popups", permission: "settings" },
+  { icon: Image, labelKey: "sidebar.media", href: "/media", permission: "media" },
   { icon: Palette, labelKey: "sidebar.appearance", href: "/appearance", permission: "settings" },
   { icon: Sparkles, labelKey: "sidebar.customize", href: "/customize", permission: "settings" },
 ]
@@ -228,6 +234,7 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
           pages: true,
           navigation: true,
           blog: true,
+          media: true,
           reviews: true,
           returns: true,
           store_credits: true,
@@ -256,6 +263,7 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
         pages: true,
         navigation: true,
         blog: true,
+        media: true,
         reviews: true,
         returns: true,
         store_credits: true,

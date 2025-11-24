@@ -545,14 +545,11 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
               {/* Estimated Total */}
               <div className="mb-4">
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-900 font-medium">סה"כ משוער</span>
+                  <span className="text-gray-900 font-medium">סה״כ</span>
                   <span className="text-2xl font-bold text-gray-900">
                     ₪{cart.total.toFixed(2)}
                   </span>
                 </div>
-                <p className="text-xs text-gray-500 text-center">
-                  דמי משלוח יחושבו בקופה
-                </p>
               </div>
 
               {/* Cart Page Button - Optional */}

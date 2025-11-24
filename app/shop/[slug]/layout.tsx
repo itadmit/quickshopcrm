@@ -1,6 +1,7 @@
 import { TrackingPixelProvider } from "@/components/storefront/TrackingPixelProvider"
 import { StorefrontDataProvider } from "@/components/storefront/StorefrontDataProvider"
 import { ScriptInjectorWrapper } from "@/components/plugins/ScriptInjectorWrapper"
+import { PopupDisplay } from "@/components/storefront/PopupDisplay"
 import { prisma } from "@/lib/prisma"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
@@ -148,6 +149,7 @@ export default async function ShopLayout({
       >
         <ScriptInjectorWrapper shopId={shop?.id} companyId={shop?.companyId} />
         {children}
+        <PopupDisplay slug={slug} />
       </StorefrontDataProvider>
     </TrackingPixelProvider>
   )

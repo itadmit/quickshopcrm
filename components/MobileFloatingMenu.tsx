@@ -19,21 +19,18 @@ export function MobileFloatingMenu() {
       label: t('dashboard.actions.createStoreShort'),
       href: "/shops/new",
       color: "bg-emerald-500",
-      delay: "delay-[0ms]"
     },
     {
       icon: Package,
       label: t('dashboard.actions.addProduct'),
       href: "/products/new",
       color: "bg-blue-500",
-      delay: "delay-[50ms]"
     },
     {
       icon: ShoppingBag,
       label: t('dashboard.actions.viewOrders'), // Using view orders as "create order" might be less common manual task
       href: "/orders",
       color: "bg-purple-500",
-      delay: "delay-[100ms]"
     }
   ]
 

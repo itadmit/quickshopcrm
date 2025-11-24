@@ -1357,9 +1357,8 @@ export async function calculateCart(
   
   if (finalTaxRate > 0) {
     if (pricesIncludeTax) {
-      // המחירים כוללים מע"מ - רק מפרידים את המע"מ לתצוגה
-      // דוגמה: אם המחיר 117 והמע"מ 17%, אז המחיר לפני מע"ם הוא 100 והמע"ם הוא 17
-      tax = finalPrice - (finalPrice / (1 + finalTaxRate / 100))
+      // המחירים כוללים מע"מ - המע"מ כבר נכלל במחיר, לא צריך להציג אותו בנפרד
+      tax = 0
       total = finalPrice + (shippingCost !== null ? shippingCost : 0)
     } else {
       // המחירים לא כוללים מע"מ - צריך להוסיף מע"מ

@@ -61,6 +61,7 @@ export default function NewProductPage() {
     priceByWeight: false,
     showPricePer100ml: false,
     pricePer100ml: "",
+    isGiftCard: false,
     weight: "",
     dimensions: {
       length: "",
@@ -215,6 +216,7 @@ export default function NewProductPage() {
         sellWhenSoldOut: formData.sellWhenSoldOut,
         priceByWeight: formData.priceByWeight,
         showPricePer100ml: formData.showPricePer100ml,
+        isGiftCard: formData.isGiftCard,
         status: formData.status,
         notifyOnPublish: formData.notifyOnPublish,
         images: formData.images,
@@ -493,10 +495,14 @@ export default function NewProductPage() {
               data={{
                 name: formData.name,
                 description: formData.description,
+                isGiftCard: formData.isGiftCard,
               }}
               onNameChange={handleNameChange}
               onDescriptionChange={(description) => 
                 setFormData(prev => ({ ...prev, description }))
+              }
+              onIsGiftCardChange={(isGiftCard) => 
+                setFormData(prev => ({ ...prev, isGiftCard }))
               }
             />
 

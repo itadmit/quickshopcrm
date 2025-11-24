@@ -69,7 +69,10 @@ export function HeroProductShowcase() {
       }`} />
 
       {/* iPhone Frame */}
-      <div className="relative mx-auto border-gray-900 bg-gray-900 border-[12px] rounded-[3rem] h-[600px] w-[300px] shadow-2xl rotate-[-6deg] hover:rotate-0 transition-all duration-700 ease-[cubic-bezier(0.25,0.1,0.25,1)] z-10 group cursor-pointer">
+      <div 
+        className="relative mx-auto border-gray-900 bg-gray-900 border-[12px] rounded-[3rem] h-[600px] w-[300px] shadow-2xl rotate-[-6deg] hover:rotate-0 transition-all duration-700 z-10 group cursor-pointer"
+        style={{ transitionTimingFunction: 'cubic-bezier(0.25,0.1,0.25,1)' }}
+      >
         
         {/* Side Buttons */}
         <div className="h-[32px] w-[3px] bg-gray-800 absolute -left-[15px] top-[72px] rounded-l-lg"></div>

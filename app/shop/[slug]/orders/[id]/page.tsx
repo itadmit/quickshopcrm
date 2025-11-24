@@ -404,12 +404,6 @@ export default function StorefrontOrderPage() {
                     <span>₪{order.shipping.toFixed(2)}</span>
                   </div>
                 )}
-                {order.tax > 0 && (
-                  <div className="flex justify-between text-gray-700">
-                    <span>מע"מ</span>
-                    <span>₪{order.tax.toFixed(2)}</span>
-                  </div>
-                )}
                 <div className="border-t pt-4 flex justify-between text-lg font-bold">
                   <span>סה"כ</span>
                   <span>₪{order.total.toFixed(2)}</span>

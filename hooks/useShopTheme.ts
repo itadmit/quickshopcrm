@@ -267,7 +267,7 @@ export function useShopTheme(slug: string) {
           // Cart settings
           showCouponByDefault: themeSettings.showCouponByDefault !== undefined ? themeSettings.showCouponByDefault : true,
           showCartPageButton: themeSettings.showCartPageButton !== undefined ? themeSettings.showCartPageButton : false,
-          showTaxInCart: themeSettings.showTaxInCart !== undefined ? themeSettings.showTaxInCart : true,
+          showTaxInCart: themeSettings.showTaxInCart !== undefined ? themeSettings.showTaxInCart : false,
           
           // Category settings
           categoryProductsPerRowMobile: themeSettings.categoryProductsPerRowMobile || DEFAULT_THEME.categoryProductsPerRowMobile,

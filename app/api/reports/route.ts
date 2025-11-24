@@ -20,6 +20,8 @@ export type ReportType =
   | "vip-customers"
   | "top-products"
   | "abandoned-carts"
+  | "influencers"
+  | "gift-cards"
 
 interface ReportParams {
   shopId: string
@@ -69,7 +71,8 @@ export async function GET(req: NextRequest) {
     const validReportTypes: ReportType[] = [
       "sales", "orders", "customers", "products", "inventory",
       "returns", "coupons", "discounts", "reviews", "marketing",
-      "payments", "shipping", "vip-customers", "top-products", "abandoned-carts"
+      "payments", "shipping", "vip-customers", "top-products", "abandoned-carts",
+      "influencers", "gift-cards"
     ]
     if (!validReportTypes.includes(reportType)) {
       return NextResponse.json(
@@ -79,7 +82,7 @@ export async function GET(req: NextRequest) {
     }
 
     // דוח מלאי לא צריך תאריכים
-    const needsDates = reportType !== "inventory"
+    const needsDates = reportType !== "inventory" && reportType !== "gift-cards"
     if (needsDates && (!startDate || !endDate)) {
       return NextResponse.json(
         { error: "Missing required parameters: startDate and endDate are required for this report" },
@@ -182,6 +185,12 @@ export async function GET(req: NextRequest) {
         break
       case "abandoned-carts":
         data = await getAbandonedCartsReport(shopId, start!, end!, columns, limit)
+        break
+      case "influencers":
+        data = await getInfluencersReport(shopId, start!, end!, columns, limit)
+        break
+      case "gift-cards":
+        data = await getGiftCardsReport(shopId, start || null, end || null, columns, limit)
         break
     }
 
@@ -1040,6 +1049,205 @@ async function getAbandonedCartsReport(
       row.couponCode = cart.couponCode || ""
     if (!columns.length || columns.includes("recovered"))
       row.recovered = cart.recoveredAt ? "כן" : "לא"
+    return row
+  })
+}
+
+// דוח משפיעניות
+async function getInfluencersReport(
+  shopId: string,
+  start: Date,
+  end: Date,
+  columns: string[],
+  limit: number = 10000
+) {
+  // קבלת כל הקופונים עם משפיענים
+  const coupons = await prisma.coupon.findMany({
+    where: {
+      shopId,
+      influencerId: { not: null },
+      createdAt: { gte: start, lte: end },
+    },
+    include: {
+      influencer: true,
+      shop: true,
+    },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  })
+
+  // קבלת הזמנות עם קופונים של משפיענים
+  const couponCodes = coupons.map((c) => c.code)
+  const orders = await prisma.order.findMany({
+    where: {
+      shopId,
+      couponCode: { in: couponCodes },
+      createdAt: { gte: start, lte: end },
+    },
+    include: {
+      items: true,
+    },
+  })
+
+  // יצירת מפה של קופון -> משפיען
+  const couponToInfluencer = new Map<string, typeof coupons[0]>()
+  coupons.forEach((coupon) => {
+    couponToInfluencer.set(coupon.code, coupon)
+  })
+
+  // חישוב סטטיסטיקות לכל קופון בנפרד
+  const couponStats = new Map<
+    string,
+    {
+      coupon: typeof coupons[0]
+      totalOrders: number
+      totalRevenue: number
+      totalDiscount: number
+    }
+  >()
+
+  // אתחול סטטיסטיקות לכל קופון
+  coupons.forEach((coupon) => {
+    couponStats.set(coupon.code, {
+      coupon,
+      totalOrders: 0,
+      totalRevenue: 0,
+      totalDiscount: 0,
+    })
+  })
+
+  // חישוב סטטיסטיקות מההזמנות
+  orders.forEach((order) => {
+    const couponCode = order.couponCode || ""
+    const stats = couponStats.get(couponCode)
+    if (stats) {
+      stats.totalOrders++
+      stats.totalRevenue += order.total
+      stats.totalDiscount += order.discount || 0
+    }
+  })
+
+  // יצירת שורות הדוח
+  const rows: any[] = []
+
+  couponStats.forEach((stats) => {
+    const coupon = stats.coupon
+    if (!coupon.influencer) return
+
+    const row: any = {}
+    if (!columns.length || columns.includes("influencerName"))
+      row.influencerName = coupon.influencer.name || ""
+    if (!columns.length || columns.includes("influencerEmail"))
+      row.influencerEmail = coupon.influencer.email || ""
+    if (!columns.length || columns.includes("couponCode"))
+      row.couponCode = coupon.code
+    if (!columns.length || columns.includes("couponType"))
+      row.couponType = coupon.type
+    if (!columns.length || columns.includes("couponValue"))
+      row.couponValue = coupon.value
+    if (!columns.length || columns.includes("usedCount"))
+      row.usedCount = coupon.usedCount
+    if (!columns.length || columns.includes("maxUses"))
+      row.maxUses = coupon.maxUses || ""
+    if (!columns.length || columns.includes("totalOrders"))
+      row.totalOrders = stats.totalOrders
+    if (!columns.length || columns.includes("totalRevenue"))
+      row.totalRevenue = stats.totalRevenue
+    if (!columns.length || columns.includes("totalDiscount"))
+      row.totalDiscount = stats.totalDiscount
+    if (!columns.length || columns.includes("averageOrderValue"))
+      row.averageOrderValue =
+        stats.totalOrders > 0 ? stats.totalRevenue / stats.totalOrders : 0
+    if (!columns.length || columns.includes("isActive"))
+      row.isActive = coupon.isActive ? "כן" : "לא"
+    if (!columns.length || columns.includes("startDate"))
+      row.startDate = coupon.startDate
+        ? coupon.startDate.toISOString().split("T")[0]
+        : ""
+    if (!columns.length || columns.includes("endDate"))
+      row.endDate = coupon.endDate
+        ? coupon.endDate.toISOString().split("T")[0]
+        : ""
+    rows.push(row)
+  })
+
+  return rows
+}
+
+// דוח כרטיסי מתנה
+async function getGiftCardsReport(
+  shopId: string,
+  start: Date | null,
+  end: Date | null,
+  columns: string[],
+  limit: number = 10000
+) {
+  const where: any = { shopId }
+
+  // אם יש תאריכים, נסנן לפי תאריך יצירה
+  if (start && end) {
+    where.createdAt = { gte: start, lte: end }
+  }
+
+  const giftCards = await prisma.giftCard.findMany({
+    where,
+    include: {
+      transactions: {
+        include: {
+          order: {
+            select: {
+              id: true,
+              orderNumber: true,
+              total: true,
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: limit,
+  })
+
+  return giftCards.map((giftCard) => {
+    const usedAmount = giftCard.amount - giftCard.balance
+    const transactionsCount = giftCard.transactions.length
+    const lastUsedAt =
+      giftCard.transactions.length > 0
+        ? giftCard.transactions[0].createdAt
+        : null
+
+    const row: any = {}
+    if (!columns.length || columns.includes("code"))
+      row.code = giftCard.code
+    if (!columns.length || columns.includes("recipientName"))
+      row.recipientName = giftCard.recipientName || ""
+    if (!columns.length || columns.includes("recipientEmail"))
+      row.recipientEmail = giftCard.recipientEmail
+    if (!columns.length || columns.includes("senderName"))
+      row.senderName = giftCard.senderName || ""
+    if (!columns.length || columns.includes("amount"))
+      row.amount = giftCard.amount
+    if (!columns.length || columns.includes("balance"))
+      row.balance = giftCard.balance
+    if (!columns.length || columns.includes("usedAmount"))
+      row.usedAmount = usedAmount
+    if (!columns.length || columns.includes("isActive"))
+      row.isActive = giftCard.isActive ? "כן" : "לא"
+    if (!columns.length || columns.includes("createdAt"))
+      row.createdAt = giftCard.createdAt.toISOString().split("T")[0]
+    if (!columns.length || columns.includes("expiresAt"))
+      row.expiresAt = giftCard.expiresAt
+        ? giftCard.expiresAt.toISOString().split("T")[0]
+        : ""
+    if (!columns.length || columns.includes("transactionsCount"))
+      row.transactionsCount = transactionsCount
+    if (!columns.length || columns.includes("lastUsedAt"))
+      row.lastUsedAt = lastUsedAt
+        ? lastUsedAt.toISOString().split("T")[0]
+        : ""
     return row
   })
 }

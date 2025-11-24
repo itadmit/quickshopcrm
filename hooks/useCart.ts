@@ -99,6 +99,7 @@ export function useCart(slug: string, customerId?: string | null) {
       variantId,
       quantity = 1,
       addons,
+      giftCardData,
     }: {
       productId: string
       variantId?: string | null
@@ -110,6 +111,13 @@ export function useCart(slug: string, customerId?: string | null) {
         price: number
         quantity: number
       }>
+      giftCardData?: {
+        recipientName: string
+        recipientEmail: string
+        recipientPhone: string
+        senderName: string
+        message: string
+      }
     }) => {
       const headers: HeadersInit = { 'Content-Type': 'application/json' }
       if (customerId) {
@@ -120,7 +128,7 @@ export function useCart(slug: string, customerId?: string | null) {
         method: 'POST',
         headers,
         credentials: 'include',
-        body: JSON.stringify({ productId, variantId, quantity, addons }),
+        body: JSON.stringify({ productId, variantId, quantity, addons, giftCardData }),
       })
       
       if (!response.ok) {

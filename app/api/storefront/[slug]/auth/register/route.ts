@@ -68,6 +68,7 @@ export async function POST(
         firstName: true,
         lastName: true,
         phone: true,
+        preferredPaymentMethod: true,
         createdAt: true,
       },
     })
@@ -107,6 +108,7 @@ export async function POST(
         firstName: customer.firstName,
         lastName: customer.lastName,
         phone: customer.phone,
+        preferredPaymentMethod: customer.preferredPaymentMethod,
       },
     }, { status: 201 })
 
@@ -117,6 +119,7 @@ export async function POST(
       firstName: customer.firstName,
       lastName: customer.lastName,
       phone: customer.phone,
+      preferredPaymentMethod: customer.preferredPaymentMethod,
     })
     
     response.cookies.set(`storefront_customer_${params.slug}`, customerData, {

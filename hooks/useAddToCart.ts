@@ -33,6 +33,14 @@ interface AddToCartParams {
     price: number
     quantity: number
   }>
+  // נתוני gift card (אם זה מוצר gift card)
+  giftCardData?: {
+    recipientName: string
+    recipientEmail: string
+    recipientPhone: string
+    senderName: string
+    message: string
+  }
 }
 
 /**
@@ -67,7 +75,8 @@ export function useAddToCart({ slug, customerId, onSuccess, autoOpenCart = true 
     quantity = 1,
     productName = 'המוצר',
     productData,
-    addons
+    addons,
+    giftCardData
   }: AddToCartParams): Promise<boolean> => {
     // בדיקת מלאי אם יש נתוני מוצר
     if (productData) {
@@ -110,6 +119,7 @@ export function useAddToCart({ slug, customerId, onSuccess, autoOpenCart = true 
         variantId: variantId || undefined, // שולח undefined במקום null
         quantity,
         addons,
+        giftCardData,
       })
 
       // הצגת טוסט רק אם העגלה לא נפתחת אוטומטית

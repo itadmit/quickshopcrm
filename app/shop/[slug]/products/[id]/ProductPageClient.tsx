@@ -43,6 +43,7 @@ import { ProductAddonsSelector } from "./components/ProductAddonsSelector"
 import { ProductCustomFields } from "./components/ProductCustomFields"
 import { BundleSelector } from "./components/BundleSelector"
 import { ReviewForm } from "@/components/storefront/ReviewForm"
+import { GiftCardForm } from "./components/GiftCardForm"
 
 const popularColors: Record<string, string> = {
   'שחור': '#000000',
@@ -99,6 +100,24 @@ export function ProductPageClient({
   const [showQuickBuy, setShowQuickBuy] = useState(false)
   const [isGift, setIsGift] = useState(false)
   const [giftDiscountId, setGiftDiscountId] = useState<string | null>(null)
+  
+  // Gift Card form data (only for gift card products)
+  const [giftCardData, setGiftCardData] = useState({
+    recipientName: "",
+    recipientEmail: "",
+    recipientPhone: "",
+    senderName: "",
+    message: "",
+  })
+  
+  // שמירת gift card data ב-window כדי ש-handleAddToCart יוכל לגשת אליו
+  useEffect(() => {
+    if ((product as any).isGiftCard) {
+      (window as any).giftCardData = giftCardData
+    } else {
+      delete (window as any).giftCardData
+    }
+  }, [giftCardData, product])
   
   // State for Product Add-ons
   const [selectedAddons, setSelectedAddons] = useState<Array<{
@@ -373,6 +392,7 @@ export function ProductPageClient({
     onOpenElementSettings: handleOpenElementSettings,
     slug,
     productId: product.id, // שימוש ב-id האמיתי של המוצר במקום slug
+    shopId: shop.id,
     theme,
     hasBundles: bundles && bundles.length > 0, // האם יש bundles
     averageRating,
@@ -630,6 +650,28 @@ export function ProductPageClient({
                     }
                   }
                 }
+                // הוסף Gift Card Form אחרי variants אם זה gift card product
+                if (element.position === 5 && element.type === "product-quantity" && (product as any).isGiftCard) {
+                  const variantPrice = selectedVariant && product.variants
+                    ? product.variants.find((v) => v.id === selectedVariant)?.price || product.price
+                    : product.price
+                  
+                  return (
+                    <div key="gift-card-form">
+                      {/* Gift Card Form */}
+                      <div className="mb-6">
+                        <GiftCardForm
+                          data={giftCardData}
+                          onChange={setGiftCardData}
+                          variantPrice={variantPrice}
+                        />
+                      </div>
+                      {/* Quantity element */}
+                      {renderElement(element)}
+                    </div>
+                  )
+                }
+                
                 // הוסף את התוספות אחרי variants (position 4) ולפני quantity (position 5)
                 if (element.position === 5 && element.type === "product-quantity" && productAddons && productAddons.length > 0) {
                   return (

@@ -62,6 +62,7 @@ export async function GET(
           pages: true,
           navigation: true,
           blog: true,
+          media: true,
           reviews: true,
           returns: true,
           store_credits: true,

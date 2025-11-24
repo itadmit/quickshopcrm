@@ -121,6 +121,18 @@ export async function PUT(
       },
     })
 
+    // בדיקה אם הווריאציה חזרה למלאי ושליחת מיילים לרשימת המתנה
+    // רק אם המלאי השתנה
+    if (data.inventoryQty !== undefined) {
+      try {
+        const { checkAndNotifyWaitlist } = await import("@/lib/waitlist-notifications")
+        await checkAndNotifyWaitlist(existingVariant.product.id)
+      } catch (error) {
+        console.error("Error checking waitlist:", error)
+        // לא נכשיל את הבקשה אם יש שגיאה בשליחת מיילים
+      }
+    }
+
     return NextResponse.json(variant)
   } catch (error) {
     if (error instanceof z.ZodError) {

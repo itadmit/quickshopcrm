@@ -43,6 +43,7 @@ export async function GET(req: NextRequest) {
           pages: true,
           navigation: true,
           blog: true,
+          media: true,
           reviews: true,
           returns: true,
           store_credits: true,

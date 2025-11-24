@@ -27,6 +27,7 @@ export default function NewGiftCardPage() {
     senderName: "",
     message: "",
     expiresAt: "",
+    sendEmail: true, // ברירת מחדל - לשלוח מייל
   })
 
   const handleSubmit = async () => {
@@ -69,6 +70,7 @@ export default function NewGiftCardPage() {
         senderName: formData.senderName || undefined,
         message: formData.message || undefined,
         expiresAt: formData.expiresAt || undefined,
+        sendEmail: formData.sendEmail, // האם לשלוח מייל
       }
 
       const response = await fetch("/api/gift-cards", {
@@ -247,6 +249,22 @@ export default function NewGiftCardPage() {
                     placeholder="הודעה אישית לנמען..."
                     rows={4}
                   />
+                </div>
+
+                <div className="space-y-2 pt-4 border-t">
+                  <div className="flex items-center space-x-2 space-x-reverse">
+                    <Checkbox
+                      id="sendEmail"
+                      checked={formData.sendEmail}
+                      onCheckedChange={(checked) => setFormData((prev) => ({ ...prev, sendEmail: !!checked }))}
+                    />
+                    <Label htmlFor="sendEmail" className="cursor-pointer">
+                      שלח מייל לנמען עם פרטי כרטיס המתנה
+                    </Label>
+                  </div>
+                  <p className="text-sm text-gray-500 mr-6">
+                    אם מסומן, מייל עם פרטי כרטיס המתנה יישלח אוטומטית לנמען
+                  </p>
                 </div>
               </CardContent>
             </Card>

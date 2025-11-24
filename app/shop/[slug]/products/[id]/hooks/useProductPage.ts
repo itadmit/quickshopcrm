@@ -146,11 +146,38 @@ export function useProductPage({
       }
       
       if (variantValue) {
-        initialOptions[option.id] = variantValue
+        // מציאת ה-ID של הערך לפי ה-label או ה-ID
+        // option.values יכול להיות מערך של objects {id, label} או מערך של strings
+        const values = Array.isArray(option.values) ? option.values : []
+        let valueId = variantValue // ברירת מחדל - אם לא נמצא, נשתמש ב-variantValue
+        
+        for (const val of values) {
+          if (typeof val === 'object' && val !== null) {
+            // אם זה object, בדוק אם ה-label או ה-ID תואמים
+            // השוואה case-insensitive
+            const valLabelLower = String(val.label || '').toLowerCase().trim()
+            const valIdLower = String(val.id || '').toLowerCase().trim()
+            const variantValueLower = String(variantValue).toLowerCase().trim()
+            
+            if (valLabelLower === variantValueLower || valIdLower === variantValueLower) {
+              valueId = val.id
+              break
+            }
+          } else if (typeof val === 'string') {
+            // אם זה string, בדוק אם זה תואם (case-insensitive)
+            if (val.toLowerCase().trim() === String(variantValue).toLowerCase().trim()) {
+              valueId = val
+              break
+            }
+          }
+        }
+        
+        initialOptions[option.id] = valueId
       }
     })
     
     setSelectedOptionValues(initialOptions)
+    setSelectedVariant(variantToSelect.id)
   }, [product])
 
   // טעינת cart count
@@ -466,6 +493,28 @@ export function useProductPage({
   const handleAddToCart = async (showToast = true) => {
     if (!product) return false
 
+    // בדיקת מלאי לפני הוספה לעגלה - רק אם המוצר לא מאפשר מכירה בלי מלאי
+    if (!product.sellWhenSoldOut) {
+      if (selectedVariant && product.variants) {
+        const variant = product.variants.find((v) => v.id === selectedVariant)
+        if (variant && variant.inventoryQty !== null && variant.inventoryQty < quantity) {
+          toast({
+            title: 'אין מספיק מלאי',
+            description: `נותרו רק ${variant.inventoryQty} יחידות במידה זו`,
+            variant: 'destructive',
+          })
+          return false
+        }
+      } else if (product.inventoryQty !== null && product.inventoryQty < quantity) {
+        toast({
+          title: 'אין מספיק מלאי',
+          description: `נותרו רק ${product.inventoryQty} יחידות`,
+          variant: 'destructive',
+        })
+        return false
+      }
+    }
+
     const currentPrice = selectedVariant && product.variants
       ? product.variants.find((v) => v.id === selectedVariant)?.price || product.price
       : product.price
@@ -484,6 +533,7 @@ export function useProductPage({
         }))
       },
       addons: selectedAddons.length > 0 ? selectedAddons : undefined,
+      giftCardData: (product as any).isGiftCard ? (window as any).giftCardData : undefined,
     })
 
     if (success) {

@@ -23,6 +23,13 @@ const addToCartSchema = z.object({
     quantity: z.number().int().min(1).default(1),
   })).optional(),
   bundleId: z.string().optional(), // תמיכה בחבילות
+  giftCardData: z.object({
+    recipientName: z.string(),
+    recipientEmail: z.string().email(),
+    recipientPhone: z.string().optional(),
+    senderName: z.string().optional(),
+    message: z.string().optional(),
+  }).optional(),
 }).refine((data) => data.productId || data.bundleId, {
   message: "חייב לספק productId או bundleId",
 })
@@ -359,22 +366,31 @@ export async function POST(
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
 
-    // בדיקת מלאי
-    if (data.variantId) {
-      const variant = await prisma.productVariant.findUnique({
-        where: { id: data.variantId },
-      })
-      if (variant && variant.inventoryQty !== null && variant.inventoryQty < data.quantity) {
-        return NextResponse.json(
-          { error: "Insufficient inventory" },
-          { status: 400 }
-        )
+    // בדיקת מלאי - רק אם המוצר לא מאפשר מכירה בלי מלאי
+    if (!product.sellWhenSoldOut) {
+      if (data.variantId) {
+        const variant = await prisma.productVariant.findUnique({
+          where: { id: data.variantId },
+        })
+        // בדיקה אם יש מספיק מלאי ב-variant
+        if (variant) {
+          // אם יש מעקב מלאי ב-variant, בדוק את המלאי
+          if (variant.inventoryQty !== null && variant.inventoryQty < data.quantity) {
+            return NextResponse.json(
+              { error: "אין מספיק מלאי למוצר זה" },
+              { status: 400 }
+            )
+          }
+        }
+      } else {
+        // בדיקה אם יש מספיק מלאי במוצר עצמו
+        if (product.inventoryQty !== null && product.inventoryQty < data.quantity) {
+          return NextResponse.json(
+            { error: "אין מספיק מלאי למוצר זה" },
+            { status: 400 }
+          )
+        }
       }
-    } else if (product.inventoryQty !== null && product.inventoryQty < data.quantity) {
-      return NextResponse.json(
-        { error: "Insufficient inventory" },
-        { status: 400 }
-      )
     }
 
     const cookieStore = await cookies()
@@ -444,6 +460,10 @@ export async function POST(
           items[existingItemIndex].giftDiscountId = data.giftDiscountId
         }
       }
+      // עדכון gift card data אם קיים
+      if (data.giftCardData) {
+        items[existingItemIndex].giftCardData = data.giftCardData
+      }
     } else {
       console.log('➕ Adding new item to cart:', {
         productId: data.productId,
@@ -457,6 +477,7 @@ export async function POST(
         quantity: data.quantity,
         ...(data.isGift ? { isGift: true, giftDiscountId: data.giftDiscountId } : {}),
         ...(data.addons && data.addons.length > 0 ? { addons: data.addons } : {}),
+        ...(data.giftCardData ? { giftCardData: data.giftCardData } : {}),
       })
     }
     

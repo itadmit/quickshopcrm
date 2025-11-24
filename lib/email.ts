@@ -495,6 +495,269 @@ export const emailTemplates = {
       `,
     }),
   }),
+
+  giftCard: async (
+    shopId: string,
+    giftCard: {
+      code: string
+      amount: number
+      balance: number
+      recipientName?: string | null
+      senderName?: string | null
+      message?: string | null
+      expiresAt?: Date | null
+    },
+    shopName: string,
+    shopUrl?: string
+  ) => {
+    // קבלת הגדרות עיצוב Gift Card מהחנות
+    const shop = await prisma.shop.findUnique({
+      where: { id: shopId },
+      select: {
+        themeSettings: true,
+        logo: true,
+      },
+    })
+
+    const themeSettings = (shop?.themeSettings as any) || {}
+    const giftCardSettings = {
+      backgroundType: themeSettings.giftCardBackgroundType || 'gradient',
+      gradientColor1: themeSettings.giftCardGradientColor1 || '#ff9a9e',
+      gradientColor2: themeSettings.giftCardGradientColor2 || '#fecfef',
+      backgroundImage: themeSettings.giftCardBackgroundImage || null,
+      textPosition: themeSettings.giftCardTextPosition || 'right',
+    }
+
+    const emailSettings = await getShopEmailSettings(shopId)
+    
+    // יצירת רקע
+    const backgroundStyle = giftCardSettings.backgroundType === 'gradient'
+      ? `background: linear-gradient(135deg, ${giftCardSettings.gradientColor1} 0%, ${giftCardSettings.gradientColor2} 100%);`
+      : giftCardSettings.backgroundImage
+        ? `background-image: url('${giftCardSettings.backgroundImage}'); background-size: 60%; background-position: center center; background-repeat: no-repeat;`
+        : `background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);`
+
+    // מיקום הכיתוב
+    const textAlign = giftCardSettings.textPosition === 'right' ? 'right' : giftCardSettings.textPosition === 'left' ? 'left' : 'center'
+    const justifyContent = giftCardSettings.textPosition === 'right' ? 'flex-end' : giftCardSettings.textPosition === 'left' ? 'flex-start' : 'center'
+
+    const html = `
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>כרטיס מתנה מ-${shopName}</title>
+  <style>
+    * {
+      direction: rtl;
+      text-align: right;
+    }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 20px;
+      direction: rtl;
+      text-align: right;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    .header {
+      background: linear-gradient(135deg, ${emailSettings.color1} 0%, ${emailSettings.color2} 100%);
+      padding: 30px 20px;
+      text-align: center;
+      color: white;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 28px;
+      font-weight: 600;
+    }
+    .content {
+      padding: 30px 20px;
+      color: #333;
+      line-height: 1.6;
+      direction: rtl;
+      text-align: right;
+    }
+    .gift-card-container {
+      margin: 30px 0;
+      border-radius: 12px;
+      overflow: hidden;
+      position: relative;
+      min-height: 300px;
+      width: 100%;
+      max-width: 100%;
+      ${backgroundStyle}
+    }
+    /* Fallback for email clients that don't support background-image */
+    @media only screen and (max-width: 600px) {
+      .gift-card-container {
+        min-height: 250px;
+      }
+    }
+    .gift-card-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: ${giftCardSettings.backgroundType === 'image' && giftCardSettings.backgroundImage 
+        ? 'rgba(0, 0, 0, 0.2)' 
+        : 'transparent'};
+      border-radius: 12px;
+      z-index: 0;
+    }
+    .gift-card-content {
+      position: absolute;
+      ${justifyContent}: 0;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      padding: 30px;
+      box-sizing: border-box;
+      z-index: 1;
+    }
+    .gift-card-box {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border-radius: 12px;
+      padding: 30px;
+      max-width: 400px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      text-align: ${textAlign};
+      direction: rtl;
+    }
+    .gift-card-logo {
+      max-width: 120px;
+      height: auto;
+      margin-bottom: 20px;
+      ${textAlign === 'right' ? 'margin-right: 0; margin-left: auto;' : textAlign === 'left' ? 'margin-left: 0; margin-right: auto;' : 'margin: 0 auto 20px;'}
+      display: block;
+    }
+    .gift-card-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: #1f2937;
+      margin: 0 0 10px 0;
+      text-align: ${textAlign};
+    }
+    .gift-card-amount {
+      font-size: 48px;
+      font-weight: bold;
+      color: #059669;
+      margin: 20px 0;
+      text-align: ${textAlign};
+    }
+    .gift-card-code {
+      background: #f3f4f6;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      text-align: center;
+      font-family: 'Courier New', monospace;
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      color: #1f2937;
+    }
+    .gift-card-message {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f9fafb;
+      border-radius: 8px;
+      font-style: italic;
+      color: #4b5563;
+      text-align: ${textAlign};
+    }
+    .gift-card-info {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+      font-size: 14px;
+      color: #6b7280;
+      text-align: ${textAlign};
+    }
+    .footer {
+      background-color: #f9f9f9;
+      padding: 20px;
+      text-align: center;
+      color: #666;
+      font-size: 12px;
+      border-top: 1px solid #eee;
+    }
+    .button {
+      display: inline-block;
+      padding: 12px 30px;
+      background: linear-gradient(135deg, ${emailSettings.color1} 0%, ${emailSettings.color2} 100%);
+      color: white !important;
+      text-decoration: none;
+      border-radius: 5px;
+      margin: 20px 0;
+      font-weight: 600;
+      text-align: center;
+    }
+    .button:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎁 כרטיס מתנה מ-${shopName}</h1>
+    </div>
+    <div class="content">
+      ${giftCard.recipientName ? `<p>שלום ${giftCard.recipientName},</p>` : '<p>שלום,</p>'}
+      ${giftCard.senderName ? `<p>${giftCard.senderName} שלח לך כרטיס מתנה!</p>` : '<p>קיבלת כרטיס מתנה!</p>'}
+      
+      <div class="gift-card-container">
+        ${giftCardSettings.backgroundType === 'image' && giftCardSettings.backgroundImage ? '<div class="gift-card-overlay"></div>' : ''}
+        <div class="gift-card-content">
+          <div class="gift-card-box">
+            ${shop?.logo ? `<img src="${shop.logo}" alt="${shopName}" class="gift-card-logo" />` : ''}
+            <h2 class="gift-card-title">כרטיס מתנה</h2>
+            <div class="gift-card-amount">₪${giftCard.amount.toLocaleString('he-IL', { minimumFractionDigits: 2 })}</div>
+            <div class="gift-card-code">${giftCard.code}</div>
+            ${giftCard.message ? `<div class="gift-card-message">${giftCard.message}</div>` : ''}
+            <div class="gift-card-info">
+              ${giftCard.expiresAt ? `<p>תוקף עד: ${new Date(giftCard.expiresAt).toLocaleDateString('he-IL')}</p>` : ''}
+              <p>יתרה נוכחית: ₪${giftCard.balance.toLocaleString('he-IL', { minimumFractionDigits: 2 })}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      ${shopUrl ? `<a href="${shopUrl}" class="button">השתמש בכרטיס המתנה</a>` : ''}
+      
+      <p>תודה שבחרת ב-${shopName}!</p>
+    </div>
+    <div class="footer">
+      <p>הודעה זו נשלחה אוטומטית מ-${emailSettings.senderName}</p>
+      <p>${emailSettings.senderName} © ${new Date().getFullYear()}</p>
+    </div>
+  </div>
+</body>
+</html>
+    `.trim()
+
+    return {
+      subject: `🎁 כרטיס מתנה מ-${shopName} - ₪${giftCard.amount.toLocaleString('he-IL', { minimumFractionDigits: 2 })}`,
+      html,
+    }
+  },
 }
 
 /**

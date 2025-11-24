@@ -11,6 +11,7 @@ import { ProductCard } from "@/components/storefront/ProductCard"
 import { ProductPageElement, ProductPageElementType } from "@/components/storefront/ProductPageLayoutDesigner"
 import { EditableProductElement } from "@/components/storefront/EditableProductElement"
 import { ProductGallery } from "./ProductGallery"
+import { WaitlistForm } from "@/components/products/WaitlistForm"
 import { Product, GalleryLayout } from "../types"
 import { cn } from "@/lib/utils"
 
@@ -60,6 +61,7 @@ interface ProductElementsProps {
   onOpenElementSettings: (elementId: string) => void
   slug: string
   productId: string // זה ה-id האמיתי של המוצר, לא ה-slug
+  shopId: string
   theme: any
   averageRating: number
   totalReviews: number
@@ -96,6 +98,7 @@ export function ProductElements({
   onOpenElementSettings,
   slug,
   productId,
+  shopId,
   theme,
   averageRating,
   totalReviews,
@@ -367,24 +370,65 @@ export function ProductElements({
                       
                       // בדיקת זמינות - האם יש variant זמין עם הערך הזה + הבחירות הקודמות
                       const hasStock = (() => {
-                        // אם אין variants, הכל זמין
-                        if (!product.variants || product.variants.length === 0) return true
-                        
-                        // אם אין בחירות אחרות, בדוק רק את הערך הזה
-                        if (Object.keys(selectedOptionValues).length === 0) {
-                          return product.variants.some((variant) => {
-                            const matchesValue = 
-                              (variant.option1 === option.name && variant.option1Value === valueId) ||
-                              (variant.option2 === option.name && variant.option2Value === valueId) ||
-                              (variant.option3 === option.name && variant.option3Value === valueId)
-                            
-                            if (!matchesValue) return false
-                            return variant.inventoryQty === null || variant.inventoryQty === undefined || variant.inventoryQty > 0
-                          })
+                        // אם המוצר מאפשר מכירה בלי מלאי, הכל זמין (כל עוד יש variant תואם)
+                        if (product.sellWhenSoldOut) {
+                          // נבדוק רק אם יש variant תואם, לא את המלאי
+                          if (!product.variants || product.variants.length === 0) {
+                            return true
+                          }
+                          // נמשיך לבדוק אם יש variant תואם, אבל לא נבדוק מלאי
                         }
                         
-                        // יש בחירות קודמות - צריך לבדוק שהן תואמות
-                        return product.variants.some((v: any) => {
+                        // אם אין variants, הכל זמין
+                        if (!product.variants || product.variants.length === 0) {
+                          console.log(`[Stock Check] No variants for option ${option.name}, value ${valueId} - returning true`)
+                          return true
+                        }
+                        
+                        // פונקציה להשוואה בין valueId/valueLabel לבין optionValue
+                        const matchesValue = (valId: string, valLabel: string, optionValue: string | null | undefined): boolean => {
+                          if (!optionValue) return false
+                          // השוואה ישירה
+                          if (optionValue === valId || optionValue === valLabel) return true
+                          // השוואה case-insensitive
+                          const optionValueLower = optionValue.toLowerCase().trim()
+                          const valIdLower = valId.toLowerCase().trim()
+                          const valLabelLower = valLabel.toLowerCase().trim()
+                          if (optionValueLower === valIdLower || optionValueLower === valLabelLower) return true
+                          // השוואה חלקית (אם אחד מכיל את השני)
+                          if (optionValueLower.includes(valLabelLower) || valLabelLower.includes(optionValueLower)) return true
+                          return false
+                        }
+                        
+                        // בניית mapping של כל ה-values לפי optionId
+                        const valueIdToLabelMap: Record<string, Record<string, string>> = {}
+                        product.options?.forEach(opt => {
+                          valueIdToLabelMap[opt.id] = {}
+                          const values = Array.isArray(opt.values) ? opt.values : []
+                          values.forEach((val: any) => {
+                            const vid = typeof val === 'object' ? val.id : val
+                            const vlabel = typeof val === 'object' ? val.label : val
+                            valueIdToLabelMap[opt.id][vid] = vlabel
+                          })
+                        })
+                        
+                        // בניית השילוב המלא (כולל הערך הנוכחי)
+                        const fullSelection: Record<string, string> = {
+                          ...selectedOptionValues,
+                          [option.id]: valueId
+                        }
+                        
+                        console.log(`[Stock Check] Checking availability for:`, {
+                          optionName: option.name,
+                          valueId,
+                          valueLabel,
+                          selectedOptionValues,
+                          fullSelection,
+                          totalVariants: product.variants.length
+                        })
+                        
+                        // בדיקה אם יש variant שמתאים לשילוב המלא (כולל הערך הנוכחי) ויש לו מלאי
+                        const result = product.variants.some((v: any) => {
                           // המרת variant ל-options structure
                           const variantOptions: Record<string, string> = {}
                           if (v.option1 && v.option1Value) {
@@ -397,24 +441,83 @@ export function ProductElements({
                             variantOptions[v.option3] = v.option3Value
                           }
                           
-                          // בדיקה שהבחירות הקודמות תואמות (מלבד האפשרות הנוכחית)
-                          const matchesCurrentSelections = Object.entries(selectedOptionValues)
-                            .filter(([key]) => key !== option.id)
-                            .every(([optionId, val]) => {
-                              // מצא את שם האפשרות לפי ה-ID
-                              const selectedOption = product.options?.find(opt => opt.id === optionId)
-                              const optionName = selectedOption?.name || optionId
-                              return variantOptions[optionName] === val
+                          // אם אין בחירות בכלל, בדוק רק אם יש variant עם הערך הזה שיש לו מלאי
+                          if (Object.keys(fullSelection).length === 0) {
+                            const matchesValueCheck = 
+                              (v.option1 === option.name && matchesValue(valueId, valueLabel, v.option1Value)) ||
+                              (v.option2 === option.name && matchesValue(valueId, valueLabel, v.option2Value)) ||
+                              (v.option3 === option.name && matchesValue(valueId, valueLabel, v.option3Value))
+                            
+                            if (!matchesValueCheck) return false
+                            // אם המוצר מאפשר מכירה בלי מלאי, לא נבדוק מלאי
+                            const hasStockCheck = product.sellWhenSoldOut 
+                              ? true 
+                              : (v.inventoryQty === null || v.inventoryQty === undefined || v.inventoryQty > 0)
+                            console.log(`[Stock Check] No selections - variant ${v.id} matches: ${matchesValueCheck}, hasStock: ${hasStockCheck}, inventoryQty: ${v.inventoryQty}, sellWhenSoldOut: ${product.sellWhenSoldOut}`)
+                            return hasStockCheck
+                          }
+                          
+                          // יש בחירות - בדוק אם השילוב המלא תואם ל-variant
+                          // בדיקה שכל הבחירות תואמות ל-variant
+                          const allSelectionsMatch = Object.entries(fullSelection).every(([optionId, valId]) => {
+                            const selectedOption = product.options?.find(opt => opt.id === optionId)
+                            const optionName = selectedOption?.name || optionId
+                            const variantValue = variantOptions[optionName]
+                            
+                            // מציאת ה-label של ה-valueId שנבחר
+                            const valLabel = valueIdToLabelMap[optionId]?.[valId] || valId
+                            
+                            const matches = matchesValue(valId, valLabel, variantValue)
+                            if (!matches) {
+                              console.log(`[Stock Check] Selection mismatch: ${optionName} = ${valId} (${valLabel}), variant has: ${variantValue}`)
+                            }
+                            return matches
+                          })
+                          
+                          // בדיקה שכל ה-options של ה-variant תואמים לבחירות (לא יותר, לא פחות)
+                          const allVariantOptionsMatch = Object.keys(variantOptions).every(optionName => {
+                            const opt = product.options?.find(o => o.name === optionName)
+                            if (!opt) return false
+                            const selectedValueId = fullSelection[opt.id]
+                            if (!selectedValueId) return false
+                            
+                            const variantValue = variantOptions[optionName]
+                            const valLabel = valueIdToLabelMap[opt.id]?.[selectedValueId] || selectedValueId
+                            
+                            const matches = matchesValue(selectedValueId, valLabel, variantValue)
+                            if (!matches) {
+                              console.log(`[Stock Check] Variant option mismatch: ${optionName} = ${variantValue}, selection has: ${selectedValueId} (${valLabel})`)
+                            }
+                            return matches
+                          })
+                          
+                          // בדיקה שמספר ה-options תואם
+                          const optionsCountMatch = Object.keys(variantOptions).length === Object.keys(fullSelection).length
+                          
+                          // בדיקת מלאי - רק אם המוצר לא מאפשר מכירה בלי מלאי
+                          const hasStockCheck = product.sellWhenSoldOut 
+                            ? true 
+                            : (v.inventoryQty === null || v.inventoryQty === undefined || v.inventoryQty > 0)
+                          
+                          const isMatch = allSelectionsMatch && allVariantOptionsMatch && optionsCountMatch && hasStockCheck
+                          
+                          if (isMatch || (allSelectionsMatch && allVariantOptionsMatch && optionsCountMatch)) {
+                            console.log(`[Stock Check] Variant ${v.id} (${v.name}):`, {
+                              variantOptions,
+                              allSelectionsMatch,
+                              allVariantOptionsMatch,
+                              optionsCountMatch,
+                              hasStock: hasStockCheck,
+                              inventoryQty: v.inventoryQty,
+                              isMatch
                             })
+                          }
                           
-                          // בדיקה שהאפשרות הנוכחית תואמת
-                          const matchesThisOption = variantOptions[option.name] === valueId
-                          
-                          // בדיקת מלאי
-                          const hasStock = v.inventoryQty === null || v.inventoryQty === undefined || v.inventoryQty > 0
-                          
-                          return matchesCurrentSelections && matchesThisOption && hasStock
+                          return isMatch
                         })
+                        
+                        console.log(`[Stock Check] Final result for ${option.name} ${valueLabel}: ${result}`)
+                        return result
                       })()
                       
                       // קביעת קוד הצבע
@@ -508,20 +611,28 @@ export function ProductElements({
                       }
                       
                       // אחרת, הצג כפתור רגיל
+                      // שימוש באותו צבע כמו כפתור "הוסף לעגלה"
+                      const buttonBgColor = theme.primaryColor || "#000000"
+                      const buttonTextColor = theme.primaryTextColor || '#ffffff'
+                      
                       return (
                         <button
                           key={valueId}
                           onClick={() => setSelectedOptionValues({ ...selectedOptionValues, [option.id]: valueId })}
-                          className={`relative px-4 py-2 border-2 rounded-sm text-sm font-medium transition-all ${
+                          className={`relative px-4 py-2 border-2 rounded-sm text-sm font-medium transition-all flex items-center justify-center ${
                             isSelected
                               ? ""
                               : "border-gray-300 text-gray-900 hover:border-gray-400 bg-white"
                           } ${!hasStock ? "opacity-60" : ""}`}
-                          style={isSelected ? {
-                            borderColor: theme.primaryColor,
-                            backgroundColor: theme.primaryColor,
-                            color: theme.primaryTextColor || '#ffffff',
-                          } : {}}
+                          style={{
+                            ...(isSelected ? {
+                              borderColor: buttonBgColor,
+                              backgroundColor: buttonBgColor,
+                              color: buttonTextColor,
+                            } : {}),
+                            minWidth: '48px',
+                            height: '40px',
+                          }}
                         >
                           {valueLabel}
                           {!hasStock && (
@@ -624,40 +735,231 @@ export function ProductElements({
         )
 
       case "product-buttons":
+        // בדיקה אם המוצר או הווריאציה לא זמינים
+        const isProductOutOfStock = product.availability === "OUT_OF_STOCK" || 
+          (product.inventoryEnabled && product.inventoryQty !== null && product.inventoryQty <= 0)
+        
+        let isVariantOutOfStock = false
+        let matchedVariantId: string | null = null
+        let hasMatchedVariant = false // האם מצאנו variant מתאים
+        
+        // אם יש בחירות של options, נבדוק אם השילוב תואם ל-variant ספציפי
+        if (product.options && product.options.length > 0 && Object.keys(selectedOptionValues).length > 0) {
+          // בניית mapping של כל ה-values לפי optionId
+          const valueIdToLabelMap: Record<string, Record<string, string>> = {}
+          product.options.forEach(opt => {
+            valueIdToLabelMap[opt.id] = {}
+            const values = Array.isArray(opt.values) ? opt.values : []
+            values.forEach((val: any) => {
+              const vid = typeof val === 'object' ? val.id : val
+              const vlabel = typeof val === 'object' ? val.label : val
+              valueIdToLabelMap[opt.id][vid] = vlabel
+            })
+          })
+          
+          // פונקציה להשוואה בין valueId/valueLabel לבין optionValue
+          const matchesValue = (valId: string, valLabel: string, optionValue: string | null | undefined): boolean => {
+            if (!optionValue) return false
+            // השוואה ישירה
+            if (optionValue === valId || optionValue === valLabel) return true
+            // השוואה case-insensitive
+            const optionValueLower = optionValue.toLowerCase().trim()
+            const valIdLower = valId.toLowerCase().trim()
+            const valLabelLower = valLabel.toLowerCase().trim()
+            if (optionValueLower === valIdLower || optionValueLower === valLabelLower) return true
+            // השוואה חלקית (אם אחד מכיל את השני)
+            if (optionValueLower.includes(valLabelLower) || valLabelLower.includes(optionValueLower)) return true
+            return false
+          }
+          
+          // מציאת ה-variant שמתאים לכל הבחירות
+          const matchedVariant = product.variants?.find((variant: any) => {
+            // בניית mapping של ה-variant
+            const variantOptions: Record<string, string> = {}
+            if (variant.option1 && variant.option1Value) {
+              variantOptions[variant.option1] = variant.option1Value
+            }
+            if (variant.option2 && variant.option2Value) {
+              variantOptions[variant.option2] = variant.option2Value
+            }
+            if (variant.option3 && variant.option3Value) {
+              variantOptions[variant.option3] = variant.option3Value
+            }
+            
+            console.log(`[Product Buttons] Checking variant ${variant.id}:`, {
+              variantName: variant.name,
+              variantOptions,
+              selectedOptionValues,
+              inventoryQty: variant.inventoryQty
+            })
+            
+            // בדיקה שכל הבחירות תואמות ל-variant
+            const allSelectionsMatch = Object.entries(selectedOptionValues).every(([optionId, valueId]) => {
+              const selectedOption = product.options?.find(opt => opt.id === optionId)
+              const optionName = selectedOption?.name || optionId
+              const variantValue = variantOptions[optionName]
+              const valLabel = valueIdToLabelMap[optionId]?.[valueId] || valueId
+              const matches = matchesValue(valueId, valLabel, variantValue)
+              console.log(`[Product Buttons] Selection match check:`, {
+                optionId,
+                optionName,
+                valueId,
+                valLabel,
+                variantValue,
+                matches
+              })
+              return matches
+            })
+            
+            // בדיקה שכל ה-options של ה-variant תואמים לבחירות (לא יותר, לא פחות)
+            const allVariantOptionsMatch = Object.keys(variantOptions).every(optionName => {
+              const option = product.options?.find(opt => opt.name === optionName)
+              if (!option) return false
+              const selectedValueId = selectedOptionValues[option.id]
+              if (!selectedValueId) return false
+              const variantValue = variantOptions[optionName]
+              const valLabel = valueIdToLabelMap[option.id]?.[selectedValueId] || selectedValueId
+              const matches = matchesValue(selectedValueId, valLabel, variantValue)
+              console.log(`[Product Buttons] Variant option match check:`, {
+                optionName,
+                selectedValueId,
+                valLabel,
+                variantValue,
+                matches
+              })
+              return matches
+            })
+            
+            const optionsCountMatch = Object.keys(variantOptions).length === Object.keys(selectedOptionValues).length
+            
+            const isMatch = allSelectionsMatch && allVariantOptionsMatch && optionsCountMatch
+            
+            console.log(`[Product Buttons] Variant ${variant.id} match result:`, {
+              allSelectionsMatch,
+              allVariantOptionsMatch,
+              optionsCountMatch,
+              isMatch
+            })
+            
+            return isMatch
+          })
+          
+          if (matchedVariant) {
+            hasMatchedVariant = true
+            matchedVariantId = matchedVariant.id
+            // בדיקה אם ה-variant הזה לא זמין
+            isVariantOutOfStock = matchedVariant.inventoryQty !== null && 
+                                  matchedVariant.inventoryQty !== undefined && 
+                                  matchedVariant.inventoryQty <= 0
+            console.log(`[Product Buttons] Found matched variant:`, {
+              variantId: matchedVariant.id,
+              variantName: matchedVariant.name,
+              inventoryQty: matchedVariant.inventoryQty,
+              isVariantOutOfStock,
+              selectedOptionValues
+            })
+          } else {
+            console.log(`[Product Buttons] No matched variant found for:`, {
+              selectedOptionValues,
+              totalVariants: product.variants?.length || 0,
+              optionsCount: product.options?.length || 0
+            })
+            // אם לא מצאנו variant מתאים, נבדוק אם כל האופציות נבחרו
+            // אם לא כל האופציות נבחרו, זה לא out of stock - פשוט צריך לבחור עוד אופציות
+            const allOptionsSelected = product.options?.every(opt => selectedOptionValues[opt.id] !== undefined) || false
+            if (!allOptionsSelected) {
+              // לא כל האופציות נבחרו - לא נציג waitlist
+              isVariantOutOfStock = false
+            } else if (selectedVariant && product.variants) {
+              // אם לא מצאנו variant מתאים אבל יש selectedVariant, נבדוק אותו
+              hasMatchedVariant = true
+              const variant = product.variants.find((v: any) => v.id === selectedVariant)
+              if (variant) {
+                matchedVariantId = variant.id
+                isVariantOutOfStock = variant.inventoryQty !== null && 
+                                     variant.inventoryQty !== undefined && 
+                                     variant.inventoryQty <= 0
+              }
+            }
+          }
+        } else if (selectedVariant && product.variants) {
+          // אם אין options, נבדוק את ה-selectedVariant הקיים
+          hasMatchedVariant = true
+          const variant = product.variants.find((v: any) => v.id === selectedVariant)
+          if (variant) {
+            matchedVariantId = variant.id
+            isVariantOutOfStock = variant.inventoryQty !== null && 
+                                 variant.inventoryQty !== undefined && 
+                                 variant.inventoryQty <= 0
+          }
+        }
+        
+        // אם יש variant שנבחר, נבדוק רק את המלאי שלו
+        // אם אין variant, נבדוק את המלאי הכללי של המוצר
+        // אבל אם המוצר מאפשר מכירה בלי מלאי, לא נציג waitlist
+        const isOutOfStock = product.sellWhenSoldOut 
+          ? false // אם מאפשר מכירה בלי מלאי, תמיד זמין להוספה לעגלה
+          : (hasMatchedVariant 
+              ? isVariantOutOfStock 
+              : isProductOutOfStock)
+        
+        console.log(`[Product Buttons] Final check:`, {
+          hasMatchedVariant,
+          isProductOutOfStock,
+          isVariantOutOfStock,
+          sellWhenSoldOut: product.sellWhenSoldOut,
+          isOutOfStock,
+          matchedVariantId,
+          selectedOptionValues
+        })
+        
         return (
           <div key={element.id} className="space-y-3">
-            <button
-              onClick={() => onAddToCart(true)}
-              disabled={product.availability === "OUT_OF_STOCK" || isAddingToCart}
-              className="w-full rounded-sm h-11 px-8 font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-              style={{ 
-                backgroundColor: theme.primaryColor || "#000000",
-                color: theme.primaryTextColor || '#ffffff',
-              }}
-            >
-              {isAddingToCart ? (
-                <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-              ) : (
-                <ShoppingCart className="w-5 h-5 ml-2" />
-              )}
-              {isAddingToCart ? "מוסיף..." : "הוסף לעגלה"}
-            </button>
-            <Button
-              onClick={onCheckout}
-              disabled={product.availability === "OUT_OF_STOCK" || isProcessingCheckout}
-              variant="outline"
-              className="w-full border-2 rounded-sm hover:bg-gray-50"
-              style={{
-                borderColor: theme.primaryColor,
-                color: theme.primaryColor,
-              }}
-              size="lg"
-            >
-              {isProcessingCheckout ? (
-                <Loader2 className="w-5 h-5 ml-2 animate-spin" />
-              ) : null}
-              קנה עכשיו
-            </Button>
+            {isOutOfStock ? (
+              // אם לא זמין, הצג את רשימת ההמתנה במקום הכפתורים
+              <WaitlistForm
+                shopId={shopId}
+                productId={productId}
+                variantId={isVariantOutOfStock && matchedVariantId ? matchedVariantId : null}
+                customerId={customerId}
+                theme={theme}
+              />
+            ) : (
+              <>
+                <button
+                  onClick={() => onAddToCart(true)}
+                  disabled={product.availability === "OUT_OF_STOCK" || isAddingToCart}
+                  className="w-full rounded-sm h-11 px-8 font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  style={{ 
+                    backgroundColor: theme.primaryColor || "#000000",
+                    color: theme.primaryTextColor || '#ffffff',
+                  }}
+                >
+                  {isAddingToCart ? (
+                    <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                  ) : (
+                    <ShoppingCart className="w-5 h-5 ml-2" />
+                  )}
+                  {isAddingToCart ? "מוסיף..." : "הוסף לעגלה"}
+                </button>
+                <Button
+                  onClick={onCheckout}
+                  disabled={product.availability === "OUT_OF_STOCK" || isProcessingCheckout}
+                  variant="outline"
+                  className="w-full border-2 rounded-sm hover:bg-gray-50"
+                  style={{
+                    borderColor: theme.primaryColor,
+                    color: theme.primaryColor,
+                  }}
+                  size="lg"
+                >
+                  {isProcessingCheckout ? (
+                    <Loader2 className="w-5 h-5 ml-2 animate-spin" />
+                  ) : null}
+                  קנה עכשיו
+                </Button>
+              </>
+            )}
             <div className="flex gap-2">
               {theme?.productShowFavoriteButton !== false && (
                 <Button 

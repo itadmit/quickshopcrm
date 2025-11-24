@@ -141,6 +141,93 @@ export default async function PaymentSuccessPage({
         },
       })
 
+      // יצירת gift cards עבור מוצרי gift card בהזמנה
+      if (orderWithItems) {
+        for (const item of orderWithItems.items) {
+          // בדיקה אם זה מוצר gift card
+          if (item.giftCardData) {
+            const product = await prisma.product.findUnique({
+              where: { id: item.productId },
+              select: { shopId: true, isGiftCard: true },
+            })
+            
+            if (product && product.isGiftCard) {
+              // קביעת סכום ה-gift card - מהמחיר של ה-variant או המוצר
+              let giftCardAmount = item.price
+              
+              // יצירת קוד ייחודי
+              const { randomBytes } = await import("crypto")
+              let code: string
+              let codeExists = true
+              while (codeExists) {
+                code = randomBytes(8).toString("hex").toUpperCase()
+                const existing = await prisma.giftCard.findUnique({
+                  where: { code },
+                })
+                codeExists = !!existing
+              }
+              
+              // יצירת gift card
+              const giftCard = await prisma.giftCard.create({
+                data: {
+                  shopId: product.shopId,
+                  code: code!,
+                  amount: giftCardAmount,
+                  balance: giftCardAmount,
+                  recipientEmail: item.giftCardData.recipientEmail,
+                  recipientName: item.giftCardData.recipientName || null,
+                  senderName: item.giftCardData.senderName || null,
+                  message: item.giftCardData.message || null,
+                  isActive: true,
+                },
+              })
+              
+              // שליחת מייל gift card
+              try {
+                const shop = await prisma.shop.findUnique({
+                  where: { id: product.shopId },
+                  select: { name: true, slug: true, domain: true },
+                })
+                
+                if (shop) {
+                  const shopUrl = shop.domain 
+                    ? `https://${shop.domain}` 
+                    : `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/shop/${shop.slug}`
+                  
+                  const { emailTemplates, sendEmail } = await import("@/lib/email")
+                  const emailTemplate = await emailTemplates.giftCard(
+                    product.shopId,
+                    {
+                      code: giftCard.code,
+                      amount: giftCard.amount,
+                      balance: giftCard.balance,
+                      recipientName: giftCard.recipientName,
+                      senderName: giftCard.senderName,
+                      message: giftCard.message,
+                      expiresAt: giftCard.expiresAt,
+                    },
+                    shop.name,
+                    shopUrl
+                  )
+                  
+                  await sendEmail({
+                    to: giftCard.recipientEmail,
+                    subject: emailTemplate.subject,
+                    html: emailTemplate.html,
+                    shopId: product.shopId,
+                  })
+                  
+                  console.log(`✅ Gift card created and email sent: ${giftCard.code}`)
+                }
+              } catch (emailError) {
+                console.error("Error sending gift card email:", emailError)
+                // לא נכשיל את התהליך אם שליחת המייל נכשלה
+              }
+            }
+          }
+        }
+      }
+      
       // שליחת מייל אישור תשלום
       const { sendOrderConfirmationEmail } = await import("@/lib/order-email")
       await sendOrderConfirmationEmail(order.id).catch((error) => {

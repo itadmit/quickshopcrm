@@ -29,7 +29,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ShoppingBag, Search, Filter, MoreVertical, Eye, Package, Calendar, Trash2, RefreshCw, CreditCard, User, MapPin, Mail, Phone } from "lucide-react"
+import { ShoppingBag, Search, Filter, MoreVertical, Eye, Package, Calendar, Trash2, RefreshCw, CreditCard, User, MapPin, Mail, Phone, Plus } from "lucide-react"
 import { OrdersSkeleton } from "@/components/skeletons/OrdersSkeleton"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
@@ -37,6 +37,7 @@ import { MobileListView, MobileListItem } from "@/components/MobileListView"
 import { MobileFilters, FilterConfig } from "@/components/MobileFilters"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
 import { cn } from "@/lib/utils"
+import { ManualOrderDialog } from "@/components/ManualOrderDialog"
 
 interface Order {
   id: string
@@ -74,6 +75,7 @@ export default function OrdersPage() {
   const [newStatus, setNewStatus] = useState<string>("")
   const [isDeleting, setIsDeleting] = useState(false)
   const isMobile = useMediaQuery("(max-width: 768px)")
+  const [isManualOrderDialogOpen, setIsManualOrderDialogOpen] = useState(false)
 
   useEffect(() => {
     // טעינת הנתונים מיד
@@ -341,6 +343,12 @@ export default function OrdersPage() {
           <div>
             <h1 className="text-2xl md:text-3xl font-bold text-gray-900">הזמנות</h1>
             <p className="text-sm md:text-base text-gray-600 mt-1">נהל ועקוב אחר כל ההזמנות שלך</p>
+          </div>
+          <div className="flex gap-2">
+            <Button onClick={() => setIsManualOrderDialogOpen(true)}>
+              <Plus className="ml-2 h-4 w-4" />
+              יצירת הזמנה ידנית
+            </Button>
           </div>
           {selectedOrders.length > 0 && (
             <Button
@@ -790,6 +798,15 @@ export default function OrdersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Manual Order Dialog */}
+      <ManualOrderDialog
+        open={isManualOrderDialogOpen}
+        onOpenChange={setIsManualOrderDialogOpen}
+        onSuccess={() => {
+          fetchOrders()
+        }}
+      />
     </AppLayout>
   )
 }

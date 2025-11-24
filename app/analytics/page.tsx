@@ -35,6 +35,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
 
 interface Analytics {
   sales: {
@@ -83,6 +84,8 @@ type ReportType =
   | "vip-customers"
   | "top-products"
   | "abandoned-carts"
+  | "influencers"
+  | "gift-cards"
 
 interface ReportDefinition {
   type: ReportType
@@ -367,6 +370,50 @@ const REPORTS: ReportDefinition[] = [
       { key: "recovered", label: "שוחזר" },
     ],
   },
+  {
+    type: "influencers",
+    label: "דוח משפיעניות",
+    icon: Megaphone,
+    description: "ביצועי משפיענים וקופונים",
+    defaultColumns: ["influencerName", "influencerEmail", "couponCode", "usedCount", "totalOrders", "totalRevenue"],
+    availableColumns: [
+      { key: "influencerName", label: "שם משפיען" },
+      { key: "influencerEmail", label: "אימייל משפיען" },
+      { key: "couponCode", label: "קוד קופון" },
+      { key: "couponType", label: "סוג קופון" },
+      { key: "couponValue", label: "ערך קופון" },
+      { key: "usedCount", label: "מספר שימושים" },
+      { key: "maxUses", label: "מקסימום שימושים" },
+      { key: "totalOrders", label: "סה\"כ הזמנות" },
+      { key: "totalRevenue", label: "סה\"כ הכנסה" },
+      { key: "totalDiscount", label: "סה\"כ הנחה" },
+      { key: "averageOrderValue", label: "ערך הזמנה ממוצע" },
+      { key: "isActive", label: "פעיל" },
+      { key: "startDate", label: "תאריך התחלה" },
+      { key: "endDate", label: "תאריך סיום" },
+    ],
+  },
+  {
+    type: "gift-cards",
+    label: "דוח כרטיסי מתנה",
+    icon: CreditCard,
+    description: "כרטיסי מתנה ושימוש",
+    defaultColumns: ["code", "recipientEmail", "amount", "balance", "isActive", "createdAt"],
+    availableColumns: [
+      { key: "code", label: "קוד" },
+      { key: "recipientName", label: "שם מקבל" },
+      { key: "recipientEmail", label: "אימייל מקבל" },
+      { key: "senderName", label: "שם שולח" },
+      { key: "amount", label: "סכום ראשוני" },
+      { key: "balance", label: "יתרה" },
+      { key: "usedAmount", label: "סכום משומש" },
+      { key: "isActive", label: "פעיל" },
+      { key: "createdAt", label: "תאריך יצירה" },
+      { key: "expiresAt", label: "תאריך תפוגה" },
+      { key: "transactionsCount", label: "מספר עסקאות" },
+      { key: "lastUsedAt", label: "שימוש אחרון" },
+    ],
+  },
 ]
 
 export default function AnalyticsPage() {
@@ -395,7 +442,40 @@ export default function AnalyticsPage() {
       setEndDate(end.toISOString().split("T")[0])
       setStartDate(start.toISOString().split("T")[0])
     }
-  }, [selectedShop, timeRange])
+  }, [selectedShop])
+
+  // עדכון תאריכים כשמשנים את timeRange
+  useEffect(() => {
+    if (!selectedShop) return
+    
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    let start = new Date(today)
+    let end = new Date(today)
+    end.setHours(23, 59, 59, 999)
+    
+    if (timeRange === "yesterday") {
+      start.setDate(start.getDate() - 1)
+      end.setDate(end.getDate() - 1)
+      end.setHours(23, 59, 59, 999)
+    } else if (timeRange === "today") {
+      // כבר מוגדר
+    } else if (timeRange === "week") {
+      const dayOfWeek = now.getDay()
+      const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // ראשון = 0, שני = 1, וכו'
+      start.setDate(start.getDate() - diff)
+    } else if (timeRange === "month") {
+      start.setDate(1)
+    } else if (timeRange === "year") {
+      start.setMonth(0, 1)
+    } else if (timeRange === "custom") {
+      // לא משנים תאריכים אם זה custom
+      return
+    }
+    
+    setStartDate(start.toISOString().split("T")[0])
+    setEndDate(end.toISOString().split("T")[0])
+  }, [timeRange, selectedShop])
 
   const fetchAnalytics = async () => {
     if (!selectedShop) return
@@ -448,8 +528,8 @@ export default function AnalyticsPage() {
     const report = REPORTS.find((r) => r.type === reportType)
     if (!report) return
 
-    // דוח מלאי לא צריך תאריכים
-    const needsDates = reportType !== "inventory"
+    // דוח מלאי וגיפט קארד לא צריכים תאריכים (אבל יכולים לקבל אותם)
+    const needsDates = reportType !== "inventory" && reportType !== "gift-cards"
     if (needsDates && (!startDate || !endDate)) {
       toast({
         title: "שגיאה",
@@ -459,8 +539,8 @@ export default function AnalyticsPage() {
       return
     }
 
-    // Validation של תאריכים
-    if (needsDates && startDate && endDate) {
+    // Validation של תאריכים (אם יש תאריכים)
+    if (startDate && endDate) {
       const start = new Date(startDate)
       const end = new Date(endDate)
       
@@ -651,17 +731,20 @@ export default function AnalyticsPage() {
             <h1 className="text-3xl font-bold text-gray-900">אנליטיקה ודוחות</h1>
             <p className="text-gray-600 mt-1">צפה בנתונים וסטטיסטיקות של החנות</p>
           </div>
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="today">היום</SelectItem>
-              <SelectItem value="week">השבוע</SelectItem>
-              <SelectItem value="month">החודש</SelectItem>
-              <SelectItem value="year">השנה</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className="flex items-center gap-4">
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={(date) => {
+                setStartDate(date)
+                setTimeRange("custom")
+              }}
+              onEndDateChange={(date) => {
+                setEndDate(date)
+                setTimeRange("custom")
+              }}
+            />
+          </div>
         </div>
 
         {/* Sales Overview */}
@@ -807,7 +890,7 @@ export default function AnalyticsPage() {
           </CardHeader>
           <CardContent>
             {/* Date Selection - רק אם דוח נבחר וצריך תאריכים */}
-            {selectedReport && selectedReport !== "inventory" && (
+            {selectedReport && selectedReport !== "inventory" && selectedReport !== "gift-cards" && (
               <div className="mb-6 p-4 bg-gray-50 rounded-lg">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                   <div>

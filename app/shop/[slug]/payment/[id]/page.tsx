@@ -118,12 +118,6 @@ export default async function PaymentPage({
                     <span>₪{order.shipping.toFixed(2)}</span>
                   </div>
                 )}
-                {order.tax > 0 && (
-                  <div className="flex justify-between text-gray-700">
-                    <span>מע"מ:</span>
-                    <span>₪{order.tax.toFixed(2)}</span>
-                  </div>
-                )}
                 <div className="flex justify-between text-xl font-bold text-gray-900 pt-2 border-t border-gray-200">
                   <span>סה"כ לתשלום:</span>
                   <span className="text-emerald-600">₪{order.total.toFixed(2)}</span>

@@ -150,6 +150,12 @@ export async function POST(
     const existingVariantIds = new Set(existingVariants.map((v: { id: string }) => v.id))
     
     const orderItems = calculation.items.map(item => {
+      // מציאת gift card data מהעגלה המקורית
+      const cartItem = items.find((ci: any) => 
+        ci.productId === item.productId && 
+        (ci.variantId === item.variantId || (!ci.variantId && !item.variantId))
+      )
+      
       const orderItem: any = {
         productId: item.productId,
         name: item.product.name,
@@ -173,6 +179,12 @@ export async function POST(
         
         // נבדוק אם יש וריאציות אחרות למוצר הזה
         console.log('🔍 Checking if product has other variants...')
+      }
+      
+      // הוסף gift card data אם קיים
+      if (cartItem?.giftCardData) {
+        orderItem.giftCardData = cartItem.giftCardData
+        console.log('✅ Added gift card data to order item')
       }
       
       // הוסף addons אם יש
@@ -278,8 +290,8 @@ export async function POST(
     
     if (taxRate > 0) {
       if (pricesIncludeTax) {
-        // המחירים כוללים מע"מ - רק מפרידים את המע"מ לתצוגה
-        tax = finalPrice - (finalPrice / (1 + taxRate / 100))
+        // המחירים כוללים מע"מ - המע"מ כבר נכלל במחיר, לא צריך להציג אותו בנפרד
+        tax = 0
         total = finalPrice + shipping
       } else {
         // המחירים לא כוללים מע"מ - צריך להוסיף מע"מ

@@ -273,10 +273,10 @@ export function MegaMenu({ item, slug, onClose }: MegaMenuProps) {
                         src={item.image}
                         alt={item.label}
                         className={cn(
-                          "absolute inset-0 w-full h-full object-cover transition-opacity duration-600 ease-[cubic-bezier(0.25,0.1,0.25,1)]",
+                          "absolute inset-0 w-full h-full object-cover transition-opacity duration-600",
                           hoveredChildIndex !== null ? "opacity-0" : "opacity-100"
                         )}
-                        style={{ willChange: 'opacity' }}
+                        style={{ willChange: 'opacity', transitionTimingFunction: 'cubic-bezier(0.25,0.1,0.25,1)' }}
                       />
                     )}
                     
@@ -289,7 +289,8 @@ export function MegaMenu({ item, slug, onClose }: MegaMenuProps) {
                           <img
                             src={hoveredChild.image}
                             alt={hoveredChild.label}
-                            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-600 ease-[cubic-bezier(0.25,0.1,0.25,1)]"
+                            className="absolute inset-0 w-full h-full object-cover transition-opacity duration-600"
+                            style={{ transitionTimingFunction: 'cubic-bezier(0.25,0.1,0.25,1)' }}
                             style={{
                               opacity: 1,
                               willChange: 'opacity'

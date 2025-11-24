@@ -34,6 +34,7 @@ import {
   CheckCircle2,
   CreditCard,
   Mail,
+  Gift,
   Monitor,
   Tablet,
   Smartphone,
@@ -264,6 +265,13 @@ interface AppearanceSettings {
   emailSenderName: string
   emailColor1: string
   emailColor2: string
+  
+  // ===== הגדרות עיצוב Gift Card =====
+  giftCardBackgroundType: "gradient" | "image"
+  giftCardGradientColor1: string
+  giftCardGradientColor2: string
+  giftCardBackgroundImage: string | null
+  giftCardTextPosition: "right" | "left" | "center"
 }
 
 const FONTS = [
@@ -304,7 +312,7 @@ export default function AppearancePage() {
   const { selectedShop, loading: shopLoading } = useShop()
   const { toast } = useToast()
   const [saving, setSaving] = useState(false)
-  const [activeTab, setActiveTab] = useState<"logo" | "theme" | "header" | "cart" | "topbar" | "category" | "product" | "checkout" | "thankyou" | "emails">("logo")
+  const [activeTab, setActiveTab] = useState<"logo" | "theme" | "header" | "cart" | "topbar" | "category" | "product" | "checkout" | "thankyou" | "emails" | "giftcard">("logo")
   const [pages, setPages] = useState<Array<{ id: string; title: string; slug: string }>>([])
   const [showSuggestions, setShowSuggestions] = useState<{ [key: string]: boolean }>({})
 
@@ -453,6 +461,13 @@ export default function AppearancePage() {
     emailSenderName: "",
     emailColor1: "#15b981",
     emailColor2: "#10b981",
+    
+    // הגדרות עיצוב Gift Card
+    giftCardBackgroundType: "gradient",
+    giftCardGradientColor1: "#ff9a9e",
+    giftCardGradientColor2: "#fecfef",
+    giftCardBackgroundImage: null,
+    giftCardTextPosition: "right",
   })
 
   useEffect(() => {
@@ -629,6 +644,13 @@ export default function AppearancePage() {
           emailSenderName: themeSettings.emailSenderName || shop.name || "",
           emailColor1: themeSettings.emailColor1 || "#15b981",
           emailColor2: themeSettings.emailColor2 || "#10b981",
+          
+          // הגדרות עיצוב Gift Card
+          giftCardBackgroundType: themeSettings.giftCardBackgroundType || "gradient",
+          giftCardGradientColor1: themeSettings.giftCardGradientColor1 || "#ff9a9e",
+          giftCardGradientColor2: themeSettings.giftCardGradientColor2 || "#fecfef",
+          giftCardBackgroundImage: themeSettings.giftCardBackgroundImage || null,
+            giftCardTextPosition: themeSettings.giftCardTextPosition || "right",
         })
       }
     } catch (error) {
@@ -789,6 +811,13 @@ export default function AppearancePage() {
             emailSenderName: settings.emailSenderName,
             emailColor1: settings.emailColor1,
             emailColor2: settings.emailColor2,
+            
+            // הגדרות עיצוב Gift Card
+            giftCardBackgroundType: settings.giftCardBackgroundType,
+            giftCardGradientColor1: settings.giftCardGradientColor1,
+            giftCardGradientColor2: settings.giftCardGradientColor2,
+            giftCardBackgroundImage: settings.giftCardBackgroundImage,
+            giftCardTextPosition: settings.giftCardTextPosition,
           },
           settings: {
             cartBehavior: settings.cartBehavior,
@@ -1749,7 +1778,7 @@ export default function AppearancePage() {
                 <div>
                   <Label className="text-base font-semibold">הצגת מע"מ בעגלה</Label>
                   <p className="text-sm text-gray-600 mt-1">
-                    הצג את שורת "כולל מע״מ" בעגלה, עגלת הצד ובעמוד הקופה
+                    הצג את שורת "כולל מע״מ" בעגלת הקניות ובעמוד הקופה (ברירת מחדל: כבוי)
                   </p>
                 </div>
                 <Switch
@@ -3217,6 +3246,7 @@ export default function AppearancePage() {
     { key: "checkout", label: "עמוד קופה", icon: CreditCard, divider: false },
     { key: "thankyou", label: "דף תודה", icon: CheckCircle2, divider: false },
     { key: "emails", label: "הגדרות מיילים", icon: Mail, divider: false },
+    { key: "giftcard", label: "גיפט קארד", icon: Gift, divider: false },
   ]
 
   return (
@@ -4638,6 +4668,230 @@ export default function AppearancePage() {
                           }}
                         >
                           גרדיאנט מיילים
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Gift Card Tab */}
+            {activeTab === "giftcard" && (
+              <Card className="shadow-sm">
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
+                        <Gift className="w-5 h-5 text-purple-600" />
+                      </div>
+                      <div>
+                        <CardTitle>עיצוב Gift Card</CardTitle>
+                        <CardDescription>הגדר את העיצוב של כרטיסי המתנה שנשלחים במייל</CardDescription>
+                      </div>
+                    </div>
+                    <Button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="prodify-gradient text-white"
+                    >
+                      <Save className="w-4 h-4 ml-2" />
+                      {saving ? "שומר..." : "שמור שינויים"}
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-6">
+                    <div className="space-y-4">
+                      <div className="space-y-2">
+                        <Label>סוג רקע</Label>
+                        <Select
+                          value={settings.giftCardBackgroundType}
+                          onValueChange={(value: "gradient" | "image") => updateSettings("giftCardBackgroundType", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="gradient">גרדיאנט צבעים</SelectItem>
+                            <SelectItem value="image">תמונה</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {settings.giftCardBackgroundType === "gradient" && (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="giftCardGradientColor1">צבע 1</Label>
+                            <div className="flex gap-3">
+                              <Input
+                                id="giftCardGradientColor1"
+                                type="color"
+                                value={settings.giftCardGradientColor1}
+                                onChange={(e) => updateSettings("giftCardGradientColor1", e.target.value)}
+                                className="w-20 h-10"
+                              />
+                              <Input
+                                type="text"
+                                value={settings.giftCardGradientColor1}
+                                onChange={(e) => updateSettings("giftCardGradientColor1", e.target.value)}
+                                className="flex-1"
+                                placeholder="#ff9a9e"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <Label htmlFor="giftCardGradientColor2">צבע 2</Label>
+                            <div className="flex gap-3">
+                              <Input
+                                id="giftCardGradientColor2"
+                                type="color"
+                                value={settings.giftCardGradientColor2}
+                                onChange={(e) => updateSettings("giftCardGradientColor2", e.target.value)}
+                                className="w-20 h-10"
+                              />
+                              <Input
+                                type="text"
+                                value={settings.giftCardGradientColor2}
+                                onChange={(e) => updateSettings("giftCardGradientColor2", e.target.value)}
+                                className="flex-1"
+                                placeholder="#fecfef"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {settings.giftCardBackgroundType === "image" && (
+                        <div className="space-y-2">
+                          <Label>תמונת רקע</Label>
+                          <div className="flex gap-3">
+                            {settings.giftCardBackgroundImage ? (
+                              <div className="relative w-32 h-32 rounded-lg overflow-hidden border-2 border-gray-200">
+                                <img
+                                  src={settings.giftCardBackgroundImage}
+                                  alt="Gift card background"
+                                  className="w-full h-full object-cover"
+                                />
+                                <button
+                                  onClick={() => updateSettings("giftCardBackgroundImage", null)}
+                                  className="absolute top-1 left-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                                >
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            ) : (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => {
+                                  // נשתמש ב-MediaPicker
+                                  const input = document.createElement("input")
+                                  input.type = "file"
+                                  input.accept = "image/*"
+                                  input.onchange = async (e: any) => {
+                                    const file = e.target.files?.[0]
+                                    if (!file || !selectedShop?.id) return
+                                    
+                                    const formData = new FormData()
+                                    formData.append("file", file)
+                                    formData.append("entityType", "shops")
+                                    formData.append("entityId", selectedShop.id)
+                                    formData.append("shopId", selectedShop.id)
+                                    formData.append("fileType", "gift-card-background")
+                                    
+                                    try {
+                                      const response = await fetch("/api/files/upload", {
+                                        method: "POST",
+                                        body: formData,
+                                      })
+                                      
+                                      if (response.ok) {
+                                        const data = await response.json()
+                                        updateSettings("giftCardBackgroundImage", data.file.path)
+                                        toast({
+                                          title: "הצלחה",
+                                          description: "התמונה הועלתה בהצלחה",
+                                        })
+                                      } else {
+                                        const errorData = await response.json().catch(() => ({ error: "Unknown error" }))
+                                        console.error("Upload error:", errorData)
+                                        throw new Error(errorData.error || "Upload failed")
+                                      }
+                                    } catch (error) {
+                                      toast({
+                                        title: "שגיאה",
+                                        description: "אירעה שגיאה בהעלאת התמונה",
+                                        variant: "destructive",
+                                      })
+                                    }
+                                  }
+                                  input.click()
+                                }}
+                                className="gap-2"
+                              >
+                                <Upload className="w-4 h-4" />
+                                העלה תמונה
+                              </Button>
+                            )}
+                          </div>
+                          <p className="text-sm text-gray-500">העלה תמונה שתוצג כרקע של כרטיס המתנה</p>
+                        </div>
+                      )}
+
+                      <div className="space-y-2">
+                        <Label>מיקום כיתוב</Label>
+                        <Select
+                          value={settings.giftCardTextPosition}
+                          onValueChange={(value: "right" | "left" | "center") => updateSettings("giftCardTextPosition", value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="right">ימין (ברירת מחדל)</SelectItem>
+                            <SelectItem value="left">שמאל</SelectItem>
+                            <SelectItem value="center">מרכז</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <p className="text-sm text-gray-500">הכיתוב תמיד יוצג בצד שנבחר ולא יתנגש עם המיתוג</p>
+                      </div>
+
+                      {/* תצוגה מקדימה של Gift Card */}
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                        <p className="text-sm text-gray-600 mb-2">תצוגה מקדימה:</p>
+                        <div
+                          className="h-48 rounded-lg relative overflow-hidden"
+                          style={{
+                            ...(settings.giftCardBackgroundType === "gradient"
+                              ? {
+                                  backgroundImage: `linear-gradient(135deg, ${settings.giftCardGradientColor1} 0%, ${settings.giftCardGradientColor2} 100%)`,
+                                }
+                              : settings.giftCardBackgroundImage
+                                ? {
+                                    backgroundImage: `url(${settings.giftCardBackgroundImage})`,
+                                    backgroundSize: "cover",
+                                    backgroundPosition: "center",
+                                    backgroundRepeat: "no-repeat",
+                                  }
+                                : {
+                                    backgroundColor: "#f0f0f0",
+                                  }),
+                          }}
+                        >
+                          <div
+                            className={`absolute inset-0 flex items-center justify-${settings.giftCardTextPosition === "right" ? "end" : settings.giftCardTextPosition === "left" ? "start" : "center"} p-6`}
+                            style={{
+                              textAlign: settings.giftCardTextPosition,
+                            }}
+                          >
+                            <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 max-w-xs">
+                              <h3 className="font-bold text-lg mb-2">כרטיס מתנה</h3>
+                              <p className="text-sm text-gray-600">₪100.00</p>
+                              <p className="text-xs text-gray-500 mt-2">קוד: ABC12345</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>

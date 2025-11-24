@@ -107,7 +107,7 @@ async function main() {
       isPublished: true,
       currency: 'ILS',
       taxEnabled: true,
-      taxRate: 17,
+      taxRate: 18,
       pricesIncludeTax: true,
     },
   })

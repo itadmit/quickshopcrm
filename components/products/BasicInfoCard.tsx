@@ -4,20 +4,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { RichTextEditor } from "@/components/ui/rich-text-editor"
-import { Package } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
+import { Package, Gift } from "lucide-react"
 
 interface BasicInfoData {
   name: string
   description: string
+  isGiftCard?: boolean
 }
 
 interface BasicInfoCardProps {
   data: BasicInfoData
   onNameChange: (name: string) => void
   onDescriptionChange: (description: string) => void
+  onIsGiftCardChange?: (isGiftCard: boolean) => void
 }
 
-export function BasicInfoCard({ data, onNameChange, onDescriptionChange }: BasicInfoCardProps) {
+export function BasicInfoCard({ data, onNameChange, onDescriptionChange, onIsGiftCardChange }: BasicInfoCardProps) {
   return (
     <Card>
       <CardHeader>
@@ -45,6 +48,23 @@ export function BasicInfoCard({ data, onNameChange, onDescriptionChange }: Basic
             placeholder="תיאור מפורט של המוצר..."
           />
         </div>
+
+        {onIsGiftCardChange && (
+          <div className="flex items-center space-x-2 space-x-reverse pt-2 border-t">
+            <Checkbox
+              id="isGiftCard"
+              checked={data.isGiftCard || false}
+              onCheckedChange={(checked) => onIsGiftCardChange(checked === true)}
+            />
+            <Label
+              htmlFor="isGiftCard"
+              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 flex items-center gap-2 cursor-pointer"
+            >
+              <Gift className="w-4 h-4" />
+              זהו מוצר Gift Card (כרטיס מתנה)
+            </Label>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

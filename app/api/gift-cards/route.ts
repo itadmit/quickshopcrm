@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { randomBytes } from "crypto"
+import { sendEmail, emailTemplates } from "@/lib/email"
 
 const createGiftCardSchema = z.object({
   shopId: z.string(),
@@ -15,6 +16,7 @@ const createGiftCardSchema = z.object({
   message: z.string().optional(),
   expiresAt: z.string().datetime().optional(),
   isActive: z.boolean().default(true),
+  sendEmail: z.boolean().default(true), // האם לשלוח מייל
 })
 
 // GET - קבלת כל כרטיסי המתנה
@@ -134,6 +136,58 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // שליחת מייל עם כרטיס המתנה (רק אם המשתמש בחר)
+    const shouldSendEmail = data.sendEmail !== false && data.sendEmail !== undefined
+    console.log(`📧 Gift card email check:`, { 
+      sendEmail: data.sendEmail, 
+      shouldSendEmail,
+      recipientEmail: giftCard.recipientEmail 
+    })
+    
+    if (shouldSendEmail) {
+      try {
+        const shopUrl = shop.domain 
+          ? `https://${shop.domain}` 
+          : `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/shop/${shop.slug}`
+        
+        console.log(`📧 Generating email template for gift card ${giftCard.code}...`)
+        
+        const emailTemplate = await emailTemplates.giftCard(
+          shop.id,
+          {
+            code: giftCard.code,
+            amount: giftCard.amount,
+            balance: giftCard.balance,
+            recipientName: giftCard.recipientName,
+            senderName: giftCard.senderName,
+            message: giftCard.message,
+            expiresAt: giftCard.expiresAt,
+          },
+          shop.name,
+          shopUrl
+        )
+
+        console.log(`📧 Email template generated, sending to ${giftCard.recipientEmail}...`)
+
+        await sendEmail({
+          to: giftCard.recipientEmail,
+          subject: emailTemplate.subject,
+          html: emailTemplate.html,
+          shopId: shop.id,
+        })
+
+        console.log(`✅ Gift card email sent successfully to ${giftCard.recipientEmail}`)
+      } catch (emailError) {
+        // לא נכשל את יצירת gift card אם שליחת המייל נכשלה
+        console.error("❌ Error sending gift card email:", emailError)
+        if (emailError instanceof Error) {
+          console.error("Error details:", emailError.message, emailError.stack)
+        }
+      }
+    } else {
+      console.log(`ℹ️ Email not sent - user chose not to send email (sendEmail: ${data.sendEmail})`)
+    }
+
     return NextResponse.json(giftCard, { status: 201 })
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -144,6 +198,78 @@ export async function POST(req: NextRequest) {
     }
 
     console.error("Error creating gift card:", error)
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    )
+  }
+}
+
+// DELETE - מחיקת כרטיס מתנה
+export async function DELETE(req: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.companyId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+
+    const { searchParams } = new URL(req.url)
+    const giftCardId = searchParams.get("id")
+
+    if (!giftCardId) {
+      return NextResponse.json(
+        { error: "Gift card ID is required" },
+        { status: 400 }
+      )
+    }
+
+    // בדיקה שהכרטיס שייך לחברה
+    const giftCard = await prisma.giftCard.findFirst({
+      where: {
+        id: giftCardId,
+        shop: {
+          companyId: session.user.companyId,
+        },
+      },
+      include: {
+        shop: true,
+      },
+    })
+
+    if (!giftCard) {
+      return NextResponse.json(
+        { error: "Gift card not found" },
+        { status: 404 }
+      )
+    }
+
+    // מחיקת כרטיס המתנה
+    await prisma.giftCard.delete({
+      where: { id: giftCardId },
+    })
+
+    // יצירת אירוע
+    await prisma.shopEvent.create({
+      data: {
+        shopId: giftCard.shopId,
+        type: "gift_card.deleted",
+        entityType: "gift_card",
+        entityId: giftCardId,
+        payload: {
+          giftCardId: giftCard.id,
+          code: giftCard.code,
+          amount: giftCard.amount,
+        },
+        userId: session.user.id,
+      },
+    })
+
+    return NextResponse.json(
+      { message: "Gift card deleted successfully" },
+      { status: 200 }
+    )
+  } catch (error) {
+    console.error("Error deleting gift card:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

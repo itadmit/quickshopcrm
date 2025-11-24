@@ -21,7 +21,7 @@ export function Toaster() {
         const Icon = isDestructive ? XCircle : CheckCircle2
         
         return (
-          <Toast key={id} variant={variant} duration={3000} {...props}>
+          <Toast key={id} variant={variant} duration={3000} {...props} className="z-[9999]">
             <div className="grid gap-1">
               {title && (
                 <ToastTitle className="flex items-center gap-2">
@@ -42,7 +42,7 @@ export function Toaster() {
           </Toast>
         )
       })}
-      <ToastViewport />
+      <ToastViewport className="z-[9999]" />
     </ToastProvider>
   )
 }

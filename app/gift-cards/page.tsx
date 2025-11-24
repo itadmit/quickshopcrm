@@ -9,8 +9,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
-import { Plus, Search, Gift, Copy, Calendar } from "lucide-react"
+import { Plus, Search, Gift, Copy, Calendar, Trash2 } from "lucide-react"
 import { GiftCardsSkeleton } from "@/components/skeletons/GiftCardsSkeleton"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 
 interface GiftCard {
   id: string
@@ -31,6 +39,9 @@ export default function GiftCardsPage() {
   const [giftCards, setGiftCards] = useState<GiftCard[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [giftCardToDelete, setGiftCardToDelete] = useState<GiftCard | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     if (selectedShop) {
@@ -66,6 +77,48 @@ export default function GiftCardsPage() {
       title: "הועתק",
       description: "קוד כרטיס המתנה הועתק ללוח",
     })
+  }
+
+  const handleDeleteClick = (card: GiftCard) => {
+    setGiftCardToDelete(card)
+    setDeleteDialogOpen(true)
+  }
+
+  const handleDelete = async () => {
+    if (!giftCardToDelete) return
+
+    setDeleting(true)
+    try {
+      const response = await fetch(`/api/gift-cards?id=${giftCardToDelete.id}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        toast({
+          title: "הצלחה",
+          description: "כרטיס המתנה נמחק בהצלחה",
+        })
+        setGiftCards(giftCards.filter((card) => card.id !== giftCardToDelete.id))
+        setDeleteDialogOpen(false)
+        setGiftCardToDelete(null)
+      } else {
+        const error = await response.json()
+        toast({
+          title: "שגיאה",
+          description: error.error || "אירעה שגיאה במחיקת כרטיס המתנה",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error deleting gift card:", error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה במחיקת כרטיס המתנה",
+        variant: "destructive",
+      })
+    } finally {
+      setDeleting(false)
+    }
   }
 
   const filteredGiftCards = giftCards.filter(
@@ -164,6 +217,9 @@ export default function GiftCardsPage() {
                       <th className="text-right p-4 text-sm font-medium text-gray-900">
                         סטטוס
                       </th>
+                      <th className="text-right p-4 text-sm font-medium text-gray-900">
+                        פעולות
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
@@ -219,6 +275,16 @@ export default function GiftCardsPage() {
                             {card.isActive ? "פעיל" : "לא פעיל"}
                           </Badge>
                         </td>
+                        <td className="p-4">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDeleteClick(card)}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -228,6 +294,39 @@ export default function GiftCardsPage() {
           </Card>
         )}
       </div>
+
+      {/* Delete Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>מחיקת כרטיס מתנה</DialogTitle>
+            <DialogDescription>
+              האם אתה בטוח שברצונך למחוק את כרטיס המתנה עם הקוד "{giftCardToDelete?.code}"?
+              <br />
+              פעולה זו לא ניתנת לביטול.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false)
+                setGiftCardToDelete(null)
+              }}
+              disabled={deleting}
+            >
+              ביטול
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDelete}
+              disabled={deleting}
+            >
+              {deleting ? "מוחק..." : "מחק"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppLayout>
   )
 }

@@ -60,6 +60,7 @@ interface ShopData {
   taxEnabled: boolean
   taxRate: number
   pricesIncludeTax: boolean
+  showTaxInCart: boolean
   
   // משלוח
   shippingEnabled: boolean
@@ -133,6 +134,7 @@ export function ShopSettings() {
     taxEnabled: true,
     taxRate: 18,
     pricesIncludeTax: true,
+    showTaxInCart: true,
     shippingEnabled: false,
     shippingOptions: {
       fixed: false,
@@ -212,7 +214,26 @@ export function ShopSettings() {
         const settings = shop.settings || {}
         const shipping = settings.shipping || {}
         const pickup = settings.pickup || {}
-        const paymentMethods = settings.paymentMethods || []
+        
+        // paymentMethods צריך להיות מערך
+        let paymentMethodsArray: string[] = []
+        if (Array.isArray(settings.paymentMethods)) {
+          paymentMethodsArray = settings.paymentMethods
+        } else {
+          // ברירת מחדל - ריק
+          paymentMethodsArray = []
+        }
+        
+        // הוספת cash_on_delivery אם cashPayment מופעל
+        if (settings.cashPayment?.enabled && !paymentMethodsArray.includes('cash_on_delivery')) {
+          paymentMethodsArray.push('cash_on_delivery')
+        }
+        
+        // הוספת bank_transfer אם bankTransferPayment מופעל
+        if (settings.bankTransferPayment?.enabled && !paymentMethodsArray.includes('bank_transfer')) {
+          paymentMethodsArray.push('bank_transfer')
+        }
+        
         const shippingOptions = shipping.options || {
           fixed: false,
           fixedCost: null,
@@ -232,11 +253,12 @@ export function ShopSettings() {
           phone: shop.phone || "",
           address: shop.address || "",
           workingHours: shop.workingHours,
-          paymentMethods: paymentMethods,
+          paymentMethods: paymentMethodsArray,
           currency: shop.currency || "ILS",
           taxEnabled: shop.taxEnabled ?? true,
           taxRate: shop.taxRate || 18,
           pricesIncludeTax: shop.pricesIncludeTax ?? true,
+          showTaxInCart: settings.showTaxInCart ?? true,
           shippingEnabled: shipping.enabled || false,
           shippingOptions: shippingOptions,
           shippingZones: shipping.zones || [],
@@ -348,6 +370,7 @@ export function ShopSettings() {
           pricesIncludeTax: shopData.pricesIncludeTax,
           settings: {
             paymentMethods: shopData.paymentMethods,
+            showTaxInCart: shopData.showTaxInCart,
             shipping: {
               enabled: shopData.shippingEnabled,
               options: shopData.shippingOptions,
@@ -955,12 +978,13 @@ export function ShopSettings() {
                     <div key={method.id} className="flex items-center space-x-2 space-x-reverse">
                       <Checkbox
                         id={`payment-${method.id}`}
-                        checked={shopData.paymentMethods.includes(method.id)}
+                        checked={Array.isArray(shopData.paymentMethods) && shopData.paymentMethods.includes(method.id)}
                         onCheckedChange={(checked) => {
+                          const currentMethods = Array.isArray(shopData.paymentMethods) ? shopData.paymentMethods : []
                           if (checked) {
-                            updateShopData("paymentMethods", [...shopData.paymentMethods, method.id])
+                            updateShopData("paymentMethods", [...currentMethods, method.id])
                           } else {
-                            updateShopData("paymentMethods", shopData.paymentMethods.filter((m) => m !== method.id))
+                            updateShopData("paymentMethods", currentMethods.filter((m) => m !== method.id))
                           }
                         }}
                       />
@@ -970,7 +994,7 @@ export function ShopSettings() {
                     </div>
                   ))}
                 </div>
-                {shopData.paymentMethods.length === 0 && (
+                {(Array.isArray(shopData.paymentMethods) ? shopData.paymentMethods.length : 0) === 0 && (
                   <p className="text-xs text-red-500 mt-1">
                     יש לבחור לפחות שיטת תשלום אחת
                   </p>
@@ -1018,6 +1042,21 @@ export function ShopSettings() {
                           {shopData.pricesIncludeTax 
                             ? "המחירים שמוצגים ללקוחות כבר כוללים מע״מ" 
                             : "המע״מ יתווסף למחיר בעת התשלום"}
+                        </p>
+                        <div className="flex items-center space-x-2 space-x-reverse">
+                          <Checkbox
+                            id="showTaxInCart"
+                            checked={shopData.showTaxInCart}
+                            onCheckedChange={(checked) => updateShopData("showTaxInCart", checked)}
+                          />
+                          <Label htmlFor="showTaxInCart" className="cursor-pointer text-sm">
+                            הצג פירוט מע"מ בעגלה ובצ'ק אאוט
+                          </Label>
+                        </div>
+                        <p className="text-xs text-gray-500 mr-6">
+                          {shopData.showTaxInCart 
+                            ? "סכום המע״מ יוצג בפירוט בעגלה ובדף התשלום" 
+                            : "סכום המע״מ לא יוצג, רק הסכום הכולל"}
                         </p>
                       </div>
                     )}

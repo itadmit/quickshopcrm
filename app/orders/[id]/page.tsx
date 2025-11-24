@@ -494,10 +494,6 @@ export default function OrderDetailPage() {
                     <span className={cn("text-gray-600", isMobile && "text-sm")}>משלוח</span>
                     <span className={cn("font-medium", isMobile && "text-sm")}>₪{order.shipping.toFixed(2)}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className={cn("text-gray-600", isMobile && "text-sm")}>מע"מ</span>
-                    <span className={cn("font-medium", isMobile && "text-sm")}>₪{order.tax.toFixed(2)}</span>
-                  </div>
                   <div className="border-t pt-3 flex justify-between">
                     <span className={cn("text-lg font-bold", isMobile && "text-base")}>סה"כ</span>
                     <span className={cn("text-lg font-bold", isMobile && "text-base")}>₪{order.total.toFixed(2)}</span>

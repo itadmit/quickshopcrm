@@ -367,7 +367,7 @@ export default function ForDevelopersPage() {
                       </div>
                       <div className="flex">
                         <span className="text-gray-500 w-8 select-none">16</span>
-                        <span className="text-white">}</span>
+                        <span className="text-white">{'}'}</span>
                       </div>
                     </div>
 
@@ -629,7 +629,7 @@ export default function ForDevelopersPage() {
                   <span className="font-bold text-gray-900">{item.quickshop === true ? <CheckCircle className="w-8 h-8 text-emerald-500" /> : item.quickshop}</span>
                 </div>
                 <div className="p-6 flex items-center justify-center flex-col">
-                   <span className="font-medium text-gray-500">{item.shopify === true ? <CheckCircle className="w-8 h-8 text-emerald-500" /> : item.shopify}</span>
+                   <span className="font-medium text-gray-500">{typeof item.shopify === 'boolean' && item.shopify ? <CheckCircle className="w-8 h-8 text-emerald-500" /> : item.shopify}</span>
                 </div>
               </div>
             ))}

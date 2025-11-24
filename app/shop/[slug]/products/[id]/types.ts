@@ -10,6 +10,7 @@ export interface Product {
   images: string[]
   availability: string
   inventoryQty: number
+  sellWhenSoldOut?: boolean // המשך מכירה כשאין במלאי
   seoTitle?: string | null
   seoDescription?: string | null
   variants?: Array<{

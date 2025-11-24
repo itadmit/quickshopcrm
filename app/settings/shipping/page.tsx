@@ -30,7 +30,6 @@ import {
 } from "@/components/ui/select"
 import { 
   Truck, 
-  MapPin, 
   Plus, 
   Edit, 
   Trash2, 
@@ -65,31 +64,11 @@ interface ShippingRate {
   }
 }
 
-interface FulfillmentLocation {
-  id: string
-  name: string
-  address: string
-  city: string
-  country: string
-  zipCode?: string
-}
-
 export default function ShippingSettingsPage() {
   const { toast } = useToast()
   const { selectedShop } = useShop()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  
-  // Fulfillment Location
-  const [fulfillmentLocation, setFulfillmentLocation] = useState<FulfillmentLocation | null>(null)
-  const [editingLocation, setEditingLocation] = useState(false)
-  const [locationForm, setLocationForm] = useState({
-    name: "",
-    address: "",
-    city: "",
-    country: "ישראל",
-    zipCode: "",
-  })
   
   // Shipping Zones
   const [zones, setZones] = useState<ShippingZone[]>([])
@@ -144,29 +123,6 @@ export default function ShippingSettingsPage() {
         const data = await response.json()
         const settings = data.settings || {}
         
-        // טעינת fulfillment location
-        if (settings.fulfillmentLocation) {
-          setFulfillmentLocation(settings.fulfillmentLocation)
-          setLocationForm({
-            name: settings.fulfillmentLocation.name || "",
-            address: settings.fulfillmentLocation.address || "",
-            city: settings.fulfillmentLocation.city || "",
-            country: settings.fulfillmentLocation.country || "ישראל",
-            zipCode: settings.fulfillmentLocation.zipCode || "",
-          })
-        } else if (data.address) {
-          // אם יש כתובת בחנות, נשתמש בה
-          const addressParts = data.address.split(",")
-          setFulfillmentLocation({
-            id: "default",
-            name: data.name,
-            address: addressParts[0] || data.address,
-            city: addressParts[1]?.trim() || "",
-            country: "ישראל",
-            zipCode: "",
-          })
-        }
-        
         // טעינת shipping zones
         if (settings.shippingZones) {
           setZones(settings.shippingZones)
@@ -200,65 +156,6 @@ export default function ShippingSettingsPage() {
     }
   }
   
-  const saveFulfillmentLocation = async () => {
-    if (!selectedShop?.id) return
-    
-    if (!locationForm.address || !locationForm.city) {
-      toast({
-        title: "שגיאה",
-        description: "נא למלא כתובת ועיר",
-        variant: "destructive",
-      })
-      return
-    }
-    
-    setSaving(true)
-    try {
-      const response = await fetch(`/api/shops/${selectedShop.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          settings: {
-            fulfillmentLocation: {
-              id: fulfillmentLocation?.id || "default",
-              name: locationForm.name || selectedShop.name,
-              address: locationForm.address,
-              city: locationForm.city,
-              country: locationForm.country,
-              zipCode: locationForm.zipCode,
-            },
-          },
-        }),
-      })
-      
-      if (response.ok) {
-        setFulfillmentLocation({
-          id: fulfillmentLocation?.id || "default",
-          name: locationForm.name || selectedShop.name,
-          address: locationForm.address,
-          city: locationForm.city,
-          country: locationForm.country,
-          zipCode: locationForm.zipCode,
-        })
-        setEditingLocation(false)
-        toast({
-          title: "הצלחה!",
-          description: "מיקום המימוש עודכן",
-        })
-      } else {
-        throw new Error("Failed to save")
-      }
-    } catch (error) {
-      toast({
-        title: "שגיאה",
-        description: "לא ניתן לשמור את מיקום המימוש",
-        variant: "destructive",
-      })
-    } finally {
-      setSaving(false)
-    }
-  }
-  
   const handleCreateZone = () => {
     setEditingZone(null)
     setZoneForm({ name: "", countries: [] })
@@ -276,8 +173,9 @@ export default function ShippingSettingsPage() {
   const handleDeleteZone = async (zoneId: string) => {
     if (!confirm("האם אתה בטוח שברצונך למחוק את אזור המשלוח הזה?")) return
     
-    setZones(zones.filter(z => z.id !== zoneId))
-    await saveZones()
+    const updatedZones = zones.filter(z => z.id !== zoneId)
+    setZones(updatedZones)
+    await saveZones(updatedZones)
   }
   
   const handleSaveZone = async () => {
@@ -299,12 +197,13 @@ export default function ShippingSettingsPage() {
       return
     }
     
+    let updatedZones: ShippingZone[]
     if (editingZone) {
-      setZones(zones.map(z => 
+      updatedZones = zones.map(z => 
         z.id === editingZone!.id 
           ? { ...z, name: zoneForm.name, countries: zoneForm.countries }
           : z
-      ))
+      )
     } else {
       const newZone: ShippingZone = {
         id: `zone-${Date.now()}`,
@@ -312,11 +211,12 @@ export default function ShippingSettingsPage() {
         countries: zoneForm.countries,
         rates: [],
       }
-      setZones([...zones, newZone])
+      updatedZones = [...zones, newZone]
     }
     
+    setZones(updatedZones)
     setShowZoneDialog(false)
-    await saveZones()
+    await saveZones(updatedZones)
   }
   
   const handleCreateRate = (zoneId: string) => {
@@ -350,12 +250,13 @@ export default function ShippingSettingsPage() {
   }
   
   const handleDeleteRate = async (zoneId: string, rateId: string) => {
-    setZones(zones.map(z => 
+    const updatedZones = zones.map(z => 
       z.id === zoneId 
         ? { ...z, rates: z.rates.filter(r => r.id !== rateId) }
         : z
-    ))
-    await saveZones()
+    )
+    setZones(updatedZones)
+    await saveZones(updatedZones)
   }
   
   const handleSaveRate = async () => {
@@ -384,7 +285,7 @@ export default function ShippingSettingsPage() {
       } : undefined,
     }
     
-    setZones(zones.map(z => 
+    const updatedZones = zones.map(z => 
       z.id === editingRate.zoneId
         ? {
             ...z,
@@ -393,14 +294,17 @@ export default function ShippingSettingsPage() {
               : [...z.rates, rate]
           }
         : z
-    ))
+    )
     
+    setZones(updatedZones)
     setShowRateDialog(false)
-    await saveZones()
+    await saveZones(updatedZones)
   }
   
-  const saveZones = async () => {
+  const saveZones = async (zonesToSave?: ShippingZone[]) => {
     if (!selectedShop?.id) return
+    
+    const zonesToSaveFinal = zonesToSave || zones
     
     try {
       const response = await fetch(`/api/shops/${selectedShop.id}`, {
@@ -408,7 +312,7 @@ export default function ShippingSettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           settings: {
-            shippingZones: zones,
+            shippingZones: zonesToSaveFinal,
           },
         }),
       })
@@ -466,121 +370,9 @@ export default function ShippingSettingsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">הגדרות משלוחים</h1>
           <p className="text-sm text-gray-500 mt-1">
-            נהל את אזורי המשלוח, תעריפים ומיקומי המימוש שלך
+            נהל את אזורי המשלוח ותעריפים
           </p>
         </div>
-        
-        {/* Fulfillment Location */}
-        <Card className="shadow-sm">
-          <CardHeader>
-            <CardTitle>מיקום מימוש</CardTitle>
-            <CardDescription>
-              הכתובת שממנה אתה שולח את המוצרים
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {!editingLocation && fulfillmentLocation ? (
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-medium text-lg">{fulfillmentLocation.name}</p>
-                  <p className="text-sm text-gray-600 mt-1">
-                    {fulfillmentLocation.address}
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    {fulfillmentLocation.city}, {fulfillmentLocation.country}
-                    {fulfillmentLocation.zipCode && ` ${fulfillmentLocation.zipCode}`}
-                  </p>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setEditingLocation(true)}
-                >
-                  <Edit className="w-4 h-4 ml-2" />
-                  ערוך
-                </Button>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="location-name">שם המיקום</Label>
-                  <Input
-                    id="location-name"
-                    value={locationForm.name}
-                    onChange={(e) => setLocationForm({ ...locationForm, name: e.target.value })}
-                    placeholder="למשל: המחסן הראשי"
-                    className="mt-2"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="location-address">כתובת</Label>
-                  <Input
-                    id="location-address"
-                    value={locationForm.address}
-                    onChange={(e) => setLocationForm({ ...locationForm, address: e.target.value })}
-                    placeholder="רחוב ומספר בית"
-                    className="mt-2"
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="location-city">עיר</Label>
-                    <Input
-                      id="location-city"
-                      value={locationForm.city}
-                      onChange={(e) => setLocationForm({ ...locationForm, city: e.target.value })}
-                      className="mt-2"
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="location-zip">מיקוד</Label>
-                    <Input
-                      id="location-zip"
-                      value={locationForm.zipCode}
-                      onChange={(e) => setLocationForm({ ...locationForm, zipCode: e.target.value })}
-                      className="mt-2"
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label htmlFor="location-country">מדינה</Label>
-                  <Input
-                    id="location-country"
-                    value={locationForm.country}
-                    onChange={(e) => setLocationForm({ ...locationForm, country: e.target.value })}
-                    className="mt-2"
-                  />
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={saveFulfillmentLocation}
-                    disabled={saving}
-                    className="prodify-gradient text-white border-0"
-                  >
-                    {saving ? "שומר..." : "שמור"}
-                  </Button>
-                  {fulfillmentLocation && (
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        setEditingLocation(false)
-                        setLocationForm({
-                          name: fulfillmentLocation.name,
-                          address: fulfillmentLocation.address,
-                          city: fulfillmentLocation.city,
-                          country: fulfillmentLocation.country,
-                          zipCode: fulfillmentLocation.zipCode || "",
-                        })
-                      }}
-                    >
-                      ביטול
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
         
         {/* Shipping Zones */}
         <Card className="shadow-sm">

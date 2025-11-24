@@ -91,6 +91,16 @@ interface Shop {
       minOrderAmount?: number | null
     }
   }
+  // הגדרות תשלום חדשות (לתאימות)
+  bankTransferPayment?: {
+    enabled: boolean
+    instructions?: string
+  }
+  cashPayment?: {
+    enabled: boolean
+    minOrderEnabled?: boolean
+    minOrderAmount?: number | null
+  }
   shippingSettings?: {
     enabled: boolean
     options?: {
@@ -149,10 +159,32 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
   const [processing, setProcessing] = useState(false)
   const [storeCredit, setStoreCredit] = useState<any>(null)
   const [useStoreCredit, setUseStoreCredit] = useState(false)
+  const [utmParams, setUtmParams] = useState<{
+    utmSource?: string
+    utmMedium?: string
+    utmCampaign?: string
+    utmTerm?: string
+    utmContent?: string
+  }>({})
   
   // למנוע tracking כפול
   const hasTrackedPageView = useRef(false)
   const hasTrackedCheckout = useRef(false)
+  
+  // Extract UTM parameters from URL
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const utm = {
+        utmSource: params.get('utm_source') || undefined,
+        utmMedium: params.get('utm_medium') || undefined,
+        utmCampaign: params.get('utm_campaign') || undefined,
+        utmTerm: params.get('utm_term') || undefined,
+        utmContent: params.get('utm_content') || undefined,
+      }
+      setUtmParams(utm)
+    }
+  }, [])
   
   // Autocomplete hooks לערים ורחובות
   const citySearch = useCitySearch(slug)
@@ -172,8 +204,8 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
   })
 
   // קביעת שיטת תשלום ברירת מחדל - לפי מה שמופעל
-  const bankTransferEnabled = shop.paymentMethods?.bankTransfer?.enabled === true
-  const cashEnabled = shop.paymentMethods?.cash?.enabled === true
+  const bankTransferEnabled = (shop.bankTransferPayment?.enabled || shop.paymentMethods?.bankTransfer?.enabled) === true
+  const cashEnabled = (shop.cashPayment?.enabled || shop.paymentMethods?.cash?.enabled) === true
   
   // בדיקה אם יש לפחות שיטת תשלום אחת מופעלת
   const hasAnyPaymentMethod = shop.hasPaymentProvider || bankTransferEnabled || cashEnabled
@@ -188,26 +220,44 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
     defaultPaymentMethod = "cash"
   }
 
-  const [formData, setFormData] = useState({
-    email: customerData?.email || "",
-    phone: customerData?.phone || "",
-    firstName: customerData?.firstName || "",
-    lastName: customerData?.lastName || "",
-    companyName: "",
-    address: "",
-    houseNumber: "",
-    apartment: "",
-    floor: "",
-    city: "",
-    zip: "",
-    orderNotes: "",
-    newsletter: shop.checkoutSettings?.newsletterDefaultChecked !== false,
-    createAccount: false, // האם הלקוח רוצה להרשם לחשבון
-    saveDetails: false, // האם הלקוח רוצה לשמור פרטים לפעם הבאה
-    paymentMethod: defaultPaymentMethod || ("bank_transfer" as "credit_card" | "bank_transfer" | "cash"),
-    deliveryMethod: "shipping" as "shipping" | "pickup",
-    customFields: initialCustomFields,
-    selectedAddressId: "",
+  const [formData, setFormData] = useState(() => {
+    // טעינת שיטת תשלום מועדפת מנתוני הלקוח
+    let paymentMethod = defaultPaymentMethod || "bank_transfer"
+    
+    if (customerData?.preferredPaymentMethod) {
+      const savedMethod = customerData.preferredPaymentMethod
+      // אימות ששיטת התשלום השמורה עדיין תקפה
+      const isValid = 
+        (savedMethod === "credit_card" && shop.hasPaymentProvider) ||
+        (savedMethod === "bank_transfer" && bankTransferEnabled) ||
+        (savedMethod === "cash" && cashEnabled)
+      
+      if (isValid) {
+        paymentMethod = savedMethod as "credit_card" | "bank_transfer" | "cash"
+      }
+    }
+    
+    return {
+      email: customerData?.email || "",
+      phone: customerData?.phone || "",
+      firstName: customerData?.firstName || "",
+      lastName: customerData?.lastName || "",
+      companyName: "",
+      address: "",
+      houseNumber: "",
+      apartment: "",
+      floor: "",
+      city: "",
+      zip: "",
+      orderNotes: "",
+      newsletter: shop.checkoutSettings?.newsletterDefaultChecked !== false,
+      createAccount: false, // האם הלקוח רוצה להרשם לחשבון
+      saveDetails: false, // האם הלקוח רוצה לשמור פרטים לפעם הבאה
+      paymentMethod: paymentMethod as "credit_card" | "bank_transfer" | "cash",
+      deliveryMethod: "shipping" as "shipping" | "pickup",
+      customFields: initialCustomFields,
+      selectedAddressId: "",
+    }
   })
   const [savedAddresses, setSavedAddresses] = useState<any[]>([])
 
@@ -280,6 +330,26 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
       }
     }
   }, [customerData?.id, slug])
+
+  // שמירת שיטת תשלום מועדפת במסד הנתונים
+  useEffect(() => {
+    if (customerData?.id && formData.paymentMethod) {
+      const token = localStorage.getItem(`storefront_token_${slug}`)
+      if (token) {
+        // שמירה במסד הנתונים
+        fetch(`/api/storefront/${slug}/update-payment-preference`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-customer-id": token,
+          },
+          body: JSON.stringify({
+            paymentMethod: formData.paymentMethod,
+          }),
+        }).catch((err) => console.error("Error saving payment preference:", err))
+      }
+    }
+  }, [formData.paymentMethod, customerData?.id, slug])
 
   // PageView event - רק פעם אחת כשהעמוד נטען
   useEffect(() => {
@@ -426,6 +496,8 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
           shippingCost: shippingCost,
           storeCreditAmount: useStoreCredit ? storeCreditAmount : 0, // הוספת סכום קרדיט בחנות
           customFields: formData.customFields,
+          // UTM Tracking
+          ...utmParams,
         }),
       })
 
@@ -1087,10 +1159,10 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                             <div className="text-sm text-gray-500">העברת כסף ישירות לחשבון הבנק</div>                                                                 
                           </Label>
                         </div>
-                        {shop.paymentMethods?.bankTransfer?.instructions && (
+                        {(shop.bankTransferPayment?.instructions || shop.paymentMethods?.bankTransfer?.instructions) && (
                           <div className="mr-6 p-3 bg-gray-50 rounded-lg border border-gray-200">
                             <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                              {shop.paymentMethods.bankTransfer.instructions}
+                              {shop.bankTransferPayment?.instructions || shop.paymentMethods?.bankTransfer?.instructions}
                             </p>
                           </div>
                         )}
@@ -1103,9 +1175,9 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                           <div className="font-medium">מזומן בהזמנה</div>
                           <div className="text-sm text-gray-500">
                             תשלום במזומן בעת המשלוח
-                            {shop.paymentMethods?.cash?.minOrderEnabled && shop.paymentMethods?.cash?.minOrderAmount && (
+                            {((shop.cashPayment?.minOrderEnabled && shop.cashPayment?.minOrderAmount) || (shop.paymentMethods?.cash?.minOrderEnabled && shop.paymentMethods?.cash?.minOrderAmount)) && (
                               <span className="block mt-1 text-xs text-gray-600">
-                                (מינימום הזמנה: ₪{shop.paymentMethods.cash.minOrderAmount})
+                                (מינימום הזמנה: ₪{shop.cashPayment?.minOrderAmount || shop.paymentMethods?.cash?.minOrderAmount})
                               </span>
                             )}
                           </div>                                                                      
