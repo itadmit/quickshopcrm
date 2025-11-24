@@ -214,6 +214,7 @@ export function ShopSettings() {
         const settings = shop.settings || {}
         const shipping = settings.shipping || {}
         const pickup = settings.pickup || {}
+<<<<<<< HEAD
         
         // paymentMethods צריך להיות מערך
         let paymentMethodsArray: string[] = []
@@ -234,6 +235,11 @@ export function ShopSettings() {
           paymentMethodsArray.push('bank_transfer')
         }
         
+=======
+        const paymentMethods = Array.isArray(settings.paymentMethods) 
+          ? settings.paymentMethods 
+          : []
+>>>>>>> 65d0e89ec85ff8d1179f09f4f37ab83458e20bd7
         const shippingOptions = shipping.options || {
           fixed: false,
           fixedCost: null,
