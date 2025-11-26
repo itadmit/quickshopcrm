@@ -171,20 +171,43 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
   const hasTrackedPageView = useRef(false)
   const hasTrackedCheckout = useRef(false)
   
-  // Extract UTM parameters from URL
+  // Extract UTM parameters from URL and save to cookie
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search)
-      const utm = {
+      
+      // קרא מ-URL או מ-cookie
+      const utmFromUrl = {
         utmSource: params.get('utm_source') || undefined,
         utmMedium: params.get('utm_medium') || undefined,
         utmCampaign: params.get('utm_campaign') || undefined,
         utmTerm: params.get('utm_term') || undefined,
         utmContent: params.get('utm_content') || undefined,
       }
-      setUtmParams(utm)
+      
+      // אם יש UTM ב-URL, עדכן את ה-cookie
+      if (utmFromUrl.utmSource) {
+        const cookieValue = JSON.stringify(utmFromUrl)
+        document.cookie = `utm_params_${slug}=${cookieValue}; path=/; max-age=${60 * 60 * 24 * 30}` // 30 ימים
+        setUtmParams(utmFromUrl)
+      } else {
+        // אם אין ב-URL, נסה לקרוא מ-cookie
+        const cookieName = `utm_params_${slug}`
+        const cookies = document.cookie.split(';')
+        const utmCookie = cookies.find(c => c.trim().startsWith(`${cookieName}=`))
+        
+        if (utmCookie) {
+          try {
+            const cookieValue = utmCookie.split('=')[1]
+            const utmFromCookie = JSON.parse(decodeURIComponent(cookieValue))
+            setUtmParams(utmFromCookie)
+          } catch (e) {
+            console.error('Error parsing UTM cookie:', e)
+          }
+        }
+      }
     }
-  }, [])
+  }, [slug])
   
   // Autocomplete hooks לערים ורחובות
   const citySearch = useCitySearch(slug)

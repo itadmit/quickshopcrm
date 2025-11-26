@@ -28,6 +28,12 @@ const checkoutSchema = z.object({
   storeCreditAmount: z.number().min(0).optional(), // סכום קרדיט בחנות לשימוש
   notes: z.string().nullable().optional(),
   customFields: z.record(z.any()).optional(),
+  // UTM Tracking Parameters
+  utmSource: z.string().optional(),
+  utmMedium: z.string().optional(),
+  utmCampaign: z.string().optional(),
+  utmTerm: z.string().optional(),
+  utmContent: z.string().optional(),
 })
 
 // POST - יצירת הזמנה
@@ -439,6 +445,23 @@ export async function POST(
       // אם רק saveDetails (בלי createAccount), לא יוצרים לקוח חדש - רק משתמשים בקיים אם יש
     }
 
+    // מציאת מקור תנועה לפי UTM Source
+    let trafficSourceId: string | null = null
+    if (data.utmSource) {
+      const trafficSource = await prisma.trafficSource.findUnique({
+        where: {
+          shopId_uniqueId: {
+            shopId: shop.id,
+            uniqueId: data.utmSource,
+          },
+        },
+        select: { id: true },
+      })
+      if (trafficSource) {
+        trafficSourceId = trafficSource.id
+      }
+    }
+
     // יצירת מספר הזמנה (מתחיל מ-1000 לכל חנות)
     const orderCount = await prisma.order.count({
       where: { shopId: shop.id },
@@ -465,6 +488,7 @@ export async function POST(
         couponCode: data.couponCode,
         notes: data.notes,
         customFields: data.customFields || {},
+        trafficSourceId: trafficSourceId, // שמירת מקור התנועה
         status: "PENDING",
         paymentStatus: "PENDING",
         fulfillmentStatus: "UNFULFILLED",

@@ -60,13 +60,10 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    // הזמנות ממקורות מעקב (עם UTM או trafficSourceId)
+    // הזמנות ממקורות מעקב (עם trafficSourceId)
     const trackedOrdersWhere = {
       ...whereClause,
-      OR: [
-        { trafficSourceId: { not: null } },
-        { utmSource: { not: null } },
-      ],
+      trafficSourceId: { not: null },
     }
 
     const trackedOrdersCount = await prisma.order.count({
@@ -116,27 +113,24 @@ export async function GET(req: NextRequest) {
       }
     })
 
-    // דוח UTM מפורט (כל ההפניות, גם ללא מקור מוגדר)
-    const utmOrders = await prisma.order.findMany({
+    // דוח UTM מפורט - קיבוץ לפי מקורות תנועה עם medium ו-campaign
+    const ordersWithTrafficSource = await prisma.order.findMany({
       where: {
         ...whereClause,
-        OR: [
-          { utmSource: { not: null } },
-          { utmMedium: { not: null } },
-          { utmCampaign: { not: null } },
-        ],
+        trafficSourceId: { not: null },
       },
-      select: {
-        id: true,
-        utmSource: true,
-        utmMedium: true,
-        utmCampaign: true,
-        total: true,
-        createdAt: true,
+      include: {
+        trafficSource: {
+          select: {
+            uniqueId: true,
+            medium: true,
+            campaign: true,
+          },
+        },
       },
     })
 
-    // קיבוץ לפי UTM parameters
+    // קיבוץ לפי UTM parameters מה-trafficSource
     const utmReportMap = new Map<string, {
       source: string | null
       medium: string | null
@@ -145,14 +139,17 @@ export async function GET(req: NextRequest) {
       revenue: number
     }>()
 
-    utmOrders.forEach((order) => {
-      const key = `${order.utmSource || 'null'}_${order.utmMedium || 'null'}_${order.utmCampaign || 'null'}`
+    ordersWithTrafficSource.forEach((order) => {
+      const source = order.trafficSource?.uniqueId || null
+      const medium = order.trafficSource?.medium || null
+      const campaign = order.trafficSource?.campaign || null
+      const key = `${source || 'null'}_${medium || 'null'}_${campaign || 'null'}`
       
       if (!utmReportMap.has(key)) {
         utmReportMap.set(key, {
-          source: order.utmSource,
-          medium: order.utmMedium,
-          campaign: order.utmCampaign,
+          source,
+          medium,
+          campaign,
           orders: 0,
           revenue: 0,
         })
