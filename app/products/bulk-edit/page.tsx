@@ -108,14 +108,14 @@ const AVAILABLE_COLUMNS: Column[] = [
   { key: "cost", label: "עלות", editable: true, type: "number" },
   { key: "available-quantity", label: "כמות זמינה", editable: true, type: "number" },
   { key: "on-hand-quantity", label: "כמות במלאי", editable: true, type: "number" },
-  { key: "sku", label: "SKU", editable: true, type: "text" },
+  { key: "sku", label: "מקט", editable: true, type: "text" },
 ]
 
 export default function BulkEditPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
-  const { selectedShop, loading: shopLoading } = useShop()
+  const { selectedShop, shops, loading: shopLoading } = useShop()
   const [rows, setRows] = useState<BulkEditRow[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -158,10 +158,11 @@ export default function BulkEditPage() {
   }, [selectedShop?.id, productIdsString, shopLoading])
 
   const fetchCategories = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
 
     try {
-      const response = await fetch(`/api/categories?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/categories?shopId=${shopToUse.id}`)
       if (response.ok) {
         const data = await response.json()
         setCategories(data || [])
@@ -172,8 +173,9 @@ export default function BulkEditPage() {
   }
 
   const fetchProducts = async () => {
-    if (!selectedShop) {
-      console.log("No selected shop")
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) {
+      console.log("No shop available")
       setLoading(false)
       return
     }
@@ -181,7 +183,7 @@ export default function BulkEditPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams({
-        shopId: selectedShop.id,
+        shopId: shopToUse.id,
         limit: "1000", // טעינת הרבה מוצרים לעריכה קבוצתית
         ...(productIds && productIds.length > 0 && { ids: productIds.join(",") }),
       })
@@ -348,7 +350,8 @@ export default function BulkEditPage() {
   }
 
   const handleSave = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
 
     setSaving(true)
     try {
@@ -670,11 +673,14 @@ export default function BulkEditPage() {
     )
   }
 
-  if (!selectedShop && !loading) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse && !loading) {
     return (
       <AppLayout title="עריכה קבוצתית">
         <div className="text-center py-12">
-          <p className="text-gray-600">יש לבחור חנות מההדר לפני עריכה קבוצתית</p>
+          <p className="text-gray-600">לא נמצאה חנות. אנא צור חנות תחילה.</p>
         </div>
       </AppLayout>
     )

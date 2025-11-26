@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     await prisma.order.update({
       where: { id: orderId },
       data: {
-        paymentStatus: isSuccess ? "PAID" : "FAILED",
+        status: isSuccess ? "PAID" : "FAILED",
         transactionId: body.transaction_uid || body.transactionUid,
         paidAt: isSuccess ? new Date() : null,
       },
@@ -254,6 +254,52 @@ export async function POST(req: NextRequest) {
       })
 
       console.log("✅ Created order.paid event for order:", order.orderNumber)
+      
+      // עדכון totalSpent ו-orderCount של הלקוח (אם יש לקוח)
+      if (order.customerId) {
+        try {
+          await prisma.customer.update({
+            where: { id: order.customerId },
+            data: {
+              totalSpent: {
+                increment: order.total,
+              },
+              orderCount: {
+                increment: 1,
+              },
+            },
+          })
+        } catch (updateError) {
+          console.error('Error updating customer stats:', updateError)
+        }
+      }
+      
+      // מחיקת עגלת הקניות - רק אחרי תשלום מוצלח!
+      if (order.customerId) {
+        try {
+          // מחיקת עגלה לפי לקוח
+          await prisma.cart.deleteMany({
+            where: { 
+              customerId: order.customerId,
+              shopId: order.shopId
+            }
+          })
+          console.log(`✅ Cart deleted for customer ${order.customerId} after successful payment`)
+        } catch (cartError) {
+          console.error('Error deleting cart after payment:', cartError)
+          // לא נכשיל את התהליך אם מחיקת העגלה נכשלה
+        }
+      }
+      
+      // עדכון רמת מועדון פרימיום (אם יש לקוח) - רק אחרי שהתשלום הושלם!
+      if (order.customerId) {
+        try {
+          const { runPluginHook } = await import('@/lib/plugins/loader')
+          await runPluginHook('onOrderComplete', order.shopId, order)
+        } catch (pluginError) {
+          console.error('Error running premium club plugin hook:', pluginError)
+        }
+      }
       
       // בדיקה אם צריך לשלוח אוטומטית לחברת משלוחים
       const { ShippingManager } = await import('@/lib/shipping/manager')

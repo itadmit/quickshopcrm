@@ -135,7 +135,7 @@ export async function GET(
         transformedItem.categorySlug = categorySlug || null
       }
       
-      // אם זה קולקציה
+      // אם זה קטגוריה
       if (type === "collection" || item.type === "COLLECTION") {
         let collectionId = item.collectionId
         if (!collectionId && item.id?.startsWith("collection-")) {
@@ -143,7 +143,7 @@ export async function GET(
         }
         transformedItem.collectionId = collectionId || null
         
-        // שליפת slug של הקולקציה
+        // שליפת slug של הקטגוריה
         let collectionSlug = null
         if (item.url) {
           const urlMatch = item.url.match(/\/collections\/(.+)/)

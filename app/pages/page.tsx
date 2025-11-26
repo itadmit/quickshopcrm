@@ -30,7 +30,7 @@ interface Page {
 export default function PagesPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop, loading: shopsLoading } = useShop()
+  const { selectedShop, shops, loading: shopsLoading } = useShop()
   const [pages, setPages] = useState<Page[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -43,7 +43,8 @@ export default function PagesPage() {
   const fetchPages = async () => {
     setLoading(true)
     try {
-      const params = selectedShop?.id ? `?shopId=${selectedShop.id}` : ''
+      const shopToUse = selectedShop || shops[0]
+      const params = shopToUse?.id ? `?shopId=${shopToUse.id}` : ''
       const response = await fetch(`/api/pages${params}`)
       if (response.ok) {
         const data = await response.json()
@@ -94,16 +95,18 @@ export default function PagesPage() {
     )
   }
 
-  // אם אין חנות נבחרת אחרי שהכל נטען
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="דפים">
         <div className="text-center py-12">
           <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            אין חנות נבחרת
+            לא נמצאה חנות
           </h3>
-          <p className="text-gray-600">יש לבחור חנות מההדר לפני ניהול דפים</p>
+          <p className="text-gray-600">אנא צור חנות תחילה</p>
         </div>
       </AppLayout>
     )

@@ -64,7 +64,7 @@ export async function GET(
     })
 
     if (!collection) {
-      return NextResponse.json({ error: "קולקציה לא נמצאה" }, { status: 404 })
+      return NextResponse.json({ error: "קטגוריה לא נמצאה" }, { status: 404 })
     }
 
     return NextResponse.json(collection)
@@ -102,7 +102,7 @@ export async function PUT(
     })
 
     if (!existingCollection) {
-      return NextResponse.json({ error: "קולקציה לא נמצאה" }, { status: 404 })
+      return NextResponse.json({ error: "קטגוריה לא נמצאה" }, { status: 404 })
     }
 
     const body = await req.json()
@@ -148,10 +148,10 @@ export async function PUT(
     const finalType = data.type ?? existingCollection.type
     
     if (finalType === "AUTOMATIC" && data.rules) {
-      // קולקציה אוטומטית - עדכון לפי rules
+      // קטגוריה אוטומטית - עדכון לפי rules
       await updateAutomaticCollection(existingCollection.id, existingCollection.shopId, data.rules)
     } else if (data.productIds !== undefined) {
-      // קולקציה ידנית - עדכון מוצרים שנבחרו
+      // קטגוריה ידנית - עדכון מוצרים שנבחרו
       // מחיקת כל הקשרים הקיימים
       await prisma.productCollection.deleteMany({
         where: { collectionId: existingCollection.id },
@@ -252,7 +252,7 @@ export async function DELETE(
     })
 
     if (!collection) {
-      return NextResponse.json({ error: "קולקציה לא נמצאה" }, { status: 404 })
+      return NextResponse.json({ error: "קטגוריה לא נמצאה" }, { status: 404 })
     }
 
     // מחיקת האוסף (עם כל הקשרים - cascade)
@@ -274,7 +274,7 @@ export async function DELETE(
       },
     })
 
-    return NextResponse.json({ message: "הקולקציה נמחקה בהצלחה" })
+    return NextResponse.json({ message: "הקטגוריה נמחקה בהצלחה" })
   } catch (error) {
     console.error("Error deleting collection:", error)
     return NextResponse.json(

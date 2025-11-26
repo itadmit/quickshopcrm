@@ -24,7 +24,7 @@ export function ProductDetailsCard({ data, onChange }: ProductDetailsCardProps) 
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="sku">SKU / מק״ט</Label>
+          <Label htmlFor="sku">מקט</Label>
           <Input
             id="sku"
             value={data.sku}

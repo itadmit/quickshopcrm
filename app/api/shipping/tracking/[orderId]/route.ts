@@ -15,14 +15,26 @@ export async function GET(
       return NextResponse.json({ error: "לא מאומת" }, { status: 401 })
     }
 
+    // בדיקה אם זה ID או מספר הזמנה
+    const whereClause: any = {
+      shop: {
+        companyId: session.user.companyId,
+      },
+    }
+
+    // אם זה נראה כמו UUID או CUID (מתחיל באות קטנה ואורך 25 תווים), חפש לפי ID, אחרת לפי מספר הזמנה
+    const isUUID = params.orderId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+    const isCUID = params.orderId.match(/^[a-z][a-z0-9]{24}$/i) // CUID מתחיל באות קטנה ואורך 25 תווים
+    
+    if (isUUID || isCUID) {
+      whereClause.id = params.orderId
+    } else {
+      whereClause.orderNumber = params.orderId
+    }
+
     // בדיקה שההזמנה שייכת לחברה
     const order = await prisma.order.findFirst({
-      where: {
-        id: params.orderId,
-        shop: {
-          companyId: session.user.companyId,
-        },
-      },
+      where: whereClause,
     })
 
     if (!order) {
@@ -81,7 +93,7 @@ export async function GET(
 
     // עדכון הזמנה עם הסטטוס החדש
     await prisma.order.update({
-      where: { id: params.orderId },
+      where: { id: order.id },
       data: {
         shippingStatus: status.status,
         shippingStatusUpdatedAt: status.lastUpdate || new Date(),

@@ -185,7 +185,7 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    let contact
+    let contact: any
     if (existingContact) {
       // עדכון איש קשר קיים
       contact = await prisma.contact.update({
@@ -222,7 +222,7 @@ export async function POST(req: NextRequest) {
         )
 
         const newCategoryTypes = categoryTypes.filter(
-          (ct: string) => !existingCategoryTypes.includes(ct)
+          (ct: string) => !existingCategoryTypes.includes(ct as any)
         )
 
         if (newCategoryTypes.length > 0) {

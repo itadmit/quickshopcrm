@@ -44,7 +44,7 @@ interface CollectionRule {
 export default function NewCollectionPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const [saving, setSaving] = useState(false)
   const [uploadingImage, setUploadingImage] = useState(false)
   
@@ -96,8 +96,9 @@ export default function NewCollectionPage() {
       formDataObj.append("file", file)
       formDataObj.append("entityType", "collections")
       formDataObj.append("entityId", "new")
-      if (selectedShop?.id) {
-        formDataObj.append("shopId", selectedShop.id)
+      const shopToUseForSave = selectedShop || shops[0]
+      if (shopToUseForSave?.id) {
+        formDataObj.append("shopId", shopToUseForSave.id)
       }
 
       const response = await fetch("/api/files/upload", {
@@ -126,7 +127,8 @@ export default function NewCollectionPage() {
   }
 
   const searchProducts = async (query: string) => {
-    if (!selectedShop || !query.trim()) {
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse || !query.trim()) {
       setSearchResults([])
       return
     }
@@ -134,7 +136,7 @@ export default function NewCollectionPage() {
     setSearching(true)
     try {
       const response = await fetch(
-        `/api/products?shopId=${selectedShop.id}&search=${encodeURIComponent(query)}&status=PUBLISHED&limit=20`
+        `/api/products?shopId=${shopToUse.id}&search=${encodeURIComponent(query)}&status=PUBLISHED&limit=20`
       )
       if (response.ok) {
         const data = await response.json()
@@ -199,7 +201,7 @@ export default function NewCollectionPage() {
       return
     }
 
-    // נסגור את הדיאלוג - ההוספה תתבצע לאחר יצירת הקולקציה
+    // נסגור את הדיאלוג - ההוספה תתבצע לאחר יצירת הקטגוריה
     setAddToMenuDialogOpen(false)
   }
 
@@ -246,10 +248,11 @@ export default function NewCollectionPage() {
   }
 
   const findMatchingProducts = async () => {
-    if (!selectedShop) {
+    const shopToUseForMatch = selectedShop || shops[0]
+    if (!shopToUseForMatch) {
       toast({
         title: "שגיאה",
-        description: "יש לבחור חנות מההדר",
+        description: "לא נמצאה חנות. אנא צור חנות תחילה.",
         variant: "destructive",
       })
       return
@@ -271,7 +274,7 @@ export default function NewCollectionPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shopId: selectedShop.id,
+          shopId: shopToUse.id,
           rules: {
             conditions: activeRules,
             matchType
@@ -459,13 +462,16 @@ export default function NewCollectionPage() {
     }
   }
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="קטגוריה חדשה">
         <div className="text-center py-12">
           <FolderOpen className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            אין חנות נבחרת
+            לא נמצאה חנות
           </h3>
           <p className="text-gray-600 mb-4">
             יש לבחור חנות מההדר לפני יצירת קטגוריה
@@ -621,7 +627,7 @@ export default function NewCollectionPage() {
                               <SelectItem value="title">כותרת מוצר</SelectItem>
                               <SelectItem value="price">מחיר</SelectItem>
                               <SelectItem value="tag">תג</SelectItem>
-                              <SelectItem value="sku">SKU</SelectItem>
+                              <SelectItem value="sku">מקט</SelectItem>
                               <SelectItem value="status">סטטוס</SelectItem>
                               <SelectItem value="availability">זמינות</SelectItem>
                             </SelectContent>
@@ -764,7 +770,7 @@ export default function NewCollectionPage() {
                         <Input
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          placeholder="חפש מוצרים לפי שם או SKU..."
+                          placeholder="חפש מוצרים לפי שם או מקט..."
                           className="pr-10"
                         />
                       </div>
@@ -796,7 +802,7 @@ export default function NewCollectionPage() {
                                 <p className="font-medium">{product.name}</p>
                                 <p className="text-sm text-gray-500">
                                   ₪{product.price.toFixed(2)}
-                                  {product.sku && ` • SKU: ${product.sku}`}
+                                  {product.sku && ` • מקט: ${product.sku}`}
                                 </p>
                               </div>
                               <Plus className="w-5 h-5 text-gray-400" />

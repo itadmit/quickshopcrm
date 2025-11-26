@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils"
 
 export interface MobileListItem {
   id: string
+  orderNumber?: string // For orders
   title: string
   subtitle?: string
   description?: string
@@ -39,6 +40,7 @@ export interface MobileListItem {
     onClick: () => void
     variant?: "default" | "destructive"
   }>
+  className?: string // For custom styling like opacity
 }
 
 interface MobileListViewProps {
@@ -323,7 +325,8 @@ export function MobileListView({
             className={cn(
               "transition-all duration-200 border-0 shadow-sm",
               isSelected && "ring-2 ring-emerald-500 bg-emerald-50/50",
-              onItemClick && "cursor-pointer active:scale-[0.99]"
+              onItemClick && "cursor-pointer active:scale-[0.99]",
+              item.className
             )}
             onClick={() => onItemClick?.(item)}
           >
@@ -363,7 +366,7 @@ export function MobileListView({
 
                 {/* Content */}
                 <div className="flex-1 min-w-0 flex gap-2">
-                  {/* Left side - Title, Category, SKU, Inventory */}
+                  {/* Left side - Title, Category, מקט, Inventory */}
                   <div className="flex-[2] min-w-0 flex flex-col gap-1">
                     <h3 className="font-semibold text-gray-900 text-sm leading-tight truncate">
                       {item.title}
@@ -379,7 +382,7 @@ export function MobileListView({
                       </div>
                     )}
 
-                    {/* SKU */}
+                    {/* מקט */}
                     {item.metadata && item.metadata.length > 0 && displaySettings.showSku && (
                       <div className="flex items-center gap-1.5">
                         <Hash className="w-3 h-3 text-gray-400" />

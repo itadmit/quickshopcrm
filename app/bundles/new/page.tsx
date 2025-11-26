@@ -28,7 +28,7 @@ interface Product {
 export default function NewBundlePage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop, loading: shopLoading } = useShop()
+  const { selectedShop, shops, loading: shopLoading } = useShop()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [products, setProducts] = useState<Product[]>([])
@@ -53,11 +53,12 @@ export default function NewBundlePage() {
   }, [selectedShop])
 
   const fetchProducts = async () => {
-    if (!selectedShop) return
+    const shopToUseForProducts = selectedShop || shops[0]
+    if (!shopToUseForProducts) return
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/products?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/products?shopId=${shopToUseForProducts.id}`)
       if (response.ok) {
         const data = await response.json()
         setProducts(data.products || [])
@@ -102,10 +103,11 @@ export default function NewBundlePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!selectedShop) {
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) {
       toast({
         title: "שגיאה",
-        description: "יש לבחור חנות",
+        description: "לא נמצאה חנות. אנא צור חנות תחילה.",
         variant: "destructive",
       })
       return
@@ -126,7 +128,7 @@ export default function NewBundlePage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shopId: selectedShop.id,
+          shopId: shopToUse.id,
           name: formData.name,
           description: formData.description || null,
           price: parseFloat(formData.price),
@@ -173,13 +175,16 @@ export default function NewBundlePage() {
     )
   }
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="חבילה חדשה">
         <div className="text-center py-12">
           <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">אין חנות נבחרת</h3>
-          <p className="text-gray-600">יש לבחור חנות מההדר</p>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">לא נמצאה חנות</h3>
+          <p className="text-gray-600">אנא צור חנות תחילה</p>
         </div>
       </AppLayout>
     )

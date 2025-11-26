@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
           await prisma.order.update({
             where: { id: order.id },
             data: {
-              paymentStatus: "PAID",
+              status: "PAID",
               paidAt: new Date(),
             },
           })
@@ -303,7 +303,7 @@ export async function GET(req: NextRequest) {
     await prisma.order.update({
       where: { id: order.id },
       data: {
-        paymentStatus: "PAID",
+        status: "PAID",
         paidAt: new Date(),
       },
     })

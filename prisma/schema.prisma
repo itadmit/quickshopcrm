@@ -275,6 +275,7 @@ model Shop {
   otpTokens                OtpToken[]
   waitlist                 Waitlist[]
   popups                   Popup[]
+  orderStatusDefinitions   OrderStatusDefinition[]
 
   @@index([companyId])
   @@index([slug])
@@ -529,8 +530,7 @@ model Order {
   shopId            String
   orderNumber       String
   customerId        String?
-  status            OrderStatus       @default(PENDING)
-  paymentStatus     PaymentStatus     @default(PENDING)
+  status            String            @default("PENDING") // סטטוס מאוחד - יכול להיות enum או מותאם אישית
   fulfillmentStatus FulfillmentStatus @default(UNFULFILLED)
   customerName      String
   customerEmail     String
@@ -1343,23 +1343,16 @@ enum ProductAvailability {
   DISCONTINUED
 }
 
+// סטטוסים מאוחדים (ברירת מחדל)
 enum OrderStatus {
-  PENDING
-  CONFIRMED
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
-  REFUNDED
-}
-
-enum PaymentStatus {
-  PENDING
-  PROCESSING
-  COMPLETED
-  FAILED
-  REFUNDED
-  PAID
+  PENDING // ממתין לתשלום
+  PAID // שולם
+  PROCESSING // מעובד
+  SHIPPED // נשלח
+  DELIVERED // נמסר
+  CANCELLED // בוטל
+  REFUNDED // הוחזר
+  FAILED // נכשל
 }
 
 enum FulfillmentStatus {
@@ -1888,4 +1881,29 @@ model TrafficSource {
   @@index([uniqueId])
   @@index([isActive])
   @@map("traffic_sources")
+}
+
+// סטטוסים מותאמים אישית להזמנות
+model OrderStatusDefinition {
+  id          String   @id @default(cuid())
+  shopId      String
+  key         String   // מזהה ייחודי (PENDING, PAID, וכו')
+  label       String   // תווית בעברית להצגה
+  labelEn     String?  // תווית באנגלית
+  color       String   // צבע התצוגה (hex)
+  icon        String?  // אייקון (lucide icon name)
+  description String?  // תיאור הסטטוס
+  isDefault   Boolean  @default(false) // האם זה סטטוס ברירת מחדל
+  isSystem    Boolean  @default(false) // האם זה סטטוס מערכת (לא ניתן למחוק)
+  position    Int      @default(0) // סדר תצוגה
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, key])
+  @@index([shopId])
+  @@index([isActive])
+  @@index([position])
+  @@map("order_status_definitions")
 }

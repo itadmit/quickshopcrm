@@ -90,14 +90,14 @@ const CATEGORY_CONFIG: Record<ContactCategoryType, { label: string; icon: any; c
   all: { label: "הכל", icon: Users, color: "bg-gray-500" },
   CUSTOMER: { label: "לקוחות", icon: ShoppingBag, color: "bg-green-500" },
   CLUB_MEMBER: { label: "חברי מועדון", icon: UserCheck, color: "bg-blue-500" },
-  NEWSLETTER: { label: "ניוזלטר", icon: Mail, color: "bg-orange-500" },
+  NEWSLETTER: { label: "דיוור", icon: Mail, color: "bg-orange-500" },
   CONTACT_FORM: { label: "יצירת קשר", icon: MessageSquare, color: "bg-purple-500" },
 }
 
 export default function ContactsPage() {
   const router = useRouter()
   const { data: session } = useSession()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const { toast } = useToast()
   const isMobile = useMediaQuery("(max-width: 768px)")
   
@@ -131,6 +131,7 @@ export default function ContactsPage() {
   useEffect(() => {
     // אתחול קטגוריות אם צריך
     initCategories()
+    // טען אנשי קשר גם אם אין חנות נבחרת (יטען מכל החנויות)
     fetchContacts()
   }, [page, activeTab, emailConsentFilter, search, selectedShop])
 
@@ -146,15 +147,17 @@ export default function ContactsPage() {
   }
 
   const fetchContacts = async () => {
-    if (!selectedShop) return
-    
     try {
       setLoading(true)
       const params = new URLSearchParams({
         page: page.toString(),
         limit: "50",
-        shopId: selectedShop.id,
       })
+      
+      // אם יש חנות נבחרת, הוסף אותה לפרמטרים
+      if (selectedShop) {
+        params.append("shopId", selectedShop.id)
+      }
 
       if (activeTab !== "all") {
         params.append("categoryType", activeTab)
@@ -301,10 +304,13 @@ export default function ContactsPage() {
   const handleCreateContact = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!selectedShop) {
+    // אם אין חנות נבחרת, נשתמש בחנות הראשונה של המשתמש
+    const shopToUse = selectedShop || shops[0]
+    
+    if (!shopToUse) {
       toast({
         title: "שגיאה",
-        description: "אנא בחר חנות",
+        description: "לא נמצאה חנות. אנא צור חנות תחילה.",
         variant: "destructive",
       })
       return
@@ -337,7 +343,7 @@ export default function ContactsPage() {
         },
         body: JSON.stringify({
           ...newContact,
-          shopId: selectedShop.id,
+          shopId: shopToUse.id,
         }),
       })
 
@@ -384,17 +390,7 @@ export default function ContactsPage() {
     setPage(1)
   }
 
-  if (!selectedShop) {
-    return (
-      <AppLayout title="אנשי קשר">
-        <Card>
-          <CardContent className="p-8 text-center">
-            <p className="text-gray-600">אנא בחר חנות כדי לראות את אנשי הקשר</p>
-          </CardContent>
-        </Card>
-      </AppLayout>
-    )
-  }
+  // לא נציג הודעת "בחר חנות" - נטען את כל אנשי הקשר של החברה
 
   return (
     <AppLayout title="אנשי קשר">

@@ -39,7 +39,7 @@ interface Discount {
 export default function DiscountsPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop, loading: shopLoading } = useShop()
+  const { selectedShop, shops, loading: shopLoading } = useShop()
   const [discounts, setDiscounts] = useState<Discount[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -49,10 +49,11 @@ export default function DiscountsPage() {
   const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
-    if (selectedShop && !shopLoading) {
+    // טען גם אם אין חנות נבחרת (נשתמש בחנות הראשונה)
+    if (!shopLoading) {
       fetchDiscounts()
     }
-  }, [selectedShop, shopLoading])
+  }, [selectedShop, shops, shopLoading])
 
   useEffect(() => {
     // איפוס בחירות כשמשנים פילטרים
@@ -60,11 +61,12 @@ export default function DiscountsPage() {
   }, [search, typeFilter, statusFilter])
 
   const fetchDiscounts = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/discounts?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/discounts?shopId=${shopToUse.id}`)
       if (response.ok) {
         const data = await response.json()
         setDiscounts(data)
@@ -227,7 +229,10 @@ export default function DiscountsPage() {
 
   // אם אין חנות נבחרת אחרי שהטעינה הסתיימה, זה אומר שאין חנויות
   // רק אם shopLoading הוא false ו-selectedShop הוא null, אז נציג את ההודעה
-  if (!selectedShop && !shopLoading) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse && !shopLoading) {
     return (
       <AppLayout title="הנחות">
         <div className="text-center py-12">

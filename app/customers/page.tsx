@@ -60,7 +60,7 @@ interface Customer {
 export default function CustomersPage() {
   const router = useRouter()
   const { data: session } = useSession()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const { toast } = useToast()
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -229,10 +229,12 @@ export default function CustomersPage() {
   const handleCreateCustomer = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!selectedShop) {
+    // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+    const shopToUse = selectedShop || shops?.[0]
+    if (!shopToUse) {
       toast({
         title: "שגיאה",
-        description: "אנא בחר חנות",
+        description: "לא נמצאה חנות. אנא צור חנות תחילה.",
         variant: "destructive",
       })
       return
@@ -256,7 +258,7 @@ export default function CustomersPage() {
         },
         body: JSON.stringify({
           ...newCustomer,
-          shopId: selectedShop.id,
+          shopId: shopToUse.id,
         }),
       })
 

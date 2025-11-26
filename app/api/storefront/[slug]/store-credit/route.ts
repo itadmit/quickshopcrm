@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { jwtVerify } from "jose"
+import { verifyStorefrontCustomer } from "@/lib/storefront-auth"
 
 // GET - קבלת קרדיט בחנות של לקוח בסטורפרונט
 export async function GET(
@@ -8,61 +8,17 @@ export async function GET(
   { params }: { params: { slug: string } }
 ) {
   try {
-    // נסה למצוא את החנות לפי slug או ID
-    let shop = await prisma.shop.findFirst({
-      where: {
-        slug: params.slug,
-        isPublished: true,
-      },
-    })
-
-    if (!shop) {
-      shop = await prisma.shop.findFirst({
-        where: {
-          id: params.slug,
-          isPublished: true,
-        },
-      })
-    }
-
-    if (!shop) {
-      return NextResponse.json({ error: "Shop not found" }, { status: 404 })
-    }
-
-    const token = req.headers.get("x-customer-id")
-    
-    if (!token) {
-      return NextResponse.json({ error: "Customer ID required" }, { status: 401 })
-    }
-
-    // ניסיון לפענח JWT token
-    let customerId: string | null = null
-    try {
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
-      const { payload } = await jwtVerify(token, secret)
-      
-      if (payload.shopId !== shop.id) {
-        return NextResponse.json(
-          { error: "אימות נכשל" },
-          { status: 401 }
-        )
-      }
-      
-      customerId = payload.customerId as string
-    } catch (jwtError) {
-      // אם זה לא JWT, נניח שזה customerId ישיר
-      customerId = token
-    }
-
-    if (!customerId) {
-      return NextResponse.json({ error: "Customer ID required" }, { status: 401 })
+    // אימות לקוח (כולל בדיקה שהלקוח קיים)
+    const auth = await verifyStorefrontCustomer(req, params.slug)
+    if (!auth.success || !auth.customerId || !auth.shop) {
+      return auth.error!
     }
 
     // מציאת קרדיט בחנות של הלקוח
     const storeCredit = await prisma.storeCredit.findFirst({
       where: {
-        shopId: shop.id,
-        customerId: customerId,
+        shopId: auth.shop.id,
+        customerId: auth.customerId,
       },
       include: {
         transactions: {

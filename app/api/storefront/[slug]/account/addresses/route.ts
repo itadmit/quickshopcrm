@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
-import { jwtVerify } from "jose"
+import { verifyStorefrontCustomer } from "@/lib/storefront-auth"
 
 const addressSchema = z.object({
   firstName: z.string().min(1, "שם פרטי הוא חובה"),
@@ -20,77 +20,15 @@ export async function GET(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const shop = await prisma.shop.findUnique({
-      where: {
-        slug: params.slug,
-        isPublished: true,
-      },
-    })
-
-    if (!shop) {
-      return NextResponse.json({ error: "Shop not found" }, { status: 404 })
-    }
-
-    // קבלת token מה-header
-    const authHeader = req.headers.get("authorization")
-    const token = authHeader?.replace("Bearer ", "") || req.headers.get("x-customer-token")
-
-    if (!token) {
-      return NextResponse.json(
-        { error: "אימות נדרש" },
-        { status: 401 }
-      )
-    }
-
-    // אימות JWT token
-    let customerId: string | null = null
-    try {
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
-      const { payload } = await jwtVerify(token, secret)
-      
-      if (payload.shopId !== shop.id) {
-        return NextResponse.json(
-          { error: "אימות נכשל" },
-          { status: 401 }
-        )
-      }
-      
-      customerId = payload.customerId as string
-    } catch (jwtError) {
-      return NextResponse.json(
-        { error: "אימות נכשל" },
-        { status: 401 }
-      )
-    }
-
-    if (!customerId) {
-      return NextResponse.json(
-        { error: "אימות נכשל" },
-        { status: 401 }
-      )
-    }
-
-    // קבלת הלקוח
-    const customer = await prisma.customer.findFirst({
-      where: {
-        id: customerId,
-        shopId: shop.id,
-      },
-      select: {
-        addresses: true,
-      },
-    })
-
-    if (!customer) {
-      return NextResponse.json(
-        { error: "לקוח לא נמצא" },
-        { status: 404 }
-      )
+    // אימות לקוח (כולל בדיקה שהלקוח קיים)
+    const auth = await verifyStorefrontCustomer(req, params.slug)
+    if (!auth.success || !auth.customer) {
+      return auth.error!
     }
 
     // החזרת כתובות (אם יש)
-    const addresses = customer.addresses && typeof customer.addresses === 'object' 
-      ? (Array.isArray(customer.addresses) ? customer.addresses : [customer.addresses])
+    const addresses = auth.customer.addresses && typeof auth.customer.addresses === 'object' 
+      ? (Array.isArray(auth.customer.addresses) ? auth.customer.addresses : [auth.customer.addresses])
       : []
 
     return NextResponse.json({ addresses })
@@ -109,76 +47,14 @@ export async function POST(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const shop = await prisma.shop.findUnique({
-      where: {
-        slug: params.slug,
-        isPublished: true,
-      },
-    })
-
-    if (!shop) {
-      return NextResponse.json({ error: "Shop not found" }, { status: 404 })
-    }
-
-    // קבלת token מה-header
-    const authHeader = req.headers.get("authorization")
-    const token = authHeader?.replace("Bearer ", "") || req.headers.get("x-customer-token")
-
-    if (!token) {
-      return NextResponse.json(
-        { error: "אימות נדרש" },
-        { status: 401 }
-      )
-    }
-
-    // אימות JWT token
-    let customerId: string | null = null
-    try {
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
-      const { payload } = await jwtVerify(token, secret)
-      
-      if (payload.shopId !== shop.id) {
-        return NextResponse.json(
-          { error: "אימות נכשל" },
-          { status: 401 }
-        )
-      }
-      
-      customerId = payload.customerId as string
-    } catch (jwtError) {
-      return NextResponse.json(
-        { error: "אימות נכשל" },
-        { status: 401 }
-      )
-    }
-
-    if (!customerId) {
-      return NextResponse.json(
-        { error: "אימות נכשל" },
-        { status: 401 }
-      )
+    // אימות לקוח (כולל בדיקה שהלקוח קיים)
+    const auth = await verifyStorefrontCustomer(req, params.slug)
+    if (!auth.success || !auth.customer) {
+      return auth.error!
     }
 
     const body = await req.json()
     const data = addressSchema.parse(body)
-
-    // קבלת הלקוח עם הכתובות הקיימות
-    const customer = await prisma.customer.findFirst({
-      where: {
-        id: customerId,
-        shopId: shop.id,
-      },
-      select: {
-        addresses: true,
-      },
-    })
-
-    if (!customer) {
-      return NextResponse.json(
-        { error: "לקוח לא נמצא" },
-        { status: 404 }
-      )
-    }
 
     // יצירת כתובת חדשה עם ID
     const newAddress = {
@@ -195,15 +71,15 @@ export async function POST(
     }
 
     // עדכון הכתובות
-    const existingAddresses = customer.addresses && typeof customer.addresses === 'object'
-      ? (Array.isArray(customer.addresses) ? customer.addresses : [customer.addresses])
+    const existingAddresses = auth.customer.addresses && typeof auth.customer.addresses === 'object'
+      ? (Array.isArray(auth.customer.addresses) ? auth.customer.addresses : [auth.customer.addresses])
       : []
 
     const updatedAddresses = [...existingAddresses, newAddress]
 
     // עדכון הלקוח
     await prisma.customer.update({
-      where: { id: customerId },
+      where: { id: auth.customerId },
       data: {
         addresses: updatedAddresses,
       },
@@ -235,54 +111,10 @@ export async function DELETE(
   { params }: { params: { slug: string } }
 ) {
   try {
-    const shop = await prisma.shop.findUnique({
-      where: {
-        slug: params.slug,
-        isPublished: true,
-      },
-    })
-
-    if (!shop) {
-      return NextResponse.json({ error: "Shop not found" }, { status: 404 })
-    }
-
-    // קבלת token מה-header
-    const authHeader = req.headers.get("authorization")
-    const token = authHeader?.replace("Bearer ", "") || req.headers.get("x-customer-token")
-
-    if (!token) {
-      return NextResponse.json(
-        { error: "אימות נדרש" },
-        { status: 401 }
-      )
-    }
-
-    // אימות JWT token
-    let customerId: string | null = null
-    try {
-      const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")
-      const { payload } = await jwtVerify(token, secret)
-      
-      if (payload.shopId !== shop.id) {
-        return NextResponse.json(
-          { error: "אימות נכשל" },
-          { status: 401 }
-        )
-      }
-      
-      customerId = payload.customerId as string
-    } catch (jwtError) {
-      return NextResponse.json(
-        { error: "אימות נכשל" },
-        { status: 401 }
-      )
-    }
-
-    if (!customerId) {
-      return NextResponse.json(
-        { error: "אימות נכשל" },
-        { status: 401 }
-      )
+    // אימות לקוח (כולל בדיקה שהלקוח קיים)
+    const auth = await verifyStorefrontCustomer(req, params.slug)
+    if (!auth.success || !auth.customer) {
+      return auth.error!
     }
 
     const { searchParams } = new URL(req.url)
@@ -295,27 +127,9 @@ export async function DELETE(
       )
     }
 
-    // קבלת הלקוח עם הכתובות הקיימות
-    const customer = await prisma.customer.findFirst({
-      where: {
-        id: customerId,
-        shopId: shop.id,
-      },
-      select: {
-        addresses: true,
-      },
-    })
-
-    if (!customer) {
-      return NextResponse.json(
-        { error: "לקוח לא נמצא" },
-        { status: 404 }
-      )
-    }
-
     // מחיקת הכתובת
-    const existingAddresses = customer.addresses && typeof customer.addresses === 'object'
-      ? (Array.isArray(customer.addresses) ? customer.addresses : [customer.addresses])
+    const existingAddresses = auth.customer.addresses && typeof auth.customer.addresses === 'object'
+      ? (Array.isArray(auth.customer.addresses) ? auth.customer.addresses : [auth.customer.addresses])
       : []
 
     const updatedAddresses = existingAddresses.filter(
@@ -324,7 +138,7 @@ export async function DELETE(
 
     // עדכון הלקוח
     await prisma.customer.update({
-      where: { id: customerId },
+      where: { id: auth.customerId },
       data: {
         addresses: updatedAddresses,
       },

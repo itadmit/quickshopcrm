@@ -66,7 +66,7 @@ interface ShippingRate {
 
 export default function ShippingSettingsPage() {
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   
@@ -110,15 +110,16 @@ export default function ShippingSettingsPage() {
   ]
   
   useEffect(() => {
-    if (selectedShop?.id) {
-      loadShippingSettings()
+    const shopToUse = selectedShop || shops[0]
+    if (shopToUse?.id) {
+      loadShippingSettings(shopToUse.id)
     }
-  }, [selectedShop?.id])
+  }, [selectedShop?.id, shops])
   
-  const loadShippingSettings = async () => {
+  const loadShippingSettings = async (shopId: string) => {
     try {
       setLoading(true)
-      const response = await fetch(`/api/shops/${selectedShop?.id}`)
+      const response = await fetch(`/api/shops/${shopId}`)
       if (response.ok) {
         const data = await response.json()
         const settings = data.settings || {}
@@ -302,12 +303,13 @@ export default function ShippingSettingsPage() {
   }
   
   const saveZones = async (zonesToSave?: ShippingZone[]) => {
-    if (!selectedShop?.id) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse?.id) return
     
     const zonesToSaveFinal = zonesToSave || zones
     
     try {
-      const response = await fetch(`/api/shops/${selectedShop.id}`, {
+      const response = await fetch(`/api/shops/${shopToUse.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

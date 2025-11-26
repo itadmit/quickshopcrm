@@ -230,7 +230,7 @@ export async function getShopNavigation(
           }
         }
         
-        // אם זה קטגוריה/קולקציה
+        // אם זה קטגוריה
         if (type === "category" || item.type === "CATEGORY") {
           let categoryId = item.categoryId
           if (!categoryId && item.id?.startsWith("category-")) {
@@ -265,7 +265,7 @@ export async function getShopNavigation(
           }
         }
         
-        // אם זה קטגוריה/קולקציה
+        // אם זה קטגוריה
         if (type === "collection" || item.type === "COLLECTION") {
           let collectionId = item.collectionId
           if (!collectionId && item.id?.startsWith("collection-")) {

@@ -90,7 +90,7 @@ function buildWhereCondition(rule: CollectionRule): any | null {
       return buildTagCondition(condition, value)
 
     case "sku":
-      // SKU יכול להיות null, אז צריך לטפל בזה
+      // מקט יכול להיות null, אז צריך לטפל בזה
       if (condition === "equals" || condition === "contains" || condition === "starts_with" || condition === "ends_with") {
         return {
           AND: [
@@ -373,7 +373,7 @@ function buildTagCondition(
 }
 
 /**
- * מעדכן את המוצרים בקולקציה אוטומטית לפי ה-rules
+ * מעדכן את המוצרים בקטגוריה אוטומטית לפי ה-rules
  */
 export async function updateAutomaticCollection(
   collectionId: string,
@@ -383,7 +383,7 @@ export async function updateAutomaticCollection(
   // קבלת רשימת מוצרים שמתאימים לתנאים
   const matchingProductIds = await applyCollectionRules(shopId, rules)
 
-  // קבלת רשימת מוצרים נוכחית בקולקציה
+  // קבלת רשימת מוצרים נוכחית בקטגוריה
   const currentProducts = await prisma.productCollection.findMany({
     where: { collectionId },
     select: { productId: true }

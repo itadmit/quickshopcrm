@@ -31,7 +31,8 @@ export default function NewGiftCardPage() {
   })
 
   const handleSubmit = async () => {
-    if (!selectedShop) {
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) {
       toast({
         title: "שגיאה",
         description: "יש לבחור חנות מההדר",
@@ -62,7 +63,7 @@ export default function NewGiftCardPage() {
 
     try {
       const payload: any = {
-        shopId: selectedShop.id,
+        shopId: shopToUse.id,
         code: formData.code || undefined,
         amount: parseFloat(formData.amount),
         recipientEmail: formData.recipientEmail,
@@ -105,16 +106,19 @@ export default function NewGiftCardPage() {
     }
   }
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="כרטיס מתנה חדש">
         <div className="text-center py-12">
           <Gift className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            אין חנות נבחרת
+            לא נמצאה חנות
           </h3>
           <p className="text-gray-600 mb-4">
-            יש לבחור חנות מההדר לפני יצירת כרטיס מתנה
+            אנא צור חנות תחילה
           </p>
           <Button onClick={() => router.push("/gift-cards")}>
             חזור לרשימת כרטיסי מתנה

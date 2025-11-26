@@ -88,36 +88,55 @@ export const PremiumClubPlugin: PluginHook = {
               <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
                 <title>עלית לרמה ${tierName}</title>
+                <style>
+                  * {
+                    direction: rtl;
+                    text-align: right;
+                  }
+                  body {
+                    direction: rtl;
+                    text-align: right;
+                  }
+                  ul {
+                    direction: rtl;
+                    text-align: right;
+                  }
+                  li {
+                    direction: rtl;
+                    text-align: right;
+                  }
+                </style>
               </head>
-              <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+              <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; direction: rtl; text-align: right;">
                 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
                   <h1 style="color: white; margin: 0; font-size: 28px;">🎉 מזל טוב ${customerName}!</h1>
                 </div>
-                <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
-                  <p style="font-size: 18px; margin-bottom: 20px;">
+                <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; direction: rtl; text-align: right;">
+                  <p style="font-size: 18px; margin-bottom: 20px; direction: rtl; text-align: right;">
                     עלית לרמה <strong style="color: ${tier.color || '#667eea'};">${tierName}</strong> במועדון הפרימיום שלנו!
                   </p>
                   
-                  ${oldTier ? `<p style="color: #666; margin-bottom: 20px;">עלית מרמה <strong>${oldTierName}</strong> לרמה <strong>${tierName}</strong></p>` : ''}
+                  ${oldTier ? `<p style="color: #666; margin-bottom: 20px; direction: rtl; text-align: right;">עלית מרמה <strong>${oldTierName}</strong> לרמה <strong>${tierName}</strong></p>` : ''}
                   
-                  <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid ${tier.color || '#667eea'};">
-                    <h2 style="color: ${tier.color || '#667eea'}; margin-top: 0;">הטבות הרמה החדשה שלך:</h2>
-                    <ul style="list-style: none; padding: 0;">
-                      ${tier.benefits.freeShipping ? '<li style="padding: 8px 0;">✅ משלוח חינם על כל ההזמנות</li>' : ''}
-                      ${tier.benefits.earlyAccess ? '<li style="padding: 8px 0;">✅ גישה מוקדמת למבצעים מיוחדים</li>' : ''}
-                      ${tier.benefits.exclusiveProducts ? '<li style="padding: 8px 0;">✅ גישה למוצרים בלעדיים</li>' : ''}
-                      ${tier.benefits.birthdayGift ? '<li style="padding: 8px 0;">✅ מתנת יום הולדת מיוחדת</li>' : ''}
-                      ${tier.discount ? `<li style="padding: 8px 0;">✅ הנחה ${tier.discount.type === 'PERCENTAGE' ? tier.discount.value + '%' : '₪' + tier.discount.value} על כל הרכישות</li>` : ''}
-                      ${tier.benefits.pointsMultiplier ? `<li style="padding: 8px 0;">✅ צבירת נקודות x${tier.benefits.pointsMultiplier}</li>` : ''}
+                  <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-right: 4px solid ${tier.color || '#667eea'}; direction: rtl; text-align: right;">
+                    <h2 style="color: ${tier.color || '#667eea'}; margin-top: 0; direction: rtl; text-align: right;">הטבות הרמה החדשה שלך:</h2>
+                    <ul style="list-style: none; padding: 0; direction: rtl; text-align: right;">
+                      ${tier.benefits.freeShipping ? '<li style="padding: 8px 0; direction: rtl; text-align: right;">✅ משלוח חינם על כל ההזמנות</li>' : ''}
+                      ${tier.benefits.earlyAccess ? '<li style="padding: 8px 0; direction: rtl; text-align: right;">✅ גישה מוקדמת למבצעים מיוחדים</li>' : ''}
+                      ${tier.benefits.exclusiveProducts ? '<li style="padding: 8px 0; direction: rtl; text-align: right;">✅ גישה למוצרים בלעדיים</li>' : ''}
+                      ${tier.benefits.birthdayGift ? '<li style="padding: 8px 0; direction: rtl; text-align: right;">✅ מתנת יום הולדת מיוחדת</li>' : ''}
+                      ${tier.discount ? `<li style="padding: 8px 0; direction: rtl; text-align: right;">✅ הנחה ${tier.discount.type === 'PERCENTAGE' ? tier.discount.value + '%' : '₪' + tier.discount.value} על כל הרכישות</li>` : ''}
+                      ${tier.benefits.pointsMultiplier ? `<li style="padding: 8px 0; direction: rtl; text-align: right;">✅ צבירת נקודות x${tier.benefits.pointsMultiplier}</li>` : ''}
                     </ul>
                   </div>
                   
-                  <p style="margin-top: 30px; color: #666;">
+                  <p style="margin-top: 30px; color: #666; direction: rtl; text-align: right;">
                     תודה על הנאמנות שלך! אנו שמחים להיות חלק מהמסע שלך.
                   </p>
                   
-                  <p style="margin-top: 20px; color: #666; font-size: 14px;">
+                  <p style="margin-top: 20px; color: #666; font-size: 14px; direction: rtl; text-align: right;">
                     ההטבות שלך כבר פעילות בחשבון שלך. תוכל לראות את הרמה החדשה שלך באזור האישי.
                   </p>
                 </div>

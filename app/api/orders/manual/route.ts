@@ -44,8 +44,7 @@ const manualOrderSchema = z.object({
   discount: z.number().min(0).default(0),
   orderNotes: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
-  status: z.enum(["PENDING", "CONFIRMED", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"]),
-  paymentStatus: z.enum(["PENDING", "PAID", "FAILED", "REFUNDED"]),
+  status: z.string(),
 })
 
 export async function POST(req: NextRequest) {
@@ -312,7 +311,6 @@ export async function POST(req: NextRequest) {
         notes: data.notes,
         customFields: {},
         status: data.status,
-        paymentStatus: data.paymentStatus,
         fulfillmentStatus: "UNFULFILLED",
         items: {
           create: orderItems,
@@ -346,7 +344,7 @@ export async function POST(req: NextRequest) {
     })
 
     // אירוע payment.completed אם התשלום שולם
-    if (data.paymentStatus === "PAID") {
+    if (data.status === "PAID") {
       await prisma.shopEvent.create({
         data: {
           shopId: shop.id,
@@ -430,7 +428,6 @@ export async function POST(req: NextRequest) {
         orderNumber: order.orderNumber,
         total: order.total,
         status: order.status,
-        paymentStatus: order.paymentStatus,
       },
     })
   } catch (error) {

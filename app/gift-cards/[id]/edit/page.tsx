@@ -18,7 +18,7 @@ export default function EditGiftCardPage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const giftCardId = params.id as string
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -85,10 +85,11 @@ export default function EditGiftCardPage() {
   }
 
   const handleSubmit = async () => {
-    if (!selectedShop) {
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) {
       toast({
         title: "שגיאה",
-        description: "יש לבחור חנות מההדר",
+        description: "לא נמצאה חנות. אנא צור חנות תחילה.",
         variant: "destructive",
       })
       return
@@ -166,16 +167,19 @@ export default function EditGiftCardPage() {
     )
   }
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="עריכת כרטיס מתנה">
         <div className="text-center py-12">
           <Gift className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            אין חנות נבחרת
+            לא נמצאה חנות
           </h3>
           <p className="text-gray-600 mb-4">
-            יש לבחור חנות מההדר לפני עריכת כרטיס מתנה
+            אנא צור חנות תחילה
           </p>
           <Button onClick={() => router.push("/gift-cards")}>
             חזור לרשימת כרטיסי מתנה

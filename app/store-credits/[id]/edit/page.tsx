@@ -25,7 +25,7 @@ export default function EditStoreCreditPage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const storeCreditId = params.id as string
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -88,11 +88,13 @@ export default function EditStoreCreditPage() {
   }
 
   const fetchCustomers = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/customers?shopId=${selectedShop.id}`)
+      const shopToUseForCustomers = selectedShop || shops[0]
+      const response = await fetch(`/api/customers?shopId=${shopToUseForCustomers.id}`)
       if (response.ok) {
         const data = await response.json()
         setCustomers(data.customers || [])
@@ -105,10 +107,11 @@ export default function EditStoreCreditPage() {
   }
 
   const handleSubmit = async () => {
-    if (!selectedShop) {
+    const shopToUseForSave = selectedShop || shops[0]
+    if (!shopToUseForSave) {
       toast({
         title: "שגיאה",
-        description: "יש לבחור חנות מההדר",
+        description: "לא נמצאה חנות. אנא צור חנות תחילה.",
         variant: "destructive",
       })
       return
@@ -136,7 +139,7 @@ export default function EditStoreCreditPage() {
 
     try {
       const payload: any = {
-        shopId: selectedShop.id,
+        shopId: shopToUseForSave.id,
         customerId: formData.customerId,
         amount: parseFloat(formData.amount),
         expiresAt: formData.expiresAt || undefined,
@@ -183,16 +186,19 @@ export default function EditStoreCreditPage() {
     )
   }
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="עריכת קרדיט בחנות">
         <div className="text-center py-12">
           <CreditCard className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            אין חנות נבחרת
+            לא נמצאה חנות
           </h3>
           <p className="text-gray-600 mb-4">
-            יש לבחור חנות מההדר לפני עריכת קרדיט בחנות
+            אנא צור חנות תחילה
           </p>
           <Button onClick={() => router.push("/store-credits")}>
             חזור לרשימת קרדיט בחנות

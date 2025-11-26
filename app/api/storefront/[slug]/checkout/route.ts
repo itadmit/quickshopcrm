@@ -233,21 +233,67 @@ export async function POST(
           shopId: shop.id,
           email: data.customerEmail.toLowerCase(),
         },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          addresses: true,
+        },
       })
+
+      // הכנת הכתובת לשמירה (אם יש)
+      let addressToSave = null
+      if (data.shippingAddress && typeof data.shippingAddress === 'object') {
+        const addr = data.shippingAddress
+        addressToSave = {
+          id: `addr_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          firstName: addr.firstName || data.customerName.split(" ")[0] || "",
+          lastName: addr.lastName || data.customerName.split(" ").slice(1).join(" ") || "",
+          city: addr.city || "",
+          address: addr.address || addr.street || "",
+          houseNumber: addr.houseNumber || "",
+          apartment: addr.apartment || "",
+          floor: addr.floor || "",
+          zip: addr.zip || addr.zipCode || "",
+          createdAt: new Date().toISOString(),
+        }
+      }
 
       if (existingCustomer) {
         finalCustomerId = existingCustomer.id
+        
         // עדכון פרטי הלקוח אם יש מידע חדש
+        const updateData: any = {
+          firstName: data.customerName.split(" ")[0] || existingCustomer.firstName,
+          lastName: data.customerName.split(" ").slice(1).join(" ") || existingCustomer.lastName,
+          phone: data.customerPhone || existingCustomer.phone,
+        }
+        
+        // הוספת כתובת אם אין עדיין כתובות ויש כתובת חדשה
+        if (addressToSave) {
+          const existingAddresses = existingCustomer.addresses && typeof existingCustomer.addresses === 'object'
+            ? (Array.isArray(existingCustomer.addresses) ? existingCustomer.addresses : [existingCustomer.addresses])
+            : []
+          
+          // בדיקה אם הכתובת כבר קיימת (לפי עיר ורחוב)
+          const addressExists = existingAddresses.some((addr: any) => 
+            addr.city === addressToSave!.city && 
+            addr.address === addressToSave!.address &&
+            addr.houseNumber === addressToSave!.houseNumber
+          )
+          
+          if (!addressExists && addressToSave.city && addressToSave.address) {
+            updateData.addresses = [...existingAddresses, addressToSave]
+          }
+        }
+        
         await prisma.customer.update({
           where: { id: existingCustomer.id },
-          data: {
-            firstName: data.customerName.split(" ")[0] || existingCustomer.firstName,
-            lastName: data.customerName.split(" ").slice(1).join(" ") || existingCustomer.lastName,
-            phone: data.customerPhone || existingCustomer.phone,
-          },
+          data: updateData,
         })
       } else {
-        // יצירת לקוח חדש
+        // יצירת לקוח חדש עם הכתובת
         const newCustomer = await prisma.customer.create({
           data: {
             shopId: shop.id,
@@ -255,9 +301,13 @@ export async function POST(
             firstName: data.customerName.split(" ")[0] || null,
             lastName: data.customerName.split(" ").slice(1).join(" ") || null,
             phone: data.customerPhone || null,
+            addresses: addressToSave && addressToSave.city && addressToSave.address ? [addressToSave] : [],
+            emailVerified: true, // אם בחר ליצור חשבון, נאמת אוטומטית
           },
         })
         finalCustomerId = newCustomer.id
+        
+        console.log(`✅ New customer created: ${data.customerEmail} (ID: ${newCustomer.id})`)
       }
     }
     
@@ -639,40 +689,16 @@ export async function POST(
       })
     }
 
-    // מחיקת עגלת קניות
-    await prisma.cart.delete({
-      where: { id: cart.id },
-    })
+    // הערה: מחיקת העגלה תתבצע רק אחרי תשלום מוצלח
+    // (ב-callback של PayPlus או בדף התודה)
+    // לא מוחקים כאן כדי שאם התשלום ייכשל, הלקוח יוכל לנסות שוב
 
-    // עדכון totalSpent ו-orderCount של הלקוח (אם יש לקוח)
-    if (finalCustomerId) {
-      try {
-        await prisma.customer.update({
-          where: { id: finalCustomerId },
-          data: {
-            totalSpent: {
-              increment: order.total,
-            },
-            orderCount: {
-              increment: 1,
-            },
-          },
-        })
-      } catch (updateError) {
-        // לא נכשל את ההזמנה אם יש בעיה בעדכון הלקוח
-        console.error('Error updating customer stats:', updateError)
-      }
-    }
+    // הערה: עדכון totalSpent ו-orderCount של הלקוח יתבצע רק אחרי תשלום מוצלח
+    // (ב-callback של PayPlus או בדף התודה)
+    // לא מעדכנים כאן כדי שלא לספור הזמנות שלא שולמו
 
-    // עדכון רמת מועדון פרימיום (אם יש לקוח)
-    if (finalCustomerId) {
-      try {
-        await runPluginHook('onOrderComplete', shop.id, order)
-      } catch (pluginError) {
-        // לא נכשל את ההזמנה אם יש בעיה בתוסף
-        console.error('Error running premium club plugin hook:', pluginError)
-      }
-    }
+    // הערה: עדכון רמת מועדון פרימיום יקרה ב-callback של PayPlus אחרי שהתשלום הושלם
+    // לא נקרא כאן כדי לא לשלוח מייל לפני שהתשלום הושלם
 
     // יצירת אירוע order.created
     await prisma.shopEvent.create({

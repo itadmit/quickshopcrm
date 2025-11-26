@@ -19,7 +19,7 @@ const previewRulesSchema = z.object({
 
 /**
  * GET/POST - Preview של מוצרים שיתאימו לתנאים
- * מאפשר לראות אילו מוצרים יתווספו לקולקציה לפני שמירה
+ * מאפשר לראות אילו מוצרים יתווספו לקטגוריה לפני שמירה
  */
 export async function POST(req: NextRequest) {
   try {

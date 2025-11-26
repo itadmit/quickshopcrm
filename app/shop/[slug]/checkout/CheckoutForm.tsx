@@ -651,8 +651,8 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                       placeholder="כתובת המייל שלך"
                     />
                     
-                    {/* Newsletter Checkbox - ממש מתחת לאינפוט של המייל */}
-                    {shop.checkoutSettings?.showNewsletterCheckbox !== false && (
+                    {/* Newsletter Checkbox - רק ללקוחות לא מחוברים */}
+                    {!customerData?.id && shop.checkoutSettings?.showNewsletterCheckbox !== false && (
                       <div className="flex items-center space-x-2 space-x-reverse mt-2">
                         <Checkbox
                           id="newsletter"

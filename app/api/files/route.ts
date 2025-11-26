@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
       },
     }
 
-    // אם יש shopId, נחפש קבצים של המוצרים/קולקציות של החנות
+    // אם יש shopId, נחפש קבצים של המוצרים/קטגוריות של החנות
     if (shopId) {
       const shop = await prisma.shop.findFirst({
         where: {

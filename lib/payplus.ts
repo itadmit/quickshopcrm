@@ -448,12 +448,23 @@ export async function generatePaymentLink(
     // קריאת התשובה כ-text קודם כדי לראות מה באמת חזר
     const responseText = await response.text()
     console.log("PayPlus generatePaymentLink - Raw response:", responseText)
+    console.log("PayPlus generatePaymentLink - Response status:", response.status, response.statusText)
+
+    // בדיקה אם התגובה היא שגיאת אימות
+    if (response.status === 401 || responseText.toLowerCase().includes("not-authorize") || responseText.toLowerCase().includes("unauthorized")) {
+      console.error("PayPlus authentication failed - check API credentials")
+      return {
+        success: false,
+        error: "PayPlus authentication failed. Please check your API key, secret key, and payment page UID.",
+      }
+    }
 
     let data: any
     try {
       data = JSON.parse(responseText)
     } catch (parseError) {
       console.error("PayPlus response is not valid JSON:", responseText)
+      // אם זה לא JSON, נחזיר את התגובה הטקסטואלית
       return {
         success: false,
         error: `PayPlus returned invalid response: ${responseText.substring(0, 200)}`,
@@ -467,7 +478,7 @@ export async function generatePaymentLink(
     })
 
     if (!response.ok) {
-      const errorMsg = data.message || data.error || data.results?.description || "Failed to generate payment link"
+      const errorMsg = data.message || data.error || data.results?.description || responseText || "Failed to generate payment link"
       console.error("PayPlus generatePaymentLink failed:", errorMsg, data)
       return {
         success: false,

@@ -11,7 +11,7 @@ export async function sendOrderConfirmationEmail(orderId: string) {
       where: { id: orderId },
       include: {
         shop: {
-          select: { id: true, name: true, settings: true },
+          select: { id: true, name: true, slug: true, domain: true, settings: true },
         },
         items: true,
       },
@@ -29,9 +29,9 @@ export async function sendOrderConfirmationEmail(orderId: string) {
     // בניית רשימת פריטים
     const itemsList = order.items.map(item => 
       `<tr>
-        <td style="padding: 10px; border-bottom: 1px solid #eee;">${item.name}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; direction: rtl; text-align: right;">${item.name}</td>
         <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${item.quantity}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: left;">₪${item.total.toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #eee; direction: rtl; text-align: right;">₪${item.total.toFixed(2)}</td>
       </tr>`
     ).join('')
 
@@ -69,12 +69,12 @@ export async function sendOrderConfirmationEmail(orderId: string) {
       <p>הזמנתך התקבלה והתשלום אושר בהצלחה! מספר ההזמנה שלך הוא: <strong>${order.orderNumber}</strong></p>
       
       <h3>פרטי ההזמנה:</h3>
-      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0; direction: rtl;">
         <thead>
           <tr style="background-color: #f9fafb;">
-            <th style="padding: 10px; text-align: right; border-bottom: 2px solid #ddd;">מוצר</th>
+            <th style="padding: 10px; text-align: right; border-bottom: 2px solid #ddd; direction: rtl;">מוצר</th>
             <th style="padding: 10px; text-align: center; border-bottom: 2px solid #ddd;">כמות</th>
-            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">מחיר</th>
+            <th style="padding: 10px; text-align: right; border-bottom: 2px solid #ddd; direction: rtl;">מחיר</th>
           </tr>
         </thead>
         <tbody>
@@ -82,22 +82,22 @@ export async function sendOrderConfirmationEmail(orderId: string) {
         </tbody>
       </table>
 
-      <div style="margin-top: 20px; padding: 15px; background-color: #f0f9ff; border-radius: 8px;">
-        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+      <div style="margin-top: 20px; padding: 15px; background-color: #f0f9ff; border-radius: 8px; direction: rtl; text-align: right;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; direction: rtl;">
           <span>סכום ביניים:</span>
           <strong>₪${order.subtotal.toFixed(2)}</strong>
         </div>
         ${order.discount > 0 ? `
-        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #059669;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #059669; direction: rtl;">
           <span>הנחה:</span>
           <strong>-₪${order.discount.toFixed(2)}</strong>
         </div>
         ` : ''}
-        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+        <div style="display: flex; justify-content: space-between; margin-bottom: 5px; direction: rtl;">
           <span>משלוח:</span>
           <strong>₪${order.shipping.toFixed(2)}</strong>
         </div>
-        <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 2px solid #ddd; font-size: 18px;">
+        <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 2px solid #ddd; font-size: 18px; direction: rtl;">
           <strong>סה"כ ששולם:</strong>
           <strong style="color: #059669;">₪${order.total.toFixed(2)}</strong>
         </div>
@@ -111,6 +111,17 @@ export async function sendOrderConfirmationEmail(orderId: string) {
         <p>${order.notes}</p>
       </div>
       ` : ''}
+
+      <div style="margin-top: 30px; padding: 20px; background-color: #f3f4f6; border-radius: 8px; text-align: center;">
+        <p style="margin-bottom: 15px;">רוצה לעקוב אחר המשלוח שלך?</p>
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/shop/${order.shop.slug}/track-order?order=${order.orderNumber}&phone=${encodeURIComponent(order.phone || '')}" 
+           style="display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
+          🚚 עקוב אחר ההזמנה
+        </a>
+        <p style="margin-top: 10px; font-size: 12px; color: #6b7280;">
+          או העתק את הקישור: ${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/shop/${order.shop.slug}/track-order?order=${order.orderNumber}
+        </p>
+      </div>
 
       <p style="margin-top: 30px;">נשלח אליך עדכון נוסף כשההזמנה תישלח.</p>
       <p>תודה שקנית אצלנו!</p>
@@ -218,9 +229,9 @@ export async function sendReturnApprovalEmail(returnId: string) {
       
       return `
         <tr>
-          <td style="padding: 10px; border-bottom: 1px solid #eee;">${productName}${variantName ? ` - ${variantName}` : ''}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; direction: rtl; text-align: right;">${productName}${variantName ? ` - ${variantName}` : ''}</td>
           <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${returnItem.quantity}</td>
-          <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: left;">₪${itemTotal.toFixed(2)}</td>
+          <td style="padding: 10px; border-bottom: 1px solid #eee; direction: rtl; text-align: right;">₪${itemTotal.toFixed(2)}</td>
         </tr>
       `
     }).join('')
@@ -244,12 +255,12 @@ export async function sendReturnApprovalEmail(returnId: string) {
       <p><strong>סיבה:</strong> ${returnRequest.reason}</p>
       
       <h3>פריטים מוחזרים:</h3>
-      <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+      <table style="width: 100%; border-collapse: collapse; margin: 20px 0; direction: rtl;">
         <thead>
           <tr style="background-color: #f9fafb;">
-            <th style="padding: 10px; text-align: right; border-bottom: 2px solid #ddd;">מוצר</th>
+            <th style="padding: 10px; text-align: right; border-bottom: 2px solid #ddd; direction: rtl;">מוצר</th>
             <th style="padding: 10px; text-align: center; border-bottom: 2px solid #ddd;">כמות</th>
-            <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd;">סכום</th>
+            <th style="padding: 10px; text-align: right; border-bottom: 2px solid #ddd; direction: rtl;">סכום</th>
           </tr>
         </thead>
         <tbody>
@@ -257,8 +268,8 @@ export async function sendReturnApprovalEmail(returnId: string) {
         </tbody>
       </table>
 
-      <div style="margin-top: 20px; padding: 15px; background-color: #f0f9ff; border-radius: 8px;">
-        <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 2px solid #ddd; font-size: 18px;">
+      <div style="margin-top: 20px; padding: 15px; background-color: #f0f9ff; border-radius: 8px; direction: rtl; text-align: right;">
+        <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 2px solid #ddd; font-size: 18px; direction: rtl;">
           <strong>סכום החזר:</strong>
           <strong style="color: #059669;">₪${refundAmount.toFixed(2)}</strong>
         </div>

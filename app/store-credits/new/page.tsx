@@ -24,7 +24,7 @@ interface Customer {
 export default function NewStoreCreditPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -43,11 +43,12 @@ export default function NewStoreCreditPage() {
   }, [selectedShop])
 
   const fetchCustomers = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/customers?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/customers?shopId=${shopToUse.id}`)
       if (response.ok) {
         const data = await response.json()
         setCustomers(data.customers || [])
@@ -138,16 +139,19 @@ export default function NewStoreCreditPage() {
     )
   }
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="קרדיט בחנות חדש">
         <div className="text-center py-12">
           <CreditCard className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            אין חנות נבחרת
+            לא נמצאה חנות
           </h3>
           <p className="text-gray-600 mb-4">
-            יש לבחור חנות מההדר לפני יצירת קרדיט בחנות
+            אנא צור חנות תחילה
           </p>
           <Button onClick={() => router.push("/store-credits")}>
             חזור לרשימת קרדיט בחנות

@@ -52,7 +52,7 @@ export default function EditBundlePage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
-  const { selectedShop, loading: shopLoading } = useShop()
+  const { selectedShop, shops, loading: shopLoading } = useShop()
   const bundleId = params.id as string
 
   const [loading, setLoading] = useState(true)
@@ -123,10 +123,11 @@ export default function EditBundlePage() {
   }
 
   const fetchProducts = async () => {
-    if (!selectedShop) return
+    const shopToUseForProducts = selectedShop || shops[0]
+    if (!shopToUseForProducts) return
 
     try {
-      const response = await fetch(`/api/products?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/products?shopId=${shopToUseForProducts.id}`)
       if (response.ok) {
         const data = await response.json()
         // Ensure all products have comparePrice field
@@ -248,13 +249,16 @@ export default function EditBundlePage() {
     )
   }
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="עריכת חבילה">
         <div className="text-center py-12">
           <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">אין חנות נבחרת</h3>
-          <p className="text-gray-600">יש לבחור חנות מההדר</p>
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">לא נמצאה חנות</h3>
+          <p className="text-gray-600">אנא צור חנות תחילה</p>
         </div>
       </AppLayout>
     )

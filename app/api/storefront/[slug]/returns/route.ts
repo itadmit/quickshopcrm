@@ -218,7 +218,7 @@ export async function POST(
     }
 
     // בדיקה שההזמנה שולמה (לא ניתן להחזיר הזמנה שלא שולמה)
-    if (order.paymentStatus !== "PAID") {
+    if (order.status !== "PAID") {
       return NextResponse.json(
         { error: "לא ניתן להחזיר הזמנה שלא שולמה" },
         { status: 400 }

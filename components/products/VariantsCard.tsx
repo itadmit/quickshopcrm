@@ -883,7 +883,7 @@ export function VariantsCard({
                         <th className="text-right p-2 text-sm font-medium">מחיר</th>
                         <th className="text-right p-2 text-sm font-medium">מחיר לפני הנחה</th>
                         <th className="text-right p-2 text-sm font-medium">עלות</th>
-                        <th className="text-right p-2 text-sm font-medium">SKU</th>
+                        <th className="text-right p-2 text-sm font-medium">מקט</th>
                         <th className="text-right p-2 text-sm font-medium">מלאי</th>
                       </tr>
                     </thead>
@@ -954,7 +954,7 @@ export function VariantsCard({
                                 updated[variantIndex].sku = e.target.value
                                 onVariantsChange(updated)
                               }}
-                              placeholder="SKU"
+                              placeholder="מקט"
                               className="w-full"
                             />
                           </td>
@@ -1060,7 +1060,7 @@ export function VariantsCard({
                             />
                           </div>
                           <div className="space-y-1.5 col-span-2">
-                            <Label className="text-xs text-gray-600">SKU</Label>
+                            <Label className="text-xs text-gray-600">מקט</Label>
                             <Input
                               value={variant.sku}
                               onChange={(e) => {

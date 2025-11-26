@@ -188,7 +188,7 @@ export default function InventoryPage() {
               <div className="relative">
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
-                  placeholder="חיפוש לפי שם או SKU..."
+                  placeholder="חיפוש לפי שם או מקט..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="pr-10"
@@ -232,7 +232,7 @@ export default function InventoryPage() {
                         מוצר
                       </th>
                       <th className="text-right p-4 text-sm font-medium text-gray-900">
-                        SKU
+                        מקט
                       </th>
                       <th className="text-right p-4 text-sm font-medium text-gray-900">
                         מלאי נוכחי

@@ -250,7 +250,7 @@ export default function ReturnDetailPage() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">מספר הזמנה</span>
                   <Link
-                    href={`/orders/${returnItem.orderId}`}
+                    href={`/orders/${returnItem.order.orderNumber}`}
                     className="text-emerald-600 hover:underline font-medium"
                   >
                     #{returnItem.order.orderNumber}

@@ -24,7 +24,7 @@ type PopupContentElement = {
 export default function NewPopupPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const [saving, setSaving] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [showDisplaySettings, setShowDisplaySettings] = useState(false)
@@ -47,11 +47,7 @@ export default function NewPopupPage() {
     overlayOpacity: 0.5,
   })
 
-  useEffect(() => {
-    if (!selectedShop) {
-      router.push("/shops")
-    }
-  }, [selectedShop, router])
+  // אין צורך לבדוק - ShopProvider מטפל בזה
 
   const addContentElement = (type: "text" | "image" | "form") => {
     const newElement: PopupContentElement = {
@@ -88,10 +84,11 @@ export default function NewPopupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!selectedShop) {
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) {
       toast({
         title: "שגיאה",
-        description: "אנא בחר חנות",
+        description: "לא נמצאה חנות. אנא צור חנות תחילה.",
         variant: "destructive",
       })
       return
@@ -114,7 +111,7 @@ export default function NewPopupPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          shopId: selectedShop.id,
+          shopId: shopToUse.id,
           ...formData,
         }),
       })
@@ -145,7 +142,10 @@ export default function NewPopupPage() {
     }
   }
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return null
   }
 
@@ -650,4 +650,5 @@ export default function NewPopupPage() {
     </AppLayout>
   )
 }
+
 

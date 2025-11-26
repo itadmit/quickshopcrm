@@ -492,7 +492,7 @@ export default function CustomerDetailPage() {
                       <div
                         key={order.id}
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                        onClick={() => router.push(`/orders/${order.id}`)}
+                        onClick={() => router.push(`/orders/${order.orderNumber}`)}
                       >
                         <div className="flex items-center gap-3">
                           <ShoppingBag className="w-5 h-5 text-gray-400" />

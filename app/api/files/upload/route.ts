@@ -247,7 +247,7 @@ export async function POST(req: NextRequest) {
         let targetShopId: string | null = null
         
         if (entityId !== 'new') {
-          // מוצר/קולקציה/דף קיים - נמצא את ה-shopId
+          // מוצר/קטגוריה/דף קיים - נמצא את ה-shopId
           if (entityType === 'products') {
             const product = await prisma.product.findFirst({
               where: {

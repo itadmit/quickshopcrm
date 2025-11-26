@@ -39,7 +39,7 @@ interface Review {
 export default function ReviewsPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const [reviews, setReviews] = useState<Review[]>([])
   const [loading, setLoading] = useState(true)
   const [pluginActive, setPluginActive] = useState<boolean | null>(null)
@@ -49,13 +49,14 @@ export default function ReviewsPage() {
   // בדיקה אם תוסף הביקורות פעיל
   useEffect(() => {
     const checkPlugin = async () => {
-      if (!selectedShop) {
+      const shopToUseForPlugin = selectedShop || shops[0]
+      if (!shopToUseForPlugin) {
         setPluginActive(false)
         return
       }
 
       try {
-        const response = await fetch(`/api/plugins/active?shopId=${selectedShop.id}`)
+        const response = await fetch(`/api/plugins/active?shopId=${shopToUseForPlugin.id}`)
         if (response.ok) {
           const plugins = await response.json()
           const reviewsPlugin = plugins.find((p: any) => p.slug === 'reviews' && p.isActive && p.isInstalled)
@@ -79,12 +80,13 @@ export default function ReviewsPage() {
   }, [selectedShop, statusFilter, pluginActive])
 
   const fetchReviews = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
 
     setLoading(true)
     try {
       const params = new URLSearchParams({
-        shopId: selectedShop.id,
+        shopId: shopToUse.id,
         ...(statusFilter !== "all" && { isApproved: statusFilter === "approved" ? "true" : "false" }),
       })
 
@@ -165,15 +167,18 @@ export default function ReviewsPage() {
     review.comment?.toLowerCase().includes(search.toLowerCase())
   )
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="ביקורות">
         <div className="text-center py-12">
           <Star className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            אין חנות נבחרת
+            לא נמצאה חנות
           </h3>
-          <p className="text-gray-600">יש לבחור חנות מההדר לפני ניהול ביקורות</p>
+          <p className="text-gray-600">אנא צור חנות תחילה</p>
         </div>
       </AppLayout>
     )

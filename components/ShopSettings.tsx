@@ -109,7 +109,7 @@ const CURRENCIES = [
 export function ShopSettings() {
   const router = useRouter()
   const { data: session } = useSession()
-  const { selectedShop, loading: shopsLoading } = useShop()
+  const { selectedShop, shops, loading: shopsLoading } = useShop()
   const { toast } = useToast()
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -203,10 +203,11 @@ export function ShopSettings() {
   }, [debouncedSlug, selectedShop?.id, selectedShop?.slug])
 
   const loadShopData = async () => {
-    if (!selectedShop?.id) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse?.id) return
     
     try {
-      const response = await fetch(`/api/shops/${selectedShop.id}`)
+      const response = await fetch(`/api/shops/${shopToUse.id}`)
       if (response.ok) {
         const shop = await response.json()
         
@@ -214,7 +215,6 @@ export function ShopSettings() {
         const settings = shop.settings || {}
         const shipping = settings.shipping || {}
         const pickup = settings.pickup || {}
-<<<<<<< HEAD
         
         // paymentMethods צריך להיות מערך
         let paymentMethodsArray: string[] = []
@@ -234,12 +234,6 @@ export function ShopSettings() {
         if (settings.bankTransferPayment?.enabled && !paymentMethodsArray.includes('bank_transfer')) {
           paymentMethodsArray.push('bank_transfer')
         }
-        
-=======
-        const paymentMethods = Array.isArray(settings.paymentMethods) 
-          ? settings.paymentMethods 
-          : []
->>>>>>> 65d0e89ec85ff8d1179f09f4f37ab83458e20bd7
         const shippingOptions = shipping.options || {
           fixed: false,
           fixedCost: null,
@@ -289,10 +283,11 @@ export function ShopSettings() {
   }
 
   const handleSave = async () => {
-    if (!selectedShop?.id) {
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse?.id) {
       toast({
         title: "שגיאה",
-        description: "אנא בחר חנות",
+        description: "לא נמצאה חנות. אנא צור חנות תחילה.",
         variant: "destructive",
       })
       return
@@ -357,7 +352,7 @@ export function ShopSettings() {
 
     setSaving(true)
     try {
-      const response = await fetch(`/api/shops/${selectedShop.id}`, {
+      const response = await fetch(`/api/shops/${shopToUse.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -459,7 +454,10 @@ export function ShopSettings() {
     )
   }
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <Card className="shadow-sm">
         <CardContent className="py-12">

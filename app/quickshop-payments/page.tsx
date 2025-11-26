@@ -458,10 +458,16 @@ export default function QuickShopPaymentsPage() {
                 </li>
               </ul>
 
-              <div className="mt-6 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
-                <p className="text-yellow-300 text-xs font-bold text-center">הקמת 3D ללא עלות + 1.5₪ לעסקה
-
-</p>
+              <div className="mt-6 space-y-2">
+                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                  <p className="text-blue-300 text-xs font-bold text-center">עמלת סליקה ל-Apple Pay & Google Pay<br/>בתוספת ₪0.80 לעסקה</p>
+                </div>
+                <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+                  <p className="text-purple-300 text-xs font-bold text-center">עמלת סליקה ל-Bit<br/>בתוספת 0.3% לעסקה</p>
+                </div>
+                <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+                  <p className="text-yellow-300 text-xs font-bold text-center">עמלת 3D מאובטח<br/>בתוספת ₪1.5 לעסקה</p>
+                </div>
               </div>
               
               <Button className="w-full mt-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl h-12 font-medium transition-all" variant="secondary">
@@ -478,7 +484,7 @@ export default function QuickShopPaymentsPage() {
               
               <div className="mb-8 pb-8 border-b border-slate-700/50">
                 <div className="flex items-baseline mb-3">
-                  <span className="text-5xl font-bold text-white tracking-tight">₪99</span>
+                  <span className="text-5xl font-bold text-white tracking-tight">₪129</span>
                   <span className="text-slate-400 mr-2 font-medium">/ חודש + מע״מ</span>
                 </div>
                 <div className="inline-flex items-center gap-2 bg-slate-700/30 px-3 py-1.5 rounded-lg border border-slate-600/30">
@@ -537,10 +543,16 @@ export default function QuickShopPaymentsPage() {
                 </li>
               </ul>
 
-              <div className="mt-6 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
-                <p className="text-yellow-300 text-xs font-bold text-center">הקמת 3D ללא עלות + 1.5₪ לעסקה
-
-</p>
+              <div className="mt-6 space-y-2">
+                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                  <p className="text-blue-300 text-xs font-bold text-center">עמלת סליקה ל-Apple Pay & Google Pay<br/>בתוספת ₪0.80 לעסקה</p>
+                </div>
+                <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+                  <p className="text-purple-300 text-xs font-bold text-center">עמלת סליקה ל-Bit<br/>בתוספת 0.3% לעסקה</p>
+                </div>
+                <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+                  <p className="text-yellow-300 text-xs font-bold text-center">עמלת 3D מאובטח<br/>בתוספת ₪1.5 לעסקה</p>
+                </div>
               </div>
 
               <Button className="w-full mt-4 bg-slate-700 hover:bg-slate-600 text-white rounded-xl h-12 font-medium transition-all" variant="secondary">
@@ -630,10 +642,16 @@ export default function QuickShopPaymentsPage() {
                 </li>
               </ul>
 
-              <div className="mt-6 p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
-                <p className="text-yellow-300 text-xs font-bold text-center">הקמת 3D ללא עלות + 1.5₪ לעסקה
-
-</p>
+              <div className="mt-6 space-y-2">
+                <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-xl">
+                  <p className="text-blue-300 text-xs font-bold text-center">עמלת סליקה ל-Apple Pay & Google Pay<br/>בתוספת ₪0.80 לעסקה</p>
+                </div>
+                <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl">
+                  <p className="text-purple-300 text-xs font-bold text-center">עמלת סליקה ל-Bit<br/>בתוספת 0.3% לעסקה</p>
+                </div>
+                <div className="p-3 bg-yellow-500/10 border border-yellow-500/20 rounded-xl">
+                  <p className="text-yellow-300 text-xs font-bold text-center">עמלת 3D מאובטח<br/>בתוספת ₪1.5 לעסקה</p>
+                </div>
               </div>
 
               <Button className="w-full mt-4 bg-emerald-500 hover:bg-emerald-400 text-white rounded-xl h-14 font-bold text-lg shadow-lg shadow-emerald-500/25 transition-all">

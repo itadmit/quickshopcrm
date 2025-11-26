@@ -167,10 +167,10 @@ export async function POST(req: NextRequest) {
 
     // הוספת מוצרים - ידני או אוטומטי
     if (data.type === "AUTOMATIC" && data.rules) {
-      // קולקציה אוטומטית - עדכון לפי rules
+      // קטגוריה אוטומטית - עדכון לפי rules
       await updateAutomaticCollection(collection.id, data.shopId, data.rules)
     } else if (data.productIds && data.productIds.length > 0) {
-      // קולקציה ידנית - הוספת מוצרים שנבחרו
+      // קטגוריה ידנית - הוספת מוצרים שנבחרו
       await Promise.all(
         data.productIds.map((productId, index) =>
           prisma.productCollection.create({

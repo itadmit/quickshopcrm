@@ -25,7 +25,7 @@ export default function EditPopupPage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [showPreview, setShowPreview] = useState(false)
@@ -50,13 +50,8 @@ export default function EditPopupPage() {
   })
 
   useEffect(() => {
-    if (!selectedShop) {
-      router.push("/shops")
-      return
-    }
-
     fetchPopup()
-  }, [selectedShop, params.id])
+  }, [params.id])
 
   const fetchPopup = async () => {
     try {
@@ -708,4 +703,5 @@ export default function EditPopupPage() {
     </AppLayout>
   )
 }
+
 

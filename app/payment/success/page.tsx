@@ -49,26 +49,129 @@ export default async function PaymentSuccessPage({
   searchParams,
 }: {
   searchParams: { orderId?: string; [key: string]: string | undefined }
-}) {
-  const { orderId, status, status_code } = searchParams
+     }) {
+ const { orderId, status, status_code, transaction_uid, page_request_uid } = searchParams
+  
+  // לוגים לדיבוג
+  console.log("Payment success page - Search params:", {
+    orderId,
+    status,
+    status_code,
+    transaction_uid,
+    page_request_uid,
+    allParams: Object.keys(searchParams),
+  })
 
-  if (!orderId) {
-    redirect("/")
+  // נחפש את ההזמנה לפי orderId או לפי transaction_uid של PayPlus
+  let order = null
+  
+  if (orderId) {
+    order = await getOrder(orderId)
   }
-
-  const order = await getOrder(orderId)
+  
+  // אם לא מצאנו לפי orderId, נחפש לפי transaction_uid
+  if (!order && transaction_uid) {
+    try {
+      const foundOrder = await prisma.order.findFirst({
+        where: {
+          transactionId: transaction_uid,
+        },
+        include: {
+          shop: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              logo: true,
+              settings: true,
+            },
+          },
+          items: {
+            include: {
+              product: {
+                select: {
+                  name: true,
+                  images: true,
+                },
+              },
+              variant: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      })
+      if (foundOrder) {
+        order = foundOrder
+      }
+    } catch (error) {
+      console.error("Error finding order by transaction_uid:", error)
+    }
+  }
+  
+  // אם עדיין לא מצאנו, נחפש לפי page_request_uid (אם שמור ב-paymentLink)
+  if (!order && page_request_uid) {
+    try {
+      const foundOrder = await prisma.order.findFirst({
+        where: {
+          paymentLink: {
+            contains: page_request_uid,
+          },
+        },
+        include: {
+          shop: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              logo: true,
+              settings: true,
+            },
+          },
+          items: {
+            include: {
+              product: {
+                select: {
+                  name: true,
+                  images: true,
+                },
+              },
+              variant: {
+                select: {
+                  id: true,
+                  name: true,
+                },
+              },
+            },
+          },
+        },
+      })
+      if (foundOrder) {
+        order = foundOrder
+      }
+    } catch (error) {
+      console.error("Error finding order by page_request_uid:", error)
+    }
+  }
 
   if (!order) {
+    console.error("Order not found. Search params:", { orderId, transaction_uid, page_request_uid, status, status_code })
     redirect("/")
   }
+  
+  // אם יש orderId ב-URL אבל לא מצאנו את ההזמנה, נשתמש ב-orderId שנמצא
+  const finalOrderId = order.id
 
   // אם יש פרמטרים של PayPlus שמצביעים על תשלום מוצלח, נעדכן את ההזמנה
   // זה גיבוי למקרה שה-callback לא נקרא
-  const isPaymentSuccess = status === "approved" || status_code === "000"
+  const isPaymentSuccess = status === "approved" || status_code === "000" || status === "success"
   if (isPaymentSuccess && order.paymentStatus !== "PAID") {
     try {
       await prisma.order.update({
-        where: { id: orderId },
+        where: { id: finalOrderId },
         data: {
           paymentStatus: "PAID",
           paidAt: new Date(),
@@ -78,7 +181,7 @@ export default async function PaymentSuccessPage({
       
       // אם התשלום הצליח, נעדכן את המלאי
       const orderWithItems = await prisma.order.findUnique({
-        where: { id: orderId },
+        where: { id: finalOrderId },
         include: {
           items: true,
         },
@@ -229,9 +332,54 @@ export default async function PaymentSuccessPage({
         }
       }
       
+      // עדכון totalSpent ו-orderCount של הלקוח (אם יש לקוח)
+      if (order.customerId) {
+        try {
+          await prisma.customer.update({
+            where: { id: order.customerId },
+            data: {
+              totalSpent: {
+                increment: order.total,
+              },
+              orderCount: {
+                increment: 1,
+              },
+            },
+          })
+        } catch (updateError) {
+          console.error('Error updating customer stats:', updateError)
+        }
+      }
+      
+      // מחיקת עגלת הקניות - רק אחרי תשלום מוצלח!
+      if (order.customerId) {
+        try {
+          await prisma.cart.deleteMany({
+            where: { 
+              customerId: order.customerId,
+              shopId: order.shopId
+            }
+          })
+          console.log(`✅ Cart deleted for customer ${order.customerId} after successful payment`)
+        } catch (cartError) {
+          console.error('Error deleting cart after payment:', cartError)
+          // לא נכשיל את התהליך אם מחיקת העגלה נכשלה
+        }
+      }
+      
+      // עדכון רמת מועדון פרימיום (אם יש לקוח) - רק אחרי שהתשלום הושלם!
+      if (order.customerId) {
+        try {
+          const { runPluginHook } = await import('@/lib/plugins/loader')
+          await runPluginHook('onOrderComplete', order.shopId, order)
+        } catch (pluginError) {
+          console.error('Error running premium club plugin hook:', pluginError)
+        }
+      }
+      
       // שליחת מייל אישור תשלום
       const { sendOrderConfirmationEmail } = await import("@/lib/order-email")
-      await sendOrderConfirmationEmail(order.id).catch((error) => {
+      await sendOrderConfirmationEmail(finalOrderId).catch((error) => {
         console.error("Error sending confirmation email:", error)
       })
 

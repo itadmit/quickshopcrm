@@ -20,7 +20,7 @@ const products = [
     color: 'bg-yellow-50',
     image: 'https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=1000&auto=format&fit=crop', // Yellow Jacket
     title: 'Urban Jacket',
-    subtitle: "Winter Collection",
+    subtitle: "Winter Category",
     price: '₪299.00',
     prevPrice: '₪399',
     notification: { text: 'רכישה בוצעה', value: '+ ₪299', icon: Check, color: 'green' },

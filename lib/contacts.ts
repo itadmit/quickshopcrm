@@ -253,3 +253,4 @@ export async function initContactCategories(shopId: string) {
   return results
 }
 
+

@@ -54,7 +54,7 @@ interface Coupon {
 export default function CouponsPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [coupons, setCoupons] = useState<Coupon[]>([])
   const [loading, setLoading] = useState(true)
@@ -67,11 +67,12 @@ export default function CouponsPage() {
   }, [selectedShop])
 
   const fetchCoupons = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/coupons?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/coupons?shopId=${shopToUse.id}`)
       if (response.ok) {
         const data = await response.json()
         setCoupons(data)
@@ -184,13 +185,16 @@ export default function CouponsPage() {
     coupon.code.toLowerCase().includes(search.toLowerCase())
   )
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="קופונים">
         <div className="text-center py-12">
           <Tag className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            אין חנות נבחרת
+            לא נמצאה חנות
           </h3>
           <p className="text-gray-600">
             יש לבחור חנות מההדר לפני ניהול קופונים

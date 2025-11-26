@@ -14,7 +14,6 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const shopId = searchParams.get("shopId")
     const status = searchParams.get("status")
-    const paymentStatus = searchParams.get("paymentStatus")
     const search = searchParams.get("search")
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "20")
@@ -34,10 +33,6 @@ export async function GET(req: NextRequest) {
       where.status = status
     }
 
-    if (paymentStatus) {
-      where.paymentStatus = paymentStatus
-    }
-
     if (search) {
       where.OR = [
         { orderNumber: { contains: search, mode: "insensitive" } },
@@ -53,10 +48,11 @@ export async function GET(req: NextRequest) {
           id: true,
           orderNumber: true,
           status: true,
-          paymentStatus: true,
           fulfillmentStatus: true,
           customerName: true,
           customerEmail: true,
+          customerPhone: true,
+          couponCode: true,
           total: true,
           createdAt: true,
           shop: {

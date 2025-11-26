@@ -15,35 +15,73 @@ export async function POST(
       return NextResponse.json({ error: "לא מאומת" }, { status: 401 })
     }
 
-    const body = await req.json()
+    const body = await req.json().catch(() => ({}))
     const { provider, forceResend } = body
 
-    if (!provider) {
-      return NextResponse.json(
-        { error: "נא לציין חברת משלוחים" },
-        { status: 400 }
-      )
+    // בדיקה אם זה ID או מספר הזמנה
+    const whereClause: any = {
+      shop: {
+        companyId: session.user.companyId,
+      },
+    }
+
+    // אם זה נראה כמו UUID או CUID (מתחיל באות קטנה ואורך 25 תווים), חפש לפי ID, אחרת לפי מספר הזמנה
+    const isUUID = params.orderId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)
+    const isCUID = params.orderId.match(/^[a-z][a-z0-9]{24}$/i) // CUID מתחיל באות קטנה ואורך 25 תווים
+    
+    if (isUUID || isCUID) {
+      whereClause.id = params.orderId
+    } else {
+      whereClause.orderNumber = params.orderId
     }
 
     // בדיקה שההזמנה שייכת לחברה
     const order = await prisma.order.findFirst({
-      where: {
-        id: params.orderId,
+      where: whereClause,
+      include: {
         shop: {
-          companyId: session.user.companyId,
+          select: {
+            id: true,
+            companyId: true,
+          },
         },
       },
     })
 
     if (!order) {
+      console.error(`Order not found: ${params.orderId}, companyId: ${session.user.companyId}`)
       return NextResponse.json(
-        { error: "הזמנה לא נמצאה" },
+        { error: `הזמנה לא נמצאה: ${params.orderId}` },
         { status: 404 }
       )
     }
 
+    // אם לא צוין provider, נחפש את חברת המשלוחים המוטמעת לחברה
+    let providerToUse = provider
+    if (!providerToUse) {
+      // חיפוש אינטגרציות משלוחים - צריך להשתמש ב-in כי type הוא enum
+      const integrations = await prisma.integration.findMany({
+        where: {
+          companyId: order.shop.companyId,
+          type: { in: ['FOCUS_SHIPPING'] }, // ניתן להוסיף כאן עוד סוגי משלוחים בעתיד
+          isActive: true,
+        },
+      })
+
+      if (integrations.length === 0) {
+        return NextResponse.json(
+          { error: "לא נמצאה אינטגרציית משלוחים פעילה לחברה" },
+          { status: 400 }
+        )
+      }
+
+      // נשתמש באינטגרציה הראשונה שנמצאה (או default)
+      const integration = integrations.find(i => i.type === 'FOCUS_SHIPPING') || integrations[0]
+      providerToUse = integration.type.toLowerCase().replace('_shipping', '')
+    }
+
     // שליחה דרך ShippingManager
-    const response = await ShippingManager.sendOrder(params.orderId, provider, {
+    const response = await ShippingManager.sendOrder(order.id, providerToUse, {
       forceResend: forceResend || false,
       userId: session.user.id,
     })

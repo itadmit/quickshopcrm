@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter, useParams, useSearchParams } from "next/navigation"
 import { AppLayout } from "@/components/AppLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -28,6 +28,7 @@ import {
   Calendar,
   Save,
   X,
+  Edit,
 } from "lucide-react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
@@ -53,11 +54,20 @@ interface OrderItem {
   } | null
 }
 
+interface OrderStatusDefinition {
+  id: string
+  key: string
+  label: string
+  labelEn: string | null
+  color: string
+  icon: string | null
+  isActive: boolean
+}
+
 interface Order {
   id: string
   orderNumber: string
   status: string
-  paymentStatus: string
   fulfillmentStatus: string
   customerName: string
   customerEmail: string
@@ -85,6 +95,7 @@ interface Order {
     id: string
     name: string
     settings: any | null
+    taxEnabled: boolean
   }
   customer: {
     id: string
@@ -99,26 +110,83 @@ interface Order {
 export default function OrderDetailPage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [order, setOrder] = useState<Order | null>(null)
+  const [statuses, setStatuses] = useState<OrderStatusDefinition[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [editing, setEditing] = useState(false)
+  const [editingSection, setEditingSection] = useState<string | null>(null)
+  const isPrintMode = searchParams.get('print') === 'true'
   
   // Form state
   const [status, setStatus] = useState("")
-  const [paymentStatus, setPaymentStatus] = useState("")
   const [fulfillmentStatus, setFulfillmentStatus] = useState("")
   const [shippingMethod, setShippingMethod] = useState("")
   const [trackingNumber, setTrackingNumber] = useState("")
   const [notes, setNotes] = useState("")
+  
+  // Customer info state
+  const [customerName, setCustomerName] = useState("")
+  const [customerEmail, setCustomerEmail] = useState("")
+  const [customerPhone, setCustomerPhone] = useState("")
+  
+  // Shipping address state
+  const [shippingAddress, setShippingAddress] = useState<any>(null)
+  
+  // Payment info state
+  const [paymentMethod, setPaymentMethod] = useState("")
+  const [transactionId, setTransactionId] = useState("")
+  
+  // Order summary state
+  const [subtotal, setSubtotal] = useState(0)
+  const [shipping, setShipping] = useState(0)
+  const [tax, setTax] = useState(0)
+  const [discount, setDiscount] = useState(0)
+  const [couponCode, setCouponCode] = useState("")
+  
+  // Items state
+  const [items, setItems] = useState<OrderItem[]>([])
+
+  useEffect(() => {
+    fetchStatuses()
+  }, [])
 
   useEffect(() => {
     if (params.id) {
       fetchOrder()
     }
   }, [params.id])
+
+  useEffect(() => {
+    // אם במצב הדפסה, להדפיס אוטומטית
+    if (isPrintMode && order) {
+      setTimeout(() => {
+        window.print()
+      }, 500)
+    }
+  }, [isPrintMode, order])
+
+  useEffect(() => {
+    // אם יש פרמטר edit, להפעיל מצב עריכה
+    if (searchParams.get('edit') === 'true') {
+      setEditing(true)
+    }
+  }, [searchParams])
+
+  const fetchStatuses = async () => {
+    try {
+      const response = await fetch("/api/order-statuses")
+      if (response.ok) {
+        const data = await response.json()
+        setStatuses(data.filter((s: OrderStatusDefinition) => s.isActive))
+      }
+    } catch (error) {
+      console.error("Error fetching statuses:", error)
+    }
+  }
 
   const fetchOrder = async () => {
     try {
@@ -128,11 +196,30 @@ export default function OrderDetailPage() {
         const data = await response.json()
         setOrder(data)
         setStatus(data.status)
-        setPaymentStatus(data.paymentStatus)
         setFulfillmentStatus(data.fulfillmentStatus)
         setShippingMethod(data.shippingMethod || "")
         setTrackingNumber(data.trackingNumber || "")
         setNotes(data.notes || "")
+        setCustomerName(data.customerName || "")
+        setCustomerEmail(data.customerEmail || "")
+        setCustomerPhone(data.customerPhone || "")
+        setShippingAddress(data.shippingAddress || null)
+        setPaymentMethod(data.paymentMethod || "")
+        setTransactionId(data.transactionId || "")
+        setSubtotal(data.subtotal || 0)
+        setShipping(data.shipping || 0)
+        setTax(data.tax || 0)
+        setDiscount(data.discount || 0)
+        setCouponCode(data.couponCode || "")
+        setItems(data.items || [])
+      } else if (response.status === 404) {
+        // ההזמנה לא נמצאה - חזרה לדף ההזמנות
+        toast({
+          title: "הזמנה לא נמצאה",
+          description: "ההזמנה שחיפשת אינה קיימת במערכת",
+          variant: "destructive",
+        })
+        router.push("/orders")
       } else {
         toast({
           title: "שגיאה",
@@ -153,22 +240,65 @@ export default function OrderDetailPage() {
     }
   }
 
-  const handleSave = async () => {
+  const handleSaveSection = async (section: string) => {
     try {
       setSaving(true)
+      let updateData: any = {}
+
+      switch (section) {
+        case 'status':
+          updateData = {
+            status,
+            fulfillmentStatus,
+            shippingMethod: shippingMethod || undefined,
+            trackingNumber: trackingNumber || undefined,
+            notes: notes || undefined,
+          }
+          break
+        case 'customer':
+          updateData = {
+            customerName,
+            customerEmail,
+            customerPhone: customerPhone || undefined,
+          }
+          break
+        case 'shipping':
+          updateData = {
+            shippingAddress,
+          }
+          break
+        case 'payment':
+          updateData = {
+            paymentMethod: paymentMethod || undefined,
+            transactionId: transactionId || undefined,
+          }
+          break
+        case 'summary':
+          updateData = {
+            subtotal,
+            shipping,
+            tax,
+            discount,
+            couponCode: couponCode || undefined,
+          }
+          break
+        case 'items':
+          updateData = {
+            items: items.map(item => ({
+              id: item.id,
+              quantity: item.quantity,
+              price: item.price,
+            })),
+          }
+          break
+      }
+
       const response = await fetch(`/api/orders/${params.id}`, {
-        method: "PUT",
+        method: "PATCH",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          status,
-          paymentStatus,
-          fulfillmentStatus,
-          shippingMethod: shippingMethod || undefined,
-          trackingNumber: trackingNumber || undefined,
-          notes: notes || undefined,
-        }),
+        body: JSON.stringify(updateData),
       })
 
       if (response.ok) {
@@ -176,7 +306,7 @@ export default function OrderDetailPage() {
           title: "הצלחה",
           description: "ההזמנה עודכנה בהצלחה",
         })
-        setEditing(false)
+        setEditingSection(null)
         fetchOrder()
       } else {
         const data = await response.json()
@@ -198,89 +328,66 @@ export default function OrderDetailPage() {
     }
   }
 
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; className: string }> = {
-      PENDING: { label: "ממתין", className: "bg-yellow-100 text-yellow-800 border-yellow-300" },
-      CONFIRMED: { label: "מאושר", className: "bg-blue-100 text-blue-800 border-blue-300" },
-      PROCESSING: { label: "מעובד", className: "bg-emerald-100 text-emerald-800 border-emerald-300" },
-      SHIPPED: { label: "נשלח", className: "bg-cyan-100 text-cyan-800 border-cyan-300" },
-      DELIVERED: { label: "נמסר", className: "bg-green-100 text-green-800 border-green-300" },
-      CANCELLED: { label: "בוטל", className: "bg-red-100 text-red-800 border-red-300" },
-      REFUNDED: { label: "הוחזר", className: "bg-gray-100 text-gray-800 border-gray-300" },
+  const handleSave = async () => {
+    await handleSaveSection('status')
+  }
+
+  const getStatusInfo = (statusKey: string) => {
+    const statusDef = statuses.find(s => s.key === statusKey)
+    if (statusDef) {
+      return {
+        label: statusDef.label,
+        color: statusDef.color,
+      }
     }
-    const statusInfo = statusMap[status] || { label: status, className: "bg-gray-100 text-gray-800" }
+    return {
+      label: statusKey,
+      color: "#6B7280",
+    }
+  }
+
+  const getStatusBadge = (statusKey: string) => {
+    const statusInfo = getStatusInfo(statusKey)
     return (
-      <Badge variant="outline" className={statusInfo.className}>
+      <Badge 
+        variant="outline" 
+        style={{ 
+          backgroundColor: statusInfo.color + "20",
+          color: statusInfo.color,
+          borderColor: statusInfo.color + "40"
+        }}
+      >
         {statusInfo.label}
       </Badge>
     )
   }
 
-  const getPaymentStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; className: string }> = {
-      PENDING: { label: "ממתין לתשלום", className: "bg-yellow-100 text-yellow-800 border-yellow-300" },
-      PAID: { label: "שולם", className: "bg-green-100 text-green-800 border-green-300" },
-      FAILED: { label: "נכשל", className: "bg-red-100 text-red-800 border-red-300" },
-      REFUNDED: { label: "הוחזר", className: "bg-gray-100 text-gray-800 border-gray-300" },
+  const getPaymentMethodLabel = (method: string | null) => {
+    if (!method) return ""
+    const paymentMethods: Record<string, string> = {
+      credit_card: "כרטיס אשראי",
+      bank_transfer: "העברה בנקאית",
+      cash: "מזומן",
     }
-    const statusInfo = statusMap[status] || { label: status, className: "bg-gray-100 text-gray-800" }
-    return (
-      <Badge variant="outline" className={statusInfo.className}>
-        {statusInfo.label}
-      </Badge>
-    )
+    return paymentMethods[method.toLowerCase()] || method
   }
 
   if (loading) {
     return (
       <AppLayout>
-        <div className="animate-pulse space-y-0">
-          {/* Header Skeleton */}
-          {!isMobile ? (
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <div className="h-8 w-16 bg-gray-200 rounded"></div>
-                <div>
-                  <div className="h-8 w-48 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-4 w-32 bg-gray-100 rounded"></div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-6 w-16 bg-gray-100 rounded-full"></div>
-                <div className="h-6 w-20 bg-gray-100 rounded-full"></div>
-                <div className="h-9 w-20 bg-gray-200 rounded"></div>
+        <div className="animate-pulse space-y-4">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div className="h-8 w-16 bg-gray-200 rounded"></div>
+              <div>
+                <div className="h-8 w-48 bg-gray-200 rounded mb-2"></div>
+                <div className="h-4 w-32 bg-gray-100 rounded"></div>
               </div>
             </div>
-          ) : (
-            <div className="mb-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-8 w-8 bg-gray-200 rounded"></div>
-                <div className="flex-1">
-                  <div className="h-6 w-32 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-4 w-24 bg-gray-100 rounded"></div>
-                </div>
-              </div>
-              <div className="flex gap-2 mb-3">
-                <div className="h-6 w-16 bg-gray-100 rounded-full"></div>
-                <div className="h-6 w-20 bg-gray-100 rounded-full"></div>
-              </div>
-              <div className="h-10 w-full bg-gray-200 rounded"></div>
-            </div>
-          )}
-
-          {/* Content Skeleton */}
-          <div className={cn(
-            "grid grid-cols-1 gap-4",
-            !isMobile && "lg:grid-cols-3 gap-6"
-          )}>
-            <div className={cn(!isMobile && "lg:col-span-2")}>
-              <div className="h-64 bg-gray-100 rounded mb-4"></div>
-              <div className="h-48 bg-gray-100 rounded"></div>
-            </div>
-            <div>
-              <div className="h-48 bg-gray-100 rounded mb-4"></div>
-              <div className="h-32 bg-gray-100 rounded"></div>
-            </div>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className="h-64 bg-gray-200 rounded-lg"></div>
+            <div className="h-64 bg-gray-200 rounded-lg"></div>
           </div>
         </div>
       </AppLayout>
@@ -292,464 +399,1130 @@ export default function OrderDetailPage() {
       <AppLayout>
         <div className="text-center py-12">
           <Package className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">הזמנה לא נמצאה</h3>
-          <Button onClick={() => router.push("/orders")}>חזור לרשימת הזמנות</Button>
+          <h3 className="text-lg font-semibold mb-2">הזמנה לא נמצאה</h3>
+          <Button onClick={() => router.push("/orders")}>
+            חזור להזמנות
+          </Button>
         </div>
       </AppLayout>
     )
   }
 
-  return (
-    <AppLayout>
-      <div className={cn("space-y-0", isMobile && "pb-20")}>
-        {/* Header - Desktop */}
-        {!isMobile && (
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-4">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push("/orders")}
-              >
-                <ArrowRight className="w-4 h-4 ml-1" />
-                חזור
-              </Button>
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">הזמנה #{order.orderNumber}</h1>
-                <p className="text-gray-600 mt-1">
-                  {format(new Date(order.createdAt), "dd/MM/yyyy HH:mm", { locale: he })}
-                </p>
+  // אם במצב הדפסה, להציג גרסה פשוטה
+  if (isPrintMode) {
+    const printStyles = `
+      @media print {
+        @page {
+          size: A4;
+          margin: 1cm;
+        }
+        body * {
+          visibility: hidden;
+        }
+        .print-container, .print-container * {
+          visibility: visible;
+        }
+        .print-container {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        body {
+          print-color-adjust: exact;
+          -webkit-print-color-adjust: exact;
+        }
+        .no-print {
+          display: none !important;
+        }
+      }
+      @media screen {
+        body {
+          background: #f5f5f5;
+        }
+      }
+      .print-container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 40px;
+        background: white;
+      }
+      .print-header {
+        text-align: center;
+        margin-bottom: 30px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid #000;
+      }
+      .print-title {
+        font-size: 28px;
+        font-weight: bold;
+        margin-bottom: 10px;
+      }
+      .print-section {
+        margin-bottom: 25px;
+        page-break-inside: avoid;
+      }
+      .print-section-title {
+        font-size: 16px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        padding-bottom: 5px;
+        border-bottom: 1px solid #ddd;
+      }
+      .print-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 10px 0;
+      }
+      .print-table th {
+        text-align: right;
+        padding: 10px;
+        background: #f5f5f5;
+        border: 1px solid #ddd;
+        font-weight: bold;
+      }
+      .print-table td {
+        text-align: right;
+        padding: 10px;
+        border: 1px solid #ddd;
+      }
+      .print-summary {
+        margin-top: 20px;
+        text-align: left;
+      }
+      .print-summary-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+      }
+      .print-total {
+        font-size: 18px;
+        font-weight: bold;
+        padding-top: 10px;
+        border-top: 2px solid #000;
+      }
+      .print-info-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-top: 15px;
+      }
+      .print-info-item {
+        margin-bottom: 10px;
+      }
+      .print-label {
+        font-weight: bold;
+        color: #666;
+        font-size: 11px;
+        margin-bottom: 3px;
+      }
+      .print-value {
+        font-size: 13px;
+      }
+    `;
+    
+    return (
+      <>
+        <style dangerouslySetInnerHTML={{ __html: printStyles }} />
+        <div className="print-container" dir="rtl">
+          <div className="print-header">
+          <div className="print-title">הזמנה #{order.orderNumber}</div>
+          <div style={{ fontSize: '12px', color: '#666' }}>
+            נוצרה ב-{format(new Date(order.createdAt), "dd/MM/yyyy HH:mm", { locale: he })}
+          </div>
+        </div>
+
+        <div className="print-section">
+          <div className="print-section-title">פריטים בהזמנה</div>
+          <table className="print-table">
+            <thead>
+              <tr>
+                <th style={{ width: '50%' }}>פריט</th>
+                <th style={{ width: '15%' }}>כמות</th>
+                <th style={{ width: '17.5%' }}>מחיר יחידה</th>
+                <th style={{ width: '17.5%' }}>סה"כ</th>
+              </tr>
+            </thead>
+            <tbody>
+              {order.items.map((item) => (
+                <tr key={item.id}>
+                  <td>
+                    <div style={{ fontWeight: 'bold' }}>{item.name}</div>
+                    {item.variant && (
+                      <div style={{ fontSize: '11px', color: '#666' }}>{item.variant.name}</div>
+                    )}
+                    {item.sku && (
+                      <div style={{ fontSize: '10px', color: '#999' }}>מקט: {item.sku}</div>
+                    )}
+                  </td>
+                  <td>{item.quantity}</td>
+                  <td>₪{item.price.toFixed(2)}</td>
+                  <td style={{ fontWeight: 'bold' }}>₪{item.total.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="print-summary">
+            <div className="print-summary-row">
+              <span>סכום ביניים:</span>
+              <span>₪{order.subtotal.toFixed(2)}</span>
+            </div>
+            <div className="print-summary-row">
+              <span>משלוח:</span>
+              <span>₪{order.shipping.toFixed(2)}</span>
+            </div>
+            {order.discount > 0 && (
+              <div className="print-summary-row" style={{ color: '#16a34a' }}>
+                <span>הנחה:</span>
+                <span>-₪{order.discount.toFixed(2)}</span>
+              </div>
+            )}
+            {order.couponCode && (
+              <div className="print-summary-row">
+                <span>קוד קופון:</span>
+                <span style={{ fontWeight: 'bold' }}>{order.couponCode}</span>
+              </div>
+            )}
+            <div className="print-summary-row">
+              <span>מע"מ:</span>
+              <span>₪{order.tax.toFixed(2)}</span>
+            </div>
+            <div className="print-summary-row print-total">
+              <span>סה"כ:</span>
+              <span>₪{order.total.toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="print-info-grid">
+          <div className="print-section">
+            <div className="print-section-title">פרטי לקוח</div>
+            <div className="print-info-item">
+              <div className="print-label">שם</div>
+              <div className="print-value">{order.customerName}</div>
+            </div>
+            <div className="print-info-item">
+              <div className="print-label">אימייל</div>
+              <div className="print-value">{order.customerEmail}</div>
+            </div>
+            {order.customerPhone && (
+              <div className="print-info-item">
+                <div className="print-label">טלפון</div>
+                <div className="print-value">{order.customerPhone}</div>
+              </div>
+            )}
+          </div>
+
+          <div className="print-section">
+            <div className="print-section-title">כתובת משלוח</div>
+            {order.shippingAddress && (
+              <>
+                {order.shippingAddress.street && (
+                  <div className="print-info-item">
+                    <div className="print-value">{order.shippingAddress.street}</div>
+                  </div>
+                )}
+                {order.shippingAddress.city && (
+                  <div className="print-info-item">
+                    <div className="print-value">
+                      {order.shippingAddress.city}
+                      {order.shippingAddress.zipCode && `, ${order.shippingAddress.zipCode}`}
+                    </div>
+                  </div>
+                )}
+                {order.shippingAddress.country && (
+                  <div className="print-info-item">
+                    <div className="print-value">{order.shippingAddress.country}</div>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        </div>
+
+        <div className="print-info-grid">
+          <div className="print-section">
+            <div className="print-section-title">פרטי תשלום</div>
+            {order.paymentMethod && (
+              <div className="print-info-item">
+                <div className="print-label">שיטת תשלום</div>
+                <div className="print-value">{order.paymentMethod}</div>
+              </div>
+            )}
+            {order.transactionId && (
+              <div className="print-info-item">
+                <div className="print-label">מזהה עסקה</div>
+                <div className="print-value" style={{ fontFamily: 'monospace', fontSize: '11px' }}>
+                  {order.transactionId}
+                </div>
+              </div>
+            )}
+            {order.paidAt && (
+              <div className="print-info-item">
+                <div className="print-label">תאריך תשלום</div>
+                <div className="print-value">
+                  {format(new Date(order.paidAt), "dd/MM/yyyy HH:mm", { locale: he })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="print-section">
+            <div className="print-section-title">מצב הזמנה</div>
+            <div className="print-info-item">
+              <div className="print-label">סטטוס</div>
+              <div className="print-value">{getStatusInfo(order.status).label}</div>
+            </div>
+            <div className="print-info-item">
+              <div className="print-label">סטטוס משלוח</div>
+              <div className="print-value">
+                {order.fulfillmentStatus === "UNFULFILLED" && "לא נשלח"}
+                {order.fulfillmentStatus === "PARTIAL" && "חלקי"}
+                {order.fulfillmentStatus === "FULFILLED" && "נשלח"}
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {getStatusBadge(order.status)}
-              {getPaymentStatusBadge(order.paymentStatus)}
-              {!editing ? (
-                <Button onClick={() => setEditing(true)} className="prodify-gradient text-white">
-                  ערוך
-                </Button>
-              ) : (
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setEditing(false)
-                      fetchOrder()
-                    }}
-                  >
-                    <X className="w-4 h-4 ml-1" />
-                    ביטול
-                  </Button>
-                  <Button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="prodify-gradient text-white"
-                  >
-                    <Save className="w-4 h-4 ml-1" />
-                    שמור
-                  </Button>
-                </div>
-              )}
+            {order.shippingMethod && (
+              <div className="print-info-item">
+                <div className="print-label">שיטת משלוח</div>
+                <div className="print-value">{order.shippingMethod}</div>
+              </div>
+            )}
+            {order.trackingNumber && (
+              <div className="print-info-item">
+                <div className="print-label">מספר מעקב</div>
+                <div className="print-value">{order.trackingNumber}</div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {order.notes && (
+          <div className="print-section">
+            <div className="print-section-title">הערות</div>
+            <div style={{ padding: '10px', background: '#f9f9f9', borderRadius: '4px' }}>
+              {order.notes}
             </div>
           </div>
         )}
+        </div>
+      </>
+    )
+  }
 
-        {/* Header - Mobile */}
-        {isMobile && (
-          <div className="mb-4">
-            <div className="flex items-center gap-3 mb-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => router.push("/orders")}
-                className="p-2 h-8 w-8"
-              >
-                <ArrowRight className="w-5 h-5" />
-              </Button>
-              <div className="flex-1">
-                <h1 className="text-xl font-bold text-gray-900">הזמנה #{order.orderNumber}</h1>
-                <p className="text-sm text-gray-600">
-                  {format(new Date(order.createdAt), "dd/MM/yyyy HH:mm", { locale: he })}
-                </p>
-              </div>
+  return (
+    <AppLayout>
+      <div className={cn("space-y-6", isMobile && "pb-20")}>
+        {/* Header */}
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => router.push("/orders")}
+            >
+              <ArrowRight className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold">
+                הזמנה #{order.orderNumber}
+              </h1>
+              <p className="text-sm text-gray-500 mt-1">
+                נוצרה ב-{format(new Date(order.createdAt), "dd/MM/yyyy HH:mm", { locale: he })}
+              </p>
             </div>
-            
-            {/* Status Badges - Mobile */}
-            <div className="flex gap-2 mb-3">
-              {getStatusBadge(order.status)}
-              {getPaymentStatusBadge(order.paymentStatus)}
-            </div>
+          </div>
 
-            {/* Action Buttons - Mobile */}
-            {!editing ? (
-              <Button 
-                onClick={() => setEditing(true)} 
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
-              >
-                ערוך הזמנה
-              </Button>
-            ) : (
-              <div className="flex gap-2">
+          <div className="flex gap-2">
+            {editing ? (
+              <>
                 <Button
                   variant="outline"
                   onClick={() => {
                     setEditing(false)
-                    fetchOrder()
+                    setStatus(order.status)
+                    setFulfillmentStatus(order.fulfillmentStatus)
+                    setShippingMethod(order.shippingMethod || "")
+                    setTrackingNumber(order.trackingNumber || "")
+                    setNotes(order.notes || "")
                   }}
-                  className="flex-1"
+                  disabled={saving}
                 >
-                  <X className="w-4 h-4 ml-1" />
+                  <X className="ml-2 h-4 w-4" />
                   ביטול
                 </Button>
-                <Button
-                  onClick={handleSave}
-                  disabled={saving}
-                  className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white"
-                >
-                  <Save className="w-4 h-4 ml-1" />
-                  שמור
+                <Button onClick={handleSave} disabled={saving}>
+                  <Save className="ml-2 h-4 w-4" />
+                  {saving ? "שומר..." : "שמור"}
                 </Button>
-              </div>
+              </>
+            ) : (
+              <Button onClick={() => setEditing(true)}>
+                <Edit className="ml-2 h-4 w-4" />
+                ערוך
+              </Button>
             )}
           </div>
-        )}
+        </div>
 
-        <div className={cn(
-          "grid grid-cols-1 gap-4",
-          !isMobile && "lg:grid-cols-3 gap-6"
-        )}>
-          {/* Left Column - Order Details */}
-          <div className={cn(
-            "space-y-4",
-            !isMobile && "lg:col-span-2 space-y-6"
-          )}>
-            {/* Order Items */}
-            <Card className={cn(isMobile && "border-0 shadow-sm")}>
-              <CardHeader className={cn(isMobile && "px-3 py-3")}>
-                <CardTitle className={cn(isMobile && "text-base")}>פריטים בהזמנה</CardTitle>
-              </CardHeader>
-              <CardContent className={cn(isMobile && "px-3 pb-3")}>
-                <div className={cn(
-                  "space-y-4",
-                  isMobile && "space-y-3"
-                )}>
-                  {order.items.map((item) => (
-                    <div key={item.id} className={cn(
-                      "flex items-center gap-4 p-4 border rounded-lg",
-                      isMobile && "gap-3 p-3"
-                    )}>
-                      {item.product?.images?.[0] && (
-                        <img
-                          src={item.product.images[0]}
-                          alt={item.name}
-                          className={cn(
-                            "w-16 h-16 object-cover rounded",
-                            isMobile && "w-14 h-14"
-                          )}
-                        />
-                      )}
-                      <div className="flex-1 min-w-0">
-                        <h4 className={cn(
-                          "font-medium text-gray-900",
-                          isMobile && "text-sm"
-                        )}>{item.name}</h4>
-                        {item.variant && (
-                          <p className="text-sm text-gray-500">{item.variant.name}</p>
-                        )}
-                        {item.sku && (
-                          <p className="text-xs text-gray-400">SKU: {item.sku}</p>
-                        )}
-                      </div>
-                      <div className="text-left flex-shrink-0">
-                        <p className="text-sm text-gray-600">כמות: {item.quantity}</p>
-                        <p className={cn(
-                          "font-semibold text-gray-900",
-                          isMobile && "text-sm"
-                        )}>₪{item.total.toFixed(2)}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Order Summary */}
-            <Card className={cn(isMobile && "border-0 shadow-sm")}>
-              <CardHeader className={cn(isMobile && "px-3 py-3")}>
-                <CardTitle className={cn(isMobile && "text-base")}>סיכום הזמנה</CardTitle>
-              </CardHeader>
-              <CardContent className={cn(isMobile && "px-3 pb-3")}>
-                <div className="space-y-3">
-                  <div className="flex justify-between">
-                    <span className={cn("text-gray-600", isMobile && "text-sm")}>סכום ביניים</span>
-                    <span className={cn("font-medium", isMobile && "text-sm")}>₪{order.subtotal.toFixed(2)}</span>
+        <div className="grid gap-6 md:grid-cols-3">
+          {/* Order Details */}
+          <div className="md:col-span-2 space-y-6">
+            {/* Items */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-5 w-5" />
+                    פריטים בהזמנה
                   </div>
-                  {order.discount > 0 && (
-                    <div className={cn("flex justify-between text-green-600", isMobile && "text-sm")}>
-                      <span>הנחה</span>
-                      <span>-₪{order.discount.toFixed(2)}</span>
-                    </div>
+                  {editingSection !== 'items' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setEditingSection('items')}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
                   )}
-                  <div className="flex justify-between">
-                    <span className={cn("text-gray-600", isMobile && "text-sm")}>משלוח</span>
-                    <span className={cn("font-medium", isMobile && "text-sm")}>₪{order.shipping.toFixed(2)}</span>
-                  </div>
-                  <div className="border-t pt-3 flex justify-between">
-                    <span className={cn("text-lg font-bold", isMobile && "text-base")}>סה"כ</span>
-                    <span className={cn("text-lg font-bold", isMobile && "text-base")}>₪{order.total.toFixed(2)}</span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right Column - Customer & Shipping Info */}
-          <div className={cn(
-            "space-y-6",
-            isMobile && "space-y-4"
-          )}>
-            {/* Customer Info */}
-            <Card className={cn(isMobile && "border-0 shadow-sm")}>
-              <CardHeader className={cn(isMobile && "px-3 py-3")}>
-                <CardTitle className={cn(
-                  "flex items-center gap-2",
-                  isMobile && "text-base"
-                )}>
-                  <User className="w-5 h-5" />
-                  פרטי לקוח
                 </CardTitle>
               </CardHeader>
-              <CardContent className={cn(
-                "space-y-3",
-                isMobile && "px-3 pb-3"
-              )}>
-                <div>
-                  <p className="text-sm text-gray-600">שם</p>
-                  <p className={cn("font-medium", isMobile && "text-sm")}>{order.customerName}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">אימייל</p>
-                  <p className={cn("font-medium", isMobile && "text-sm")}>{order.customerEmail}</p>
-                </div>
-                {order.customerPhone && (
-                  <div>
-                    <p className="text-sm text-gray-600">טלפון</p>
-                    <p className={cn("font-medium", isMobile && "text-sm")}>{order.customerPhone}</p>
+              <CardContent>
+                {editingSection === 'items' ? (
+                  <>
+                    <div className="space-y-4">
+                      {items.map((item) => (
+                        <div
+                          key={item.id}
+                          className="flex items-center gap-4 p-4 border rounded-lg"
+                        >
+                          {item.product?.images?.[0] && (
+                            <img
+                              src={item.product.images[0]}
+                              alt={item.name}
+                              className="w-16 h-16 object-cover rounded"
+                            />
+                          )}
+                          <div className="flex-1">
+                            <h4 className="font-medium">{item.name}</h4>
+                            {item.variant && (
+                              <p className="text-sm text-gray-500">{item.variant.name}</p>
+                            )}
+                            {item.sku && (
+                              <p className="text-xs text-gray-400">מקט: {item.sku}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-left">
+                              <Label className="text-xs">מחיר</Label>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={item.price}
+                                onChange={(e) => {
+                                  const newPrice = parseFloat(e.target.value) || 0
+                                  const updatedItems = items.map(i => 
+                                    i.id === item.id 
+                                      ? { ...i, price: newPrice, total: newPrice * i.quantity }
+                                      : i
+                                  )
+                                  setItems(updatedItems)
+                                }}
+                                className="w-24"
+                              />
+                            </div>
+                            <div className="text-left">
+                              <Label className="text-xs">כמות</Label>
+                              <Input
+                                type="number"
+                                value={item.quantity}
+                                onChange={(e) => {
+                                  const newQuantity = parseInt(e.target.value) || 0
+                                  const updatedItems = items.map(i => 
+                                    i.id === item.id 
+                                      ? { ...i, quantity: newQuantity, total: i.price * newQuantity }
+                                      : i
+                                  )
+                                  setItems(updatedItems)
+                                }}
+                                className="w-20"
+                              />
+                            </div>
+                            <div className="font-semibold w-20 text-left">
+                              ₪{item.total.toFixed(2)}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditingSection(null)
+                          setItems(order.items)
+                        }}
+                        disabled={saving}
+                      >
+                        <X className="ml-2 h-4 w-4" />
+                        ביטול
+                      </Button>
+                      <Button onClick={() => handleSaveSection('items')} disabled={saving}>
+                        <Save className="ml-2 h-4 w-4" />
+                        {saving ? "שומר..." : "שמור"}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <div className="space-y-4">
+                    {order.items.map((item) => (
+                      <div
+                        key={item.id}
+                        className="flex items-center gap-4 p-4 border rounded-lg"
+                      >
+                        {item.product?.images?.[0] && (
+                          <img
+                            src={item.product.images[0]}
+                            alt={item.name}
+                            className="w-16 h-16 object-cover rounded"
+                          />
+                        )}
+                        <div className="flex-1">
+                          <h4 className="font-medium">{item.name}</h4>
+                          {item.variant && (
+                            <p className="text-sm text-gray-500">{item.variant.name}</p>
+                          )}
+                          {item.sku && (
+                            <p className="text-xs text-gray-400">מקט: {item.sku}</p>
+                          )}
+                        </div>
+                        <div className="text-left">
+                          <p className="text-sm text-gray-500">כמות: {item.quantity}</p>
+                        </div>
+                        <div className="font-semibold text-right">
+                          ₪{item.total.toFixed(2)}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
-                {order.customer && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full"
-                    onClick={() => router.push(`/customers/${order.customer!.id}`)}
-                  >
-                    צפה בפרופיל לקוח
-                  </Button>
+
+                {/* Order Summary */}
+                <div className="mt-6 pt-6 border-t">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold">סיכום הזמנה</h3>
+                    {editingSection !== 'summary' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setEditingSection('summary')}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  {editingSection === 'summary' ? (
+                    <>
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <Label>סכום ביניים</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={subtotal}
+                            onChange={(e) => setSubtotal(parseFloat(e.target.value) || 0)}
+                            className="w-32"
+                          />
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <Label>משלוח</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={shipping}
+                            onChange={(e) => setShipping(parseFloat(e.target.value) || 0)}
+                            className="w-32"
+                          />
+                        </div>
+                        {order.shop?.taxEnabled && (
+                          <div className="flex justify-between items-center">
+                            <Label>מע"מ</Label>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={tax}
+                              onChange={(e) => setTax(parseFloat(e.target.value) || 0)}
+                              className="w-32"
+                            />
+                          </div>
+                        )}
+                        <div className="flex justify-between items-center">
+                          <Label>הנחה</Label>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            value={discount}
+                            onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                            className="w-32"
+                          />
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <Label>קוד קופון</Label>
+                          <Input
+                            value={couponCode}
+                            onChange={(e) => setCouponCode(e.target.value)}
+                            className="w-32"
+                          />
+                        </div>
+                        <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                          <span>סה"כ</span>
+                          <span>₪{(subtotal + shipping + tax - discount).toFixed(2)}</span>
+                        </div>
+                      </div>
+                      <div className="flex gap-2 mt-4">
+                        <Button
+                          variant="outline"
+                          onClick={() => {
+                            setEditingSection(null)
+                            setSubtotal(order.subtotal)
+                            setShipping(order.shipping)
+                            setTax(order.tax)
+                            setDiscount(order.discount)
+                            setCouponCode(order.couponCode || "")
+                          }}
+                          disabled={saving}
+                        >
+                          <X className="ml-2 h-4 w-4" />
+                          ביטול
+                        </Button>
+                        <Button onClick={() => handleSaveSection('summary')} disabled={saving}>
+                          <Save className="ml-2 h-4 w-4" />
+                          {saving ? "שומר..." : "שמור"}
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">סכום ביניים</span>
+                        <span>₪{order.subtotal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600">משלוח</span>
+                        <span>₪{order.shipping.toFixed(2)}</span>
+                      </div>
+                      {order.discount > 0 && (
+                        <div className="flex justify-between text-sm text-green-600">
+                          <span>הנחה</span>
+                          <span>-₪{order.discount.toFixed(2)}</span>
+                        </div>
+                      )}
+                      {order.couponCode && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">קוד קופון</span>
+                          <Badge variant="secondary">{order.couponCode}</Badge>
+                        </div>
+                      )}
+                      {order.shop?.taxEnabled && order.tax > 0 && (
+                        <div className="flex justify-between text-sm">
+                          <span className="text-gray-600">מע"מ</span>
+                          <span>₪{order.tax.toFixed(2)}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between text-lg font-bold pt-2 border-t">
+                        <span>סה"כ</span>
+                        <span>₪{order.total.toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Customer Info */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    פרטי לקוח
+                  </div>
+                  {editingSection !== 'customer' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setEditingSection('customer')}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {editingSection === 'customer' ? (
+                  <>
+                    <div>
+                      <Label>שם</Label>
+                      <Input
+                        value={customerName}
+                        onChange={(e) => setCustomerName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label className="flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        אימייל
+                      </Label>
+                      <Input
+                        type="email"
+                        value={customerEmail}
+                        onChange={(e) => setCustomerEmail(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label className="flex items-center gap-2">
+                        <Phone className="h-4 w-4" />
+                        טלפון
+                      </Label>
+                      <Input
+                        value={customerPhone}
+                        onChange={(e) => setCustomerPhone(e.target.value)}
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditingSection(null)
+                          setCustomerName(order.customerName)
+                          setCustomerEmail(order.customerEmail)
+                          setCustomerPhone(order.customerPhone || "")
+                        }}
+                        disabled={saving}
+                      >
+                        <X className="ml-2 h-4 w-4" />
+                        ביטול
+                      </Button>
+                      <Button onClick={() => handleSaveSection('customer')} disabled={saving}>
+                        <Save className="ml-2 h-4 w-4" />
+                        {saving ? "שומר..." : "שמור"}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <Label className="text-gray-500">שם</Label>
+                      <p className="font-medium">{order.customerName}</p>
+                    </div>
+                    <div>
+                      <Label className="text-gray-500 flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        אימייל
+                      </Label>
+                      <p className="font-medium">{order.customerEmail}</p>
+                    </div>
+                    {order.customerPhone && (
+                      <div>
+                        <Label className="text-gray-500 flex items-center gap-2">
+                          <Phone className="h-4 w-4" />
+                          טלפון
+                        </Label>
+                        <p className="font-medium">{order.customerPhone}</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
 
             {/* Shipping Address */}
-            <Card className={cn(isMobile && "border-0 shadow-sm")}>
-              <CardHeader className={cn(isMobile && "px-3 py-3")}>
-                <CardTitle className={cn(
-                  "flex items-center gap-2",
-                  isMobile && "text-base"
-                )}>
-                  <MapPin className="w-5 h-5" />
-                  כתובת משלוח
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-5 w-5" />
+                    כתובת משלוח
+                  </div>
+                  {editingSection !== 'shipping' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setEditingSection('shipping')}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                  )}
                 </CardTitle>
               </CardHeader>
-              <CardContent className={cn(isMobile && "px-3 pb-3")}>
-                {order.shippingAddress && typeof order.shippingAddress === 'object' ? (
-                  <div className="space-y-1 text-sm">
-                    {order.shippingAddress.street && <p>{order.shippingAddress.street}</p>}
-                    {order.shippingAddress.city && order.shippingAddress.postalCode && (
-                      <p>{order.shippingAddress.city} {order.shippingAddress.postalCode}</p>
-                    )}
-                    {order.shippingAddress.country && <p>{order.shippingAddress.country}</p>}
-                  </div>
+              <CardContent>
+                {editingSection === 'shipping' ? (
+                  <>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>שם פרטי</Label>
+                          <Input
+                            value={shippingAddress?.firstName || ""}
+                            onChange={(e) => setShippingAddress({ ...shippingAddress, firstName: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label>שם משפחה</Label>
+                          <Input
+                            value={shippingAddress?.lastName || ""}
+                            onChange={(e) => setShippingAddress({ ...shippingAddress, lastName: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>רחוב</Label>
+                        <Input
+                          value={shippingAddress?.address || shippingAddress?.street || ""}
+                          onChange={(e) => setShippingAddress({ ...shippingAddress, address: e.target.value, street: e.target.value })}
+                        />
+                      </div>
+                      <div className="grid grid-cols-3 gap-4">
+                        <div>
+                          <Label>מספר בית</Label>
+                          <Input
+                            value={shippingAddress?.houseNumber || ""}
+                            onChange={(e) => setShippingAddress({ ...shippingAddress, houseNumber: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label>דירה</Label>
+                          <Input
+                            value={shippingAddress?.apartment || ""}
+                            onChange={(e) => setShippingAddress({ ...shippingAddress, apartment: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label>קומה</Label>
+                          <Input
+                            value={shippingAddress?.floor || ""}
+                            onChange={(e) => setShippingAddress({ ...shippingAddress, floor: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label>עיר</Label>
+                          <Input
+                            value={shippingAddress?.city || ""}
+                            onChange={(e) => setShippingAddress({ ...shippingAddress, city: e.target.value })}
+                          />
+                        </div>
+                        <div>
+                          <Label>מיקוד</Label>
+                          <Input
+                            value={shippingAddress?.zip || shippingAddress?.zipCode || ""}
+                            onChange={(e) => setShippingAddress({ ...shippingAddress, zip: e.target.value, zipCode: e.target.value })}
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <Label>מדינה</Label>
+                        <Input
+                          value={shippingAddress?.country || ""}
+                          onChange={(e) => setShippingAddress({ ...shippingAddress, country: e.target.value })}
+                        />
+                      </div>
+                    </div>
+                    <div className="flex gap-2 mt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditingSection(null)
+                          setShippingAddress(order.shippingAddress)
+                        }}
+                        disabled={saving}
+                      >
+                        <X className="ml-2 h-4 w-4" />
+                        ביטול
+                      </Button>
+                      <Button onClick={() => handleSaveSection('shipping')} disabled={saving}>
+                        <Save className="ml-2 h-4 w-4" />
+                        {saving ? "שומר..." : "שמור"}
+                      </Button>
+                    </div>
+                  </>
                 ) : (
-                  <p className="text-sm text-gray-600">{String(order.shippingAddress)}</p>
+                  order.shippingAddress && (
+                    <div className="space-y-1">
+                      {(() => {
+                        const address = typeof order.shippingAddress === 'string' 
+                          ? JSON.parse(order.shippingAddress) 
+                          : order.shippingAddress
+                        return (
+                          <>
+                            {address.firstName && address.lastName && (
+                              <p className="font-medium">
+                                {address.firstName} {address.lastName}
+                              </p>
+                            )}
+                            {(address.address || address.street) && (
+                              <p className="text-gray-700">
+                                {address.address || address.street}
+                                {address.houseNumber ? ` ${address.houseNumber}` : ''}
+                              </p>
+                            )}
+                            {(address.apartment || address.floor) && (
+                              <p className="text-gray-700">
+                                {address.apartment ? `דירה ${address.apartment}` : ''}
+                                {address.apartment && address.floor ? ', ' : ''}
+                                {address.floor ? `קומה ${address.floor}` : ''}
+                              </p>
+                            )}
+                            {address.city && (
+                              <p className="text-gray-700">
+                                {address.city}
+                                {address.zip ? ` ${address.zip}` : ''}
+                                {address.zipCode && !address.zip ? ` ${address.zipCode}` : ''}
+                              </p>
+                            )}
+                            {address.country && (
+                              <p className="text-gray-700">{address.country}</p>
+                            )}
+                            {/* תמיכה במבנה הישן */}
+                            {!address.firstName && !address.address && !address.street && address.street && (
+                              <p>{address.street}</p>
+                            )}
+                            {!address.city && address.city && address.zipCode && (
+                              <p>
+                                {address.city}, {address.zipCode}
+                              </p>
+                            )}
+                            {!address.country && address.country && (
+                              <p>{address.country}</p>
+                            )}
+                          </>
+                        )
+                      })()}
+                    </div>
+                  )
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar */}
+          <div className="space-y-6">
+            {/* Status Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle>מצב הזמנה</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {editing ? (
+                  <>
+                    <div>
+                      <Label>סטטוס</Label>
+                      <Select value={status} onValueChange={setStatus}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {statuses.map((s) => (
+                            <SelectItem key={s.id} value={s.key}>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className="w-3 h-3 rounded-full"
+                                  style={{ backgroundColor: s.color }}
+                                />
+                                {s.label}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label>סטטוס משלוח</Label>
+                      <Select value={fulfillmentStatus} onValueChange={setFulfillmentStatus}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="UNFULFILLED">לא נשלח</SelectItem>
+                          <SelectItem value="PARTIAL">חלקי</SelectItem>
+                          <SelectItem value="FULFILLED">נשלח</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div>
+                      <Label>שיטת משלוח</Label>
+                      <Input
+                        value={shippingMethod}
+                        onChange={(e) => setShippingMethod(e.target.value)}
+                        placeholder="דואר ישראל, שליח, וכו'"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>מספר מעקב</Label>
+                      <Input
+                        value={trackingNumber}
+                        onChange={(e) => setTrackingNumber(e.target.value)}
+                        placeholder="הזן מספר מעקב"
+                      />
+                    </div>
+
+                    <div>
+                      <Label>הערות</Label>
+                      <Textarea
+                        value={notes}
+                        onChange={(e) => setNotes(e.target.value)}
+                        placeholder="הערות נוספות"
+                        rows={3}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div>
+                      <Label className="text-gray-500">סטטוס</Label>
+                      <div className="mt-1">{getStatusBadge(order.status)}</div>
+                    </div>
+
+                    <div>
+                      <Label className="text-gray-500">סטטוס משלוח</Label>
+                      <div className="mt-1">
+                        <Badge variant="outline">
+                          {order.fulfillmentStatus === "UNFULFILLED" && "לא נשלח"}
+                          {order.fulfillmentStatus === "PARTIAL" && "חלקי"}
+                          {order.fulfillmentStatus === "FULFILLED" && "נשלח"}
+                        </Badge>
+                      </div>
+                    </div>
+
+                    {order.shippingMethod && (
+                      <div>
+                        <Label className="text-gray-500">שיטת משלוח</Label>
+                        <p className="font-medium">{order.shippingMethod}</p>
+                      </div>
+                    )}
+
+                    {order.trackingNumber && (
+                      <div>
+                        <Label className="text-gray-500">מספר מעקב</Label>
+                        <p className="font-medium">{order.trackingNumber}</p>
+                      </div>
+                    )}
+
+                    {order.notes && (
+                      <div>
+                        <Label className="text-gray-500">הערות</Label>
+                        <p className="text-sm">{order.notes}</p>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
 
-            {/* Custom Fields */}
-            {order.customFields && typeof order.customFields === 'object' && Object.keys(order.customFields).length > 0 && (
-              <Card className={cn(isMobile && "border-0 shadow-sm")}>
-                <CardHeader className={cn(isMobile && "px-3 py-3")}>
-                  <CardTitle className={cn(
-                    "flex items-center gap-2",
-                    isMobile && "text-base"
-                  )}>
-                    <Package className="w-5 h-5" />
-                    פרטים נוספים
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className={cn(
-                  "space-y-3",
-                  isMobile && "px-3 pb-3"
-                )}>
-                  {Object.entries(order.customFields).map(([key, value]) => {
-                    // נסה למצוא את התווית של השדה מה-shop settings
-                    let fieldLabel = key
-                    const shopSettings = order.shop?.settings as any
-                    const checkoutSettings = shopSettings?.checkoutPage
-                    const customFieldsConfig = checkoutSettings?.customFields || []
-                    const fieldConfig = customFieldsConfig.find((f: any) => f.id === key)
-                    
-                    if (fieldConfig && fieldConfig.label) {
-                      fieldLabel = fieldConfig.label
-                    }
-                    
-                    const displayValue = value === true ? "כן" : value === false ? "לא" : String(value || "")
-                    
-                    if (!displayValue || displayValue === "false" || displayValue === "") {
-                      return null
-                    }
-                    
-                    return (
-                      <div key={key}>
-                        <p className="text-sm text-gray-600">{fieldLabel}</p>
-                        <p className={cn("font-medium", isMobile && "text-sm")}>{displayValue}</p>
-                      </div>
-                    )
-                  })}
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Order Status (Editable) */}
-            {editing && (
-              <Card className={cn(isMobile && "border-0 shadow-sm")}>
-                <CardHeader className={cn(isMobile && "px-3 py-3")}>
-                  <CardTitle className={cn(isMobile && "text-base")}>עדכון סטטוס</CardTitle>
-                </CardHeader>
-                <CardContent className={cn(
-                  "space-y-4",
-                  isMobile && "px-3 pb-3"
-                )}>
-                  <div>
-                    <Label>סטטוס הזמנה</Label>
-                    <Select value={status} onValueChange={setStatus}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="PENDING">ממתין</SelectItem>
-                        <SelectItem value="CONFIRMED">מאושר</SelectItem>
-                        <SelectItem value="PROCESSING">מעובד</SelectItem>
-                        <SelectItem value="SHIPPED">נשלח</SelectItem>
-                        <SelectItem value="DELIVERED">נמסר</SelectItem>
-                        <SelectItem value="CANCELLED">בוטל</SelectItem>
-                        <SelectItem value="REFUNDED">הוחזר</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>סטטוס תשלום</Label>
-                    <Select value={paymentStatus} onValueChange={setPaymentStatus}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="PENDING">ממתין לתשלום</SelectItem>
-                        <SelectItem value="PAID">שולם</SelectItem>
-                        <SelectItem value="FAILED">נכשל</SelectItem>
-                        <SelectItem value="REFUNDED">הוחזר</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>סטטוס משלוח</Label>
-                    <Select value={fulfillmentStatus} onValueChange={setFulfillmentStatus}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="UNFULFILLED">לא נשלח</SelectItem>
-                        <SelectItem value="PARTIAL">חלקי</SelectItem>
-                        <SelectItem value="FULFILLED">נשלח</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Label>שיטת משלוח</Label>
-                    <Input
-                      value={shippingMethod}
-                      onChange={(e) => setShippingMethod(e.target.value)}
-                      placeholder="דואר ישראל, שליח, וכו'"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>מספר מעקב</Label>
-                    <Input
-                      value={trackingNumber}
-                      onChange={(e) => setTrackingNumber(e.target.value)}
-                      placeholder="מספר מעקב משלוח"
-                    />
-                  </div>
-
-                  <div>
-                    <Label>הערות</Label>
-                    <Textarea
-                      value={notes}
-                      onChange={(e) => setNotes(e.target.value)}
-                      placeholder="הערות פנימיות..."
-                      rows={4}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
             {/* Payment Info */}
-            {order.paymentMethod && (
-              <Card className={cn(isMobile && "border-0 shadow-sm")}>
-                <CardHeader className={cn(isMobile && "px-3 py-3")}>
-                  <CardTitle className={cn(
-                    "flex items-center gap-2",
-                    isMobile && "text-base"
-                  )}>
-                    <CreditCard className="w-5 h-5" />
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-5 w-5" />
                     פרטי תשלום
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className={cn(
-                  "space-y-2",
-                  isMobile && "px-3 pb-3"
-                )}>
-                  <div>
-                    <p className="text-sm text-gray-600">שיטת תשלום</p>
-                    <p className={cn("font-medium", isMobile && "text-sm")}>{order.paymentMethod}</p>
                   </div>
-                  {order.transactionId && (
-                    <div>
-                      <p className="text-sm text-gray-600">מספר עסקה</p>
-                      <p className={cn("font-medium", isMobile && "text-sm")}>{order.transactionId}</p>
-                    </div>
+                  {editingSection !== 'payment' && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setEditingSection('payment')}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
                   )}
-                  {order.paidAt && (
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {editingSection === 'payment' ? (
+                  <>
                     <div>
-                      <p className="text-sm text-gray-600">תאריך תשלום</p>
-                      <p className={cn("font-medium", isMobile && "text-sm")}>
-                        {format(new Date(order.paidAt), "dd/MM/yyyy HH:mm", { locale: he })}
-                      </p>
+                      <Label>שיטת תשלום</Label>
+                      <Input
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        placeholder="כרטיס אשראי, העברה בנקאית, וכו'"
+                      />
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
+                    <div>
+                      <Label>מזהה עסקה</Label>
+                      <Input
+                        value={transactionId}
+                        onChange={(e) => setTransactionId(e.target.value)}
+                        placeholder="מספר עסקה"
+                      />
+                    </div>
+                    {order.paidAt && (
+                      <div>
+                        <Label className="text-gray-500 flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          תאריך תשלום
+                        </Label>
+                        <p className="text-sm">
+                          {format(new Date(order.paidAt), "dd/MM/yyyy HH:mm", { locale: he })}
+                        </p>
+                      </div>
+                    )}
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setEditingSection(null)
+                          setPaymentMethod(order.paymentMethod || "")
+                          setTransactionId(order.transactionId || "")
+                        }}
+                        disabled={saving}
+                      >
+                        <X className="ml-2 h-4 w-4" />
+                        ביטול
+                      </Button>
+                      <Button onClick={() => handleSaveSection('payment')} disabled={saving}>
+                        <Save className="ml-2 h-4 w-4" />
+                        {saving ? "שומר..." : "שמור"}
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {order.paymentMethod && (
+                      <div>
+                        <Label className="text-gray-500">שיטת תשלום</Label>
+                        <p className="font-medium">{getPaymentMethodLabel(order.paymentMethod)}</p>
+                      </div>
+                    )}
+                    {order.transactionId && (
+                      <div>
+                        <Label className="text-gray-500">מזהה עסקה</Label>
+                        <p className="font-mono text-sm">{order.transactionId}</p>
+                      </div>
+                    )}
+                    {order.paidAt && (
+                      <div>
+                        <Label className="text-gray-500 flex items-center gap-2">
+                          <Calendar className="h-4 w-4" />
+                          תאריך תשלום
+                        </Label>
+                        <p className="text-sm">
+                          {format(new Date(order.paidAt), "dd/MM/yyyy HH:mm", { locale: he })}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
     </AppLayout>
   )
 }
-

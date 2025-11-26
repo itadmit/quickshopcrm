@@ -31,7 +31,7 @@ const AVAILABLE_EVENTS = [
 export default function NewWebhookPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const [saving, setSaving] = useState(false)
   
   const [formData, setFormData] = useState({
@@ -50,10 +50,11 @@ export default function NewWebhookPage() {
   }
 
   const handleSubmit = async () => {
-    if (!selectedShop) {
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) {
       toast({
         title: "שגיאה",
-        description: "יש לבחור חנות מההדר",
+        description: "לא נמצאה חנות. אנא צור חנות תחילה.",
         variant: "destructive",
       })
       return
@@ -90,7 +91,7 @@ export default function NewWebhookPage() {
 
     try {
       const payload: any = {
-        shopId: selectedShop.id,
+        shopId: shopToUse.id,
         url: formData.url.trim(),
         events: formData.events,
         isActive: formData.isActive,
@@ -128,16 +129,19 @@ export default function NewWebhookPage() {
     }
   }
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="Webhook חדש">
         <div className="text-center py-12">
           <Webhook className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            אין חנות נבחרת
+            לא נמצאה חנות
           </h3>
           <p className="text-gray-600 mb-4">
-            יש לבחור חנות מההדר לפני יצירת Webhook
+            אנא צור חנות תחילה
           </p>
           <Button onClick={() => router.push("/webhooks")}>
             חזור לרשימת Webhooks

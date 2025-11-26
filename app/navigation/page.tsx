@@ -371,7 +371,7 @@ export default function NavigationPage() {
       return
     }
 
-    // אם משנים תווית של קטגוריה/קולקציה, עדכן את כל הפריטים מאותו סוג עם אותו ID בכל התפריטים
+    // אם משנים תווית של קטגוריה, עדכן את כל הפריטים מאותו סוג עם אותו ID בכל התפריטים
     if (updates.label && (currentItem.type === "CATEGORY" || currentItem.type === "COLLECTION")) {
       const identifier = currentItem.type === "CATEGORY" ? currentItem.categoryId : currentItem.collectionId
       
@@ -581,7 +581,7 @@ export default function NavigationPage() {
     }
   }, [pageSearchQueries, selectedShop])
 
-  // חיפוש קטגוריות/קולקציות עם debounce
+  // חיפוש קטגוריות עם debounce
   useEffect(() => {
     const timeouts: Record<string, NodeJS.Timeout> = {}
     
@@ -620,7 +620,7 @@ export default function NavigationPage() {
     }
   }, [categorySearchQueries, selectedShop])
 
-  // חיפוש קטגוריות/קולקציות עם debounce
+  // חיפוש קטגוריות עם debounce
   useEffect(() => {
     const timeouts: Record<string, NodeJS.Timeout> = {}
     
@@ -674,7 +674,7 @@ export default function NavigationPage() {
     setPageSearchQueries(prev => ({ ...prev, [itemId]: "" }))
   }
 
-  // בחירת קטגוריה/קולקציה
+  // בחירת קטגוריה
   const selectCategory = (itemId: string, category: { id: string; slug: string; name: string }) => {
     updateItem(itemId, {
       url: `/categories/${category.slug}`, // נשמור גם את ה-URL לצורך תצוגה
@@ -686,7 +686,7 @@ export default function NavigationPage() {
     setCategorySearchQueries(prev => ({ ...prev, [itemId]: "" }))
   }
 
-  // בחירת קטגוריה/קולקציה
+  // בחירת קטגוריה
   const selectCollection = (itemId: string, collection: { id: string; slug: string; name: string }) => {
     updateItem(itemId, {
       url: `/categories/${collection.slug}`, // נשמור גם את ה-URL לצורך תצוגה

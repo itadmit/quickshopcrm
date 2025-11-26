@@ -44,7 +44,7 @@ export default function EditCollectionPage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const collectionSlug = params.slug as string
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -132,7 +132,8 @@ export default function EditCollectionPage() {
   }
 
   const searchProducts = async (query: string) => {
-    if (!selectedShop || !query.trim()) {
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse || !query.trim()) {
       setSearchResults([])
       return
     }
@@ -140,7 +141,7 @@ export default function EditCollectionPage() {
     setSearching(true)
     try {
       const response = await fetch(
-        `/api/products?shopId=${selectedShop.id}&search=${encodeURIComponent(query)}&status=PUBLISHED&limit=20`
+        `/api/products?shopId=${shopToUse.id}&search=${encodeURIComponent(query)}&status=PUBLISHED&limit=20`
       )
       if (response.ok) {
         const data = await response.json()
@@ -235,8 +236,9 @@ export default function EditCollectionPage() {
       formDataObj.append("file", file)
       formDataObj.append("entityType", "collections")
       formDataObj.append("entityId", collectionId || "temp")
-      if (selectedShop?.id) {
-        formDataObj.append("shopId", selectedShop.id)
+      const shopToUseForUpload = selectedShop || shops[0]
+      if (shopToUseForUpload?.id) {
+        formDataObj.append("shopId", shopToUseForUpload.id)
       }
 
       const response = await fetch("/api/files/upload", {
@@ -300,10 +302,11 @@ export default function EditCollectionPage() {
   }
 
   const handleSubmit = async () => {
-    if (!selectedShop) {
+    const shopToUseForSave = selectedShop || shops[0]
+    if (!shopToUseForSave) {
       toast({
         title: "שגיאה",
-        description: "יש לבחור חנות מההדר",
+        description: "לא נמצאה חנות. אנא צור חנות תחילה.",
         variant: "destructive",
       })
       return
@@ -322,7 +325,7 @@ export default function EditCollectionPage() {
 
     try {
       const payload: any = {
-        shopId: selectedShop.id,
+        shopId: shopToUseForSave.id,
         name: formData.name.trim(),
         slug: formData.slug || generateSlug(formData.name),
         description: formData.description || undefined,
@@ -388,13 +391,16 @@ export default function EditCollectionPage() {
     )
   }
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="עריכת קטגוריה">
         <div className="text-center py-12">
           <FolderOpen className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            אין חנות נבחרת
+            לא נמצאה חנות
           </h3>
           <p className="text-gray-600 mb-4">
             יש לבחור חנות מההדר לפני עריכת קטגוריה
@@ -625,7 +631,7 @@ export default function EditCollectionPage() {
                         <Input
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          placeholder="חפש מוצרים לפי שם או SKU..."
+                          placeholder="חפש מוצרים לפי שם או מקט..."
                           className="pr-10"
                         />
                       </div>
@@ -657,7 +663,7 @@ export default function EditCollectionPage() {
                                 <p className="font-medium">{product.name}</p>
                                 <p className="text-sm text-gray-500">
                                   ₪{product.price.toFixed(2)}
-                                  {product.sku && ` • SKU: ${product.sku}`}
+                                  {product.sku && ` • מקט: ${product.sku}`}
                                 </p>
                               </div>
                               <Plus className="w-5 h-5 text-gray-400" />

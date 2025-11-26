@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
-import { Eye, EyeOff, CheckCircle2, ChevronDown, ExternalLink, CreditCard, Truck, Zap } from "lucide-react"
+import { Eye, EyeOff, CheckCircle2, ChevronDown, ExternalLink, CreditCard, Truck, Zap, Copy, MapPin } from "lucide-react"
 import { Textarea } from "@/components/ui/textarea"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { useShop } from "@/components/providers/ShopProvider"
@@ -1575,15 +1575,54 @@ export default function IntegrationsPage() {
                                     </p>
                                   </div>
 
-                                  <div className="space-y-2">
-                                    <h4 className="font-medium text-sm">תכונות זמינות:</h4>
-                                    <ul className="text-sm text-gray-600 space-y-1 mr-4">
-                                      <li>• שליחת הזמנות אוטומטית (אם מופעל)</li>
-                                      <li>• שליחה ידנית מעמוד הזמנות</li>
-                                      <li>• מעקב אחר סטטוס משלוחים</li>
-                                      <li>• הורדת תוויות משלוח</li>
-                                      <li>• ביטול משלוחים</li>
-                                    </ul>
+                                  <div className="space-y-4">
+                                    <div className="space-y-2">
+                                      <h4 className="font-medium text-sm">תכונות זמינות:</h4>
+                                      <ul className="text-sm text-gray-600 space-y-1 mr-4">
+                                        <li>• שליחת הזמנות אוטומטית (אם מופעל)</li>
+                                        <li>• שליחה ידנית מעמוד הזמנות</li>
+                                        <li>• מעקב אחר סטטוס משלוחים</li>
+                                        <li>• הורדת תוויות משלוח</li>
+                                        <li>• ביטול משלוחים</li>
+                                      </ul>
+                                    </div>
+
+                                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 space-y-3">
+                                      <div className="flex items-start gap-2">
+                                        <MapPin className="w-5 h-5 text-purple-600 flex-shrink-0 mt-0.5" />
+                                        <div className="flex-1">
+                                          <h4 className="font-medium text-sm text-purple-900 mb-1">
+                                            עמוד מעקב הזמנות ללקוחות
+                                          </h4>
+                                          <p className="text-xs text-purple-700 mb-2">
+                                            לקוחות יכולים לעקוב אחר המשלוח שלהם בדף הציבורי:
+                                          </p>
+                                          <div className="flex items-center gap-2 mt-2">
+                                            <code className="flex-1 bg-white text-purple-800 px-3 py-2 rounded text-xs border border-purple-200" dir="ltr">
+                                              {typeof window !== 'undefined' ? window.location.origin : 'https://yourdomain.com'}/shop/{selectedShop?.slug || 'your-shop'}/track-order
+                                            </code>
+                                            <Button
+                                              size="sm"
+                                              variant="ghost"
+                                              onClick={() => {
+                                                const trackingUrl = `${typeof window !== 'undefined' ? window.location.origin : ''}/shop/${selectedShop?.slug || ''}/track-order`
+                                                navigator.clipboard.writeText(trackingUrl)
+                                                toast({
+                                                  title: "הועתק!",
+                                                  description: "הלינק הועתק ללוח",
+                                                })
+                                              }}
+                                              className="text-purple-600 hover:text-purple-700"
+                                            >
+                                              <Copy className="w-4 h-4" />
+                                            </Button>
+                                          </div>
+                                          <p className="text-xs text-purple-600 mt-2">
+                                            💡 ניתן להוסיף לינק זה למיילי אישור הזמנה
+                                          </p>
+                                        </div>
+                                      </div>
+                                    </div>
                                   </div>
 
                                   {focusAutoSend && (

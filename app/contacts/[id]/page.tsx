@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -542,7 +543,7 @@ export default function ContactDetailPage() {
                           <div
                             key={order.id}
                             className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
-                            onClick={() => router.push(`/orders/${order.id}`)}
+                            onClick={() => router.push(`/orders/${order.orderNumber}`)}
                           >
                             <div>
                               <p className="font-medium">הזמנה #{order.orderNumber}</p>

@@ -180,7 +180,7 @@ export async function GET(
                   condition = true
                 }
               } else if (rule.condition === "not_equals" || rule.condition === "not_contains") {
-                // אם אין SKU ויש תנאי not_equals או not_contains, זה מתקיים
+                // אם אין מקט ויש תנאי not_equals או not_contains, זה מתקיים
                 condition = true
               }
               break

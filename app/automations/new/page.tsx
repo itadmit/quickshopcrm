@@ -44,7 +44,7 @@ export default function NewAutomationPage() {
   const router = useRouter()
   const { toast } = useToast()
   const { data: session } = useSession()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
   const [isActive, setIsActive] = useState(true)
@@ -73,10 +73,11 @@ export default function NewAutomationPage() {
   ]
 
   const handleSave = async () => {
-    if (!selectedShop) {
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) {
       toast({
         title: "שגיאה",
-        description: "אנא בחר חנות",
+        description: "לא נמצאה חנות. אנא צור חנות תחילה.",
         variant: "destructive",
       })
       return
@@ -115,7 +116,7 @@ export default function NewAutomationPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shopId: selectedShop.id,
+          shopId: shopToUse.id,
           name,
           description,
           isActive,
@@ -152,11 +153,14 @@ export default function NewAutomationPage() {
     }
   }
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500">אנא בחר חנות</p>
+          <p className="text-gray-500">לא נמצאה חנות</p>
         </div>
       </AppLayout>
     )

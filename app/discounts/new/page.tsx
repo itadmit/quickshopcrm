@@ -44,7 +44,7 @@ interface Customer {
 export default function NewDiscountPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop, loading: shopLoading } = useShop()
+  const { selectedShop, shops, loading: shopLoading } = useShop()
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(false)
   
@@ -111,7 +111,8 @@ export default function NewDiscountPage() {
   }, [selectedShop])
 
   useEffect(() => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
     
     if (customerSearch.trim()) {
       const timeoutId = setTimeout(() => {
@@ -124,9 +125,11 @@ export default function NewDiscountPage() {
   }, [customerSearch, selectedShop])
 
   const fetchProducts = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
     try {
-      const response = await fetch(`/api/products?shopId=${selectedShop.id}&limit=100`)
+      const shopToUseForProducts = selectedShop || shops[0]
+      const response = await fetch(`/api/products?shopId=${shopToUseForProducts.id}&limit=100`)
       if (response.ok) {
         const data = await response.json()
         setProducts(data.products || [])
@@ -137,9 +140,11 @@ export default function NewDiscountPage() {
   }
 
   const fetchCategories = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
     try {
-      const response = await fetch(`/api/categories?shopId=${selectedShop.id}`)
+      const shopToUseForCategories = selectedShop || shops[0]
+      const response = await fetch(`/api/categories?shopId=${shopToUseForCategories.id}`)
       if (response.ok) {
         const data = await response.json()
         setCategories(data || [])
@@ -150,9 +155,11 @@ export default function NewDiscountPage() {
   }
 
   const fetchCollections = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
     try {
-      const response = await fetch(`/api/collections?shopId=${selectedShop.id}`)
+      const shopToUseForCollections = selectedShop || shops[0]
+      const response = await fetch(`/api/collections?shopId=${shopToUseForCollections.id}`)
       if (response.ok) {
         const data = await response.json()
         setCollections(data || [])
@@ -163,9 +170,11 @@ export default function NewDiscountPage() {
   }
 
   const fetchCustomers = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
     try {
-      const response = await fetch(`/api/customers?shopId=${selectedShop.id}&limit=100`)
+      const shopToUseForCustomers = selectedShop || shops[0]
+      const response = await fetch(`/api/customers?shopId=${shopToUseForCustomers.id}&limit=100`)
       if (response.ok) {
         const data = await response.json()
         setCustomers(data.customers || [])
@@ -176,9 +185,11 @@ export default function NewDiscountPage() {
   }
 
   const searchCustomers = async (searchTerm: string) => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
     try {
-      const response = await fetch(`/api/customers?shopId=${selectedShop.id}&search=${encodeURIComponent(searchTerm)}&limit=50`)
+      const shopToUseForCustomerSearch = selectedShop || shops[0]
+      const response = await fetch(`/api/customers?shopId=${shopToUseForCustomerSearch.id}&search=${encodeURIComponent(searchTerm)}&limit=50`)
       if (response.ok) {
         const data = await response.json()
         setCustomers(data.customers || [])
@@ -211,7 +222,8 @@ export default function NewDiscountPage() {
 
   // חיפוש מוצר מתנה
   const searchGiftProduct = async (query: string) => {
-    if (!selectedShop || !query.trim()) {
+    const shopToUseForGift = selectedShop || shops[0]
+    if (!shopToUseForGift || !query.trim()) {
       setGiftProductSearchResults([])
       return
     }
@@ -219,7 +231,7 @@ export default function NewDiscountPage() {
     setSearchingGiftProduct(true)
     try {
       const response = await fetch(
-        `/api/products?shopId=${selectedShop.id}&search=${encodeURIComponent(query)}&status=PUBLISHED&limit=20`
+        `/api/products?shopId=${shopToUseForGift.id}&search=${encodeURIComponent(query)}&status=PUBLISHED&limit=20`
       )
       if (response.ok) {
         const data = await response.json()
@@ -246,7 +258,8 @@ export default function NewDiscountPage() {
 
   // חיפוש מוצר נדרש
   const searchRequiredProduct = async (query: string) => {
-    if (!selectedShop || !query.trim()) {
+    const shopToUseForRequired = selectedShop || shops[0]
+    if (!shopToUseForRequired || !query.trim()) {
       setRequiredProductSearchResults([])
       return
     }
@@ -254,7 +267,7 @@ export default function NewDiscountPage() {
     setSearchingRequiredProduct(true)
     try {
       const response = await fetch(
-        `/api/products?shopId=${selectedShop.id}&search=${encodeURIComponent(query)}&status=PUBLISHED&limit=20`
+        `/api/products?shopId=${shopToUseForRequired.id}&search=${encodeURIComponent(query)}&status=PUBLISHED&limit=20`
       )
       if (response.ok) {
         const data = await response.json()
@@ -342,7 +355,7 @@ export default function NewDiscountPage() {
 
     try {
       const payload: any = {
-        shopId: selectedShop.id,
+        shopId: shopToUse.id,
         title: formData.title.trim(),
         description: formData.description || undefined,
         type: formData.type,
@@ -421,8 +434,10 @@ export default function NewDiscountPage() {
     )
   }
 
-  // אם אין חנות נבחרת אחרי שהטעינה הסתיימה, זה אומר שאין חנויות
-  if (!selectedShop && !shopLoading) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse && !shopLoading) {
     return (
       <AppLayout title="הנחה חדשה">
         <div className="text-center py-12">
@@ -1049,7 +1064,7 @@ export default function NewDiscountPage() {
                       <RadioGroupItem value="SPECIFIC_CATEGORIES" id="categories" />
                     </div>
                     <div className="flex items-center gap-3 flex-row-reverse">
-                      <Label htmlFor="collections" className="cursor-pointer flex-1 text-right">קולקציות ספציפיות</Label>
+                      <Label htmlFor="collections" className="cursor-pointer flex-1 text-right">קטגוריות ספציפיות</Label>
                       <RadioGroupItem value="SPECIFIC_COLLECTIONS" id="collections" />
                     </div>
                     <div className="flex items-center gap-3 flex-row-reverse">
@@ -1061,7 +1076,7 @@ export default function NewDiscountPage() {
                       <RadioGroupItem value="EXCLUDE_CATEGORIES" id="exclude-categories" />
                     </div>
                     <div className="flex items-center gap-3 flex-row-reverse">
-                      <Label htmlFor="exclude-collections" className="cursor-pointer flex-1 text-right">כל המוצרים חוץ מקולקציות</Label>
+                      <Label htmlFor="exclude-collections" className="cursor-pointer flex-1 text-right">כל המוצרים חוץ מקטגוריות</Label>
                       <RadioGroupItem value="EXCLUDE_COLLECTIONS" id="exclude-collections" />
                     </div>
                   </RadioGroup>
@@ -1188,11 +1203,11 @@ export default function NewDiscountPage() {
                 {/* Collection Selection */}
                 {(formData.target === "SPECIFIC_COLLECTIONS" || formData.target === "EXCLUDE_COLLECTIONS") && (
                   <div className="space-y-3">
-                    <Label>בחר קולקציות:</Label>
+                    <Label>בחר קטגוריות:</Label>
                     <div className="relative">
                       <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                       <Input
-                        placeholder="חפש קולקציות..."
+                        placeholder="חפש קטגוריות..."
                         value={collectionSearch}
                         onChange={(e) => setCollectionSearch(e.target.value)}
                         className="pr-10"
@@ -1200,7 +1215,7 @@ export default function NewDiscountPage() {
                     </div>
                     <div className="border rounded-lg p-3 max-h-60 overflow-y-auto space-y-2">
                       {filteredCollections.length === 0 ? (
-                        <p className="text-sm text-gray-500 text-center py-4">לא נמצאו קולקציות</p>
+                        <p className="text-sm text-gray-500 text-center py-4">לא נמצאו קטגוריות</p>
                       ) : (
                         filteredCollections.map((collection) => (
                           <div key={collection.id} className="flex items-center gap-2">

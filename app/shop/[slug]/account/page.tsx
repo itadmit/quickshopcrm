@@ -39,6 +39,7 @@ import {
 import Link from "next/link"
 import { StorefrontHeader } from "@/components/storefront/StorefrontHeader"
 import { FormSkeleton } from "@/components/skeletons/FormSkeleton"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Autocomplete } from "@/components/ui/autocomplete"
 import { useCitySearch, useStreetSearch } from "@/hooks/useIsraelAddress"
 
@@ -56,6 +57,7 @@ interface Customer {
   firstName: string | null
   lastName: string | null
   phone: string | null
+  premiumClubTier?: string | null
 }
 
 interface Order {
@@ -124,6 +126,25 @@ export default function StorefrontAccountPage() {
   const [monthlyGift, setMonthlyGift] = useState<any>(null)
   const [loadingMonthlyGift, setLoadingMonthlyGift] = useState(false)
   const [claimingGift, setClaimingGift] = useState(false)
+  const [premiumProgress, setPremiumProgress] = useState<any>(null)
+  const [loadingPremiumProgress, setLoadingPremiumProgress] = useState(false)
+
+  // פונקציה לבדיקת שגיאות אימות (לקוח נמחק)
+  const handleAuthError = (response: Response) => {
+    if (response.status === 401) {
+      // לקוח נמחק או אימות נכשל
+      localStorage.removeItem(`storefront_token_${slug}`)
+      localStorage.removeItem(`storefront_customer_${slug}`)
+      toast({
+        title: "החשבון לא נמצא",
+        description: "החשבון נמחק או לא קיים יותר במערכת",
+        variant: "destructive",
+      })
+      router.push(`/shop/${slug}/login`)
+      return true
+    }
+    return false
+  }
 
   // פונקציה לתרגום סטטוס לעברית
   const getStatusText = (status: string, paymentStatus?: string) => {
@@ -197,10 +218,52 @@ export default function StorefrontAccountPage() {
   }, [activeTab, customer])
 
   useEffect(() => {
-    if (customer?.id && shop?.id && customer?.premiumClubTier) {
-      fetchMonthlyGift()
+    console.log('[Account Page] useEffect triggered', { 
+      hasCustomer: !!customer?.id, 
+      hasShop: !!shop?.id,
+      hasTier: !!customer?.premiumClubTier 
+    })
+    
+    if (customer?.id && shop?.id) {
+      console.log('[Account Page] Calling fetchPremiumProgress')
+      fetchPremiumProgress()
+      if (customer?.premiumClubTier) {
+        console.log('[Account Page] Calling fetchMonthlyGift')
+        fetchMonthlyGift()
+      }
     }
   }, [customer?.id, shop?.id, customer?.premiumClubTier])
+
+  const fetchPremiumProgress = async () => {
+    if (!customer?.id || !shop?.id) return
+    
+    setLoadingPremiumProgress(true)
+    try {
+      console.log('[Premium Progress] Fetching for customer:', customer.id, 'shop:', shop.id)
+      const response = await fetch(
+        `/api/premium-club/progress?shopId=${shop.id}&customerId=${customer.id}`
+      )
+      console.log('[Premium Progress] Response status:', response.status)
+      
+      // בדיקה אם הלקוח נמחק
+      if (handleAuthError(response)) {
+        return
+      }
+      
+      if (response.ok) {
+        const data = await response.json()
+        console.log('[Premium Progress] Data received:', data)
+        setPremiumProgress(data)
+      } else {
+        const error = await response.json()
+        console.error('[Premium Progress] Error response:', error)
+      }
+    } catch (error) {
+      console.error("Error fetching premium progress:", error)
+    } finally {
+      setLoadingPremiumProgress(false)
+    }
+  }
 
   const fetchMonthlyGift = async () => {
     if (!customer?.id || !shop?.id) return
@@ -401,6 +464,12 @@ export default function StorefrontAccountPage() {
           "x-customer-token": token,
         },
       })
+      
+      // בדיקה אם הלקוח נמחק
+      if (handleAuthError(response)) {
+        return
+      }
+      
       if (response.ok) {
         const data = await response.json()
         setAddresses(data.addresses || [])
@@ -423,6 +492,12 @@ export default function StorefrontAccountPage() {
           "x-customer-id": token,
         },
       })
+      
+      // בדיקה אם הלקוח נמחק
+      if (handleAuthError(response)) {
+        return
+      }
+      
       if (response.ok) {
         const data = await response.json()
         console.log("Store credit data:", data)
@@ -784,6 +859,7 @@ export default function StorefrontAccountPage() {
           {/* Content */}
           <div className="lg:col-span-3">
             {activeTab === "profile" && (
+              <>
               <Card>
                 <CardHeader>
                   <CardTitle>פרטים אישיים</CardTitle>
@@ -807,6 +883,171 @@ export default function StorefrontAccountPage() {
                     <Label>טלפון</Label>
                     <p className="font-medium">{customer.phone || "-"}</p>
                   </div>
+                  
+                  {/* רמת מועדון פרימיום עם פרוגרס בר */}
+                  {loadingPremiumProgress ? (
+                    <div className="mt-4 pt-4 border-t">
+                      <div className="rounded-lg p-4 border-2 border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100">
+                        {/* Skeleton - כותרת */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Skeleton className="w-8 h-8 rounded-full" />
+                            <div className="space-y-2">
+                              <Skeleton className="h-3 w-32" />
+                              <Skeleton className="h-5 w-24" />
+                            </div>
+                          </div>
+                          <Skeleton className="h-8 w-20 rounded-full" />
+                        </div>
+                        
+                        {/* Skeleton - סטטיסטיקות */}
+                        <div className="grid grid-cols-2 gap-4 mb-4">
+                          <div className="bg-white/50 rounded-lg p-2">
+                            <Skeleton className="h-8 w-24 mx-auto mb-1" />
+                            <Skeleton className="h-3 w-16 mx-auto" />
+                          </div>
+                          <div className="bg-white/50 rounded-lg p-2">
+                            <Skeleton className="h-8 w-12 mx-auto mb-1" />
+                            <Skeleton className="h-3 w-16 mx-auto" />
+                          </div>
+                        </div>
+                        
+                        {/* Skeleton - פרוגרס בר */}
+                        <div className="mt-4 pt-4 border-t border-gray-200">
+                          <div className="flex items-center justify-between mb-2">
+                            <Skeleton className="h-4 w-40" />
+                            <Skeleton className="h-4 w-8" />
+                          </div>
+                          <Skeleton className="h-3 w-full rounded-full" />
+                          <div className="mt-3 flex gap-2">
+                            <Skeleton className="h-6 w-32 rounded-full" />
+                            <Skeleton className="h-6 w-28 rounded-full" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : premiumProgress?.enabled ? (
+                    <div className="mt-4 pt-4 border-t">
+                      <div 
+                        className="rounded-lg p-4 border-2"
+                        style={{
+                          background: premiumProgress.currentTier 
+                            ? `linear-gradient(135deg, ${premiumProgress.currentTier.color}15, ${premiumProgress.currentTier.color}30)`
+                            : 'linear-gradient(135deg, #f3f4f6, #e5e7eb)',
+                          borderColor: premiumProgress.currentTier?.color || '#d1d5db'
+                        }}
+                      >
+                        {/* כותרת ורמה נוכחית */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <Crown 
+                              className="w-8 h-8" 
+                              style={{ color: premiumProgress.currentTier?.color || '#d1d5db' }}
+                            />
+                            <div>
+                              <Label className="text-sm text-gray-600">רמת מועדון פרימיום</Label>
+                              <p 
+                                className="text-xl font-bold"
+                                style={{ color: premiumProgress.currentTier?.color || '#374151' }}
+                              >
+                                {premiumProgress.currentTier?.name || 'אין רמה'}
+                              </p>
+                            </div>
+                          </div>
+                          {premiumProgress.currentTier?.discount && (
+                            <div className="text-center px-3 py-1 rounded-full bg-white/50">
+                              <span className="text-lg font-bold" style={{ color: premiumProgress.currentTier.color }}>
+                                {premiumProgress.currentTier.discount.type === 'PERCENTAGE' 
+                                  ? `${premiumProgress.currentTier.discount.value}%`
+                                  : `₪${premiumProgress.currentTier.discount.value}`
+                                }
+                              </span>
+                              <span className="text-xs text-gray-600 mr-1">הנחה</span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* סטטיסטיקות */}
+                        <div className="grid grid-cols-2 gap-4 mb-4 text-center">
+                          <div className="bg-white/50 rounded-lg p-2">
+                            <p className="text-2xl font-bold text-gray-800">₪{premiumProgress.totalSpent?.toLocaleString()}</p>
+                            <p className="text-xs text-gray-500">סה"כ רכישות</p>
+                          </div>
+                          <div className="bg-white/50 rounded-lg p-2">
+                            <p className="text-2xl font-bold text-gray-800">{premiumProgress.totalOrders}</p>
+                            <p className="text-xs text-gray-500">הזמנות</p>
+                          </div>
+                        </div>
+
+                        {/* פרוגרס לרמה הבאה */}
+                        {premiumProgress.nextTier && (
+                          <div className="mt-4 pt-4 border-t border-white/30">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-sm text-gray-600">
+                                התקדמות לרמת <strong style={{ color: premiumProgress.nextTier.color }}>{premiumProgress.nextTier.name}</strong>
+                              </span>
+                              <span className="text-sm font-bold">{premiumProgress.progress}%</span>
+                            </div>
+                            
+                            {/* פרוגרס בר */}
+                            <div className="w-full bg-white/50 rounded-full h-3 overflow-hidden">
+                              <div 
+                                className="h-full rounded-full transition-all duration-500"
+                                style={{ 
+                                  width: `${premiumProgress.progress}%`,
+                                  backgroundColor: premiumProgress.nextTier.color 
+                                }}
+                              />
+                            </div>
+
+                            {/* מה נותר */}
+                            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                              {premiumProgress.spentToNext > 0 && (
+                                <span className="bg-white/50 px-2 py-1 rounded-full">
+                                  חסרים עוד ₪{premiumProgress.spentToNext.toLocaleString()}
+                                </span>
+                              )}
+                              {premiumProgress.ordersToNext > 0 && (
+                                <span className="bg-white/50 px-2 py-1 rounded-full">
+                                  חסרות עוד {premiumProgress.ordersToNext} הזמנות
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* אם הגיע לרמה הגבוהה ביותר */}
+                        {!premiumProgress.nextTier && premiumProgress.currentTier && (
+                          <div className="mt-4 pt-4 border-t border-white/30 text-center">
+                            <p className="text-sm text-gray-600">
+                              🎉 הגעת לרמה הגבוהה ביותר!
+                            </p>
+                          </div>
+                        )}
+
+                        {/* הטבות הרמה */}
+                        {premiumProgress.currentTier?.benefits && (
+                          <div className="mt-4 pt-4 border-t border-white/30">
+                            <p className="text-xs text-gray-500 mb-2">הטבות הרמה שלך:</p>
+                            <div className="flex flex-wrap gap-1">
+                              {premiumProgress.currentTier.benefits.freeShipping && (
+                                <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">משלוח חינם</span>
+                              )}
+                              {premiumProgress.currentTier.benefits.earlyAccess && (
+                                <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">גישה מוקדמת</span>
+                              )}
+                              {premiumProgress.currentTier.benefits.exclusiveProducts && (
+                                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full">מוצרים בלעדיים</span>
+                              )}
+                              {premiumProgress.currentTier.benefits.birthdayGift && (
+                                <span className="text-xs bg-pink-100 text-pink-700 px-2 py-0.5 rounded-full">מתנת יום הולדת</span>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
                   
                   {/* קרדיט בחנות */}
                   {storeCredit && (
@@ -861,50 +1102,36 @@ export default function StorefrontAccountPage() {
                 </CardContent>
               </Card>
 
-              {/* Premium Club Monthly Gift */}
-              {customer?.premiumClubTier && monthlyGift && (
+              {/* מתנה חודשית - רק אם יש מתנה זמינה */}
+              {customer?.premiumClubTier && monthlyGift?.available && (
                 <Card className="mt-6 border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-orange-50">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Crown className="w-5 h-5 text-yellow-600" />
-                      מתנה חודשית - מועדון פרימיום
+                      <Gift className="w-5 h-5 text-yellow-600" />
+                      מתנה חודשית זמינה!
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {monthlyGift.available ? (
-                      <>
-                        <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-yellow-200">
-                          <Gift className="w-8 h-8 text-yellow-600" />
-                          <div className="flex-1">
-                            <p className="font-semibold text-lg">יש לך מתנה חודשית זמינה!</p>
-                            <p className="text-sm text-gray-600">
-                              כחבר מועדון פרימיום ברמה {customer.premiumClubTier}, אתה זכאי למתנה חודשית
-                            </p>
-                          </div>
-                        </div>
-                        <Button
-                          onClick={claimMonthlyGift}
-                          disabled={claimingGift}
-                          className="w-full bg-yellow-600 hover:bg-yellow-700"
-                        >
-                          {claimingGift ? "מקבל מתנה..." : "קבל מתנה חודשית"}
-                        </Button>
-                      </>
-                    ) : (
-                      <div className="text-center py-4">
-                        <p className="text-gray-600">
-                          {monthlyGift.message || "אין מתנה זמינה כרגע"}
+                    <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-yellow-200">
+                      <Gift className="w-8 h-8 text-yellow-600" />
+                      <div className="flex-1">
+                        <p className="font-semibold text-lg">יש לך מתנה חודשית!</p>
+                        <p className="text-sm text-gray-600">
+                          כחבר מועדון פרימיום ברמה {premiumProgress?.currentTier?.name || customer.premiumClubTier}, אתה זכאי למתנה חודשית
                         </p>
-                        {monthlyGift.claimedAt && (
-                          <p className="text-sm text-gray-500 mt-2">
-                            קיבלת מתנה ב-{new Date(monthlyGift.claimedAt).toLocaleDateString('he-IL')}
-                          </p>
-                        )}
                       </div>
-                    )}
+                    </div>
+                    <Button
+                      onClick={claimMonthlyGift}
+                      disabled={claimingGift}
+                      className="w-full bg-yellow-600 hover:bg-yellow-700"
+                    >
+                      {claimingGift ? "מקבל מתנה..." : "🎁 קבל מתנה חודשית"}
+                    </Button>
                   </CardContent>
                 </Card>
               )}
+              </>
             )}
 
             {activeTab === "orders" && (

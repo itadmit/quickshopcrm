@@ -41,7 +41,7 @@ export function MobileBottomNav() {
                 <div className="w-8 h-8 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700">
                   <Layers className="w-4 h-4" />
                 </div>
-                <span className="text-xs font-medium">{t('sidebar.collections') || "קטגוריה"}</span>
+                <span className="text-xs font-medium">{t('sidebar.categories') || "קטגוריה"}</span>
               </Link>
 
               <Link href="/discounts/new" onClick={() => setIsActionsOpen(false)} className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-pink-50 hover:bg-pink-100 text-pink-900 transition-colors">

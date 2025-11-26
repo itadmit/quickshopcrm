@@ -103,7 +103,7 @@ interface Pagination {
 export default function ProductsPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const [products, setProducts] = useState<Product[]>([])
   const [loading, setLoading] = useState(true)
   const [pagination, setPagination] = useState<Pagination>({
@@ -170,10 +170,12 @@ export default function ProductsPage() {
   }, [search])
 
   const fetchCollections = async () => {
-    if (!selectedShop?.id) return
+    // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse?.id) return
     
     try {
-      const collectionsRes = await fetch(`/api/collections?shopId=${selectedShop.id}`)
+      const collectionsRes = await fetch(`/api/collections?shopId=${shopToUse.id}`)
 
       if (collectionsRes.ok) {
         const collectionsData = await collectionsRes.json()
@@ -194,7 +196,7 @@ export default function ProductsPage() {
         ...(statusFilter !== "all" && { status: statusFilter }),
         ...(collectionFilter !== "all" && { collectionId: collectionFilter }),
         ...(search && { search }),
-        ...(selectedShop?.id && { shopId: selectedShop.id }),
+        ...((selectedShop || shops[0])?.id && { shopId: (selectedShop || shops[0])?.id }),
       })
 
       const response = await fetch(`/api/products?${params}`)
@@ -406,10 +408,11 @@ export default function ProductsPage() {
   }
 
   const handleImport = async () => {
-    if (!selectedFile || !selectedShop) {
+    const shopToUse = selectedShop || shops[0]
+    if (!selectedFile || !shopToUse) {
       toast({
         title: "שגיאה",
-        description: "יש לבחור קובץ וחנות",
+        description: shopToUse ? "יש לבחור קובץ" : "לא נמצאה חנות. אנא צור חנות תחילה.",
         variant: "destructive",
       })
       return
@@ -474,7 +477,7 @@ export default function ProductsPage() {
   // Convert products to mobile list format
   const convertToMobileList = (): MobileListItem[] => {
     return products.map((product) => {
-      // Get first collection name (קולקציה = קטגוריה במערכת)
+      // Get first collection name (קטגוריה במערכת)
       const categoryName = (product as any).collections && (product as any).collections.length > 0 
         ? (product as any).collections[0].collection?.name 
         : null;
@@ -549,12 +552,12 @@ export default function ProductsPage() {
   const mobileFilters: FilterConfig[] = [
     {
       id: "collection",
-      label: "קולקציה",
+      label: "קטגוריה",
       type: "select",
       value: collectionFilter,
       onChange: setCollectionFilter,
       options: [
-        { value: "all", label: "כל הקולקציות" },
+        { value: "all", label: "כל הקטגוריות" },
         ...collections.map(c => ({ value: c.id, label: c.name }))
       ]
     },
@@ -640,10 +643,11 @@ export default function ProductsPage() {
             <Button 
               variant="outline" 
               onClick={() => {
-                if (!selectedShop) {
+                const shopToUse = selectedShop || shops[0]
+                if (!shopToUse) {
                   toast({
                     title: "שגיאה",
-                    description: "יש לבחור חנות מההדר לפני ייבוא מוצרים",
+                    description: "לא נמצאה חנות. אנא צור חנות תחילה.",
                     variant: "destructive",
                   })
                   return
@@ -691,7 +695,7 @@ export default function ProductsPage() {
               setSearch(value)
               setPagination((prev) => ({ ...prev, page: 1 }))
             }}
-            searchPlaceholder="חיפוש לפי שם, SKU..."
+            searchPlaceholder="חיפוש לפי שם, מקט..."
             filters={mobileFilters}
             isSearching={isSearching}
           />
@@ -704,7 +708,7 @@ export default function ProductsPage() {
               <div className="relative flex-1 min-w-0">
                 <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
-                  placeholder="חיפוש לפי שם, SKU..."
+                  placeholder="חיפוש לפי שם, מקט..."
                   value={search}
                   onChange={(e) => {
                     setSearch(e.target.value)
@@ -722,10 +726,10 @@ export default function ProductsPage() {
               {/* Collection Filter */}
               <Select value={collectionFilter} onValueChange={setCollectionFilter}>
                 <SelectTrigger className="w-full md:w-[200px] flex-shrink-0">
-                  <SelectValue placeholder="כל הקולקציות" />
+                  <SelectValue placeholder="כל הקטגוריות" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">כל הקולקציות</SelectItem>
+                  <SelectItem value="all">כל הקטגוריות</SelectItem>
                   {collections.map((collection) => (
                     <SelectItem key={collection.id} value={collection.id}>
                       {collection.name}
@@ -1084,7 +1088,7 @@ export default function ProductsPage() {
                   </div>
                   <div className="flex items-center justify-between text-sm text-gray-600">
                     <span>מלאי: {product.inventoryQty}</span>
-                    {product.sku && <span>SKU: {product.sku}</span>}
+                    {product.sku && <span>מקט: {product.sku}</span>}
                   </div>
                 </div>
               </CardContent>

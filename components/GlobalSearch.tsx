@@ -65,7 +65,7 @@ const getQuickLinks = (t: any) => [
     keywords: ["customers", "clients", "קליינטים"]
   },
   { 
-    titleKey: "sidebar.collections", 
+    titleKey: "sidebar.categories", 
     icon: Archive, 
     url: "/collections", 
     categoryKey: "search.categories.navigation",

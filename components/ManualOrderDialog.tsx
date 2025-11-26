@@ -158,11 +158,12 @@ export function ManualOrderDialog({ open, onOpenChange, onSuccess }: ManualOrder
   }
 
   const fetchCustomers = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
     setLoadingCustomers(true)
     try {
       const params = new URLSearchParams()
-      params.append("shopId", selectedShop.id)
+      params.append("shopId", shopToUse.id)
       if (customerSearch) {
         params.append("search", customerSearch)
       }
@@ -179,11 +180,12 @@ export function ManualOrderDialog({ open, onOpenChange, onSuccess }: ManualOrder
   }
 
   const fetchProducts = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
     setLoadingProducts(true)
     try {
       const params = new URLSearchParams()
-      params.append("shopId", selectedShop.id)
+      params.append("shopId", shopToUse.id)
       params.append("limit", "5")
       // רק אם יש חיפוש
       if (productSearch && productSearch.length > 0) {
@@ -194,7 +196,7 @@ export function ManualOrderDialog({ open, onOpenChange, onSuccess }: ManualOrder
         setLoadingProducts(false)
         return
       }
-      console.log("Fetching products for shop:", selectedShop.id)
+      console.log("Fetching products for shop:", shopToUse.id)
       const response = await fetch(`/api/products?${params.toString()}`)
       console.log("Products API response status:", response.status)
       if (response.ok) {
@@ -305,10 +307,11 @@ export function ManualOrderDialog({ open, onOpenChange, onSuccess }: ManualOrder
   }
 
   const handleSubmit = async () => {
-    if (!selectedShop) {
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) {
       toast({
         title: "שגיאה",
-        description: "נא לבחור חנות",
+        description: "לא נמצאה חנות. אנא צור חנות תחילה.",
         variant: "destructive",
       })
       return
@@ -348,7 +351,7 @@ export function ManualOrderDialog({ open, onOpenChange, onSuccess }: ManualOrder
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shopId: selectedShop.id,
+          shopId: shopToUse.id,
           customerId: selectedCustomer?.id,
           customerName: selectedCustomer?.name || newCustomer.name,
           customerEmail: selectedCustomer?.email || newCustomer.email,

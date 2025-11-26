@@ -29,7 +29,7 @@ export default function EditPagePage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
-  const { selectedShop, loading: shopsLoading } = useShop()
+  const { selectedShop, shops, loading: shopsLoading } = useShop()
   const pageSlug = params.slug as string
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -139,7 +139,8 @@ export default function EditPagePage() {
     if (!selectedShop || !pageIdToCheck) return
 
     try {
-      const response = await fetch(`/api/navigation?shopId=${selectedShop.id}`)
+      const shopToUseForNav = selectedShop || shops[0]
+      const response = await fetch(`/api/navigation?shopId=${shopToUseForNav.id}`)
       if (response.ok) {
         const navs = await response.json()
         const menusWithPage: Array<{ navigationId: string; navigationName: string; itemId: string }> = []
@@ -168,7 +169,8 @@ export default function EditPagePage() {
 
     setLoadingNavigations(true)
     try {
-      const response = await fetch(`/api/navigation?shopId=${selectedShop.id}`)
+      const shopToUseForNav = selectedShop || shops[0]
+      const response = await fetch(`/api/navigation?shopId=${shopToUseForNav.id}`)
       if (response.ok) {
         const data = await response.json()
         setNavigations(data || [])
@@ -274,7 +276,8 @@ export default function EditPagePage() {
     if (!selectedShop || productIds.length === 0) return
     
     try {
-      const response = await fetch(`/api/products?shopId=${selectedShop.id}&ids=${productIds.join(",")}&limit=100`)
+      const shopToUseForProducts = selectedShop || shops[0]
+      const response = await fetch(`/api/products?shopId=${shopToUseForProducts.id}&ids=${productIds.join(",")}&limit=100`)
       if (response.ok) {
         const data = await response.json()
         setSelectedProductsData(data.products || [])
@@ -289,7 +292,8 @@ export default function EditPagePage() {
     
     setLoadingProducts(true)
     try {
-      const response = await fetch(`/api/products?shopId=${selectedShop.id}&search=${encodeURIComponent(productSearch)}&limit=20&status=PUBLISHED`)
+      const shopToUseForProductSearch = selectedShop || shops[0]
+      const response = await fetch(`/api/products?shopId=${shopToUseForProductSearch.id}&search=${encodeURIComponent(productSearch)}&limit=20&status=PUBLISHED`)
       if (response.ok) {
         const data = await response.json()
         setProducts(data.products || [])
@@ -324,7 +328,8 @@ export default function EditPagePage() {
     
     setLoadingCoupons(true)
     try {
-      const response = await fetch(`/api/coupons?shopId=${selectedShop.id}`)
+      const shopToUseForCoupons = selectedShop || shops[0]
+      const response = await fetch(`/api/coupons?shopId=${shopToUseForCoupons.id}`)
       if (response.ok) {
         const data = await response.json()
         // נסנן רק קופונים פעילים
@@ -400,7 +405,8 @@ export default function EditPagePage() {
 
     setCheckingSlug(true)
     try {
-      const response = await fetch(`/api/pages?shopId=${selectedShop.id}`)
+      const shopToUseForPages = selectedShop || shops[0]
+      const response = await fetch(`/api/pages?shopId=${shopToUseForPages.id}`)
       if (response.ok) {
         const data = await response.json()
         // data הוא array של דפים
@@ -533,17 +539,19 @@ export default function EditPagePage() {
     )
   }
 
-  // אם אין חנות נבחרת אחרי שהכל נטען
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="עריכת דף">
         <div className="text-center py-12">
           <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            אין חנות נבחרת
+            לא נמצאה חנות
           </h3>
           <p className="text-gray-600 mb-4">
-            יש לבחור חנות מההדר לפני עריכת דף
+            אנא צור חנות תחילה
           </p>
           <Button onClick={() => router.push("/pages")}>
             חזור לרשימת דפים
@@ -868,7 +876,7 @@ export default function EditPagePage() {
                     setMediaPickerOpen(false)
                   }}
                   selectedFiles={formData.featuredImage ? [formData.featuredImage] : []}
-                  shopId={selectedShop.id}
+                  shopId={shopToUse.id}
                   entityType="pages"
                   entityId={formData.slug || pageSlug}
                   multiple={false}

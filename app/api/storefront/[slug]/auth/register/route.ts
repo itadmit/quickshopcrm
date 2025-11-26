@@ -129,6 +129,7 @@ export async function POST(
         lastName: customer.lastName,
         phone: customer.phone,
         preferredPaymentMethod: customer.preferredPaymentMethod,
+        premiumClubTier: null, // לקוח חדש אין לו רמה עדיין
       },
     }, { status: 201 })
 
@@ -140,6 +141,7 @@ export async function POST(
       lastName: customer.lastName,
       phone: customer.phone,
       preferredPaymentMethod: customer.preferredPaymentMethod,
+      premiumClubTier: null,
     })
     
     response.cookies.set(`storefront_customer_${params.slug}`, customerData, {

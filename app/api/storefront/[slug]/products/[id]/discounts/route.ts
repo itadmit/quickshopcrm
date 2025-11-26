@@ -193,7 +193,7 @@ export async function GET(
         continue
       }
 
-      // בדיקת target (מוצרים/קטגוריות/קולקציות)
+      // בדיקת target (מוצרים/קטגוריות)
       let productMatch = false
       if (discount.target === "ALL_PRODUCTS") {
         productMatch = true

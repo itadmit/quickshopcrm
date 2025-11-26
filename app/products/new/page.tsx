@@ -37,7 +37,7 @@ export default function NewProductPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { toast } = useToast()
-  const { selectedShop, loading: shopsLoading } = useShop()
+  const { selectedShop, shops, loading: shopsLoading } = useShop()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   
@@ -162,10 +162,12 @@ export default function NewProductPage() {
       return
     }
 
-    if (!selectedShop) {
+    // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) {
       toast({
         title: "שגיאה",
-        description: "יש לבחור חנות",
+        description: "לא נמצאה חנות. אנא צור חנות תחילה.",
         variant: "destructive",
       })
       return
@@ -204,7 +206,7 @@ export default function NewProductPage() {
       const weightValue = safeParseFloat(formData.weight)
 
       const payload: any = {
-        shopId: selectedShop.id,
+        shopId: shopToUse.id,
         name: formData.name,
         slug: formData.slug || generateSlug(formData.name),
         price: hasVariants ? 0 : (safeParseFloat(formData.price) ?? 0),
@@ -449,15 +451,30 @@ export default function NewProductPage() {
     )
   }
 
-  if (!selectedShop) {
+<｜tool▁sep｜>new_string
+  // אם עדיין טוען חנויות, נציג skeleton
+  if (shopsLoading) {
+    return (
+      <AppLayout title="מוצר חדש">
+        <ProductFormSkeleton />
+      </AppLayout>
+    )
+  }
+
+  // אם אין חנויות בכלל, נציג הודעה
+  if (!selectedShop && shops.length === 0) {
     return (
       <AppLayout title="מוצר חדש">
         <div className="text-center py-12">
-          <p className="text-gray-500">אנא בחר חנות כדי להמשיך</p>
+          <p className="text-gray-500">לא נמצאה חנות. אנא צור חנות תחילה.</p>
         </div>
       </AppLayout>
     )
   }
+
+  // נשתמש בחנות הראשונה אם אין אחת נבחרת
+  const shopToUse = selectedShop || shops[0]
+
 
   return (
     <AppLayout title="מוצר חדש">
@@ -509,7 +526,7 @@ export default function NewProductPage() {
             {/* Media */}
             <MediaCard
               images={formData.images}
-              shopId={selectedShop.id}
+              shopId={shopToUse.id}
                   entityId="new"
               onSelect={handleMediaSelect}
               onRemove={removeImage}
@@ -562,7 +579,7 @@ export default function NewProductPage() {
             {/* Product Add-ons */}
             {selectedShop && (
               <ProductAddonsCard
-                shopId={selectedShop.id}
+                shopId={shopToUse.id}
                 categoryIds={formData.categories}
                 onChange={handleProductAddonsChange}
               />
@@ -571,7 +588,7 @@ export default function NewProductPage() {
             {/* Custom Fields */}
             {selectedShop && (
               <CustomFieldsCard
-                shopId={selectedShop.id}
+                shopId={shopToUse.id}
                 categoryIds={formData.categories}
                 values={customFieldValues}
                 onChange={handleCustomFieldsChange}
@@ -655,7 +672,7 @@ export default function NewProductPage() {
             <CategoriesCard
               selectedCategories={formData.categories}
               onChange={(categories) => setFormData(prev => ({ ...prev, categories }))}
-              shopId={selectedShop.id}
+              shopId={shopToUse.id}
             />
 
             {/* Product Details */}

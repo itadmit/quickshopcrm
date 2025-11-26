@@ -798,7 +798,7 @@ async function getPaymentsReport(
     where: {
       shopId,
       createdAt: { gte: start, lte: end },
-      paymentStatus: { in: ["COMPLETED", "PAID", "REFUNDED"] },
+      status: { in: ["PAID", "REFUNDED"] },
     },
     include: {
       customer: true,

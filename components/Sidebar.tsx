@@ -73,7 +73,7 @@ const getSalesItems = (t: any) => [
 const getMarketingItems = (t: any) => [
   { icon: Tag, labelKey: "sidebar.discounts", href: "/discounts", permission: "discounts" },
   { icon: Tag, labelKey: "sidebar.coupons", href: "/coupons", permission: "coupons" },
-  { icon: FolderOpen, labelKey: "sidebar.collections", href: "/collections", permission: "collections" },
+  { icon: FolderOpen, labelKey: "sidebar.categories", href: "/collections", permission: "collections" },
   { icon: Gift, labelKey: "sidebar.giftCards", href: "/gift-cards", permission: "gift_cards" },
   { icon: ShoppingBag, labelKey: "sidebar.abandonedCarts", href: "/abandoned-carts", permission: "abandoned_carts" },
   { icon: Bell, labelKey: "sidebar.waitlist", href: "/waitlist", permission: "products" },
@@ -110,6 +110,7 @@ const getSystemItems = (t: any) => [
 
 const getSettingsItems = (t: any) => [
   { icon: Settings, labelKey: "sidebar.settings", href: "/settings", permission: "settings" },
+  { icon: Sliders, labelKey: "sidebar.orderStatuses", href: "/settings/order-statuses", permission: "settings" },
   { icon: Plug, labelKey: "sidebar.integrations", href: "/settings/integrations", permission: "integrations" },
   { icon: TrendingUp, labelKey: "sidebar.trafficSources", href: "/traffic-sources", permission: "settings" },
 ]

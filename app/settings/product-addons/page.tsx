@@ -68,7 +68,7 @@ const ADDON_TYPE_LABELS: Record<string, string> = {
 export default function ProductAddonsPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -97,7 +97,8 @@ export default function ProductAddonsPage() {
   }, [selectedShop?.id])
 
   const loadData = async () => {
-    if (!selectedShop?.id) {
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse?.id) {
       setLoading(false)
       return
     }
@@ -106,9 +107,9 @@ export default function ProductAddonsPage() {
       setLoading(true)
       
       const [addonsRes, categoriesRes, productsRes] = await Promise.all([
-        fetch(`/api/product-addons?shopId=${selectedShop.id}`),
-        fetch(`/api/categories?shopId=${selectedShop.id}`),
-        fetch(`/api/products?shopId=${selectedShop.id}`),
+        fetch(`/api/product-addons?shopId=${shopToUse.id}`),
+        fetch(`/api/categories?shopId=${shopToUse.id}`),
+        fetch(`/api/products?shopId=${shopToUse.id}`),
       ])
       
       if (addonsRes.ok) {
@@ -296,9 +297,10 @@ export default function ProductAddonsPage() {
     try {
       setSaving(true)
 
+      const shopToUse = selectedShop || shops[0]
       const payload = {
         ...formData,
-        shopId: selectedShop.id,
+        shopId: shopToUse.id,
       }
 
       const response = await fetch(

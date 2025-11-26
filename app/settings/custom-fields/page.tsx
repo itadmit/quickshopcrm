@@ -83,7 +83,7 @@ const FIELD_TYPE_LABELS: Record<string, string> = {
 export default function CustomFieldsPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -111,7 +111,8 @@ export default function CustomFieldsPage() {
   }, [selectedShop?.id])
 
   const loadData = async () => {
-    if (!selectedShop?.id) {
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse?.id) {
       setLoading(false)
       return
     }
@@ -121,8 +122,8 @@ export default function CustomFieldsPage() {
       
       // Load both custom fields and categories in parallel
       const [fieldsRes, categoriesRes] = await Promise.all([
-        fetch(`/api/custom-fields?shopId=${selectedShop.id}`),
-        fetch(`/api/categories?shopId=${selectedShop.id}`)
+        fetch(`/api/custom-fields?shopId=${shopToUse.id}`),
+        fetch(`/api/categories?shopId=${shopToUse.id}`)
       ])
       
       if (fieldsRes.ok) {
@@ -214,7 +215,8 @@ export default function CustomFieldsPage() {
   }
 
   const handleSave = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
 
     // Validation
     if (!formData.label.trim()) {
@@ -249,7 +251,7 @@ export default function CustomFieldsPage() {
 
       const payload = {
         ...formData,
-        shopId: selectedShop.id,
+        shopId: shopToUse.id,
       }
 
       const response = await fetch(

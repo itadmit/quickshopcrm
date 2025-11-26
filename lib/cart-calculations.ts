@@ -425,7 +425,7 @@ async function calculateAutomaticDiscounts(
       continue
     }
 
-    // בדיקת target (מוצרים/קטגוריות/קולקציות)
+    // בדיקת target (מוצרים/קטגוריות)
     let productMatch = false
     if (autoDiscount.target === "ALL_PRODUCTS") {
       productMatch = true
@@ -455,7 +455,7 @@ async function calculateAutomaticDiscounts(
         productMatch = false
       }
     } else if (autoDiscount.target === "SPECIFIC_COLLECTIONS") {
-      // צריך לבדוק אם יש מוצרים בקולקציות הספציפיות
+      // צריך לבדוק אם יש מוצרים בקטגוריות הספציפיות
       if (autoDiscount.applicableCollections && Array.isArray(autoDiscount.applicableCollections) && autoDiscount.applicableCollections.length > 0) {
         const productIds = enrichedItems.map(item => item.productId)
         const productsWithCollections = await prisma.product.findMany({
@@ -500,7 +500,7 @@ async function calculateAutomaticDiscounts(
         productMatch = true
       }
     } else if (autoDiscount.target === "EXCLUDE_COLLECTIONS") {
-      // צריך לבדוק שאין מוצרים בקולקציות המבודדות
+      // צריך לבדוק שאין מוצרים בקטגוריות המבודדות
       if (autoDiscount.excludedCollections && Array.isArray(autoDiscount.excludedCollections) && autoDiscount.excludedCollections.length > 0) {
         const productIds = enrichedItems.map(item => item.productId)
         const productsInExcludedCollections = await prisma.product.findMany({

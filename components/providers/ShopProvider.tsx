@@ -69,24 +69,33 @@ export function ShopProvider({ children }: { children: ReactNode }) {
               return
             }
 
-            // נסה לטעון חנות שמורה מ-localStorage
-            const savedShopId = localStorage.getItem("selectedShopId")
-            if (savedShopId) {
-              const savedShop = data.find((s: Shop) => s.id === savedShopId)
-              if (savedShop) {
-                setSelectedShopState(savedShop)
-                localStorage.setItem("selectedShopData", JSON.stringify(savedShop))
+            // תמיד בחר אוטומטית את החנות הראשונה אם יש רק אחת
+            // אם יש כמה, נסה לטעון חנות שמורה מ-localStorage
+            if (data.length === 1) {
+              // אם יש רק חנות אחת - בחר אותה אוטומטית
+              setSelectedShopState(data[0])
+              localStorage.setItem("selectedShopId", data[0].id)
+              localStorage.setItem("selectedShopData", JSON.stringify(data[0]))
+            } else {
+              // אם יש כמה חנויות, נסה לטעון חנות שמורה מ-localStorage
+              const savedShopId = localStorage.getItem("selectedShopId")
+              if (savedShopId) {
+                const savedShop = data.find((s: Shop) => s.id === savedShopId)
+                if (savedShop) {
+                  setSelectedShopState(savedShop)
+                  localStorage.setItem("selectedShopData", JSON.stringify(savedShop))
+                } else {
+                  // אם החנות השמורה לא קיימת, קח את הראשונה
+                  setSelectedShopState(data[0])
+                  localStorage.setItem("selectedShopId", data[0].id)
+                  localStorage.setItem("selectedShopData", JSON.stringify(data[0]))
+                }
               } else {
-                // אם החנות השמורה לא קיימת, קח את הראשונה
+                // אם אין חנות שמורה, קח את הראשונה אוטומטית
                 setSelectedShopState(data[0])
                 localStorage.setItem("selectedShopId", data[0].id)
                 localStorage.setItem("selectedShopData", JSON.stringify(data[0]))
               }
-            } else {
-              // אם אין חנות שמורה, קח את הראשונה אוטומטית
-              setSelectedShopState(data[0])
-              localStorage.setItem("selectedShopId", data[0].id)
-              localStorage.setItem("selectedShopData", JSON.stringify(data[0]))
             }
           }
         } catch (error) {

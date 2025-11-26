@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
         const orders = await prisma.order.aggregate({
           where: {
             shopId: { in: shopIds }, // כל החנויות של החברה
-            paymentStatus: "PAID", // רק הזמנות ששולמו
+            status: "PAID", // רק הזמנות ששולמו
             paidAt: {
               gte: new Date(lastCommissionDate), // מאז הגבייה האחרונה
             },

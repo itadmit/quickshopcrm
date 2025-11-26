@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
       where: { id: orderId },
       data: {
         paymentLink: paymentResult.data?.payment_page_link,
-        paymentStatus: "PENDING",
+        status: "PENDING",
       },
     })
 

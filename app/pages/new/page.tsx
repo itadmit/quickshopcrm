@@ -26,7 +26,7 @@ interface Product {
 export default function NewPagePage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop, loading: shopsLoading } = useShop()
+  const { selectedShop, shops, loading: shopsLoading } = useShop()
   const [saving, setSaving] = useState(false)
   const [productSearch, setProductSearch] = useState("")
   const [products, setProducts] = useState<Product[]>([])
@@ -59,11 +59,12 @@ export default function NewPagePage() {
   }
 
   const fetchProducts = async () => {
-    if (!selectedShop || !productSearch.trim()) return
+    const shopToUseForSearch = selectedShop || shops[0]
+    if (!shopToUseForSearch || !productSearch.trim()) return
     
     setLoadingProducts(true)
     try {
-      const response = await fetch(`/api/products?shopId=${selectedShop.id}&search=${encodeURIComponent(productSearch)}&limit=20&status=PUBLISHED`)
+      const response = await fetch(`/api/products?shopId=${shopToUseForSearch.id}&search=${encodeURIComponent(productSearch)}&limit=20&status=PUBLISHED`)
       if (response.ok) {
         const data = await response.json()
         setProducts(data.products || [])
@@ -95,11 +96,12 @@ export default function NewPagePage() {
   }, [selectedShop])
 
   const fetchCoupons = async () => {
-    if (!selectedShop) return
+    const shopToUseForCoupons = selectedShop || shops[0]
+    if (!shopToUseForCoupons) return
     
     setLoadingCoupons(true)
     try {
-      const response = await fetch(`/api/coupons?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/coupons?shopId=${shopToUseForCoupons.id}`)
       if (response.ok) {
         const data = await response.json()
         // נסנן רק קופונים פעילים
@@ -167,10 +169,11 @@ export default function NewPagePage() {
   }
 
   const handleSubmit = async () => {
-    if (!selectedShop) {
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) {
       toast({
         title: "שגיאה",
-        description: "יש לבחור חנות מההדר",
+        description: "לא נמצאה חנות. אנא צור חנות תחילה.",
         variant: "destructive",
       })
       return
@@ -189,7 +192,7 @@ export default function NewPagePage() {
 
     try {
       const payload: any = {
-        shopId: selectedShop.id,
+        shopId: shopToUse.id,
         title: formData.title.trim(),
         slug: formData.slug || generateSlug(formData.title),
         content: formData.content || undefined,
@@ -251,17 +254,19 @@ export default function NewPagePage() {
     )
   }
 
-  // אם אין חנות נבחרת אחרי שהכל נטען
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="דף חדש">
         <div className="text-center py-12">
           <FileText className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            אין חנות נבחרת
+            לא נמצאה חנות
           </h3>
           <p className="text-gray-600 mb-4">
-            יש לבחור חנות מההדר לפני יצירת דף
+            אנא צור חנות תחילה
           </p>
           <Button onClick={() => router.push("/pages")}>
             חזור לרשימת דפים

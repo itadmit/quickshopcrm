@@ -57,7 +57,7 @@ interface Automation {
 export default function AutomationsPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const [automations, setAutomations] = useState<Automation[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -71,11 +71,12 @@ export default function AutomationsPage() {
   }, [selectedShop])
 
   const fetchAutomations = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
 
     try {
       setLoading(true)
-      const response = await fetch(`/api/automations?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/automations?shopId=${shopToUse.id}`)
       if (response.ok) {
         const data = await response.json()
         setAutomations(data || [])
@@ -185,11 +186,14 @@ export default function AutomationsPage() {
     automation.description?.toLowerCase().includes(search.toLowerCase())
   )
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout>
         <div className="flex items-center justify-center h-64">
-          <p className="text-gray-500">אנא בחר חנות</p>
+          <p className="text-gray-500">לא נמצאה חנות</p>
         </div>
       </AppLayout>
     )

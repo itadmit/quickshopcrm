@@ -32,7 +32,7 @@ interface Popup {
 export default function PopupsPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop, loading: shopLoading } = useShop()
+  const { selectedShop, shops, loading: shopLoading } = useShop()
   const [popups, setPopups] = useState<Popup[]>([])
   const [loading, setLoading] = useState(true)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
@@ -47,11 +47,12 @@ export default function PopupsPage() {
   }, [selectedShop, shopLoading])
 
   const fetchPopups = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/popups?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/popups?shopId=${shopToUse.id}`)
       if (response.ok) {
         const data = await response.json()
         setPopups(data)
@@ -138,12 +139,15 @@ export default function PopupsPage() {
     )
   }
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="פופאפים">
         <Card>
           <CardContent className="p-6 text-center">
-            <p className="text-gray-500">אנא בחר חנות</p>
+            <p className="text-gray-500">לא נמצאה חנות</p>
           </CardContent>
         </Card>
       </AppLayout>

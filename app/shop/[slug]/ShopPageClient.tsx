@@ -729,6 +729,298 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
     return () => window.removeEventListener("message", handleMessage)
   }, [])
 
+  // פונקציות render לבלוקים החדשים
+  const renderSlideshowSection = (section: HomePageSection) => {
+    const config = section.config || {}
+    return (
+      <section key={section.id} className="relative w-full overflow-hidden">
+        <div className="relative w-full h-[600px] bg-gray-100">
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center text-gray-500">
+              <p className="text-lg">Slideshow Section</p>
+              <p className="text-sm mt-2">Container: {config.containerType || "full-width"}</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  const renderImageSlideSection = (section: HomePageSection) => {
+    const config = section.config || {}
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
+    const bgImage = isMobile 
+      ? (config.backgroundImageMobile || config.backgroundImage || "")
+      : (config.backgroundImage || "")
+    
+    return (
+      <section key={section.id} className="relative w-full h-[500px] md:h-[600px] overflow-hidden">
+        {bgImage ? (
+          <div className="relative w-full h-full">
+            <img
+              src={bgImage}
+              alt={config.heading || "Image slide"}
+              className="w-full h-full object-cover"
+            />
+            {(config.heading || config.subheading || config.description) && (
+              <div className={cn(
+                "absolute inset-0 flex items-center",
+                config.contentPosition === "top-left" && "items-start justify-start",
+                config.contentPosition === "top-center" && "items-start justify-center",
+                config.contentPosition === "top-right" && "items-start justify-end",
+                config.contentPosition === "middle-left" && "justify-start",
+                config.contentPosition === "middle-center" && "justify-center",
+                config.contentPosition === "middle-right" && "justify-end",
+                config.contentPosition === "bottom-left" && "items-end justify-start",
+                config.contentPosition === "bottom-center" && "items-end justify-center",
+                config.contentPosition === "bottom-right" && "items-end justify-end",
+                !config.contentPosition && "items-end justify-center"
+              )}>
+                <div className={cn(
+                  "px-8 py-12 text-center",
+                  config.contentAlignment === "left" && "text-right",
+                  config.contentAlignment === "center" && "text-center",
+                  config.contentAlignment === "right" && "text-left",
+                  config.textColor === "dark" ? "text-gray-900" : "text-white"
+                )}>
+                  {config.subheading && (
+                    <p className={cn(
+                      "mb-2",
+                      config.textSize === "large" ? "text-lg" : "text-base"
+                    )}>{config.subheading}</p>
+                  )}
+                  {config.heading && (
+                    <h2 className={cn(
+                      "mb-4 font-bold",
+                      config.textSize === "large" ? "text-4xl md:text-5xl" : "text-3xl md:text-4xl"
+                    )}>{config.heading}</h2>
+                  )}
+                  {config.description && (
+                    <p className={cn(
+                      "mb-6",
+                      config.textSize === "large" ? "text-xl" : "text-lg"
+                    )}>{config.description}</p>
+                  )}
+                  {config.buttonLabel && (
+                    <Link
+                      href={config.buttonLink || "#"}
+                      className="inline-block px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                    >
+                      {config.buttonLabel}
+                    </Link>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+            <div className="text-center text-gray-500">
+              <p className="text-lg">Image Slide Section</p>
+            </div>
+          </div>
+        )}
+      </section>
+    )
+  }
+
+  const renderVideoSection = (section: HomePageSection) => {
+    const config = section.config || {}
+    return (
+      <section key={section.id} className="relative w-full py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="relative w-full aspect-video bg-black rounded-lg overflow-hidden">
+            {config.video || config.videoLink ? (
+              <video
+                src={config.video || config.videoLink}
+                className="w-full h-full object-cover"
+                controls={config.showControls !== false}
+                autoPlay={config.autoplay}
+                loop={config.loop}
+                muted={config.muted}
+              />
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="text-center text-white">
+                  <p className="text-lg">Video Section</p>
+                  {config.heading && <p className="mt-2">{config.heading}</p>}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  const renderScrollingPromotionSection = (section: HomePageSection) => {
+    const config = section.config || {}
+    return (
+      <section key={section.id} className="relative w-full overflow-hidden bg-gray-100 py-4">
+        <div className="flex animate-scroll whitespace-nowrap">
+          {[1, 2, 3, 4, 5].map((i) => (
+            <div key={i} className="inline-block px-8 text-gray-700 font-medium">
+              Scrolling Promotion Item {i}
+            </div>
+          ))}
+        </div>
+      </section>
+    )
+  }
+
+  const renderCustomContentSection = (section: HomePageSection) => {
+    const config = section.config || {}
+    return (
+      <section 
+        key={section.id} 
+        className={cn(
+          "py-16",
+          config.containerType === "full-width" ? "w-full" : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+        )}
+        style={{
+          backgroundImage: config.backgroundImage ? `url(${config.backgroundImage})` : undefined,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+        }}
+      >
+        <div className={cn(
+          config.containerType === "full-width" && "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+        )}>
+          {config.heading && (
+            <h2 className={cn(
+              "mb-4 font-bold",
+              config.headingSize === "large" ? "text-4xl" : "text-3xl",
+              config.textAlignment === "left" && "text-right",
+              config.textAlignment === "center" && "text-center"
+            )}>{config.heading}</h2>
+          )}
+          {config.subheading && (
+            <p className="text-lg text-gray-600 mb-4">{config.subheading}</p>
+          )}
+          {config.description && (
+            <div className="prose max-w-none" dangerouslySetInnerHTML={{ __html: config.description }} />
+          )}
+        </div>
+      </section>
+    )
+  }
+
+  const renderTextBlockSection = (section: HomePageSection) => {
+    const config = section.config || {}
+    return (
+      <section key={section.id} className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className={cn(
+            "mx-auto",
+            config.containerWidth === "25%" && "w-1/4",
+            config.containerWidth === "50%" && "w-1/2",
+            config.containerWidth === "75%" && "w-3/4",
+            config.containerWidth === "100%" && "w-full"
+          )}>
+            {config.heading && (
+              <h2 className={cn(
+                "mb-4 font-bold",
+                config.textSize === "large" ? "text-4xl" : config.textSize === "small" ? "text-2xl" : "text-3xl",
+                config.textColor === "dark" ? "text-gray-900" : config.textColor === "light" ? "text-white" : "text-gray-700"
+              )}>{config.heading}</h2>
+            )}
+            {config.subheading && (
+              <p className={cn(
+                "mb-4",
+                config.textSize === "large" ? "text-xl" : "text-lg",
+                config.textColor === "dark" ? "text-gray-700" : config.textColor === "light" ? "text-gray-200" : "text-gray-600"
+              )}>{config.subheading}</p>
+            )}
+            {config.text && (
+              <div className={cn(
+                "mb-6",
+                config.textSize === "large" ? "text-lg" : "text-base",
+                config.textColor === "dark" ? "text-gray-700" : config.textColor === "light" ? "text-gray-200" : "text-gray-600"
+              )} dangerouslySetInnerHTML={{ __html: config.text }} />
+            )}
+            {config.buttonLabel && (
+              <Link
+                href={config.buttonLink || "#"}
+                className={cn(
+                  "inline-block px-6 py-3 rounded-md transition-colors",
+                  config.buttonStyle === "primary" && "bg-blue-600 text-white hover:bg-blue-700",
+                  config.buttonStyle === "secondary" && "bg-gray-600 text-white hover:bg-gray-700",
+                  config.buttonStyle === "outline" && "border-2 border-blue-600 text-blue-600 hover:bg-blue-50"
+                )}
+              >
+                {config.buttonLabel}
+              </Link>
+            )}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  const renderImageSection = (section: HomePageSection) => {
+    const config = section.config || {}
+    return (
+      <section key={section.id} className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className={cn(
+            "mx-auto",
+            config.containerWidth === "25%" && "w-1/4",
+            config.containerWidth === "50%" && "w-1/2",
+            config.containerWidth === "75%" && "w-3/4",
+            config.containerWidth === "100%" && "w-full"
+          )}>
+            {config.image ? (
+              <Link href={config.imageLink || "#"}>
+                <img
+                  src={config.image}
+                  alt="Image section"
+                  className="w-full h-auto rounded-lg"
+                />
+              </Link>
+            ) : (
+              <div className="w-full h-64 bg-gray-200 rounded-lg flex items-center justify-center">
+                <p className="text-gray-500">Image Section</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
+  const renderBrandsListSection = (section: HomePageSection) => {
+    const config = section.config || {}
+    return (
+      <section key={section.id} className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {config.heading && (
+            <h2 className={cn(
+              "mb-8 font-bold text-center",
+              config.headingSize === "large" ? "text-4xl" : "text-3xl"
+            )}>{config.heading}</h2>
+          )}
+          {config.subheading && (
+            <p className="text-center text-gray-600 mb-8">{config.subheading}</p>
+          )}
+          <div className={cn(
+            "grid gap-6",
+            config.imagesPerRow === 2 && "grid-cols-2",
+            config.imagesPerRow === 3 && "grid-cols-3",
+            config.imagesPerRow === 4 && "grid-cols-4",
+            config.imagesPerRow === 6 && "grid-cols-6",
+            !config.imagesPerRow && "grid-cols-4"
+          )}>
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center">
+                <p className="text-gray-400 text-sm">Brand {i}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    )
+  }
+
   // פונקציה שמציגה סקשן לפי הסוג שלו
   const renderSection = (section: HomePageSection) => {
     if (!isSectionVisible(section.id)) return null
@@ -737,6 +1029,22 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
       switch (section.type) {
         case "hero":
           return renderHeroSection(section)
+        case "slideshow":
+          return renderSlideshowSection(section)
+        case "image-slide":
+          return renderImageSlideSection(section)
+        case "video":
+          return renderVideoSection(section)
+        case "scrolling-promotion":
+          return renderScrollingPromotionSection(section)
+        case "custom-content":
+          return renderCustomContentSection(section)
+        case "text-block":
+          return renderTextBlockSection(section)
+        case "image":
+          return renderImageSection(section)
+        case "brands-list":
+          return renderBrandsListSection(section)
         case "new-arrivals":
           return renderNewArrivalsSection(section)
         case "categories":

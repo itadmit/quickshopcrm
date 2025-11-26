@@ -328,15 +328,26 @@ export default function StorefrontOrderPage() {
                   הזמנה #{order.orderNumber}
                 </CardTitle>
                 <div className="flex items-center gap-2">
-                  <Badge className={getStatusColor(order.status, order.paymentStatus)}>
-                    {getStatusText(order.status, order.paymentStatus)}
-                  </Badge>
-                  {order.paymentStatus && (
+                  {/* Badge של סטטוס תשלום - מוצג רק פעם אחת */}
+                  {order.paymentStatus === "PAID" ? (
+                    <Badge className="bg-green-100 text-green-700 border-green-200">
+                      שולם
+                    </Badge>
+                  ) : order.paymentStatus === "PENDING" ? (
+                    <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200">
+                      ממתין לתשלום
+                    </Badge>
+                  ) : order.paymentStatus === "FAILED" ? (
+                    <Badge className="bg-red-100 text-red-700 border-red-200">
+                      תשלום נכשל
+                    </Badge>
+                  ) : order.paymentStatus === "REFUNDED" ? (
                     <Badge className="bg-gray-100 text-gray-700 border-gray-200">
-                      {order.paymentStatus === "PAID" ? "שולם" : 
-                       order.paymentStatus === "PENDING" ? "ממתין לתשלום" : 
-                       order.paymentStatus === "FAILED" ? "תשלום נכשל" : 
-                       order.paymentStatus === "REFUNDED" ? "הוחזר" : order.paymentStatus}
+                      הוחזר
+                    </Badge>
+                  ) : (
+                    <Badge className={getStatusColor(order.status, order.paymentStatus)}>
+                      {getStatusText(order.status, order.paymentStatus)}
                     </Badge>
                   )}
                 </div>
@@ -398,6 +409,30 @@ export default function StorefrontOrderPage() {
               </CardContent>
             </Card>
 
+            {/* Payment Method */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="w-5 h-5" />
+                  אמצעי תשלום
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-700">
+                  {order.paymentMethod === "credit_card" ? "כרטיס אשראי" :
+                   order.paymentMethod === "bank_transfer" ? "העברה בנקאית" :
+                   order.paymentMethod === "cash" ? "מזומן בעת האיסוף" :
+                   order.paymentMethod === "paypal" ? "PayPal" :
+                   order.paymentMethod || "לא צוין"}
+                </p>
+                {order.transactionId && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    מזהה עסקה: {order.transactionId}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
             {/* Shipping Address */}
             {order.shippingAddress && (
               <Card>
@@ -420,12 +455,23 @@ export default function StorefrontOrderPage() {
                               {address.firstName} {address.lastName}
                             </p>
                           )}
-                          {address.address && (
-                            <p className="text-gray-700">{address.address}</p>
-                          )}
-                          {address.city && address.zip && (
+                          {(address.address || address.street) && (
                             <p className="text-gray-700">
-                              {address.city} {address.zip}
+                              {address.address || address.street}
+                              {address.houseNumber ? ` ${address.houseNumber}` : ''}
+                            </p>
+                          )}
+                          {(address.apartment || address.floor) && (
+                            <p className="text-gray-700">
+                              {address.apartment ? `דירה ${address.apartment}` : ''}
+                              {address.apartment && address.floor ? ', ' : ''}
+                              {address.floor ? `קומה ${address.floor}` : ''}
+                            </p>
+                          )}
+                          {address.city && (
+                            <p className="text-gray-700">
+                              {address.city}
+                              {address.zip ? ` ${address.zip}` : ''}
                             </p>
                           )}
                           {address.country && (

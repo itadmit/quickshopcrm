@@ -19,7 +19,7 @@ export default function EditCouponPage() {
   const router = useRouter()
   const params = useParams()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const couponId = params.id as string
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -112,7 +112,8 @@ export default function EditCouponPage() {
 
   // חיפוש מוצר מתנה
   const searchGiftProduct = async (query: string) => {
-    if (!selectedShop || !query.trim()) {
+    const shopToUseForGift = selectedShop || shops[0]
+    if (!shopToUseForGift || !query.trim()) {
       setGiftProductSearchResults([])
       return
     }
@@ -120,7 +121,7 @@ export default function EditCouponPage() {
     setSearchingGiftProduct(true)
     try {
       const response = await fetch(
-        `/api/products?shopId=${selectedShop.id}&search=${encodeURIComponent(query)}&status=PUBLISHED&limit=20`
+        `/api/products?shopId=${shopToUseForGift.id}&search=${encodeURIComponent(query)}&status=PUBLISHED&limit=20`
       )
       if (response.ok) {
         const data = await response.json()
@@ -135,7 +136,8 @@ export default function EditCouponPage() {
 
   // חיפוש מוצר נדרש
   const searchRequiredProduct = async (query: string) => {
-    if (!selectedShop || !query.trim()) {
+    const shopToUseForRequired = selectedShop || shops[0]
+    if (!shopToUseForRequired || !query.trim()) {
       setRequiredProductSearchResults([])
       return
     }
@@ -143,7 +145,7 @@ export default function EditCouponPage() {
     setSearchingRequiredProduct(true)
     try {
       const response = await fetch(
-        `/api/products?shopId=${selectedShop.id}&search=${encodeURIComponent(query)}&status=PUBLISHED&limit=20`
+        `/api/products?shopId=${shopToUseForRequired.id}&search=${encodeURIComponent(query)}&status=PUBLISHED&limit=20`
       )
       if (response.ok) {
         const data = await response.json()
@@ -268,7 +270,8 @@ export default function EditCouponPage() {
   }
 
   const handleSubmit = async () => {
-    if (!selectedShop) {
+    const shopToUseForSave = selectedShop || shops[0]
+    if (!shopToUseForSave) {
       toast({
         title: "שגיאה",
         description: "יש לבחור חנות מההדר",
@@ -356,7 +359,7 @@ export default function EditCouponPage() {
 
     try {
       const payload: any = {
-        shopId: selectedShop.id,
+        shopId: shopToUseForSave.id,
         code: formData.code || undefined,
         type: formData.type,
         value: formData.value ? parseFloat(formData.value) : (formData.type === "BUY_X_GET_Y" || formData.type === "BUY_X_PAY_Y" ? parseFloat(formData.buyQuantity || "0") : 0),
@@ -422,7 +425,10 @@ export default function EditCouponPage() {
     }
   }
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="קופון חדש">
         <div className="text-center py-12">

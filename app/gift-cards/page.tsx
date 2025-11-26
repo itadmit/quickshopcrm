@@ -35,7 +35,7 @@ interface GiftCard {
 export default function GiftCardsPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const [giftCards, setGiftCards] = useState<GiftCard[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -50,11 +50,12 @@ export default function GiftCardsPage() {
   }, [selectedShop])
 
   const fetchGiftCards = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/gift-cards?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/gift-cards?shopId=${shopToUse.id}`)
       if (response.ok) {
         const data = await response.json()
         setGiftCards(data)
@@ -127,16 +128,19 @@ export default function GiftCardsPage() {
       card.recipientEmail.toLowerCase().includes(search.toLowerCase())
   )
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="כרטיסי מתנה">
         <div className="text-center py-12">
           <Gift className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            אין חנות נבחרת
+            לא נמצאה חנות
           </h3>
           <p className="text-gray-600">
-            יש לבחור חנות מההדר לפני ניהול כרטיסי מתנה
+            אנא צור חנות תחילה
           </p>
         </div>
       </AppLayout>

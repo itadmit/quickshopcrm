@@ -27,10 +27,10 @@
     "contacts": "אנשי קשר",
     "premiumClub": "חברי מועדון פרימיום",
     "inventory": "מלאי",
-    "quickEdit": "עריכה מהירה",
+    "quickEdit": "עריכה קבוצתית",
     "discounts": "הנחות",
     "coupons": "קופונים",
-    "collections": "קטגוריות",
+    "categories": "קטגוריות",
     "giftCards": "כרטיסי מתנה",
     "abandonedCarts": "עגלות נטושות",
     "waitlist": "רשימת המתנה",
@@ -53,6 +53,7 @@
     "webhooks": "Webhooks",
     "trackingPixels": "פיקסלים וקודי מעקב",
     "settings": "הגדרות",
+    "orderStatuses": "סטטוסי הזמנות",
     "integrations": "אינטגרציות",
     "trafficSources": "מקורות תנועה",
     "influencerDashboard": "דשבורד משפיען/ית",
@@ -101,6 +102,20 @@
     "notFound": "חנות לא נמצאה",
     "welcome": "ברוכים הבאים ל-{name}",
     "shop": "חנות"
+  },
+  "orders": {
+    "printOrder": "הדפס הזמנה",
+    "editOrder": "עריכת הזמנה",
+    "markAsRead": "סמן כנקרא",
+    "viewOrder": "צפה בהזמנה",
+    "deleteOrder": "מחיקה",
+    "changeStatus": "החלף סטטוס",
+    "shipping": {
+      "sendToShipping": "שלח להפצה",
+      "checkStatus": "בדוק סטטוס משלוח",
+      "createShipment": "יצירת משלוח",
+      "trackingInfo": "מידע מעקב"
+    }
   },
   "header": {
     "marketplace": "מרקטפלייס",

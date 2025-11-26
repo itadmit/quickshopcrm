@@ -124,7 +124,7 @@ export function NavigationItemEditor({
                 <SelectContent>
                   <SelectItem value="PAGE">דף</SelectItem>
                   <SelectItem value="CATEGORY">קטגוריה</SelectItem>
-                  <SelectItem value="COLLECTION">קולקציה</SelectItem>
+                  <SelectItem value="COLLECTION">קטגוריה</SelectItem>
                   <SelectItem value="EXTERNAL">קישור חיצוני</SelectItem>
                 </SelectContent>
               </Select>
@@ -157,7 +157,7 @@ export function NavigationItemEditor({
                     item.type === "PAGE" 
                       ? "חפש דף..." 
                       : item.type === "CATEGORY" || item.type === "COLLECTION"
-                      ? "חפש קטגוריה/קולקציה..."
+                      ? "חפש קטגוריה..."
                       : "/page-slug"
                   }
                   className={(item.type === "PAGE" || item.type === "CATEGORY" || item.type === "COLLECTION") ? "pr-10" : ""}

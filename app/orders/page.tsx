@@ -29,21 +29,30 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
-import { ShoppingBag, Search, Filter, MoreVertical, Eye, Package, Calendar, Trash2, RefreshCw, CreditCard, User, MapPin, Mail, Phone, Plus } from "lucide-react"
+import { ShoppingBag, Search, MoreVertical, Eye, Package, Calendar, Trash2, RefreshCw, Plus, Printer, CheckCircle, Truck, FileCheck } from "lucide-react"
 import { OrdersSkeleton } from "@/components/skeletons/OrdersSkeleton"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
 import { MobileListView, MobileListItem } from "@/components/MobileListView"
-import { MobileFilters, FilterConfig } from "@/components/MobileFilters"
+import { MobileFilters } from "@/components/MobileFilters"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
 import { cn } from "@/lib/utils"
 import { ManualOrderDialog } from "@/components/ManualOrderDialog"
+
+interface OrderStatusDefinition {
+  id: string
+  key: string
+  label: string
+  labelEn: string | null
+  color: string
+  icon: string | null
+  isActive: boolean
+}
 
 interface Order {
   id: string
   orderNumber: string
   status: string
-  paymentStatus: string
   fulfillmentStatus: string
   customerName: string
   customerEmail: string
@@ -63,10 +72,10 @@ interface Order {
 export default function OrdersPage() {
   const router = useRouter()
   const [orders, setOrders] = useState<Order[]>([])
+  const [statuses, setStatuses] = useState<OrderStatusDefinition[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState<string>("all")
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [selectedOrders, setSelectedOrders] = useState<string[]>([])
@@ -76,11 +85,60 @@ export default function OrdersPage() {
   const [isDeleting, setIsDeleting] = useState(false)
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [isManualOrderDialogOpen, setIsManualOrderDialogOpen] = useState(false)
+  const [hasShippingIntegration, setHasShippingIntegration] = useState(false)
+  const [readOrders, setReadOrders] = useState<Set<string>>(new Set())
+
+  // טעינת הזמנות נקראות מ-localStorage
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const stored = localStorage.getItem('readOrders')
+      if (stored) {
+        try {
+          const readOrdersArray = JSON.parse(stored)
+          setReadOrders(new Set(readOrdersArray))
+        } catch (error) {
+          console.error('Error parsing readOrders from localStorage:', error)
+        }
+      }
+    }
+  }, [])
 
   useEffect(() => {
-    // טעינת הנתונים מיד
+    fetchStatuses()
+    checkShippingIntegrations()
+  }, [])
+
+  useEffect(() => {
     fetchOrders()
-  }, [page, statusFilter, paymentStatusFilter, search])
+  }, [page, statusFilter, search])
+
+  const fetchStatuses = async () => {
+    try {
+      const response = await fetch("/api/order-statuses")
+      if (response.ok) {
+        const data = await response.json()
+        setStatuses(data.filter((s: OrderStatusDefinition) => s.isActive))
+      }
+    } catch (error) {
+      console.error("Error fetching statuses:", error)
+    }
+  }
+
+  const checkShippingIntegrations = async () => {
+    try {
+      const response = await fetch("/api/integrations")
+      if (response.ok) {
+        const integrations = await response.json()
+        // בדיקה אם יש אינטגרציה פעילה של משלוחים
+        const hasShipping = integrations.some((i: any) => 
+          i.type.includes("SHIPPING") && i.isActive
+        )
+        setHasShippingIntegration(hasShipping)
+      }
+    } catch (error) {
+      console.error("Error checking shipping integrations:", error)
+    }
+  }
 
   const fetchOrders = async () => {
     try {
@@ -92,9 +150,6 @@ export default function OrdersPage() {
 
       if (statusFilter !== "all") {
         params.append("status", statusFilter)
-      }
-      if (paymentStatusFilter !== "all") {
-        params.append("paymentStatus", paymentStatusFilter)
       }
       if (search) {
         params.append("search", search)
@@ -183,7 +238,7 @@ export default function OrdersPage() {
 
     try {
       const response = await fetch(`/api/orders/${selectedOrderForStatus}`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
@@ -204,68 +259,168 @@ export default function OrdersPage() {
     }
   }
 
-  const getStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; className: string }> = {
-      PENDING: { label: "ממתין", className: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-      CONFIRMED: { label: "מאושר", className: "bg-blue-50 text-blue-700 border-blue-200" },
-      PROCESSING: { label: "מעובד", className: "bg-purple-50 text-purple-700 border-purple-200" },
-      SHIPPED: { label: "נשלח", className: "bg-cyan-50 text-cyan-700 border-cyan-200" },
-      DELIVERED: { label: "נמסר", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-      CANCELLED: { label: "בוטל", className: "bg-red-50 text-red-700 border-red-200" },
-      REFUNDED: { label: "הוחזר", className: "bg-gray-50 text-gray-700 border-gray-200" },
+  const handlePrintOrder = async (orderNumber: string) => {
+    try {
+      // פתיחת דף ההזמנה בחלון חדש לצורך הדפסה - לפי מספר הזמנה
+      window.open(`/orders/${orderNumber}?print=true`, '_blank')
+    } catch (error) {
+      console.error('Error printing order:', error)
+      alert('שגיאה בהדפסת ההזמנה')
     }
-    const statusInfo = statusMap[status] || { label: status, className: "bg-gray-50 text-gray-700 border-gray-200" }
+  }
+
+  const handleMarkAsRead = (orderId: string) => {
+    try {
+      // עדכון state
+      const newReadOrders = new Set(readOrders)
+      newReadOrders.add(orderId)
+      setReadOrders(newReadOrders)
+
+      // שמירה ב-localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('readOrders', JSON.stringify(Array.from(newReadOrders)))
+      }
+    } catch (error) {
+      console.error('Error marking order as read:', error)
+    }
+  }
+
+  const handleMarkAsUnread = (orderId: string) => {
+    try {
+      // עדכון state - הסרת ההזמנה מהרשימה
+      const newReadOrders = new Set(readOrders)
+      newReadOrders.delete(orderId)
+      setReadOrders(newReadOrders)
+
+      // שמירה ב-localStorage
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('readOrders', JSON.stringify(Array.from(newReadOrders)))
+      }
+    } catch (error) {
+      console.error('Error marking order as unread:', error)
+    }
+  }
+
+  const toggleReadStatus = (orderId: string) => {
+    if (isOrderRead(orderId)) {
+      handleMarkAsUnread(orderId)
+    } else {
+      handleMarkAsRead(orderId)
+    }
+  }
+
+  const isOrderRead = (orderId: string) => {
+    return readOrders.has(orderId)
+  }
+
+  const handleShippingTracking = async (orderId: string) => {
+    try {
+      const response = await fetch(`/api/shipping/tracking/${orderId}`)
+      if (response.ok) {
+        const data = await response.json()
+        // הצגת מידע על המעקב
+        alert(`סטטוס משלוח: ${data.status || 'לא זמין'}\n${data.statusMessage || ''}`)
+      } else {
+        alert('שגיאה בקבלת מידע על המשלוח')
+      }
+    } catch (error) {
+      console.error('Error fetching tracking:', error)
+      alert('שגיאה בקבלת מידע על המשלוח')
+    }
+  }
+
+  const handleCreateShipment = async (orderId: string) => {
+    if (!confirm('האם ליצור משלוח להזמנה זו?')) {
+      return
+    }
+    
+    try {
+      const response = await fetch(`/api/shipping/send/${orderId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({}), // שולח body ריק, ה-API ימצא את חברת המשלוחים המוטמעת
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        alert('המשלוח נוצר בהצלחה')
+        fetchOrders()
+      } else {
+        let errorMessage = 'שגיאה לא ידועה'
+        try {
+          const error = await response.json()
+          errorMessage = error.error || errorMessage
+        } catch (e) {
+          errorMessage = `שגיאה ${response.status}: ${response.statusText}`
+        }
+        alert(`שגיאה ביצירת המשלוח: ${errorMessage}`)
+      }
+    } catch (error: any) {
+      console.error('Error creating shipment:', error)
+      alert(`שגיאה ביצירת המשלוח: ${error.message || 'שגיאה לא ידועה'}`)
+    }
+  }
+
+  const getStatusInfo = (statusKey: string) => {
+    const status = statuses.find(s => s.key === statusKey)
+    if (status) {
+      return {
+        label: status.label,
+        color: status.color,
+      }
+    }
+    // Fallback לסטטוסים ישנים שעדיין לא עודכנו
+    return {
+      label: statusKey,
+      color: "#6B7280",
+    }
+  }
+
+  const getStatusBadge = (statusKey: string) => {
+    const statusInfo = getStatusInfo(statusKey)
+    // שימוש בצבעים מה-statuses - אם זה צהוב (PENDING) נשתמש בצהוב בוהק יותר
+    const isPending = statusKey.toUpperCase() === 'PENDING' || statusInfo.label.includes('ממתין')
+    
+    // בדיקה אם הצבע הוא צהוב לפי hex code
+    const colorHex = statusInfo.color.replace('#', '').toLowerCase()
+    const isYellowColor = colorHex.startsWith('ff') || 
+                         colorHex.startsWith('fbb') ||
+                         colorHex.startsWith('fef') ||
+                         colorHex.startsWith('fcd') ||
+                         colorHex.includes('yellow')
+    
+    let backgroundColor = statusInfo.color + "15"
+    let borderColor = statusInfo.color + "30"
+    
+    // אם זה סטטוס ממתין עם צבע צהוב - נשתמש בצהוב בוהק יותר (כמו שופיפיי)
+    if (isPending && isYellowColor) {
+      backgroundColor = "#FEF3C7" // צהוב בוהק כמו שופיפיי אבל טיפה פחות בוהק
+      borderColor = "#FCD34D" // border צהוב בוהק יותר
+    }
+    
     return (
-      <Badge variant="outline" className={statusInfo.className}>
+      <Badge 
+        variant="outline" 
+        className="text-xs font-normal px-2 py-0.5"
+        style={{ 
+          backgroundColor,
+          color: "#374151",
+          borderColor,
+          borderWidth: "1px"
+        }}
+      >
         {statusInfo.label}
       </Badge>
     )
-  }
-
-  const getPaymentStatusBadge = (status: string) => {
-    const statusMap: Record<string, { label: string; className: string }> = {
-      PENDING: { label: "ממתין לתשלום", className: "bg-yellow-50 text-yellow-700 border-yellow-200" },
-      PAID: { label: "שולם", className: "bg-emerald-50 text-emerald-700 border-emerald-200" },
-      FAILED: { label: "נכשל", className: "bg-red-50 text-red-700 border-red-200" },
-      REFUNDED: { label: "הוחזר", className: "bg-gray-50 text-gray-700 border-gray-200" },
-    }
-    const statusInfo = statusMap[status] || { label: status, className: "bg-gray-50 text-gray-700 border-gray-200" }
-    return (
-      <Badge variant="outline" className={statusInfo.className}>
-        {statusInfo.label}
-      </Badge>
-    )
-  }
-
-  const getStatusVariant = (status: string): "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "blue" | "purple" | "cyan" => {
-    const statusMap: Record<string, "default" | "secondary" | "destructive" | "outline" | "success" | "warning" | "blue" | "purple" | "cyan"> = {
-      PENDING: "warning",
-      CONFIRMED: "blue",
-      PROCESSING: "purple",
-      SHIPPED: "cyan",
-      DELIVERED: "success",
-      CANCELLED: "destructive",
-      REFUNDED: "secondary",
-    }
-    return statusMap[status] || "default"
-  }
-
-  const getStatusLabel = (status: string) => {
-    const statusMap: Record<string, string> = {
-      PENDING: "ממתין",
-      CONFIRMED: "מאושר",
-      PROCESSING: "מעובד",
-      SHIPPED: "נשלח",
-      DELIVERED: "נמסר",
-      CANCELLED: "בוטל",
-      REFUNDED: "הוחזר",
-    }
-    return statusMap[status] || status
   }
 
   // Convert orders to mobile list format
   const convertToMobileList = (): MobileListItem[] => {
     return orders.map((order) => {
+      const statusInfo = getStatusInfo(order.status)
+      const isRead = isOrderRead(order.id)
       const metadata = [
         {
           label: "",
@@ -274,60 +429,89 @@ export default function OrdersPage() {
         },
       ]
 
-      // Add phone if available
       if (order.customerPhone) {
         metadata.push({
           label: "",
           value: order.customerPhone,
-          icon: <Phone className="w-3 h-3 text-gray-400" />,
+          icon: <Package className="w-3 h-3 text-gray-400" />,
         })
       }
 
+      const actions = [
+        {
+          label: "צפה",
+          icon: <Eye className="w-4 h-4" />,
+          onClick: () => {
+            handleMarkAsRead(order.id)
+            router.push(`/orders/${order.orderNumber}`)
+          },
+        },
+        {
+          label: "הדפס",
+          icon: <Printer className="w-4 h-4" />,
+          onClick: () => handlePrintOrder(order.orderNumber),
+        },
+        {
+        },
+        {
+          label: isRead ? "סמן כלא נקרא" : "סמן כנקרא",
+          icon: isRead ? <Eye className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />,
+          onClick: () => toggleReadStatus(order.id),
+        },
+        {
+          label: "סטטוס",
+          icon: <RefreshCw className="w-4 h-4" />,
+          onClick: () => {
+            setSelectedOrderForStatus(order.id)
+            setNewStatus(order.status)
+            setIsStatusDialogOpen(true)
+          },
+        },
+      ]
+
+      // הוספת פעולות משלוח אם יש אינטגרציה
+      if (hasShippingIntegration) {
+        actions.push(
+          {
+            label: "שלח להפצה",
+            icon: <Truck className="w-4 h-4" />,
+            onClick: () => handleCreateShipment(order.orderNumber),
+          },
+          {
+            label: "בדוק משלוח",
+            icon: <FileCheck className="w-4 h-4" />,
+            onClick: () => handleShippingTracking(order.orderNumber),
+          }
+        )
+      }
+
+      actions.push({
+        label: "מחק",
+        icon: <Trash2 className="w-4 h-4" />,
+        onClick: () => handleDeleteOrder(order.orderNumber),
+        variant: "destructive",
+      })
+
       return {
         id: order.id,
+        orderNumber: order.orderNumber,
         title: `הזמנה #${order.orderNumber}`,
         subtitle: order.customerName,
         badge: {
-          text: getStatusLabel(order.status),
-          variant: getStatusVariant(order.status),
+          text: statusInfo.label,
+          variant: "default",
         },
         price: `₪${order.total.toFixed(2)}`,
         couponCode: order.couponCode,
         metadata,
-        badges: [
-          {
-            text: getStatusLabel(order.paymentStatus),
-            variant: order.paymentStatus === "PAID" ? "success" : order.paymentStatus === "FAILED" ? "destructive" : "warning",
-          },
-        ],
-        actions: [
-          {
-            label: "צפה",
-            icon: <Eye className="w-4 h-4" />,
-            onClick: () => router.push(`/orders/${order.id}`),
-          },
-          {
-            label: "סטטוס",
-            icon: <RefreshCw className="w-4 h-4" />,
-            onClick: () => {
-              setSelectedOrderForStatus(order.id)
-              setNewStatus(order.status)
-              setIsStatusDialogOpen(true)
-            },
-          },
-          {
-            label: "מחק",
-            icon: <Trash2 className="w-4 h-4" />,
-            onClick: () => handleDeleteOrder(order.id),
-            variant: "destructive",
-          },
-        ],
+        badges: [],
+        actions,
+        className: isRead ? 'bg-gray-50 opacity-75' : 'bg-gray-100',
       }
     })
   }
 
-  // הצגת skeleton רק בזמן טעינה ראשונית
-  if (loading) {
+  if (loading && orders.length === 0) {
     return (
       <AppLayout title="הזמנות">
         <OrdersSkeleton />
@@ -337,7 +521,7 @@ export default function OrdersPage() {
 
   return (
     <AppLayout title="הזמנות">
-      <div className={cn("space-y-0", isMobile && "pb-20")}>
+      <div className={cn("space-y-4", isMobile && "pb-20")}>
         {/* Header */}
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -384,30 +568,16 @@ export default function OrdersPage() {
 
               <div className="flex gap-2">
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="סטטוס הזמנה" />
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="כל הסטטוסים" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">כל ההזמנות</SelectItem>
-                    <SelectItem value="PENDING">ממתין</SelectItem>
-                    <SelectItem value="CONFIRMED">מאושר</SelectItem>
-                    <SelectItem value="PROCESSING">מעובד</SelectItem>
-                    <SelectItem value="SHIPPED">נשלח</SelectItem>
-                    <SelectItem value="DELIVERED">נמסר</SelectItem>
-                    <SelectItem value="CANCELLED">בוטל</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                <Select value={paymentStatusFilter} onValueChange={setPaymentStatusFilter}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="סטטוס תשלום" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">כל התשלומים</SelectItem>
-                    <SelectItem value="PENDING">ממתין לתשלום</SelectItem>
-                    <SelectItem value="PAID">שולם</SelectItem>
-                    <SelectItem value="FAILED">נכשל</SelectItem>
-                    <SelectItem value="REFUNDED">הוחזר</SelectItem>
+                    <SelectItem value="all">כל הסטטוסים</SelectItem>
+                    {statuses.map((status) => (
+                      <SelectItem key={status.id} value={status.key}>
+                        {status.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -424,30 +594,16 @@ export default function OrdersPage() {
             isSearching={loading}
             filters={[
               {
-                label: "סטטוס הזמנה",
+                label: "סטטוס",
                 value: statusFilter,
                 options: [
                   { value: "all", label: "הכל" },
-                  { value: "PENDING", label: "ממתין" },
-                  { value: "CONFIRMED", label: "מאושר" },
-                  { value: "PROCESSING", label: "מעובד" },
-                  { value: "SHIPPED", label: "נשלח" },
-                  { value: "DELIVERED", label: "נמסר" },
-                  { value: "CANCELLED", label: "בוטל" },
+                  ...statuses.map((status) => ({
+                    value: status.key,
+                    label: status.label,
+                  })),
                 ],
                 onChange: setStatusFilter,
-              },
-              {
-                label: "סטטוס תשלום",
-                value: paymentStatusFilter,
-                options: [
-                  { value: "all", label: "הכל" },
-                  { value: "PENDING", label: "ממתין" },
-                  { value: "PAID", label: "שולם" },
-                  { value: "FAILED", label: "נכשל" },
-                  { value: "REFUNDED", label: "הוחזר" },
-                ],
-                onChange: setPaymentStatusFilter,
               },
             ]}
           />
@@ -455,107 +611,34 @@ export default function OrdersPage() {
           {/* Status Filter Pills */}
           <div className="pt-4 pb-4">
             <div className="flex gap-2 overflow-x-auto pl-4" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-              {/* All Filter */}
               <Badge
                 variant="outline"
                 className={cn(
                   "cursor-pointer whitespace-nowrap transition-all",
-                  statusFilter === "all" && paymentStatusFilter === "all" ? "bg-gray-900 text-white border-gray-900" : "hover:bg-gray-50"
+                  statusFilter === "all" ? "bg-gray-900 text-white border-gray-900" : "hover:bg-gray-50"
                 )}
-                onClick={() => {
-                  setStatusFilter("all")
-                  setPaymentStatusFilter("all")
-                }}
+                onClick={() => setStatusFilter("all")}
               >
                 הכל
               </Badge>
 
-              {/* Order Status Section */}
               <div className="h-6 w-px bg-gray-300 mx-1" />
-              <span className="text-xs text-gray-500 self-center whitespace-nowrap px-1">סטטוס הזמנה:</span>
               
-              <Badge
-                variant="warning"
-                className="cursor-pointer whitespace-nowrap transition-all hover:opacity-80"
-                onClick={() => setStatusFilter("PENDING")}
-              >
-                ממתין
-              </Badge>
-              <Badge
-                variant="blue"
-                className="cursor-pointer whitespace-nowrap transition-all hover:opacity-80"
-                onClick={() => setStatusFilter("CONFIRMED")}
-              >
-                מאושר
-              </Badge>
-              <Badge
-                variant="purple"
-                className="cursor-pointer whitespace-nowrap transition-all hover:opacity-80"
-                onClick={() => setStatusFilter("PROCESSING")}
-              >
-                מעובד
-              </Badge>
-              <Badge
-                variant="cyan"
-                className="cursor-pointer whitespace-nowrap transition-all hover:opacity-80"
-                onClick={() => setStatusFilter("SHIPPED")}
-              >
-                נשלח
-              </Badge>
-              <Badge
-                variant="success"
-                className="cursor-pointer whitespace-nowrap transition-all hover:opacity-80"
-                onClick={() => setStatusFilter("DELIVERED")}
-              >
-                נמסר
-              </Badge>
-              <Badge
-                variant="destructive"
-                className="cursor-pointer whitespace-nowrap transition-all hover:opacity-80"
-                onClick={() => setStatusFilter("CANCELLED")}
-              >
-                בוטל
-              </Badge>
-              <Badge
-                variant="secondary"
-                className="cursor-pointer whitespace-nowrap transition-all hover:opacity-80"
-                onClick={() => setStatusFilter("REFUNDED")}
-              >
-                הוחזר
-              </Badge>
-
-              {/* Payment Status Section */}
-              <div className="h-6 w-px bg-gray-300 mx-1" />
-              <span className="text-xs text-gray-500 self-center whitespace-nowrap px-1">סטטוס תשלום:</span>
-              
-              <Badge
-                variant="warning"
-                className="cursor-pointer whitespace-nowrap transition-all hover:opacity-80"
-                onClick={() => setPaymentStatusFilter("PENDING")}
-              >
-                ממתין לתשלום
-              </Badge>
-              <Badge
-                variant="success"
-                className="cursor-pointer whitespace-nowrap transition-all hover:opacity-80"
-                onClick={() => setPaymentStatusFilter("PAID")}
-              >
-                שולם
-              </Badge>
-              <Badge
-                variant="destructive"
-                className="cursor-pointer whitespace-nowrap transition-all hover:opacity-80"
-                onClick={() => setPaymentStatusFilter("FAILED")}
-              >
-                נכשל
-              </Badge>
-              <Badge
-                variant="secondary"
-                className="cursor-pointer whitespace-nowrap transition-all hover:opacity-80"
-                onClick={() => setPaymentStatusFilter("REFUNDED")}
-              >
-                הוחזר
-              </Badge>
+              {statuses.map((status) => (
+                <Badge
+                  key={status.id}
+                  variant="outline"
+                  className="cursor-pointer whitespace-nowrap transition-all hover:opacity-80"
+                  style={{
+                    backgroundColor: statusFilter === status.key ? status.color : status.color + "20",
+                    color: statusFilter === status.key ? "#fff" : status.color,
+                    borderColor: status.color,
+                  }}
+                  onClick={() => setStatusFilter(status.key)}
+                >
+                  {status.label}
+                </Badge>
+              ))}
             </div>
           </div>
         </div>
@@ -599,9 +682,6 @@ export default function OrdersPage() {
                           סטטוס
                         </th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          תשלום
-                        </th>
-                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           סכום
                         </th>
                         <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -610,28 +690,38 @@ export default function OrdersPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {orders.map((order) => (
-                        <tr key={order.id} className="hover:bg-gray-50">
+                      {orders.map((order) => {
+                        const isRead = isOrderRead(order.id)
+                        return (
+                        <tr key={order.id} className={`hover:bg-gray-200 transition-colors ${isRead ? 'bg-gray-50/50 border-r-4 border-r-gray-300' : 'bg-gray-100 border-r-4 border-r-blue-500'}`}>
                           <td className="px-4 py-4">
-                            <Checkbox
-                              checked={selectedOrders.includes(order.id)}
-                              onCheckedChange={() => toggleSelectOrder(order.id)}
-                            />
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                checked={selectedOrders.includes(order.id)}
+                                onCheckedChange={() => toggleSelectOrder(order.id)}
+                              />
+                              {isRead && (
+                                <CheckCircle className="w-4 h-4 text-gray-400" />
+                              )}
+                            </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center gap-2">
-                              <Package className="w-4 h-4 text-gray-400" />
-                              <span className="font-medium text-gray-900">{order.orderNumber}</span>
+                              {!isRead && (
+                                <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
+                              )}
+                              <Package className={`w-4 h-4 ${isRead ? 'text-gray-400' : 'text-gray-600'}`} />
+                              <span className={`font-medium ${isRead ? 'text-gray-500' : 'text-gray-900 font-semibold'}`}>{order.orderNumber}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div>
-                              <div className="text-sm font-medium text-gray-900">{order.customerName}</div>
-                              <div className="text-sm text-gray-500">{order.customerEmail}</div>
+                              <div className={`text-sm font-medium ${isRead ? 'text-gray-500' : 'text-gray-900'}`}>{order.customerName}</div>
+                              <div className={`text-sm ${isRead ? 'text-gray-400' : 'text-gray-500'}`}>{order.customerEmail}</div>
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                            <div className={`flex items-center gap-2 text-sm ${isRead ? 'text-gray-400' : 'text-gray-600'}`}>
                               <Calendar className="w-4 h-4" />
                               {format(new Date(order.createdAt), "dd/MM/yyyy HH:mm", { locale: he })}
                             </div>
@@ -640,10 +730,7 @@ export default function OrdersPage() {
                             {getStatusBadge(order.status)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            {getPaymentStatusBadge(order.paymentStatus)}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className="text-sm font-semibold text-gray-900">
+                            <span className={`text-sm font-semibold ${isRead ? 'text-gray-500' : 'text-gray-900'}`}>
                               ₪{order.total.toFixed(2)}
                             </span>
                           </td>
@@ -655,9 +742,29 @@ export default function OrdersPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => router.push(`/orders/${order.id}`)}>
+                                <DropdownMenuItem onClick={() => {
+                                  handleMarkAsRead(order.id)
+                                  router.push(`/orders/${order.orderNumber}`)
+                                }} className="cursor-pointer">
                                   <Eye className="w-4 h-4 ml-2" />
                                   צפה בהזמנה
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handlePrintOrder(order.orderNumber)} className="cursor-pointer">
+                                  <Printer className="w-4 h-4 ml-2" />
+                                  הדפס הזמנה
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => toggleReadStatus(order.id)} className="cursor-pointer">
+                                  {isRead ? (
+                                    <>
+                                      <Eye className="w-4 h-4 ml-2" />
+                                      סמן כלא נקרא
+                                    </>
+                                  ) : (
+                                    <>
+                                      <CheckCircle className="w-4 h-4 ml-2" />
+                                      סמן כנקרא
+                                    </>
+                                  )}
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
                                   onClick={() => {
@@ -665,13 +772,28 @@ export default function OrdersPage() {
                                     setNewStatus(order.status)
                                     setIsStatusDialogOpen(true)
                                   }}
+                                  className="cursor-pointer"
                                 >
                                   <RefreshCw className="w-4 h-4 ml-2" />
                                   החלף סטטוס
                                 </DropdownMenuItem>
+                                {hasShippingIntegration && (
+                                  <>
+                                    <div className="h-px bg-gray-200 my-1" />
+                                    <DropdownMenuItem onClick={() => handleCreateShipment(order.orderNumber)} className="cursor-pointer">
+                                      <Truck className="w-4 h-4 ml-2" />
+                                      שלח להפצה
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleShippingTracking(order.orderNumber)} className="cursor-pointer">
+                                      <FileCheck className="w-4 h-4 ml-2" />
+                                      בדוק סטטוס משלוח
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                                <div className="h-px bg-gray-200 my-1" />
                                 <DropdownMenuItem 
-                                  onClick={() => handleDeleteOrder(order.id)}
-                                  className="text-red-600"
+                                  onClick={() => handleDeleteOrder(order.orderNumber)}
+                                  className="text-red-600 cursor-pointer"
                                 >
                                   <Trash2 className="w-4 h-4 ml-2" />
                                   מחיקה
@@ -680,7 +802,8 @@ export default function OrdersPage() {
                             </DropdownMenu>
                           </td>
                         </tr>
-                      ))}
+                        )
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -718,7 +841,7 @@ export default function OrdersPage() {
             <div className="md:hidden">
               <MobileListView
                 items={convertToMobileList()}
-                onItemClick={(item) => router.push(`/orders/${item.id}`)}
+                onItemClick={(item) => router.push(`/orders/${item.orderNumber}`)}
                 selectedItems={new Set(selectedOrders)}
                 onSelectionChange={setSelectedOrders}
                 showCheckbox={true}
@@ -778,17 +901,21 @@ export default function OrdersPage() {
                 <SelectValue placeholder="בחר סטטוס" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="PENDING">ממתין</SelectItem>
-                <SelectItem value="CONFIRMED">מאושר</SelectItem>
-                <SelectItem value="PROCESSING">מעובד</SelectItem>
-                <SelectItem value="SHIPPED">נשלח</SelectItem>
-                <SelectItem value="DELIVERED">נמסר</SelectItem>
-                <SelectItem value="CANCELLED">בוטל</SelectItem>
-                <SelectItem value="REFUNDED">הוחזר</SelectItem>
+                {statuses.map((status) => (
+                  <SelectItem key={status.id} value={status.key}>
+                    <div className="flex items-center gap-2">
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: status.color }}
+                      />
+                      {status.label}
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
-          <DialogFooter>
+          <DialogFooter className="gap-3">
             <Button variant="outline" onClick={() => setIsStatusDialogOpen(false)}>
               ביטול
             </Button>
@@ -810,4 +937,3 @@ export default function OrdersPage() {
     </AppLayout>
   )
 }
-

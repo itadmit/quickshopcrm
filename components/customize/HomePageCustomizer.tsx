@@ -73,7 +73,7 @@ export const defaultSections: HomePageSection[] = [
     config: {
       title: "", // יוצג שם האתר אם ריק
       subtitle: "",
-      description: "גלה עכשיו את הקולקציה החדשה שלנו",
+      description: "גלה עכשיו את הקטגוריה החדשה שלנו",
       buttonText: "גלה עכשיו",
       backgroundImage: "",
       backgroundImageMobile: "",

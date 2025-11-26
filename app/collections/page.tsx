@@ -9,9 +9,10 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
-import { Plus, Search, Edit, Trash2, Copy, FolderOpen, Image as ImageIcon } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Copy, FolderOpen, Image as ImageIcon, MoreVertical } from "lucide-react"
 import { CollectionsSkeleton } from "@/components/skeletons/CollectionsSkeleton"
 import { useMediaQuery } from "@/hooks/useMediaQuery"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,11 +37,12 @@ interface Collection {
 export default function CollectionsPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops, loading: shopLoading } = useShop()
   const isMobile = useMediaQuery("(max-width: 768px)")
   const [collections, setCollections] = useState<Collection[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const [selectedCollections, setSelectedCollections] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     // טעינת הנתונים מיד - לא מחכים ל-selectedShop
@@ -50,7 +52,8 @@ export default function CollectionsPage() {
   const fetchCollections = async () => {
     setLoading(true)
     try {
-      const params = selectedShop?.id ? `?shopId=${selectedShop.id}` : ''
+      const shopToUse = selectedShop || shops[0]
+      const params = shopToUse?.id ? `?shopId=${shopToUse.id}` : ''
       const response = await fetch(`/api/collections${params}`)
       if (response.ok) {
         const data = await response.json()
@@ -112,13 +115,16 @@ export default function CollectionsPage() {
     )
   }
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse && !loading) {
     return (
       <AppLayout title="קטגוריות">
         <div className="text-center py-12">
           <FolderOpen className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            אין חנות נבחרת
+            לא נמצאה חנות
           </h3>
           <p className="text-gray-600">
             יש לבחור חנות מההדר לפני ניהול קטגוריות
@@ -163,7 +169,7 @@ export default function CollectionsPage() {
           </CardContent>
         </Card>
 
-        {/* Collections List */}
+        {/* Collections Table */}
         {filteredCollections.length === 0 ? (
           <Card>
             <CardContent className="pt-6">
@@ -184,79 +190,133 @@ export default function CollectionsPage() {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredCollections.map((collection) => (
-              <Card key={collection.id} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-0">
-                  {collection.image ? (
-                    <img
-                      src={collection.image}
-                      alt={collection.name}
-                      className="w-full h-48 object-cover rounded-t-lg"
-                    />
-                  ) : (
-                    <div className="w-full h-48 bg-gray-100 rounded-t-lg flex items-center justify-center">
-                      <ImageIcon className="w-12 h-12 text-gray-400" />
-                    </div>
-                  )}
-                  <div className="p-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="text-lg font-semibold text-gray-900">
-                        {collection.name}
-                      </h3>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
-                            <span>⋯</span>
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="start" className="min-w-[160px]">
-                          <DropdownMenuItem
-                            onClick={() =>
-                              router.push(`/collections/${collection.slug}`)
+          <Card>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap w-12">
+                        <Checkbox
+                          checked={selectedCollections.size === filteredCollections.length && filteredCollections.length > 0}
+                          onCheckedChange={(checked) => {
+                            if (checked) {
+                              setSelectedCollections(new Set(filteredCollections.map((c) => c.id)))
+                            } else {
+                              setSelectedCollections(new Set())
                             }
-                            className="flex flex-row-reverse items-center gap-2 cursor-pointer"
-                          >
-                            <Edit className="w-4 h-4 flex-shrink-0" />
-                            ערוך
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDelete(collection.slug)}
-                            className="text-red-600 flex flex-row-reverse items-center gap-2 cursor-pointer"
-                          >
-                            <Trash2 className="w-4 h-4 flex-shrink-0" />
-                            מחק
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-3 line-clamp-2">
-                      {collection.description || "אין תיאור"}
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        variant={
-                          collection.type === "AUTOMATIC"
-                            ? "default"
-                            : "secondary"
-                        }
+                          }}
+                        />
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">תמונה</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">שם</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">תיאור</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">סוג</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">סטטוס</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">מוצרים</th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider whitespace-nowrap">פעולות</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredCollections.map((collection) => (
+                      <tr 
+                        key={collection.id} 
+                        className="hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => router.push(`/collections/${collection.slug}`)}
                       >
-                        {collection.type === "AUTOMATIC" ? "אוטומטי" : "ידני"}
-                      </Badge>
-                      {collection.isPublished && (
-                        <Badge className="bg-green-100 text-green-800">
-                          פורסם
-                        </Badge>
-                      )}
-                      <span className="text-sm text-gray-500 mr-auto">
-                        {collection._count?.products || 0} מוצרים
-                      </span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                        <td 
+                          className="px-6 py-4 whitespace-nowrap"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Checkbox
+                            checked={selectedCollections.has(collection.id)}
+                            onCheckedChange={(checked) => {
+                              const newSelected = new Set(selectedCollections)
+                              if (checked) {
+                                newSelected.add(collection.id)
+                              } else {
+                                newSelected.delete(collection.id)
+                              }
+                              setSelectedCollections(newSelected)
+                            }}
+                          />
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {collection.image ? (
+                            <img
+                              src={collection.image}
+                              alt={collection.name}
+                              className="w-12 h-12 object-cover rounded-md"
+                            />
+                          ) : (
+                            <div className="w-12 h-12 bg-gray-100 rounded-md flex items-center justify-center">
+                              <ImageIcon className="w-6 h-6 text-gray-400" />
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm font-medium text-gray-900">{collection.name}</div>
+                          <div className="text-xs text-gray-500">{collection.slug}</div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-700 max-w-xs truncate">
+                            {collection.description || "—"}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <Badge
+                            variant={collection.type === "AUTOMATIC" ? "default" : "secondary"}
+                          >
+                            {collection.type === "AUTOMATIC" ? "אוטומטי" : "ידני"}
+                          </Badge>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {collection.isPublished ? (
+                            <Badge className="bg-green-100 text-green-800">פורסם</Badge>
+                          ) : (
+                            <Badge variant="secondary">טיוטה</Badge>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="text-sm text-gray-700">
+                            {collection._count?.products || 0}
+                          </span>
+                        </td>
+                        <td 
+                          className="px-6 py-4 whitespace-nowrap text-left"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                <MoreVertical className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start" className="min-w-[160px]">
+                              <DropdownMenuItem
+                                onClick={() => router.push(`/collections/${collection.slug}`)}
+                                className="flex flex-row-reverse items-center gap-2 cursor-pointer"
+                              >
+                                <Edit className="w-4 h-4 flex-shrink-0" />
+                                ערוך
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleDelete(collection.slug)}
+                                className="text-red-600 flex flex-row-reverse items-center gap-2 cursor-pointer"
+                              >
+                                <Trash2 className="w-4 h-4 flex-shrink-0" />
+                                מחק
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
         )}
       </div>
     </AppLayout>

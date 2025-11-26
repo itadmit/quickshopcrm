@@ -36,7 +36,7 @@ interface Return {
 export default function ReturnsPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const [returns, setReturns] = useState<Return[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
@@ -49,12 +49,13 @@ export default function ReturnsPage() {
   }, [selectedShop, statusFilter])
 
   const fetchReturns = async () => {
-    if (!selectedShop) return
+    const shopToUse = selectedShop || shops[0]
+    if (!shopToUse) return
 
     setLoading(true)
     try {
       const params = new URLSearchParams({
-        shopId: selectedShop.id,
+        shopId: shopToUse.id,
         ...(statusFilter !== "all" && { status: statusFilter }),
       })
 
@@ -94,15 +95,18 @@ export default function ReturnsPage() {
       returnItem.customer.email.toLowerCase().includes(search.toLowerCase())
   )
 
-  if (!selectedShop) {
+  // אם אין חנות נבחרת, נשתמש בחנות הראשונה
+  const shopToUse = selectedShop || shops[0]
+  
+  if (!shopToUse) {
     return (
       <AppLayout title="החזרות">
         <div className="text-center py-12">
           <ArrowLeft className="w-16 h-16 mx-auto text-gray-400 mb-4" />
           <h3 className="text-lg font-semibold text-gray-900 mb-2">
-            אין חנות נבחרת
+            לא נמצאה חנות
           </h3>
-          <p className="text-gray-600">יש לבחור חנות מההדר לפני ניהול החזרות</p>
+          <p className="text-gray-600">אנא צור חנות תחילה</p>
         </div>
       </AppLayout>
     )

@@ -131,7 +131,6 @@ const REPORTS: ReportDefinition[] = [
       { key: "customerEmail", label: "אימייל" },
       { key: "customerPhone", label: "טלפון" },
       { key: "status", label: "סטטוס" },
-      { key: "paymentStatus", label: "סטטוס תשלום" },
       { key: "fulfillmentStatus", label: "סטטוס משלוח" },
       { key: "total", label: "סה\"כ" },
       { key: "paymentMethod", label: "אמצעי תשלום" },
@@ -167,7 +166,7 @@ const REPORTS: ReportDefinition[] = [
     defaultColumns: ["name", "sku", "price", "inventoryQty", "status"],
     availableColumns: [
       { key: "name", label: "שם מוצר" },
-      { key: "sku", label: "SKU" },
+      { key: "sku", label: "מקט" },
       { key: "price", label: "מחיר" },
       { key: "comparePrice", label: "מחיר לפני הנחה" },
       { key: "cost", label: "עלות" },
@@ -188,7 +187,7 @@ const REPORTS: ReportDefinition[] = [
     defaultColumns: ["name", "sku", "inventoryQty", "lowStockAlert", "status"],
     availableColumns: [
       { key: "name", label: "שם מוצר" },
-      { key: "sku", label: "SKU" },
+      { key: "sku", label: "מקט" },
       { key: "inventoryQty", label: "כמות במלאי" },
       { key: "lowStockAlert", label: "התראת מלאי נמוך" },
       { key: "status", label: "סטטוס" },
@@ -298,7 +297,6 @@ const REPORTS: ReportDefinition[] = [
       { key: "customerEmail", label: "אימייל" },
       { key: "total", label: "סה\"כ" },
       { key: "paymentMethod", label: "אמצעי תשלום" },
-      { key: "paymentStatus", label: "סטטוס תשלום" },
       { key: "transactionId", label: "מספר עסקה" },
       { key: "paidAt", label: "תאריך תשלום" },
     ],
@@ -346,7 +344,7 @@ const REPORTS: ReportDefinition[] = [
     defaultColumns: ["name", "sku", "price", "totalSold", "totalRevenue"],
     availableColumns: [
       { key: "name", label: "שם מוצר" },
-      { key: "sku", label: "SKU" },
+      { key: "sku", label: "מקט" },
       { key: "price", label: "מחיר" },
       { key: "category", label: "קטגוריה" },
       { key: "totalSold", label: "סה\"כ נמכר" },
