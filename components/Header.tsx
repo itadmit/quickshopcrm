@@ -38,6 +38,11 @@ export function Header({ title }: HeaderProps) {
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     const fetchUnreadCount = async () => {
@@ -114,7 +119,7 @@ export function Header({ title }: HeaderProps) {
         </Button>
 
         {/* View Store Button - Hidden on Mobile and Small Laptops */}
-        {selectedShop && (
+        {mounted && selectedShop && (
           <Button
             variant="outline"
             size="sm"

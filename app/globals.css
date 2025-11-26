@@ -100,6 +100,42 @@ body {
   @apply bg-muted-foreground/50;
 }
 
+/* Sidebar scrollbar - green color and RTL positioning */
+.sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: #15b981 #f3f4f6;
+}
+
+.sidebar-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track {
+  background: #f3f4f6;
+  border-radius: 10px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #15b981 0%, #10b981 100%);
+  border-radius: 10px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+/* Ensure scrollbar appears on the right side in RTL */
+/* When parent is RTL, flip scrollbar to right side */
+[dir="rtl"] .sidebar-scroll {
+  direction: ltr;
+  transform: scaleX(-1);
+}
+
+[dir="rtl"] .sidebar-scroll > * {
+  direction: rtl;
+  transform: scaleX(-1);
+}
+
 /* Prodify-like styling */
 .prodify-gradient {
   background: linear-gradient(135deg, #15b981 0%, #10b981 100%) !important;

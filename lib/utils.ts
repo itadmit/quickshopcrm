@@ -27,6 +27,18 @@ export function formatNumber(num: number): string {
 }
 
 /**
+ * מחזיר את ה-URL הבסיסי של האפליקציה
+ * בפיתוח: localhost:3000
+ * בפרודקשן: my-quickshop.com
+ */
+export function getBaseUrl(): string {
+  if (process.env.NODE_ENV === 'production') {
+    return `https://${process.env.NEXT_PUBLIC_DOMAIN || 'my-quickshop.com'}`
+  }
+  return process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_APP_URL || process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+}
+
+/**
  * מחזיר את ה-URL הבסיסי של החנות
  * אם יש custom domain, מחזיר אותו (עם https://)
  * אחרת מחזיר את ה-slug path

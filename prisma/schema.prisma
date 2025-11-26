@@ -246,6 +246,8 @@ model Shop {
   collections              Collection[]
   coupons                  Coupon[]
   customers                Customer[]
+  contacts                 Contact[]
+  contactCategories        ContactCategory[]
   Discount                 Discount[]
   GiftCard                 GiftCard[]
   Navigation               Navigation[]
@@ -262,6 +264,7 @@ model Shop {
   company                  Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
   StoreCredit              StoreCredit[]
   trackingPixels           TrackingPixel[]
+  trafficSources           TrafficSource[]
   webhooks                 Webhook[]
   wishlistItems            WishlistItem[]
   customFieldDefinitions   CustomFieldDefinition[]
@@ -298,6 +301,8 @@ model Product {
   showPricePer100ml    Boolean              @default(false) // האם להציג מחיר ל-100 מ״ל
   pricePer100ml        Float? // מחיר ל-100 מ״ל (אם showPricePer100ml = true)
   isGiftCard           Boolean              @default(false) // האם זה מוצר gift card
+  exclusiveToTier      String[]             @default([]) // רמות מועדון פרימיום שיש להן גישה למוצר זה
+  earlyAccessStartDate DateTime?            // תאריך התחלה מוקדם למבצע (ללקוחות עם early access)
   weight               Float?
   dimensions           Json?
   status               ProductStatus        @default(DRAFT)
@@ -492,6 +497,7 @@ model Customer {
   totalSpent             Float             @default(0)
   orderCount             Int               @default(0)
   tier                   CustomerTier      @default(REGULAR)
+  premiumClubTier         String?           // רמת מועדון פרימיום: silver, gold, platinum
   tags                   String[]
   notes                  String?
   isSubscribed           Boolean           @default(false)
@@ -511,6 +517,7 @@ model Customer {
   storeCredits           StoreCredit[]
   wishlistItems          WishlistItem[]
   waitlist               Waitlist[]
+  contact                Contact?
 
   @@index([shopId])
   @@index([email])
@@ -548,6 +555,7 @@ model Order {
   updatedAt         DateTime          @updatedAt
   customFields      Json?
   paymentLink       String?
+  trafficSourceId   String? // מקור התנועה שהביא את ההזמנה
 
   // מידע על משלוח לחברת משלוחים
   shippingProvider        String? // שם החברה (focus, dhl, וכו')
@@ -571,6 +579,7 @@ model Order {
   storeCreditTransactions StoreCreditTransaction[]
   shippingLogs            ShippingLog[]
   verifiedReviews         Review[]
+  trafficSource           TrafficSource? @relation(fields: [trafficSourceId], references: [id])
 
   @@unique([shopId, orderNumber])
   @@index([shopId])
@@ -579,6 +588,7 @@ model Order {
   @@index([status])
   @@index([shippingProvider])
   @@index([shippingStatus])
+  @@index([trafficSourceId])
   @@map("orders")
 }
 
@@ -1752,6 +1762,86 @@ model Waitlist {
   @@map("waitlist")
 }
 
+// מודל אנשי קשר - מערכת מקיפה לניהול כל סוגי הקשרים
+model Contact {
+  id                    String                    @id @default(cuid())
+  shopId                String
+  email                 String
+  firstName             String?
+  lastName              String?
+  phone                 String?
+  company               String?
+  notes                 String?
+  tags                  String[]                  @default([])
+  
+  // אישור דיוור
+  emailMarketingConsent Boolean                   @default(false)
+  emailMarketingConsentAt DateTime?
+  emailMarketingConsentSource String? // איפה נתן את האישור: checkout, newsletter, contact_form, manual
+  
+  // קישור ללקוח אם יש רכישה
+  customerId            String?                   @unique
+  
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+  
+  shop                  Shop                      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer              Customer?                 @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  categoryAssignments   ContactCategoryAssignment[]
+  
+  @@unique([shopId, email])
+  @@index([shopId])
+  @@index([email])
+  @@index([customerId])
+  @@index([emailMarketingConsent])
+  @@map("contacts")
+}
+
+// קטגוריות אנשי קשר
+model ContactCategory {
+  id          String                    @id @default(cuid())
+  shopId      String
+  type        ContactCategoryType
+  name        String                    // שם בעברית להצגה
+  description String?
+  color       String?                   // צבע להצגה ב-UI
+  isActive    Boolean                   @default(true)
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+  
+  shop        Shop                      @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  assignments ContactCategoryAssignment[]
+  
+  @@unique([shopId, type])
+  @@index([shopId])
+  @@index([type])
+  @@map("contact_categories")
+}
+
+// יחס many-to-many בין אנשי קשר לקטגוריות
+model ContactCategoryAssignment {
+  id         String            @id @default(cuid())
+  contactId  String
+  categoryId String
+  createdAt  DateTime          @default(now())
+  metadata   Json?             // מידע נוסף: מתי נוצר, איך נוצר, וכו'
+  
+  contact   Contact           @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  category  ContactCategory   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  @@unique([contactId, categoryId])
+  @@index([contactId])
+  @@index([categoryId])
+  @@map("contact_category_assignments")
+}
+
+enum ContactCategoryType {
+  CUSTOMER      // לקוחות - שרכשו באתר
+  CLUB_MEMBER   // חברי מועדון - נרשמו לאתר
+  NEWSLETTER    // ניוזלטר - נרשמו לטופס ניוזלטר
+  CONTACT_FORM  // יצירת קשר - השאירו הודעה בטופס יצירת קשר
+}
+
 model Popup {
   id               String   @id @default(cuid())
   shopId           String
@@ -1777,4 +1867,25 @@ model Popup {
   @@index([shopId])
   @@index([isActive])
   @@map("popups")
+}
+
+model TrafficSource {
+  id           String   @id @default(cuid())
+  shopId       String
+  name         String
+  uniqueId     String
+  medium       String?  // e.g., "email", "social", "cpc", "organic"
+  campaign     String?  // שם הקמפיין
+  referralLink String?  // קישור הפניה (אם רלוונטי)
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  shop         Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  orders       Order[]
+
+  @@unique([shopId, uniqueId])
+  @@index([shopId])
+  @@index([uniqueId])
+  @@index([isActive])
+  @@map("traffic_sources")
 }

@@ -75,6 +75,9 @@ export async function loadCorePlugin(slug: string): Promise<PluginHook | null> {
       case 'reviews':
         const { ReviewsPlugin } = await import('./core/reviews')
         return ReviewsPlugin
+      case 'premium-club':
+        const { PremiumClubPlugin } = await import('./core/premium-club')
+        return PremiumClubPlugin
       default:
         return null
     }
@@ -87,11 +90,32 @@ export async function loadCorePlugin(slug: string): Promise<PluginHook | null> {
 // הרצת hook של תוסף
 export async function runPluginHook(
   hookName: keyof PluginHook,
+  shopId: string,
   ...args: any[]
 ): Promise<any> {
-  // כאן נריץ את ה-hook על כל התוספים הפעילים
-  // זה יקרא מהדאטאבייס ויריץ את ה-hooks
-  // זה ייושם בהמשך כשנוסיף את התוספים הספציפיים
+  try {
+    // טעינת כל התוספים הפעילים לחנות
+    const activePlugins = await loadActivePlugins(shopId)
+    
+    // הרצת ה-hook על כל תוסף Core פעיל
+    for (const plugin of activePlugins) {
+      if (plugin.type === 'CORE') {
+        try {
+          const pluginHook = await loadCorePlugin(plugin.slug)
+          if (pluginHook && pluginHook[hookName]) {
+            const hook = pluginHook[hookName] as Function
+            await hook(...args, shopId)
+          }
+        } catch (error) {
+          console.error(`Error running hook ${hookName} for plugin ${plugin.slug}:`, error)
+          // ממשיכים עם התוספים הבאים גם אם אחד נכשל
+        }
+      }
+    }
+  } catch (error) {
+    console.error(`Error running plugin hook ${hookName}:`, error)
+  }
+  
   return null
 }
 

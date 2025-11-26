@@ -146,9 +146,12 @@ export async function POST(req: NextRequest) {
     
     if (shouldSendEmail) {
       try {
+        const { getBaseUrl } = await import('@/lib/utils')
+        const baseUrl = getBaseUrl()
+        
         const shopUrl = shop.domain 
           ? `https://${shop.domain}` 
-          : `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/shop/${shop.slug}`
+          : `${baseUrl}/shop/${shop.slug}`
         
         console.log(`📧 Generating email template for gift card ${giftCard.code}...`)
         

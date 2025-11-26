@@ -51,8 +51,8 @@ export async function POST(req: NextRequest) {
     const pricing = calculateSubscriptionPrice(plan)
     
     // יצירת Payment Link דרך PayPlus
-    // אם יש NGROK_URL ב-env, נשתמש בו לצורך Webhook
-    const baseUrl = process.env.NGROK_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    const { getBaseUrl } = await import('@/lib/utils')
+    const baseUrl = getBaseUrl()
     
     console.log("Using base URL for callbacks:", baseUrl)
     

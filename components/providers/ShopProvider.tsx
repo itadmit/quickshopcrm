@@ -24,6 +24,23 @@ export function ShopProvider({ children }: { children: ReactNode }) {
   const [selectedShop, setSelectedShopState] = useState<Shop | null>(null)
   const [shops, setShops] = useState<Shop[]>([])
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
+
+  // טען מיד מ-localStorage כש-component עולה (client-side only)
+  useEffect(() => {
+    setMounted(true)
+    if (typeof window !== 'undefined') {
+      const savedShopData = localStorage.getItem("selectedShopData")
+      if (savedShopData) {
+        try {
+          const shop = JSON.parse(savedShopData)
+          setSelectedShopState(shop)
+        } catch (err) {
+          console.error('Error loading shop from localStorage:', err)
+        }
+      }
+    }
+  }, [])
 
   // טעינת חנויות וחנות נבחרת - רק אחרי שהמשתמש מחובר
   useEffect(() => {
@@ -58,15 +75,18 @@ export function ShopProvider({ children }: { children: ReactNode }) {
               const savedShop = data.find((s: Shop) => s.id === savedShopId)
               if (savedShop) {
                 setSelectedShopState(savedShop)
+                localStorage.setItem("selectedShopData", JSON.stringify(savedShop))
               } else {
                 // אם החנות השמורה לא קיימת, קח את הראשונה
                 setSelectedShopState(data[0])
                 localStorage.setItem("selectedShopId", data[0].id)
+                localStorage.setItem("selectedShopData", JSON.stringify(data[0]))
               }
             } else {
               // אם אין חנות שמורה, קח את הראשונה אוטומטית
               setSelectedShopState(data[0])
               localStorage.setItem("selectedShopId", data[0].id)
+              localStorage.setItem("selectedShopData", JSON.stringify(data[0]))
             }
           }
         } catch (error) {
@@ -87,8 +107,10 @@ export function ShopProvider({ children }: { children: ReactNode }) {
     setSelectedShopState(shop)
     if (shop) {
       localStorage.setItem("selectedShopId", shop.id)
+      localStorage.setItem("selectedShopData", JSON.stringify(shop))
     } else {
       localStorage.removeItem("selectedShopId")
+      localStorage.removeItem("selectedShopData")
     }
   }
 

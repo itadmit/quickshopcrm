@@ -16,6 +16,7 @@ import {
   Truck,
   ArrowRight,
   ShoppingBag,
+  RefreshCw,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -58,10 +59,31 @@ interface Order {
   total: number
   shippingMethod: string | null
   trackingNumber: string | null
+  shippingTrackingNumber?: string | null
+  shippingProvider?: string | null
+  shippingStatus?: string | null
   createdAt: string
   items: OrderItem[]
   shippingAddress: any // JSON field
   billingAddress: any | null // JSON field
+}
+
+interface TrackingStatus {
+  status: 'pending' | 'sent' | 'in_transit' | 'delivered' | 'cancelled' | 'failed' | 'returned'
+  trackingNumber?: string
+  lastUpdate?: Date
+  location?: string
+  estimatedDelivery?: Date
+  driverName?: string
+  driverPhone?: string
+  events?: Array<{
+    date: Date
+    status: string
+    description: string
+    location?: string
+  }>
+  canCancel?: boolean
+  cancelDeadline?: Date
 }
 
 export default function StorefrontOrderPage() {
@@ -74,12 +96,21 @@ export default function StorefrontOrderPage() {
   const [shop, setShop] = useState<Shop | null>(null)
   const [cartItemCount, setCartItemCount] = useState(0)
   const [loading, setLoading] = useState(true)
+  const [trackingStatus, setTrackingStatus] = useState<TrackingStatus | null>(null)
+  const [loadingTracking, setLoadingTracking] = useState(false)
 
   useEffect(() => {
     fetchShopInfo()
     fetchCartCount()
     fetchOrder()
   }, [slug, orderId])
+
+  useEffect(() => {
+    if (order && (order.shippingTrackingNumber || order.trackingNumber)) {
+      fetchTrackingStatus()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [order?.id, order?.shippingTrackingNumber, order?.trackingNumber])
 
   const fetchShopInfo = async () => {
     try {
@@ -183,6 +214,58 @@ export default function StorefrontOrderPage() {
     }
     // סטטוסים אחרים - כחול פסטל
     return "bg-blue-100 text-blue-700 border-blue-200"
+  }
+
+  const fetchTrackingStatus = async () => {
+    if (!order || loadingTracking) return
+    
+    setLoadingTracking(true)
+    try {
+      const token = localStorage.getItem(`storefront_token_${slug}`)
+      const response = await fetch(`/api/storefront/${slug}/orders/${orderId}/tracking`, {
+        headers: {
+          "x-customer-id": token || "",
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setTrackingStatus(data)
+      } else {
+        // אם יש שגיאה, לא נציג הודעת שגיאה - רק לא נציג את הסטטוס
+        console.error("Error fetching tracking status:", response.status)
+      }
+    } catch (error) {
+      console.error("Error fetching tracking status:", error)
+    } finally {
+      setLoadingTracking(false)
+    }
+  }
+
+  const getTrackingStatusText = (status: string) => {
+    const statusMap: Record<string, string> = {
+      pending: "ממתין",
+      sent: "נשלח",
+      in_transit: "בדרך",
+      delivered: "נמסר",
+      cancelled: "בוטל",
+      failed: "נכשל",
+      returned: "הוחזר",
+    }
+    return statusMap[status] || status
+  }
+
+  const getTrackingStatusColor = (status: string) => {
+    const colorMap: Record<string, string> = {
+      pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
+      sent: "bg-blue-100 text-blue-700 border-blue-200",
+      in_transit: "bg-purple-100 text-purple-700 border-purple-200",
+      delivered: "bg-green-100 text-green-700 border-green-200",
+      cancelled: "bg-red-100 text-red-700 border-red-200",
+      failed: "bg-red-100 text-red-700 border-red-200",
+      returned: "bg-orange-100 text-orange-700 border-orange-200",
+    }
+    return colorMap[status] || "bg-gray-100 text-gray-700 border-gray-200"
   }
 
   if (loading) {
@@ -357,24 +440,126 @@ export default function StorefrontOrderPage() {
             )}
 
             {/* Tracking */}
-            {order.trackingNumber && (
+            {(order.trackingNumber || order.shippingTrackingNumber) && (
               <Card>
                 <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <Truck className="w-5 h-5" />
-                    מעקב משלוח
-                  </CardTitle>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="flex items-center gap-2">
+                      <Truck className="w-5 h-5" />
+                      מעקב משלוח
+                    </CardTitle>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={fetchTrackingStatus}
+                      disabled={loadingTracking}
+                    >
+                      <RefreshCw className={`w-4 h-4 ml-2 ${loadingTracking ? "animate-spin" : ""}`} />
+                      רענון
+                    </Button>
+                  </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-2">
+                  <div className="space-y-4">
                     {order.shippingMethod && (
-                      <p className="text-gray-700">
-                        <span className="font-medium">שיטת משלוח:</span> {order.shippingMethod}
+                      <div>
+                        <span className="font-medium text-gray-700">שיטת משלוח:</span>
+                        <span className="mr-2 text-gray-700">{order.shippingMethod}</span>
+                      </div>
+                    )}
+                    <div>
+                      <span className="font-medium text-gray-700">מספר מעקב:</span>
+                      <span className="mr-2 text-gray-700 font-mono">
+                        {order.shippingTrackingNumber || order.trackingNumber}
+                      </span>
+                    </div>
+                    {trackingStatus && (
+                      <>
+                        <div className="pt-3 border-t">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Badge className={getTrackingStatusColor(trackingStatus.status)}>
+                              {getTrackingStatusText(trackingStatus.status)}
+                            </Badge>
+                            {trackingStatus.lastUpdate && (
+                              <span className="text-sm text-gray-600">
+                                עודכן: {new Date(trackingStatus.lastUpdate).toLocaleDateString("he-IL")} {new Date(trackingStatus.lastUpdate).toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+                              </span>
+                            )}
+                            {!trackingStatus.lastUpdate && trackingStatus.status && (
+                              <span className="text-sm text-gray-600">
+                                סטטוס: {getTrackingStatusText(trackingStatus.status)}
+                              </span>
+                            )}
+                          </div>
+                          {trackingStatus.driverName && (
+                            <p className="text-sm text-gray-600 mb-2">
+                              <span className="font-medium">נהג:</span> {trackingStatus.driverName}
+                            </p>
+                          )}
+                          {trackingStatus.driverPhone && (
+                            <p className="text-sm text-gray-600 mb-2">
+                              <span className="font-medium">טלפון נהג:</span> {trackingStatus.driverPhone}
+                            </p>
+                          )}
+                        </div>
+                        {trackingStatus.events && trackingStatus.events.length > 0 && (
+                          <div className="pt-3 border-t">
+                            <h4 className="font-medium text-gray-700 mb-3">היסטוריית מעקב:</h4>
+                            <div className="space-y-3">
+                              {trackingStatus.events.map((event, idx) => {
+                                // בדיקה שהתאריך תקין
+                                let eventDate: Date
+                                try {
+                                  eventDate = event.date instanceof Date ? event.date : new Date(event.date)
+                                  if (isNaN(eventDate.getTime())) {
+                                    eventDate = new Date()
+                                  }
+                                } catch {
+                                  eventDate = new Date()
+                                }
+                                
+                                return (
+                                  <div key={idx} className="flex items-start gap-3">
+                                    <div className="flex flex-col items-center mt-1">
+                                      <div className={`w-3 h-3 rounded-full ${
+                                        idx === 0 ? "bg-blue-500" : "bg-gray-300"
+                                      }`}></div>
+                                      {idx < trackingStatus.events!.length - 1 && (
+                                        <div className="w-0.5 h-full bg-gray-200 mt-1"></div>
+                                      )}
+                                    </div>
+                                    <div className="flex-1 pb-3">
+                                      <div className="flex items-center gap-2 mb-1">
+                                        <span className="text-sm font-medium text-gray-900">
+                                          {event.description || "אירוע מעקב"}
+                                        </span>
+                                      </div>
+                                      <div className="text-xs text-gray-500">
+                                        {eventDate.toLocaleDateString("he-IL")} {eventDate.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+                                        {event.location && (
+                                          <span className="mr-2"> • {event.location}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                    {!trackingStatus && !loadingTracking && (
+                      <p className="text-sm text-gray-500">
+                        לחץ על "רענון" כדי לקבל את סטטוס המעקב העדכני
                       </p>
                     )}
-                    <p className="text-gray-700">
-                      <span className="font-medium">מספר מעקב:</span> {order.trackingNumber}
-                    </p>
+                    {loadingTracking && (
+                      <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <RefreshCw className="w-4 h-4 animate-spin" />
+                        טוען סטטוס מעקב...
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>

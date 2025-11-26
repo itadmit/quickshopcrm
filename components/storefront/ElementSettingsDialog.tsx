@@ -10,11 +10,13 @@ import { AlignRight, AlignCenter, AlignLeft, ChevronRight } from "lucide-react"
 import { ProductPageElementType } from "./ProductPageLayoutDesigner"
 
 export interface ElementStyleConfig {
-  fontFamily?: string
-  fontSize?: number
+  fontSizeDesktop?: number
+  fontSizeMobile?: number
   fontWeight?: number | string
   lineHeight?: number
   textAlign?: "right" | "center" | "left"
+  textAlignDesktop?: "right" | "center" | "left"
+  textAlignMobile?: "right" | "center" | "left"
   color?: string
   marginTop?: number
   marginBottom?: number
@@ -24,6 +26,16 @@ export interface ElementStyleConfig {
   comparePriceFontSize?: number // גודל מחיר מחוק
   priceColor?: string // צבע מחיר רגיל
   comparePriceColor?: string // צבע מחיר מחוק
+  // הגדרות מיוחדות לוריאציות
+  variantColorShape?: "circle" | "square" | "rounded-square" // צורת צבע
+  variantColorSize?: number // גודל צבע בפיקסלים
+  variantColorBorderColor?: string // צבע מסגרת בעת בחירה
+  variantButtonShape?: "square" | "rounded" // צורת כפתור
+  variantButtonSize?: number // גודל כפתור
+  variantButtonBgColor?: string // צבע רקע בעת בחירה
+  variantButtonBorderColor?: string // צבע מסגרת
+  variantButtonTextColor?: string // צבע פונט
+  variantButtonTextColorSelected?: string // צבע פונט בעת בחירה
 }
 
 interface ElementSettingsDialogProps {

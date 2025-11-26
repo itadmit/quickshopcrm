@@ -110,15 +110,6 @@ export function ProductPageClient({
     message: "",
   })
   
-  // שמירת gift card data ב-window כדי ש-handleAddToCart יוכל לגשת אליו
-  useEffect(() => {
-    if ((product as any).isGiftCard) {
-      (window as any).giftCardData = giftCardData
-    } else {
-      delete (window as any).giftCardData
-    }
-  }, [giftCardData, product])
-  
   // State for Product Add-ons
   const [selectedAddons, setSelectedAddons] = useState<Array<{
     addonId: string
@@ -196,6 +187,15 @@ export function ProductPageClient({
     selectedAddons,
   })
 
+  // שמירת gift card data ב-window כדי ש-handleAddToCart יוכל לגשת אליו
+  useEffect(() => {
+    if (product && (product as any).isGiftCard) {
+      (window as any).giftCardData = giftCardData
+    } else {
+      delete (window as any).giftCardData
+    }
+  }, [giftCardData, product])
+
   // טעינת טבלת מידות
   useEffect(() => {
     const fetchSizeChart = async () => {
@@ -217,30 +217,24 @@ export function ProductPageClient({
 
   // פונקציות לניהול layout
   const moveElement = (elementId: string, direction: "up" | "down") => {
-    if (!productPageLayout) return
-    
-    const newElements = [...productPageLayout.elements]
-    const index = newElements.findIndex((el) => el.id === elementId)
-    if (index === -1) return
-
-    const newIndex = direction === "up" ? index - 1 : index + 1
-    if (newIndex < 0 || newIndex >= newElements.length) return
-
-    const temp = newElements[index].position
-    newElements[index].position = newElements[newIndex].position
-    newElements[newIndex].position = temp
-
-    const sortedElements = newElements.sort((a, b) => a.position - b.position)
-    saveProductPageLayout({ elements: sortedElements })
+    if (typeof window !== 'undefined' && window.parent !== window) {
+      // שליחת הודעה ל-parent
+      window.parent.postMessage({
+        type: "moveElement",
+        elementId: elementId,
+        direction: direction
+      }, window.location.origin)
+    }
   }
 
   const toggleElementVisibility = (elementId: string) => {
-    if (!productPageLayout) return
-    
-    const newElements = productPageLayout.elements.map((el) =>
-      el.id === elementId ? { ...el, visible: !el.visible } : el
-    )
-    saveProductPageLayout({ elements: newElements })
+    if (typeof window !== 'undefined' && window.parent !== window) {
+      // שליחת הודעה ל-parent
+      window.parent.postMessage({
+        type: "toggleElementVisibility",
+        elementId: elementId
+      }, window.location.origin)
+    }
   }
 
   const handleCheckout = async () => {
@@ -690,7 +684,7 @@ export function ProductPageClient({
                     </div>
                   )
                 }
-                return renderElement(element)
+                return <div key={element.id}>{renderElement(element)}</div>
               })}
           </div>
         </div>

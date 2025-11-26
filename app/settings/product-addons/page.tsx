@@ -92,19 +92,23 @@ export default function ProductAddonsPage() {
   const [newValue, setNewValue] = useState({ label: "", price: "" })
 
   useEffect(() => {
-    if (selectedShop) {
-      loadData()
-    }
-  }, [selectedShop])
+    // טען מיד גם אם selectedShop עדיין לא נטען
+    loadData()
+  }, [selectedShop?.id])
 
   const loadData = async () => {
+    if (!selectedShop?.id) {
+      setLoading(false)
+      return
+    }
+    
     try {
       setLoading(true)
       
       const [addonsRes, categoriesRes, productsRes] = await Promise.all([
-        fetch(`/api/product-addons?shopId=${selectedShop?.id}`),
-        fetch(`/api/categories?shopId=${selectedShop?.id}`),
-        fetch(`/api/products?shopId=${selectedShop?.id}`),
+        fetch(`/api/product-addons?shopId=${selectedShop.id}`),
+        fetch(`/api/categories?shopId=${selectedShop.id}`),
+        fetch(`/api/products?shopId=${selectedShop.id}`),
       ])
       
       if (addonsRes.ok) {
@@ -337,16 +341,6 @@ export default function ProductAddonsPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <AppLayout title="תוספות למוצרים">
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        </div>
-      </AppLayout>
-    )
-  }
-
   return (
     <AppLayout title="תוספות למוצרים">
       <div className="space-y-6">
@@ -361,35 +355,57 @@ export default function ProductAddonsPage() {
           <Button
             onClick={handleCreateNew}
             className="prodify-gradient text-white"
+            disabled={loading}
           >
             <Plus className="w-4 h-4 ml-2" />
             תוספת חדשה
           </Button>
         </div>
 
-        {/* Help Card */}
-        {addons.length === 0 && (
-          <Card className="border-blue-200 bg-blue-50">
-            <CardContent className="pt-6">
-              <div className="flex gap-4">
-                <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">
-                    מה הן תוספות למוצרים?
-                  </h3>
-                  <p className="text-gray-700 text-sm">
-                    תוספות מאפשרות ללקוחות להוסיף שירותים או מוצרים נוספים בתשלום,
-                    כמו רקמה על בגד, אריזת מתנה, משלוח מהיר, וכו'. התוספות משפיעות
-                    על המחיר הסופי ונשמרות בהזמנה.
-                  </p>
+        {/* Loading Skeleton */}
+        {loading ? (
+          <div className="space-y-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-gray-200 rounded animate-pulse" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-1/4 animate-pulse" />
+                        <div className="h-3 bg-gray-200 rounded w-1/2 animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <>
+            {/* Help Card */}
+            {addons.length === 0 && (
+              <Card className="border-blue-200 bg-blue-50">
+                <CardContent className="pt-6">
+                  <div className="flex gap-4">
+                    <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-2">
+                        מה הן תוספות למוצרים?
+                      </h3>
+                      <p className="text-gray-700 text-sm">
+                        תוספות מאפשרות ללקוחות להוסיף שירותים או מוצרים נוספים בתשלום,
+                        כמו רקמה על בגד, אריזת מתנה, משלוח מהיר, וכו'. התוספות משפיעות
+                        על המחיר הסופי ונשמרות בהזמנה.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-        {/* Addons List */}
-        {addons.length > 0 && (
+            {/* Addons List */}
+            {addons.length > 0 && (
           <DataListTable
             title={`תוספות קיימות (${addons.length})`}
             items={addons.map((addon): DataListItem => {
@@ -450,6 +466,8 @@ export default function ProductAddonsPage() {
             onDelete={(item) => handleDelete(item.id)}
             deleteConfirmMessage="האם אתה בטוח שברצונך למחוק תוספת זו?"
           />
+            )}
+          </>
         )}
 
         {/* Create/Edit Dialog */}

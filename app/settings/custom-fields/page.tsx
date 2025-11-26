@@ -106,24 +106,30 @@ export default function CustomFieldsPage() {
   })
 
   useEffect(() => {
-    if (selectedShop) {
-      loadData()
-    }
-  }, [selectedShop])
+    // טען מיד גם אם selectedShop עדיין לא נטען
+    loadData()
+  }, [selectedShop?.id])
 
   const loadData = async () => {
+    if (!selectedShop?.id) {
+      setLoading(false)
+      return
+    }
+    
     try {
       setLoading(true)
       
-      // Load custom fields
-      const fieldsRes = await fetch(`/api/custom-fields?shopId=${selectedShop?.id}`)
+      // Load both custom fields and categories in parallel
+      const [fieldsRes, categoriesRes] = await Promise.all([
+        fetch(`/api/custom-fields?shopId=${selectedShop.id}`),
+        fetch(`/api/categories?shopId=${selectedShop.id}`)
+      ])
+      
       if (fieldsRes.ok) {
         const data = await fieldsRes.json()
         setDefinitions(data)
       }
       
-      // Load categories
-      const categoriesRes = await fetch(`/api/categories?shopId=${selectedShop?.id}`)
       if (categoriesRes.ok) {
         const data = await categoriesRes.json()
         setCategories(data)
@@ -286,16 +292,6 @@ export default function CustomFieldsPage() {
     }
   }
 
-  if (loading) {
-    return (
-      <AppLayout title="שדות מותאמים אישית">
-        <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-        </div>
-      </AppLayout>
-    )
-  }
-
   return (
     <AppLayout title="שדות מותאמים אישית">
       <div className="space-y-6">
@@ -310,35 +306,57 @@ export default function CustomFieldsPage() {
           <Button
             onClick={handleCreateNew}
             className="prodify-gradient text-white"
+            disabled={loading}
           >
             <Plus className="w-4 h-4 ml-2" />
             שדה חדש
           </Button>
         </div>
 
-        {/* Help Card */}
-        {definitions.length === 0 && (
-          <Card className="border-blue-200 bg-blue-50">
-            <CardContent className="pt-6">
-              <div className="flex gap-4">
-                <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0" />
-                <div>
-                  <h3 className="font-semibold text-gray-900 mb-2">
-                    מה הם שדות מותאמים אישית?
-                  </h3>
-                  <p className="text-gray-700 text-sm">
-                    שדות מותאמים אישית מאפשרים לך להוסיף מידע נוסף למוצרים שלך, כמו רכיבים,
-                    הוראות כביסה, מקור, ועוד. השדות יופיעו בכל מוצר ותוכל להציג אותם
-                    בחנות הווירטואלית.
-                  </p>
+        {/* Loading Skeleton */}
+        {loading ? (
+          <div className="space-y-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  {[1, 2, 3].map((i) => (
+                    <div key={i} className="flex items-center gap-4">
+                      <div className="w-10 h-10 bg-gray-200 rounded animate-pulse" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-1/4 animate-pulse" />
+                        <div className="h-3 bg-gray-200 rounded w-1/2 animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+          </div>
+        ) : (
+          <>
+            {/* Help Card */}
+            {definitions.length === 0 && (
+              <Card className="border-blue-200 bg-blue-50">
+                <CardContent className="pt-6">
+                  <div className="flex gap-4">
+                    <AlertCircle className="w-6 h-6 text-blue-600 flex-shrink-0" />
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-2">
+                        מה הם שדות מותאמים אישית?
+                      </h3>
+                      <p className="text-gray-700 text-sm">
+                        שדות מותאמים אישית מאפשרים לך להוסיף מידע נוסף למוצרים שלך, כמו רכיבים,
+                        הוראות כביסה, מקור, ועוד. השדות יופיעו בכל מוצר ותוכל להציג אותם
+                        בחנות הווירטואלית.
+                      </p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-        {/* Fields List */}
-        {definitions.length > 0 && (
+            {/* Fields List */}
+            {definitions.length > 0 && (
           <DataListTable
             title={`שדות קיימים (${definitions.length})`}
             items={definitions.map((definition): DataListItem => {
@@ -384,6 +402,8 @@ export default function CustomFieldsPage() {
             onDelete={(item) => handleDelete(item.id)}
             deleteConfirmMessage="האם אתה בטוח שברצונך למחוק שדה זה? כל הערכים במוצרים ימחקו גם כן."
           />
+            )}
+          </>
         )}
 
         {/* Create/Edit Dialog */}

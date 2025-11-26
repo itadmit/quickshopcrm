@@ -27,6 +27,7 @@ import { CustomFieldsCard } from "@/components/products/CustomFieldsCard"
 import { ProductAddonsCard } from "@/components/products/ProductAddonsCard"
 import { VariantsCard } from "@/components/products/VariantsCard"
 import { BadgesCard } from "@/components/products/BadgesCard"
+import { PremiumClubCard } from "@/components/products/PremiumClubCard"
 
 interface Product {
   id: string
@@ -113,6 +114,7 @@ export default function EditProductPage() {
     categories: [] as string[],
     badges: [] as any[],
     pageTemplateId: "",
+    exclusiveToTier: [] as string[],
   })
 
   const [customFieldValues, setCustomFieldValues] = useState<Record<string, any>>({})
@@ -208,6 +210,7 @@ export default function EditProductPage() {
           categories: data.collections?.map((c: any) => c.collectionId) || [],
           badges: data.badges || [],
           pageTemplateId: data.pageTemplateId || "",
+          exclusiveToTier: data.exclusiveToTier || [],
         })
         
         // טעינת תבניות זמינות
@@ -384,6 +387,7 @@ export default function EditProductPage() {
         addonIds: productAddonIds,
         pageTemplateId: formData.pageTemplateId || null,
         defaultVariantId: defaultVariantId,
+        exclusiveToTier: formData.exclusiveToTier,
       }
 
       const response = await fetch(`/api/products/${product.id}`, {
@@ -763,6 +767,17 @@ export default function EditProductPage() {
               notifyOnPublish={formData.notifyOnPublish}
               onNotifyOnPublishChange={(notify) => setFormData(prev => ({ ...prev, notifyOnPublish: notify }))}
             />
+
+            {/* Premium Club */}
+            {product && (
+              <PremiumClubCard
+                exclusiveToTier={formData.exclusiveToTier}
+                onExclusiveToTierChange={(tiers) =>
+                  setFormData(prev => ({ ...prev, exclusiveToTier: tiers }))
+                }
+                shopId={product.shopId}
+              />
+            )}
 
             {/* Categories */}
             <CategoriesCard

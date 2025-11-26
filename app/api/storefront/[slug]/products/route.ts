@@ -45,6 +45,41 @@ export async function GET(
     const limit = parseInt(searchParams.get("limit") || "20")
     const sortBy = searchParams.get("sortBy") || "createdAt"
     const sortOrder = searchParams.get("sortOrder") || "desc"
+    
+    // קבלת customerId מ-header או query (אם יש)
+    const customerId = req.headers.get("x-customer-id") || searchParams.get("customerId")
+    
+    // טעינת רמת מועדון פרימיום של הלקוח (אם יש)
+    let customerTier: string | null = null
+    let hasEarlyAccess = false
+    if (customerId) {
+      const customer = await prisma.customer.findUnique({
+        where: { id: customerId },
+        select: { premiumClubTier: true },
+      })
+      customerTier = customer?.premiumClubTier || null
+      
+      // בדיקת early access
+      if (customerTier) {
+        const premiumClubPlugin = await prisma.plugin.findFirst({
+          where: {
+            slug: 'premium-club',
+            shopId: shop.id,
+            isActive: true,
+            isInstalled: true,
+          },
+          select: { config: true },
+        })
+        
+        if (premiumClubPlugin?.config) {
+          const config = premiumClubPlugin.config as any
+          if (config.enabled && config.benefits?.earlyAccessToSales) {
+            const tier = config.tiers?.find((t: any) => t.slug === customerTier)
+            hasEarlyAccess = tier?.benefits?.earlyAccess || false
+          }
+        }
+      }
+    }
 
     const where: any = {
       shopId: shop.id,
@@ -55,12 +90,15 @@ export async function GET(
     }
 
     // חיפוש
+    const searchConditions: any[] = []
     if (search) {
-      where.OR = [
-        { name: { contains: search, mode: "insensitive" } },
-        { description: { contains: search, mode: "insensitive" } },
-        { sku: { contains: search, mode: "insensitive" } },
-      ]
+      searchConditions.push({
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
+          { sku: { contains: search, mode: "insensitive" } },
+        ],
+      })
     }
 
     // קטגוריה (collections)
@@ -88,6 +126,25 @@ export async function GET(
     // סינון לפי זמינות
     if (availability) {
       where.availability = availability
+    }
+
+    // סינון מוצרים בלעדיים - רק אם הלקוח ברמה המתאימה
+    if (customerTier) {
+      // אם יש מוצרים בלעדיים, נבדוק שהלקוח ברמה המתאימה
+      searchConditions.push({
+        OR: [
+          { exclusiveToTier: { isEmpty: true } }, // מוצרים לא בלעדיים
+          { exclusiveToTier: { has: customerTier } }, // מוצרים בלעדיים לרמה של הלקוח
+        ],
+      })
+    } else {
+      // אם אין לקוח או אין רמה, נציג רק מוצרים לא בלעדיים
+      searchConditions.push({ exclusiveToTier: { isEmpty: true } })
+    }
+
+    // שילוב כל התנאים
+    if (searchConditions.length > 0) {
+      where.AND = searchConditions
     }
 
     const orderBy: any = {}

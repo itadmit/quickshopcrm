@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ChevronUp, ChevronDown, Eye, EyeOff, Settings } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -17,6 +17,7 @@ interface EditableProductElementProps {
   canMoveUp?: boolean
   canMoveDown?: boolean
   children: React.ReactNode
+  isSelected?: boolean
 }
 
 export function EditableProductElement({
@@ -31,8 +32,70 @@ export function EditableProductElement({
   canMoveUp = false,
   canMoveDown = false,
   children,
+  isSelected = false,
 }: EditableProductElementProps) {
   const [isHovered, setIsHovered] = useState(false)
+
+  // שליחת הודעות ל-parent window במצב customize
+  useEffect(() => {
+    if (!isEditing || typeof window === 'undefined') return
+
+    const handleClick = (e: MouseEvent) => {
+      e.stopPropagation()
+      // שליחת הודעה ל-parent window
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(
+          {
+            type: "elementClick",
+            elementId: elementId,
+          },
+          window.location.origin
+        )
+      }
+      onOpenSettings?.()
+    }
+
+    const handleMouseEnter = () => {
+      setIsHovered(true)
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(
+          {
+            type: "elementHover",
+            elementId: elementId,
+          },
+          window.location.origin
+        )
+      }
+    }
+
+    const handleMouseLeave = () => {
+      setIsHovered(false)
+      if (window.parent && window.parent !== window) {
+        window.parent.postMessage(
+          {
+            type: "elementHover",
+            elementId: null,
+          },
+          window.location.origin
+        )
+      }
+    }
+
+    const element = document.querySelector(`[data-element-id="${elementId}"]`)
+    if (element) {
+      element.addEventListener('click', handleClick)
+      element.addEventListener('mouseenter', handleMouseEnter)
+      element.addEventListener('mouseleave', handleMouseLeave)
+    }
+
+    return () => {
+      if (element) {
+        element.removeEventListener('click', handleClick)
+        element.removeEventListener('mouseenter', handleMouseEnter)
+        element.removeEventListener('mouseleave', handleMouseLeave)
+      }
+    }
+  }, [isEditing, elementId, onOpenSettings])
 
   if (!isEditing) {
     return <>{children}</>
@@ -40,16 +103,22 @@ export function EditableProductElement({
 
   return (
     <div
+      data-element-id={elementId}
       className={cn(
-        "relative group transition-all duration-300 ease-in-out",
+        "relative group",
         !isVisible && "opacity-50"
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      onClick={(e) => {
+        e.stopPropagation()
+        onOpenSettings?.()
+      }}
+      style={{ cursor: isEditing && (isHovered || isSelected) ? 'pointer' : 'default' }}
     >
-      {/* מסגרת סגולה ב-hover */}
-      {isHovered && (
-        <div className="absolute inset-0 border-2 border-emerald-500 rounded-lg pointer-events-none z-10" />
+      {/* מסגרת ירוקה ב-hover או בחירה */}
+      {(isHovered || isSelected) && isEditing && (
+        <div className="absolute -inset-1 border-2 border-emerald-500 rounded-lg pointer-events-none z-10 shadow-lg" />
       )}
 
       {/* מדבקה עם שם האלמנט - לחיצה פותחת הגדרות */}

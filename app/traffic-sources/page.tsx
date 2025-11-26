@@ -70,13 +70,15 @@ export default function TrafficSourcesPage() {
   })
 
   useEffect(() => {
-    if (selectedShop) {
-      fetchTrafficSources()
-    }
-  }, [selectedShop])
+    // טען מיד גם אם selectedShop עדיין לא נטען
+    fetchTrafficSources()
+  }, [selectedShop?.id])
 
   const fetchTrafficSources = async () => {
-    if (!selectedShop) return
+    if (!selectedShop?.id) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const response = await fetch(`/api/traffic-sources?shopId=${selectedShop.id}`)
@@ -262,16 +264,6 @@ export default function TrafficSourcesPage() {
     })
   }
 
-  if (!selectedShop) {
-    return (
-      <AppLayout>
-        <div className="p-6">
-          <p className="text-gray-500">נא לבחור חנות</p>
-        </div>
-      </AppLayout>
-    )
-  }
-
   return (
     <AppLayout>
       <div className="p-6 space-y-6">
@@ -287,27 +279,49 @@ export default function TrafficSourcesPage() {
             <Button 
               onClick={() => router.push("/traffic-sources/reports")} 
               variant="outline"
+              disabled={loading || !selectedShop}
             >
               <FileText className="w-4 h-4 ml-2" />
               דוחות ואנליטיקה
             </Button>
-            <Button onClick={() => handleOpenDialog()} className="prodify-gradient text-white">
+            <Button 
+              onClick={() => handleOpenDialog()} 
+              className="prodify-gradient text-white"
+              disabled={loading || !selectedShop}
+            >
               <Plus className="w-4 h-4 ml-2" />
               הוסף מקור תנועה
             </Button>
           </div>
         </div>
 
-        {/* Traffic Sources List */}
+        {/* Loading Skeleton */}
         {loading ? (
           <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-teal-500" />
+            <CardContent className="pt-6">
+              <div className="space-y-4">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="flex items-center gap-4">
+                    <div className="w-10 h-10 bg-gray-200 rounded animate-pulse" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-1/4 animate-pulse" />
+                      <div className="h-3 bg-gray-200 rounded w-1/2 animate-pulse" />
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
-        ) : trafficSources.length === 0 ? (
+        ) : !selectedShop ? (
+          <Card>
+            <CardContent className="pt-6">
+              <p className="text-gray-500 text-center">נא לבחור חנות</p>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Traffic Sources List */}
+            {trafficSources.length === 0 ? (
           <Card>
             <CardContent className="p-12 text-center">
               <div className="flex flex-col items-center gap-4">
@@ -574,6 +588,8 @@ export default function TrafficSourcesPage() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+          </>
+        )}
       </div>
     </AppLayout>
   )

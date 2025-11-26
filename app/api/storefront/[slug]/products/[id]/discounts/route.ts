@@ -64,39 +64,73 @@ export async function GET(
 
     // טעינת לקוח אם יש customerId
     let customer = null
+    let customerTier: string | null = null
+    let hasEarlyAccess = false
+    
     if (customerId) {
-      customer = await prisma.customer.findUnique({
+      const customerData = await prisma.customer.findUnique({
         where: { id: customerId },
         select: {
           totalSpent: true,
           orderCount: true,
           tier: true,
+          premiumClubTier: true,
         },
       })
+      customer = customerData
+      customerTier = customerData?.premiumClubTier || null
+      
+      // בדיקת early access
+      if (customerTier) {
+        const premiumClubPlugin = await prisma.plugin.findFirst({
+          where: {
+            slug: 'premium-club',
+            shopId: shop.id,
+            isActive: true,
+            isInstalled: true,
+          },
+          select: { config: true },
+        })
+        
+        if (premiumClubPlugin?.config) {
+          const config = premiumClubPlugin.config as any
+          if (config.enabled && config.benefits?.earlyAccessToSales) {
+            const tier = config.tiers?.find((t: any) => t.slug === customerTier)
+            hasEarlyAccess = tier?.benefits?.earlyAccess || false
+          }
+        }
+      }
     }
 
     const now = new Date()
     
     // מציאת הנחות אוטומטיות פעילות
+    // אם יש early access, נכלול גם מבצעים עתידיים
+    const discountDateFilter: any = hasEarlyAccess
+      ? {} // עם early access, אין הגבלת תאריך
+      : {
+          AND: [
+            {
+              OR: [
+                { startDate: null },
+                { startDate: { lte: now } },
+              ],
+            },
+            {
+              OR: [
+                { endDate: null },
+                { endDate: { gte: now } },
+              ],
+            },
+          ],
+        }
+    
     const activeAutomaticDiscounts = await prisma.discount.findMany({
       where: {
         shopId: shop.id,
         isActive: true,
         isAutomatic: true,
-        AND: [
-          {
-            OR: [
-              { startDate: null },
-              { startDate: { lte: now } },
-            ],
-          },
-          {
-            OR: [
-              { endDate: null },
-              { endDate: { gte: now } },
-            ],
-          },
-        ],
+        ...discountDateFilter,
       },
       orderBy: { priority: 'desc' },
     })

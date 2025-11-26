@@ -525,21 +525,29 @@ export const emailTemplates = {
       gradientColor1: themeSettings.giftCardGradientColor1 || '#ff9a9e',
       gradientColor2: themeSettings.giftCardGradientColor2 || '#fecfef',
       backgroundImage: themeSettings.giftCardBackgroundImage || null,
+      backgroundPosition: themeSettings.giftCardBackgroundPosition || 'center',
       textPosition: themeSettings.giftCardTextPosition || 'right',
     }
 
     const emailSettings = await getShopEmailSettings(shopId)
     
     // יצירת רקע
-    const backgroundStyle = giftCardSettings.backgroundType === 'gradient'
-      ? `background: linear-gradient(135deg, ${giftCardSettings.gradientColor1} 0%, ${giftCardSettings.gradientColor2} 100%);`
-      : giftCardSettings.backgroundImage
-        ? `background-image: url('${giftCardSettings.backgroundImage}'); background-size: 60%; background-position: center center; background-repeat: no-repeat;`
-        : `background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);`
+    const backgroundColor = giftCardSettings.backgroundType === 'gradient' 
+      ? 'transparent' 
+      : (giftCardSettings.gradientColor1 || '#ff9a9e');
+    
+    const backgroundImageUrl = giftCardSettings.backgroundType === 'image' && giftCardSettings.backgroundImage
+      ? giftCardSettings.backgroundImage
+      : '';
+    
+    const backgroundGradient = giftCardSettings.backgroundType === 'gradient'
+      ? `linear-gradient(135deg, ${giftCardSettings.gradientColor1} 0%, ${giftCardSettings.gradientColor2} 100%)`
+      : 'none';
 
     // מיקום הכיתוב
     const textAlign = giftCardSettings.textPosition === 'right' ? 'right' : giftCardSettings.textPosition === 'left' ? 'left' : 'center'
-    const justifyContent = giftCardSettings.textPosition === 'right' ? 'flex-end' : giftCardSettings.textPosition === 'left' ? 'flex-start' : 'center'
+    // עבור טבלאות במייל, צריך להשתמש ב-align במקום text-align
+    const cellAlign = giftCardSettings.textPosition === 'right' ? 'right' : giftCardSettings.textPosition === 'left' ? 'left' : 'center'
 
     const html = `
 <!DOCTYPE html>
@@ -588,107 +596,96 @@ export const emailTemplates = {
       direction: rtl;
       text-align: right;
     }
-    .gift-card-container {
-      margin: 30px 0;
-      border-radius: 12px;
+    .gift-card-wrapper {
+      margin: 30px auto;
+      width: 100%;
+      max-width: 500px;
+    }
+    /* Card container using table for best email support */
+    .card-table {
+      width: 100%;
+      max-width: 500px;
+      height: 315px;
+      border-collapse: collapse;
+      background-color: ${backgroundColor};
+      background-image: ${backgroundGradient !== 'none' ? backgroundGradient : 'none'};
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      border-radius: 15px;
       overflow: hidden;
-      position: relative;
-      min-height: 300px;
-      width: 100%;
-      max-width: 100%;
-      ${backgroundStyle}
+      box-shadow: 0 10px 25px rgba(0,0,0,0.15);
     }
-    /* Fallback for email clients that don't support background-image */
-    @media only screen and (max-width: 600px) {
-      .gift-card-container {
-        min-height: 250px;
-      }
-    }
-    .gift-card-overlay {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: ${giftCardSettings.backgroundType === 'image' && giftCardSettings.backgroundImage 
-        ? 'rgba(0, 0, 0, 0.2)' 
-        : 'transparent'};
-      border-radius: 12px;
-      z-index: 0;
-    }
-    .gift-card-content {
-      position: absolute;
-      ${justifyContent}: 0;
-      top: 0;
-      bottom: 0;
-      width: 100%;
-      display: flex;
-      align-items: center;
-      padding: 30px;
-      box-sizing: border-box;
-      z-index: 1;
-    }
-    .gift-card-box {
-      background: rgba(255, 255, 255, 0.98);
-      backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
-      border-radius: 12px;
-      padding: 30px;
-      max-width: 400px;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      text-align: ${textAlign};
+    
+    .card-content-cell {
+      vertical-align: middle;
+      padding: 25px;
+      text-align: ${cellAlign};
+      background-image: ${backgroundImageUrl ? `url('${backgroundImageUrl}')` : 'none'};
+      background-size: cover;
+      background-position: ${giftCardSettings.backgroundPosition.replace("-", " ")};
+      background-repeat: no-repeat;
       direction: rtl;
     }
+    
+    .card-box {
+      display: inline-block;
+      background-color: rgba(255, 255, 255, 0.92);
+      border-radius: 10px;
+      padding: 15px;
+      width: 200px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      text-align: ${textAlign};
+      direction: rtl;
+      ${cellAlign === 'right' ? 'margin-right: 0; margin-left: auto;' : cellAlign === 'left' ? 'margin-left: 0; margin-right: auto;' : 'margin: 0 auto;'}
+    }
     .gift-card-logo {
-      max-width: 120px;
+      max-width: 100px;
       height: auto;
-      margin-bottom: 20px;
-      ${textAlign === 'right' ? 'margin-right: 0; margin-left: auto;' : textAlign === 'left' ? 'margin-left: 0; margin-right: auto;' : 'margin: 0 auto 20px;'}
+      margin-bottom: 10px;
       display: block;
+      margin-left: ${textAlign === 'left' ? '0' : 'auto'};
+      margin-right: ${textAlign === 'right' ? '0' : 'auto'};
+      ${textAlign === 'center' ? 'margin-left: auto; margin-right: auto;' : ''}
     }
     .gift-card-title {
-      font-size: 24px;
+      font-size: 16px;
       font-weight: bold;
       color: #1f2937;
-      margin: 0 0 10px 0;
-      text-align: ${textAlign};
-    }
-    .gift-card-amount {
-      font-size: 48px;
-      font-weight: bold;
-      color: #059669;
-      margin: 20px 0;
-      text-align: ${textAlign};
+      margin: 0 0 8px 0;
+      text-align: right;
+      direction: rtl;
     }
     .gift-card-code {
       background: #f3f4f6;
-      padding: 15px;
-      border-radius: 8px;
-      margin: 20px 0;
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin: 0 0 8px 0;
       text-align: center;
       font-family: 'Courier New', monospace;
+      font-size: 13px;
+      letter-spacing: 0.5px;
+      color: #1f2937;
+      border: 1px dashed #d1d5db;
+      display: block;
+    }
+    .gift-card-balance {
+      font-size: 12px;
+      color: #6b7280;
+      text-align: right;
+      direction: rtl;
+      margin-top: 8px;
+    }
+    .gift-card-message-header {
       font-size: 20px;
       font-weight: bold;
-      letter-spacing: 2px;
       color: #1f2937;
-    }
-    .gift-card-message {
+      text-align: center;
       margin: 20px 0;
       padding: 15px;
-      background: #f9fafb;
+      background-color: #f9fafb;
       border-radius: 8px;
-      font-style: italic;
-      color: #4b5563;
-      text-align: ${textAlign};
-    }
-    .gift-card-info {
-      margin-top: 20px;
-      padding-top: 20px;
-      border-top: 1px solid #e5e7eb;
-      font-size: 14px;
-      color: #6b7280;
-      text-align: ${textAlign};
+      direction: rtl;
     }
     .footer {
       background-color: #f9f9f9;
@@ -721,26 +718,26 @@ export const emailTemplates = {
     </div>
     <div class="content">
       ${giftCard.recipientName ? `<p>שלום ${giftCard.recipientName},</p>` : '<p>שלום,</p>'}
-      ${giftCard.senderName ? `<p>${giftCard.senderName} שלח לך כרטיס מתנה!</p>` : '<p>קיבלת כרטיס מתנה!</p>'}
+      ${giftCard.senderName ? `<p>נשלח אליך גיפט קארד מ${giftCard.senderName}</p>` : '<p>קיבלת כרטיס מתנה!</p>'}
       
-      <div class="gift-card-container">
-        ${giftCardSettings.backgroundType === 'image' && giftCardSettings.backgroundImage ? '<div class="gift-card-overlay"></div>' : ''}
-        <div class="gift-card-content">
-          <div class="gift-card-box">
-            ${shop?.logo ? `<img src="${shop.logo}" alt="${shopName}" class="gift-card-logo" />` : ''}
-            <h2 class="gift-card-title">כרטיס מתנה</h2>
-            <div class="gift-card-amount">₪${giftCard.amount.toLocaleString('he-IL', { minimumFractionDigits: 2 })}</div>
-            <div class="gift-card-code">${giftCard.code}</div>
-            ${giftCard.message ? `<div class="gift-card-message">${giftCard.message}</div>` : ''}
-            <div class="gift-card-info">
-              ${giftCard.expiresAt ? `<p>תוקף עד: ${new Date(giftCard.expiresAt).toLocaleDateString('he-IL')}</p>` : ''}
-              <p>יתרה נוכחית: ₪${giftCard.balance.toLocaleString('he-IL', { minimumFractionDigits: 2 })}</p>
-            </div>
-          </div>
-        </div>
+      ${giftCard.message ? `<div class="gift-card-message-header">${giftCard.message}</div>` : ''}
+      
+      <div class="gift-card-wrapper">
+        <!-- Main Card Table -->
+        <table class="card-table" cellpadding="0" cellspacing="0" border="0"${backgroundImageUrl ? ` background="${backgroundImageUrl}"` : ''}>
+          <tr>
+            <td class="card-content-cell" align="${cellAlign}">
+              <div class="card-box">
+                <div class="gift-card-title">כרטיס מתנה</div>
+                <div class="gift-card-code">${giftCard.code}</div>
+                <div class="gift-card-balance">יתרה נוכחית: ₪${giftCard.balance.toLocaleString('he-IL', { minimumFractionDigits: 2 })}</div>
+              </div>
+            </td>
+          </tr>
+        </table>
       </div>
       
-      ${shopUrl ? `<a href="${shopUrl}" class="button">השתמש בכרטיס המתנה</a>` : ''}
+      ${shopUrl ? `<div style="text-align: center;"><a href="${shopUrl}" class="button">השתמש בכרטיס המתנה</a></div>` : ''}
       
       <p>תודה שבחרת ב-${shopName}!</p>
     </div>

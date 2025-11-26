@@ -1,17 +1,32 @@
 "use client"
 
 import { useRef, useEffect, useState } from "react"
-import { Bold, Italic, Underline, List, ListOrdered, Link, Image, Youtube, Code } from "lucide-react"
+import { Bold, Italic, Underline, List, ListOrdered, Link, Image, Youtube, Code, Database } from "lucide-react"
 import { YouTubeDialog } from "./youtube-dialog"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+
+interface CustomField {
+  definition: {
+    id: string
+    label: string
+    type: string
+  }
+  value: string | null
+  valueId: string | null
+}
 
 interface RichTextEditorProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
   className?: string
+  customFields?: CustomField[]
+  productId?: string
+  onNavigateToCustomFields?: () => void
 }
 
-export function RichTextEditor({ value, onChange, placeholder, className = "" }: RichTextEditorProps) {
+export function RichTextEditor({ value, onChange, placeholder, className = "", customFields = [], productId, onNavigateToCustomFields }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null)
   const [isHtmlMode, setIsHtmlMode] = useState(false)
   const [htmlValue, setHtmlValue] = useState(value)
@@ -22,6 +37,23 @@ export function RichTextEditor({ value, onChange, placeholder, className = "" }:
       // Only update if content is different to avoid cursor jumping
       if (editorRef.current.innerHTML !== value) {
         editorRef.current.innerHTML = value || ""
+        
+        // זיהוי אוטומטי של כיוון הטקסט
+        const text = editorRef.current.textContent || ""
+        const hasRTL = /[\u0590-\u05FF\u0600-\u06FF]/.test(text)
+        const hasLTR = /[a-zA-Z0-9]/.test(text)
+        
+        if (hasRTL && !hasLTR) {
+          editorRef.current.style.direction = "rtl"
+          editorRef.current.style.textAlign = "right"
+        } else if (hasLTR && !hasRTL) {
+          editorRef.current.style.direction = "ltr"
+          editorRef.current.style.textAlign = "left"
+        } else {
+          // מעורב - נשתמש ב-auto
+          editorRef.current.style.direction = "auto"
+          editorRef.current.style.textAlign = "start"
+        }
       }
     }
   }, [value, isHtmlMode])
@@ -59,6 +91,31 @@ export function RichTextEditor({ value, onChange, placeholder, className = "" }:
     if (editorRef.current) {
       document.execCommand("insertHTML", false, iframe)
       updateContent()
+    }
+  }
+
+  const handleInsertCustomField = (fieldValue: string) => {
+    if (editorRef.current) {
+      const selection = window.getSelection()
+      if (selection && selection.rangeCount > 0) {
+        // יש בחירה - הכנס במקום הנבחר
+        const range = selection.getRangeAt(0)
+        range.deleteContents()
+        const textNode = document.createTextNode(fieldValue)
+        range.insertNode(textNode)
+        range.setStartAfter(textNode)
+        range.collapse(true)
+        selection.removeAllRanges()
+        selection.addRange(range)
+        updateContent()
+      } else {
+        // אין בחירה - הוסף בסוף
+        const textNode = document.createTextNode(fieldValue)
+        editorRef.current.appendChild(textNode)
+        updateContent()
+      }
+      // התמקד ב-editor
+      editorRef.current.focus()
     }
   }
 
@@ -182,6 +239,7 @@ export function RichTextEditor({ value, onChange, placeholder, className = "" }:
           </>
         )}
 
+
         <button
           type="button"
           className={`p-1.5 hover:bg-gray-200 rounded transition-colors ${isHtmlMode ? 'bg-gray-200 text-blue-600' : 'text-gray-600'}`}
@@ -205,13 +263,31 @@ export function RichTextEditor({ value, onChange, placeholder, className = "" }:
           ref={editorRef}
           contentEditable
           className="w-full p-4 focus:outline-none min-h-[200px] prose prose-sm max-w-none"
-          onInput={updateContent}
+          onInput={(e) => {
+            updateContent()
+            // זיהוי אוטומטי של כיוון הטקסט
+            const target = e.currentTarget
+            const text = target.textContent || ""
+            const hasRTL = /[\u0590-\u05FF\u0600-\u06FF]/.test(text)
+            const hasLTR = /[a-zA-Z0-9]/.test(text)
+            
+            if (hasRTL && !hasLTR) {
+              target.style.direction = "rtl"
+              target.style.textAlign = "right"
+            } else if (hasLTR && !hasRTL) {
+              target.style.direction = "ltr"
+              target.style.textAlign = "left"
+            } else {
+              // מעורב - נשתמש ב-auto
+              target.style.direction = "auto"
+              target.style.textAlign = "start"
+            }
+          }}
           onBlur={updateContent}
           data-placeholder={placeholder}
           suppressContentEditableWarning
-          style={{
-            direction: "rtl",
-          }}
+          dir="auto"
+          style={{ unicodeBidi: "isolate" }}
         />
       )}
 

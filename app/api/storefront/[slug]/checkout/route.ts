@@ -5,6 +5,8 @@ import { cookies } from "next/headers"
 import { calculateCart } from "@/lib/cart-calculations"
 import { findCart, isCartEmpty } from "@/lib/cart-server"
 import { sendEmail, getEmailTemplate } from "@/lib/email"
+import { createOrUpdateContact, initContactCategories } from "@/lib/contacts"
+import { runPluginHook } from "@/lib/plugins/loader"
 
 const checkoutSchema = z.object({
   customerId: z.string().optional(),
@@ -210,30 +212,6 @@ export async function POST(
       }
     }
 
-    // חישוב משלוח - שימוש בערך שנשלח או חישוב לפי הגדרות
-    let shipping = data.shippingCost || 0
-    
-    if (!data.shippingCost) {
-      // אם לא נשלח shippingCost, נחשב לפי הגדרות החנות
-      const settings = shop.settings as any
-      const shippingSettings = settings?.shipping || {}
-      
-      if (data.deliveryMethod === "pickup") {
-        const pickupSettings = settings?.pickup || {}
-        shipping = pickupSettings.cost || 0
-      } else if (shippingSettings.enabled) {
-        const shippingOptions = shippingSettings.options || {}
-        
-        if (shippingOptions.fixed && shippingOptions.fixedCost) {
-          shipping = shippingOptions.fixedCost
-        } else if (shippingOptions.freeOver && shippingOptions.freeOverAmount && calculation.subtotal >= shippingOptions.freeOverAmount) {
-          shipping = 0
-        } else if (!shippingOptions.free) {
-          shipping = shippingOptions.fixedCost || 0
-        }
-      }
-    }
-
     // חישוב המחיר הסופי
     const totalDiscount = calculation.automaticDiscount + calculation.couponDiscount
     const finalPrice = calculation.subtotal - totalDiscount - (data.storeCreditAmount || 0)
@@ -281,6 +259,106 @@ export async function POST(
     const storeCreditAmount = data.storeCreditAmount || 0
     let storeCreditUsed = 0
     
+    // חישוב הנחת יום הולדת (אם יש) - לפני חישוב מע"מ
+    let birthdayDiscount = 0
+    if (finalCustomerId) {
+      const customer = await prisma.customer.findUnique({
+        where: { id: finalCustomerId },
+        select: { dateOfBirth: true, premiumClubTier: true },
+      })
+      
+      if (customer?.dateOfBirth && customer.premiumClubTier) {
+        const today = new Date()
+        const birthDate = new Date(customer.dateOfBirth)
+        const isBirthday = birthDate.getDate() === today.getDate() && 
+                          birthDate.getMonth() === today.getMonth()
+        
+        if (isBirthday) {
+          const premiumClubPlugin = await prisma.plugin.findFirst({
+            where: {
+              slug: 'premium-club',
+              shopId: shop.id,
+              isActive: true,
+              isInstalled: true,
+            },
+            select: { config: true },
+          })
+          
+          if (premiumClubPlugin?.config) {
+            const config = premiumClubPlugin.config as any
+            const birthdayDiscountConfig = config.benefits?.birthdayDiscount
+            
+            if (birthdayDiscountConfig?.enabled) {
+              if (birthdayDiscountConfig.type === 'PERCENTAGE') {
+                birthdayDiscount = (calculation.subtotal * birthdayDiscountConfig.value) / 100
+              } else {
+                birthdayDiscount = birthdayDiscountConfig.value
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // חישוב משלוח - שימוש בערך שנשלח או חישוב לפי הגדרות
+    let shipping = data.shippingCost || 0
+    
+    // בדיקת משלוח חינם לפי רמת מועדון פרימיום (אחרי יצירת הלקוח)
+    let hasFreeShipping = false
+    if (finalCustomerId) {
+      const customerForShipping = await prisma.customer.findUnique({
+        where: { id: finalCustomerId },
+        select: { premiumClubTier: true },
+      })
+      
+      if (customerForShipping?.premiumClubTier) {
+        const premiumClubPlugin = await prisma.plugin.findFirst({
+          where: {
+            slug: 'premium-club',
+            shopId: shop.id,
+            isActive: true,
+            isInstalled: true,
+          },
+          select: { config: true },
+        })
+        
+        if (premiumClubPlugin?.config) {
+          const config = premiumClubPlugin.config as any
+          if (config.enabled && config.tiers) {
+            const tier = config.tiers.find((t: any) => t.slug === customerForShipping.premiumClubTier)
+            hasFreeShipping = tier?.benefits?.freeShipping || false
+          }
+        }
+      }
+    }
+    
+    if (!data.shippingCost && !hasFreeShipping) {
+      // אם לא נשלח shippingCost ולא יש משלוח חינם לפי רמה, נחשב לפי הגדרות החנות
+      const settings = shop.settings as any
+      const shippingSettings = settings?.shipping || {}
+      
+      if (data.deliveryMethod === "pickup") {
+        const pickupSettings = settings?.pickup || {}
+        shipping = pickupSettings.cost || 0
+      } else if (shippingSettings.enabled) {
+        const shippingOptions = shippingSettings.options || {}
+        
+        if (shippingOptions.fixed && shippingOptions.fixedCost) {
+          shipping = shippingOptions.fixedCost
+        } else if (shippingOptions.freeOver && shippingOptions.freeOverAmount && calculation.subtotal >= shippingOptions.freeOverAmount) {
+          shipping = 0
+        } else if (!shippingOptions.free) {
+          shipping = shippingOptions.fixedCost || 0
+        }
+      }
+    } else if (hasFreeShipping) {
+      // אם יש משלוח חינם לפי רמה, המשלוח הוא 0
+      shipping = 0
+    }
+
+    // חישוב מחיר סופי כולל הנחת יום הולדת
+    const finalPriceWithBirthday = finalPrice - birthdayDiscount
+
     // חישוב מע"מ בהתאם להגדרת החנות
     const taxRate = shop.taxEnabled && shop.taxRate ? shop.taxRate : 0
     const pricesIncludeTax = shop.pricesIncludeTax ?? true // ברירת מחדל: המחירים כוללים מע"מ
@@ -292,15 +370,15 @@ export async function POST(
       if (pricesIncludeTax) {
         // המחירים כוללים מע"מ - המע"מ כבר נכלל במחיר, לא צריך להציג אותו בנפרד
         tax = 0
-        total = finalPrice + shipping
+        total = finalPriceWithBirthday + shipping
       } else {
         // המחירים לא כוללים מע"מ - צריך להוסיף מע"מ
-        tax = finalPrice * (taxRate / 100)
-        total = finalPrice + tax + shipping
+        tax = finalPriceWithBirthday * (taxRate / 100)
+        total = finalPriceWithBirthday + tax + shipping
       }
     } else {
       // אין מע"מ
-      total = finalPrice + shipping
+      total = finalPriceWithBirthday + shipping
     }
 
     // יצירת או מציאת לקוח רק אם הלקוח בחר להרשם או לשמור פרטים
@@ -381,8 +459,8 @@ export async function POST(
         subtotal: Math.round(calculation.subtotal * 100) / 100,
         shipping: Math.round(shipping * 100) / 100,
         tax: Math.round(tax * 100) / 100,
-        discount: Math.round((totalDiscount + giftCardDiscount + calculation.customerDiscount + storeCreditUsed) * 100) / 100,
-        total: Math.round(Math.max(0, finalPrice + tax + shipping) * 100) / 100, // עיגול ל-2 ספרות אחרי הנקודה
+        discount: Math.round((totalDiscount + giftCardDiscount + calculation.customerDiscount + storeCreditUsed + birthdayDiscount) * 100) / 100,
+        total: Math.round(Math.max(0, finalPriceWithBirthday + tax + shipping) * 100) / 100, // עיגול ל-2 ספרות אחרי הנקודה
         paymentMethod: data.paymentMethod,
         couponCode: data.couponCode,
         notes: data.notes,
@@ -454,6 +532,59 @@ export async function POST(
       }
     }
 
+    // יצירת/עדכון Contact עם קטגוריות מתאימות
+    try {
+      // אתחול קטגוריות אם צריך
+      await initContactCategories(shop.id)
+
+      const categoryTypes: string[] = ["CUSTOMER"] // כל הזמנה = לקוח
+
+      if (data.newsletter) {
+        categoryTypes.push("NEWSLETTER")
+      }
+
+      if (data.createAccount) {
+        categoryTypes.push("CLUB_MEMBER")
+      }
+
+      const nameParts = data.customerName.split(" ")
+      await createOrUpdateContact({
+        shopId: shop.id,
+        email: data.customerEmail.toLowerCase(),
+        firstName: nameParts[0] || null,
+        lastName: nameParts.slice(1).join(" ") || null,
+        phone: data.customerPhone || null,
+        company: data.companyName || null,
+        notes: data.orderNotes || null,
+        categoryTypes,
+        emailMarketingConsent: data.newsletter || false,
+        emailMarketingConsentSource: data.newsletter ? "checkout" : undefined,
+        customerId: finalCustomerId || null,
+      })
+
+      // עדכון Contact עם customerId אם נוצר Customer חדש (אם עדיין לא עודכן)
+      if (finalCustomerId) {
+        const contact = await prisma.contact.findUnique({
+          where: {
+            shopId_email: {
+              shopId: shop.id,
+              email: data.customerEmail.toLowerCase(),
+            },
+          },
+        })
+        
+        if (contact && !contact.customerId) {
+          await prisma.contact.update({
+            where: { id: contact.id },
+            data: { customerId: finalCustomerId },
+          })
+        }
+      }
+    } catch (contactError) {
+      // לא נכשל את ההזמנה אם יש בעיה ב-Contact
+      console.error("Error creating/updating contact:", contactError)
+    }
+
     // עדכון ספירת שימושים בקופון
     if (couponCodeToUse && calculation.couponDiscount > 0) {
       const coupon = await prisma.coupon.update({
@@ -488,6 +619,36 @@ export async function POST(
     await prisma.cart.delete({
       where: { id: cart.id },
     })
+
+    // עדכון totalSpent ו-orderCount של הלקוח (אם יש לקוח)
+    if (finalCustomerId) {
+      try {
+        await prisma.customer.update({
+          where: { id: finalCustomerId },
+          data: {
+            totalSpent: {
+              increment: order.total,
+            },
+            orderCount: {
+              increment: 1,
+            },
+          },
+        })
+      } catch (updateError) {
+        // לא נכשל את ההזמנה אם יש בעיה בעדכון הלקוח
+        console.error('Error updating customer stats:', updateError)
+      }
+    }
+
+    // עדכון רמת מועדון פרימיום (אם יש לקוח)
+    if (finalCustomerId) {
+      try {
+        await runPluginHook('onOrderComplete', shop.id, order)
+      } catch (pluginError) {
+        // לא נכשל את ההזמנה אם יש בעיה בתוסף
+        console.error('Error running premium club plugin hook:', pluginError)
+      }
+    }
 
     // יצירת אירוע order.created
     await prisma.shopEvent.create({

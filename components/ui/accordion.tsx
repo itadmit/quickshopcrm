@@ -97,6 +97,11 @@ export function AccordionTrigger({ children, className, icon, itemId: propItemId
 
   const itemElement = React.useRef<HTMLButtonElement | null>(null)
   const [itemId, setItemId] = React.useState<string>(propItemId || "")
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   React.useEffect(() => {
     if (propItemId) {
@@ -136,7 +141,7 @@ export function AccordionTrigger({ children, className, icon, itemId: propItemId
       <ChevronDown
         className={cn(
           "w-4 h-4 text-gray-400 transition-transform flex-shrink-0",
-          isOpen && "transform rotate-180"
+          mounted && isOpen && "transform rotate-180"
         )}
       />
     </button>
@@ -157,6 +162,11 @@ export function AccordionContent({ children, className, itemId: propItemId }: Ac
 
   const itemElement = React.useRef<HTMLDivElement | null>(null)
   const [itemId, setItemId] = React.useState<string>(propItemId || "")
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
 
   React.useEffect(() => {
     if (propItemId) {
@@ -176,7 +186,7 @@ export function AccordionContent({ children, className, itemId: propItemId }: Ac
       ref={itemElement}
       className={cn(
         "overflow-hidden transition-all duration-200 ease-in-out",
-        isOpen ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0",
+        mounted && isOpen ? "max-h-[1000px] opacity-100" : "max-h-0 opacity-0",
         className
       )}
     >

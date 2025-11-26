@@ -271,6 +271,7 @@ interface AppearanceSettings {
   giftCardGradientColor1: string
   giftCardGradientColor2: string
   giftCardBackgroundImage: string | null
+  giftCardBackgroundPosition: "center" | "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right"
   giftCardTextPosition: "right" | "left" | "center"
 }
 
@@ -467,6 +468,7 @@ export default function AppearancePage() {
     giftCardGradientColor1: "#ff9a9e",
     giftCardGradientColor2: "#fecfef",
     giftCardBackgroundImage: null,
+    giftCardBackgroundPosition: "center",
     giftCardTextPosition: "right",
   })
 
@@ -650,7 +652,8 @@ export default function AppearancePage() {
           giftCardGradientColor1: themeSettings.giftCardGradientColor1 || "#ff9a9e",
           giftCardGradientColor2: themeSettings.giftCardGradientColor2 || "#fecfef",
           giftCardBackgroundImage: themeSettings.giftCardBackgroundImage || null,
-            giftCardTextPosition: themeSettings.giftCardTextPosition || "right",
+          giftCardBackgroundPosition: themeSettings.giftCardBackgroundPosition || "center",
+          giftCardTextPosition: themeSettings.giftCardTextPosition || "right",
         })
       }
     } catch (error) {
@@ -817,6 +820,7 @@ export default function AppearancePage() {
             giftCardGradientColor1: settings.giftCardGradientColor1,
             giftCardGradientColor2: settings.giftCardGradientColor2,
             giftCardBackgroundImage: settings.giftCardBackgroundImage,
+            giftCardBackgroundPosition: settings.giftCardBackgroundPosition,
             giftCardTextPosition: settings.giftCardTextPosition,
           },
           settings: {
@@ -4837,6 +4841,30 @@ export default function AppearancePage() {
                             )}
                           </div>
                           <p className="text-sm text-gray-500">העלה תמונה שתוצג כרקע של כרטיס המתנה</p>
+                          
+                          <div className="space-y-2">
+                            <Label>מיקום תמונת רקע</Label>
+                            <Select
+                              value={settings.giftCardBackgroundPosition}
+                              onValueChange={(value: "center" | "top" | "bottom" | "left" | "right" | "top-left" | "top-right" | "bottom-left" | "bottom-right") => updateSettings("giftCardBackgroundPosition", value)}
+                            >
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="center">מרכז</SelectItem>
+                                <SelectItem value="top">למעלה</SelectItem>
+                                <SelectItem value="bottom">למטה</SelectItem>
+                                <SelectItem value="left">שמאל</SelectItem>
+                                <SelectItem value="right">ימין</SelectItem>
+                                <SelectItem value="top-left">למעלה שמאל</SelectItem>
+                                <SelectItem value="top-right">למעלה ימין</SelectItem>
+                                <SelectItem value="bottom-left">למטה שמאל</SelectItem>
+                                <SelectItem value="bottom-right">למטה ימין</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <p className="text-sm text-gray-500">בחר היכן תוצג תמונת הרקע בכרטיס</p>
+                          </div>
                         </div>
                       )}
 
@@ -4859,37 +4887,48 @@ export default function AppearancePage() {
                       </div>
 
                       {/* תצוגה מקדימה של Gift Card */}
-                      <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-                        <p className="text-sm text-gray-600 mb-2">תצוגה מקדימה:</p>
-                        <div
-                          className="h-48 rounded-lg relative overflow-hidden"
-                          style={{
-                            ...(settings.giftCardBackgroundType === "gradient"
-                              ? {
-                                  backgroundImage: `linear-gradient(135deg, ${settings.giftCardGradientColor1} 0%, ${settings.giftCardGradientColor2} 100%)`,
-                                }
-                              : settings.giftCardBackgroundImage
-                                ? {
-                                    backgroundImage: `url(${settings.giftCardBackgroundImage})`,
-                                    backgroundSize: "cover",
-                                    backgroundPosition: "center",
-                                    backgroundRepeat: "no-repeat",
-                                  }
-                                : {
-                                    backgroundColor: "#f0f0f0",
-                                  }),
-                          }}
-                        >
+                      <div className="mt-4 p-4 bg-gray-50 rounded-lg flex justify-center">
+                        <div className="w-full max-w-[500px]">
+                          <p className="text-sm text-gray-600 mb-2 text-right">תצוגה מקדימה:</p>
                           <div
-                            className={`absolute inset-0 flex items-center justify-${settings.giftCardTextPosition === "right" ? "end" : settings.giftCardTextPosition === "left" ? "start" : "center"} p-6`}
+                            className="w-full h-[315px] rounded-[15px] relative overflow-hidden shadow-xl"
                             style={{
-                              textAlign: settings.giftCardTextPosition,
+                              ...(settings.giftCardBackgroundType === "gradient"
+                                ? {
+                                    backgroundImage: `linear-gradient(135deg, ${settings.giftCardGradientColor1} 0%, ${settings.giftCardGradientColor2} 100%)`,
+                                  }
+                                : settings.giftCardBackgroundImage
+                                  ? {
+                                      backgroundImage: `url(${settings.giftCardBackgroundImage})`,
+                                      backgroundSize: "cover",
+                                      backgroundPosition: (settings.giftCardBackgroundPosition || "center").replace("-", " "),
+                                      backgroundRepeat: "no-repeat",
+                                    }
+                                  : {
+                                      backgroundColor: "#f0f0f0",
+                                    }),
                             }}
                           >
-                            <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4 max-w-xs">
-                              <h3 className="font-bold text-lg mb-2">כרטיס מתנה</h3>
-                              <p className="text-sm text-gray-600">₪100.00</p>
-                              <p className="text-xs text-gray-500 mt-2">קוד: ABC12345</p>
+                            <div
+                              className="absolute inset-0 flex items-center p-6 z-10"
+                              style={{
+                                justifyContent: settings.giftCardTextPosition === "right" ? "flex-end" : settings.giftCardTextPosition === "left" ? "flex-start" : "center",
+                                textAlign: settings.giftCardTextPosition,
+                              }}
+                            >
+                              <div 
+                                className="bg-white/92 backdrop-blur-sm rounded-[10px] p-4 w-[200px] shadow-md text-gray-800"
+                                style={{
+                                  marginRight: settings.giftCardTextPosition === "right" ? "0" : "auto",
+                                  marginLeft: settings.giftCardTextPosition === "left" ? "0" : settings.giftCardTextPosition === "center" ? "auto" : "auto",
+                                }}
+                              >
+                                <h3 className="font-bold text-base mb-2 text-gray-900" style={{ textAlign: settings.giftCardTextPosition }}>כרטיס מתנה</h3>
+                                <div className="bg-gray-100 rounded px-3 py-2 text-center border border-dashed border-gray-300 mb-2">
+                                  <code className="text-xs font-mono text-gray-800 tracking-wider">ABC12345</code>
+                                </div>
+                                <p className="text-xs text-gray-600" style={{ textAlign: settings.giftCardTextPosition }}>יתרה נוכחית: ₪100.00</p>
+                              </div>
                             </div>
                           </div>
                         </div>

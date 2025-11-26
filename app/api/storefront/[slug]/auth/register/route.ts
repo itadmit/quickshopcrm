@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 import { SignJWT } from "jose"
 import { cookies } from "next/headers"
+import { createOrUpdateContact, initContactCategories } from "@/lib/contacts"
 
 const registerSchema = z.object({
   email: z.string().email("אימייל לא תקין"),
@@ -87,6 +88,25 @@ export async function POST(
         },
       },
     })
+
+    // יצירת/עדכון Contact עם קטגוריה CLUB_MEMBER
+    try {
+      await initContactCategories(shop.id)
+      await createOrUpdateContact({
+        shopId: shop.id,
+        email: customer.email,
+        firstName: customer.firstName,
+        lastName: customer.lastName,
+        phone: customer.phone,
+        categoryTypes: ["CLUB_MEMBER"],
+        emailMarketingConsent: false,
+        emailMarketingConsentSource: "registration",
+        customerId: customer.id,
+      })
+    } catch (contactError) {
+      // לא נכשל את ההרשמה אם יש בעיה ב-Contact
+      console.error("Error creating/updating contact:", contactError)
+    }
 
     // יצירת JWT token (התחברות אוטומטית אחרי הרשמה)
     const secret = new TextEncoder().encode(process.env.JWT_SECRET || "your-secret-key")

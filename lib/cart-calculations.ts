@@ -1,5 +1,6 @@
 import { prisma } from "./prisma"
 import { calculateCustomerDiscount } from "./discounts"
+import { calculatePremiumClubDiscount } from "@/lib/plugins/core/premium-club"
 
 /**
  * פריט עגלה מועשר
@@ -365,31 +366,39 @@ async function calculateAutomaticDiscounts(
   enrichedItems: EnrichedCartItem[],
   subtotal: number,
   customerId: string | null,
-  customer: { totalSpent: number; orderCount: number; tier: string | null } | null
+  customer: { totalSpent: number; orderCount: number; tier: string | null } | null,
+  hasEarlyAccess: boolean = false
 ): Promise<{ amount: number; title: string | null }> {
   let automaticDiscount = 0
   let automaticDiscountTitle: string | null = null
   const now = new Date()
+  
+  // אם יש early access, נכלול גם מבצעים עתידיים
+  const discountDateFilter: any = hasEarlyAccess
+    ? {} // עם early access, אין הגבלת תאריך התחלה
+    : {
+        AND: [
+          {
+            OR: [
+              { startDate: null },
+              { startDate: { lte: now } },
+            ],
+          },
+          {
+            OR: [
+              { endDate: null },
+              { endDate: { gte: now } },
+            ],
+          },
+        ],
+      }
   
   const activeAutomaticDiscounts = await prisma.discount.findMany({
     where: {
       shopId,
       isActive: true,
       isAutomatic: true,
-      AND: [
-        {
-          OR: [
-            { startDate: null },
-            { startDate: { lte: now } },
-          ],
-        },
-        {
-          OR: [
-            { endDate: null },
-            { endDate: { gte: now } },
-          ],
-        },
-      ],
+      ...discountDateFilter,
     },
     orderBy: { priority: 'desc' },
   })
@@ -896,11 +905,14 @@ export async function calculateCart(
   // טעינת לקוח והגדרות הנחות
   let customerDiscountSettings = null
   let customer = null
+  let premiumClubConfig = null
+  let hasEarlyAccess = false
+  
   if (customerId) {
-    const [shopWithSettings, customerData] = await Promise.all([
+    const [shopWithSettings, customerData, shopForPlugin] = await Promise.all([
       prisma.shop.findUnique({
         where: { id: shopId },
-        select: { customerDiscountSettings: true },
+        select: { customerDiscountSettings: true, companyId: true },
       }),
       prisma.customer.findUnique({
         where: { id: customerId },
@@ -908,11 +920,44 @@ export async function calculateCart(
           totalSpent: true,
           orderCount: true,
           tier: true,
+          premiumClubTier: true,
         },
       }),
+      prisma.shop.findUnique({
+        where: { id: shopId },
+        select: { companyId: true },
+      }),
     ])
+    
     customerDiscountSettings = shopWithSettings?.customerDiscountSettings
     customer = customerData
+    
+    // טעינת הגדרות מועדון פרימיום
+    if (shopForPlugin) {
+      const premiumClubPlugin = await prisma.plugin.findFirst({
+        where: {
+          slug: 'premium-club',
+          isActive: true,
+          isInstalled: true,
+          OR: [
+            { shopId },
+            { companyId: shopForPlugin.companyId, shopId: null },
+            { shopId: null, companyId: null },
+          ],
+        },
+        select: { config: true },
+      })
+      premiumClubConfig = premiumClubPlugin?.config
+      
+      // בדיקת early access
+      if (premiumClubConfig && customerData?.premiumClubTier) {
+        const config = premiumClubConfig as any
+        if (config.enabled && config.benefits?.earlyAccessToSales) {
+          const tier = config.tiers?.find((t: any) => t.slug === customerData.premiumClubTier)
+          hasEarlyAccess = tier?.benefits?.earlyAccess || false
+        }
+      }
+    }
   } else {
   }
 
@@ -979,16 +1024,38 @@ export async function calculateCart(
     const basePrice = item.isGift ? 0 : (variant?.price || product.price)
     let itemPrice = basePrice
 
-    // חישוב הנחת לקוח רשום (רק אם זה לא מתנה)
+    // חישוב הנחות לקוח
+    let customerDiscount = 0
+    let premiumClubDiscount = 0
+
+    // הנחת לקוח רגילה (אם יש)
     if (!item.isGift && customerId && customer && customerDiscountSettings) {
-      const discount = calculateCustomerDiscountSync(
+      customerDiscount = calculateCustomerDiscountSync(
         customerDiscountSettings as any,
         customer,
         basePrice
       )
-      itemPrice = basePrice - discount
-      customerDiscountTotal += discount * item.quantity
     }
+
+    // הנחת מועדון פרימיום (אם מופעל ויש רמה)
+    if (!item.isGift && customerId && customer && premiumClubConfig) {
+      const config = premiumClubConfig as any
+      if (config.enabled && config.tiers && customer.premiumClubTier) {
+        const tier = config.tiers.find((t: any) => t.slug === customer.premiumClubTier)
+        if (tier?.discount) {
+          if (tier.discount.type === 'PERCENTAGE') {
+            premiumClubDiscount = (basePrice * tier.discount.value) / 100
+          } else {
+            premiumClubDiscount = tier.discount.value
+          }
+        }
+      }
+    }
+
+    // לוקחים את ההנחה הגבוהה יותר (לא מצטברות - כדי לא לתת הנחה כפולה)
+    const totalDiscount = Math.max(customerDiscount, premiumClubDiscount)
+    itemPrice = Math.max(0, basePrice - totalDiscount) // לא פחות מ-0
+    customerDiscountTotal += totalDiscount * item.quantity
 
     // חישוב מחיר addons
     let addonsTotal = 0
@@ -1244,7 +1311,8 @@ export async function calculateCart(
     enrichedItems,
     subtotal,
     customerId,
-    customer
+    customer,
+    hasEarlyAccess
   )
   const automaticDiscount = automaticDiscountResult.amount
   const automaticDiscountTitle = automaticDiscountResult.title

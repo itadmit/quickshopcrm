@@ -199,6 +199,69 @@ export function useProductPage({
     }
   }, [searchParams])
 
+  // האזנה לעדכוני layout מ-localStorage ו-postMessage (למצב customize בלבד)
+  // הערה: ה-layout הראשוני נטען מה-DB דרך initialProductPageLayout
+  useEffect(() => {
+    // בדיקה אם אנחנו במצב customize
+    const isCustomizeMode = searchParams.get("customize") === "true" || searchParams.get("edit_layout") === "true"
+    if (!isCustomizeMode || typeof window === 'undefined') return
+
+    const storageKey = `productPageLayout_${slug}`
+    let lastTimestamp = 0
+    let isHydrated = false
+    
+    // קריאה מ-localStorage (רק לעדכון בזמן אמת במצב customize)
+    const loadFromStorage = () => {
+      // רק אחרי שה-hydration הסתיים
+      if (!isHydrated) return
+      
+      try {
+        const stored = localStorage.getItem(storageKey)
+        if (stored) {
+          const data = JSON.parse(stored)
+          // בדיקה אם יש עדכון חדש
+          if (data.timestamp && data.timestamp > lastTimestamp) {
+            lastTimestamp = data.timestamp
+            if (data.elements && Array.isArray(data.elements)) {
+              setProductPageLayout({ elements: data.elements })
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Error loading layout from localStorage:", error)
+      }
+    }
+
+    // האזנה להודעות postMessage
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return
+
+      if (event.data.type === "updateProductPageLayout" && event.data.elements) {
+        setProductPageLayout({ elements: event.data.elements })
+      }
+    }
+
+    // המתן ל-hydration להסתיים לפני טעינה מ-localStorage
+    const hydrationTimeout = setTimeout(() => {
+      isHydrated = true
+      loadFromStorage()
+    }, 100)
+
+    // האזנה ל-postMessage (מחלון ה-customize)
+    window.addEventListener("message", handleMessage)
+
+    // בדיקה תקופתית של localStorage (למקרה של אותו חלון) - כל 200ms
+    const interval = setInterval(() => {
+      loadFromStorage()
+    }, 200)
+
+    return () => {
+      clearTimeout(hydrationTimeout)
+      window.removeEventListener("message", handleMessage)
+      clearInterval(interval)
+    }
+  }, [searchParams, slug])
+
   const handleOpenCart = useCallback((callback: () => void) => {
     setCartOpenCallback(() => callback)
   }, [])

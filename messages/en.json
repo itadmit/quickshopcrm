@@ -24,6 +24,8 @@
     "products": "Products",
     "orders": "Orders",
     "customers": "Customers",
+    "contacts": "Contacts",
+    "premiumClub": "Premium Club",
     "inventory": "Inventory",
     "quickEdit": "Quick Edit",
     "discounts": "Discounts",
@@ -51,6 +53,7 @@
     "trackingPixels": "Tracking Pixels",
     "settings": "Settings",
     "integrations": "Integrations",
+    "trafficSources": "Traffic Sources",
     "influencerDashboard": "Influencer Dashboard",
     "sections": {
       "influencer": "Influencer",

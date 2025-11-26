@@ -178,6 +178,103 @@ export const builtInPlugins: PluginDefinition[] = [
       position: 'bottom-right',
     },
   },
+  {
+    slug: 'premium-club',
+    name: 'חברי מועדון פרימיום',
+    description: 'מערכת רמות מתקדמת עם הנחות, הטבות ופיצ\'רים נוספים לפי רמות (כסף, זהב, פלטינה)',
+    type: 'CORE',
+    category: 'MARKETING',
+    version: '1.0.0',
+    isBuiltIn: true,
+    isFree: true,
+    defaultConfig: {
+      enabled: true,
+      tiers: [
+        {
+          slug: 'silver',
+          name: 'כסף',
+          color: '#C0C0C0',
+          priority: 1,
+          minSpent: 500,
+          minOrders: 3,
+          discount: {
+            type: 'PERCENTAGE',
+            value: 5,
+          },
+          benefits: {
+            freeShipping: false,
+            earlyAccess: false,
+            exclusiveProducts: false,
+            birthdayGift: true,
+            pointsMultiplier: 1.2,
+          },
+        },
+        {
+          slug: 'gold',
+          name: 'זהב',
+          color: '#FFD700',
+          priority: 2,
+          minSpent: 2000,
+          minOrders: 10,
+          discount: {
+            type: 'PERCENTAGE',
+            value: 10,
+          },
+          benefits: {
+            freeShipping: true,
+            earlyAccess: true,
+            exclusiveProducts: false,
+            birthdayGift: true,
+            pointsMultiplier: 1.5,
+          },
+        },
+        {
+          slug: 'platinum',
+          name: 'פלטינה',
+          color: '#E5E4E2',
+          priority: 3,
+          minSpent: 5000,
+          minOrders: 25,
+          discount: {
+            type: 'PERCENTAGE',
+            value: 15,
+          },
+          benefits: {
+            freeShipping: true,
+            earlyAccess: true,
+            exclusiveProducts: true,
+            birthdayGift: true,
+            pointsMultiplier: 2,
+          },
+        },
+      ],
+      benefits: {
+        freeShippingThreshold: 200,
+        birthdayDiscount: {
+          enabled: true,
+          value: 20,
+          type: 'PERCENTAGE',
+        },
+        earlyAccessToSales: true,
+        exclusiveProductsAccess: true,
+        vipSupport: true,
+        monthlyGift: true,
+      },
+      notifications: {
+        tierUpgradeEmail: true,
+        tierUpgradeSMS: false,
+      },
+    },
+    metadata: {
+      menuItem: {
+        icon: 'Crown',
+        labelKey: 'sidebar.premiumClub',
+        href: '/premium-club',
+        permission: 'customers',
+        section: 'marketing',
+      },
+    },
+  },
 ]
 
 // פונקציה לקבלת תוסף לפי slug

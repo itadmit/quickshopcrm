@@ -24,6 +24,8 @@
     "products": "מוצרים",
     "orders": "הזמנות",
     "customers": "לקוחות",
+    "contacts": "אנשי קשר",
+    "premiumClub": "חברי מועדון פרימיום",
     "inventory": "מלאי",
     "quickEdit": "עריכה מהירה",
     "discounts": "הנחות",
@@ -52,6 +54,7 @@
     "trackingPixels": "פיקסלים וקודי מעקב",
     "settings": "הגדרות",
     "integrations": "אינטגרציות",
+    "trafficSources": "מקורות תנועה",
     "influencerDashboard": "דשבורד משפיען/ית",
     "sections": {
       "influencer": "משפיען/ית",

@@ -167,22 +167,41 @@ export function ProductElements({
 
   const getElementStyle = (element: ProductPageElement): React.CSSProperties => {
     const style = element.config?.style || {}
+    
+    // אם אין style config, נחזיר style ריק
     if (!style || Object.keys(style).length === 0) {
       return {}
     }
-    return {
-      fontFamily: style.fontFamily,
-      fontSize: style.fontSize ? `${style.fontSize}px` : undefined,
-      fontWeight: style.fontWeight,
-      lineHeight: style.lineHeight,
-      textAlign: style.textAlign,
-      marginTop: style.marginTop !== undefined ? `${style.marginTop}px` : undefined,
-      marginBottom: style.marginBottom !== undefined ? `${style.marginBottom}px` : undefined,
-      paddingTop: style.paddingTop !== undefined ? `${style.paddingTop}px` : undefined,
-      paddingBottom: style.paddingBottom !== undefined ? `${style.paddingBottom}px` : undefined,
-      color: style.color,
+    
+    const cssStyle: React.CSSProperties = {}
+    
+    // גודל פונט - נשתמש בגודל מובייל כברירת מחדל, ובגודל מחשב ב-media query
+    if (style.fontSizeMobile !== undefined) {
+      cssStyle.fontSize = `${style.fontSizeMobile}px`
+    } else if (style.fontSizeDesktop !== undefined) {
+      cssStyle.fontSize = `${style.fontSizeDesktop}px`
     }
+    
+    if (style.fontWeight) cssStyle.fontWeight = String(style.fontWeight)
+    if (style.lineHeight) cssStyle.lineHeight = String(style.lineHeight)
+    
+    // יישור טקסט - נשתמש ביישור מובייל כברירת מחדל, ובגודל מחשב ב-media query
+    if (style.textAlignMobile !== undefined) {
+      cssStyle.textAlign = style.textAlignMobile as "left" | "right" | "center"
+    } else if (style.textAlignDesktop !== undefined) {
+      cssStyle.textAlign = style.textAlignDesktop as "left" | "right" | "center"
+    } else if (style.textAlign) {
+      cssStyle.textAlign = style.textAlign as "left" | "right" | "center"
+    }
+    if (style.marginTop !== undefined) cssStyle.marginTop = `${style.marginTop}px`
+    if (style.marginBottom !== undefined) cssStyle.marginBottom = `${style.marginBottom}px`
+    if (style.paddingTop !== undefined) cssStyle.paddingTop = `${style.paddingTop}px`
+    if (style.paddingBottom !== undefined) cssStyle.paddingBottom = `${style.paddingBottom}px`
+    if (style.color) cssStyle.color = style.color
+    
+    return cssStyle
   }
+
 
   const renderStars = (rating: number) => {
     return (
@@ -210,6 +229,32 @@ export function ProductElements({
     const canMoveDown = currentIndex < sortedElements.length - 1
 
     const elementStyle = getElementStyle(element)
+    const style = element.config?.style || {}
+    
+    // הוספת style tag עם media query לגודל פונט ויישור responsive
+    const responsiveStyleId = `responsive-${element.id}`
+    const hasResponsiveFontSize = style.fontSizeDesktop && style.fontSizeMobile && style.fontSizeDesktop !== style.fontSizeMobile
+    const hasResponsiveTextAlign = style.textAlignDesktop && style.textAlignMobile && style.textAlignDesktop !== style.textAlignMobile
+    const responsiveStyle = (hasResponsiveFontSize || hasResponsiveTextAlign)
+      ? (
+        <style key={responsiveStyleId} dangerouslySetInnerHTML={{
+          __html: `
+            @media (min-width: 768px) {
+              [data-element-id="${element.id}"] h1,
+              [data-element-id="${element.id}"] h2,
+              [data-element-id="${element.id}"] h3,
+              [data-element-id="${element.id}"] p,
+              [data-element-id="${element.id}"] span,
+              [data-element-id="${element.id}"] div,
+              [data-element-id="${element.id}"] label {
+                ${hasResponsiveFontSize ? `font-size: ${style.fontSizeDesktop}px !important;` : ''}
+                ${hasResponsiveTextAlign ? `text-align: ${style.textAlignDesktop} !important;` : ''}
+              }
+            }
+          `
+        }} />
+      )
+      : null
 
     const elementContent = (() => {
       if (!element.visible && isEditingLayout) {
@@ -241,7 +286,7 @@ export function ProductElements({
       case "product-name":
         return (
           <div key={element.id} style={elementStyle}>
-            <h1 className="text-4xl font-bold text-gray-900 mb-4" style={elementStyle}>{product.seoTitle || product.name}</h1>
+            <h1 style={elementStyle}>{product.seoTitle || product.name}</h1>
           </div>
         )
 
@@ -342,11 +387,19 @@ export function ProductElements({
 
       case "product-description":
         return product.description ? (
-          <div key={element.id} className="mb-6" style={elementStyle}>
+          <div key={element.id} style={elementStyle}>
             {element.config?.title && (
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{element.config.title}</h3>
+              <h3 style={elementStyle}>{element.config.title}</h3>
             )}
-            <p className="text-gray-700 whitespace-pre-line" style={elementStyle}>{product.description}</p>
+            <p 
+              className="whitespace-pre-line" 
+              style={{
+                ...elementStyle,
+                textAlign: elementStyle.textAlign || undefined,
+              }}
+            >
+              {product.description}
+            </p>
           </div>
         ) : null
 
@@ -381,7 +434,6 @@ export function ProductElements({
                         
                         // אם אין variants, הכל זמין
                         if (!product.variants || product.variants.length === 0) {
-                          console.log(`[Stock Check] No variants for option ${option.name}, value ${valueId} - returning true`)
                           return true
                         }
                         
@@ -418,14 +470,6 @@ export function ProductElements({
                           [option.id]: valueId
                         }
                         
-                        console.log(`[Stock Check] Checking availability for:`, {
-                          optionName: option.name,
-                          valueId,
-                          valueLabel,
-                          selectedOptionValues,
-                          fullSelection,
-                          totalVariants: product.variants.length
-                        })
                         
                         // בדיקה אם יש variant שמתאים לשילוב המלא (כולל הערך הנוכחי) ויש לו מלאי
                         const result = product.variants.some((v: any) => {
@@ -453,7 +497,6 @@ export function ProductElements({
                             const hasStockCheck = product.sellWhenSoldOut 
                               ? true 
                               : (v.inventoryQty === null || v.inventoryQty === undefined || v.inventoryQty > 0)
-                            console.log(`[Stock Check] No selections - variant ${v.id} matches: ${matchesValueCheck}, hasStock: ${hasStockCheck}, inventoryQty: ${v.inventoryQty}, sellWhenSoldOut: ${product.sellWhenSoldOut}`)
                             return hasStockCheck
                           }
                           
@@ -467,11 +510,7 @@ export function ProductElements({
                             // מציאת ה-label של ה-valueId שנבחר
                             const valLabel = valueIdToLabelMap[optionId]?.[valId] || valId
                             
-                            const matches = matchesValue(valId, valLabel, variantValue)
-                            if (!matches) {
-                              console.log(`[Stock Check] Selection mismatch: ${optionName} = ${valId} (${valLabel}), variant has: ${variantValue}`)
-                            }
-                            return matches
+                            return matchesValue(valId, valLabel, variantValue)
                           })
                           
                           // בדיקה שכל ה-options של ה-variant תואמים לבחירות (לא יותר, לא פחות)
@@ -484,11 +523,7 @@ export function ProductElements({
                             const variantValue = variantOptions[optionName]
                             const valLabel = valueIdToLabelMap[opt.id]?.[selectedValueId] || selectedValueId
                             
-                            const matches = matchesValue(selectedValueId, valLabel, variantValue)
-                            if (!matches) {
-                              console.log(`[Stock Check] Variant option mismatch: ${optionName} = ${variantValue}, selection has: ${selectedValueId} (${valLabel})`)
-                            }
-                            return matches
+                            return matchesValue(selectedValueId, valLabel, variantValue)
                           })
                           
                           // בדיקה שמספר ה-options תואם
@@ -499,24 +534,9 @@ export function ProductElements({
                             ? true 
                             : (v.inventoryQty === null || v.inventoryQty === undefined || v.inventoryQty > 0)
                           
-                          const isMatch = allSelectionsMatch && allVariantOptionsMatch && optionsCountMatch && hasStockCheck
-                          
-                          if (isMatch || (allSelectionsMatch && allVariantOptionsMatch && optionsCountMatch)) {
-                            console.log(`[Stock Check] Variant ${v.id} (${v.name}):`, {
-                              variantOptions,
-                              allSelectionsMatch,
-                              allVariantOptionsMatch,
-                              optionsCountMatch,
-                              hasStock: hasStockCheck,
-                              inventoryQty: v.inventoryQty,
-                              isMatch
-                            })
-                          }
-                          
-                          return isMatch
+                          return allSelectionsMatch && allVariantOptionsMatch && optionsCountMatch && hasStockCheck
                         })
                         
-                        console.log(`[Stock Check] Final result for ${option.name} ${valueLabel}: ${result}`)
                         return result
                       })()
                       
@@ -540,19 +560,29 @@ export function ProductElements({
                       
                       // אם זה צבע, הצג עיגול
                       if (isColorOption && colorCode && !isPattern) {
+                        const variantColorShape = element.config?.style?.variantColorShape || "circle"
+                        const variantColorSize = element.config?.style?.variantColorSize || 40
+                        const variantColorBorderColor = element.config?.style?.variantColorBorderColor || "#10b981"
+                        
+                        const shapeClass = 
+                          variantColorShape === "circle" ? "rounded-full" :
+                          variantColorShape === "square" ? "rounded-none" :
+                          "rounded-md" // rounded-square
+                        
                         return (
                           <button
                             key={valueId}
                             onClick={() => setSelectedOptionValues({ ...selectedOptionValues, [option.id]: valueId })}
-                            className={`relative w-10 h-10 rounded-full border-2 transition-all overflow-hidden ${
+                            className={`relative transition-all overflow-hidden ${shapeClass} ${
                               isSelected
                                 ? "ring-2 ring-offset-2"
-                                : "border-gray-300 hover:border-gray-400"
+                                : "border-2 border-gray-300 hover:border-gray-400"
                             } ${!hasStock ? "opacity-60" : ""}`}
                             style={{
+                              width: `${variantColorSize}px`,
+                              height: `${variantColorSize}px`,
                               backgroundColor: colorCode,
-                              borderColor: isSelected ? theme.primaryColor : undefined,
-                              ringColor: isSelected ? theme.primaryColor : undefined,
+                              ['--tw-ring-color' as any]: isSelected ? variantColorBorderColor : undefined,
                             }}
                             title={valueLabel}
                           >
@@ -586,7 +616,7 @@ export function ProductElements({
                             } ${!hasStock ? "opacity-60" : ""}`}
                             style={{
                               borderColor: isSelected ? theme.primaryColor : undefined,
-                              ringColor: isSelected ? theme.primaryColor : undefined,
+                              ['--tw-ring-color' as any]: isSelected ? theme.primaryColor : undefined,
                               backgroundImage: patternStyle,
                               backgroundSize: patternBackgroundSize,
                               backgroundPosition: patternBackgroundPosition,
@@ -611,33 +641,41 @@ export function ProductElements({
                       }
                       
                       // אחרת, הצג כפתור רגיל
-                      // שימוש באותו צבע כמו כפתור "הוסף לעגלה"
-                      const buttonBgColor = theme.primaryColor || "#000000"
-                      const buttonTextColor = theme.primaryTextColor || '#ffffff'
+                      const variantButtonShape = element.config?.style?.variantButtonShape || "rounded"
+                      const variantButtonSize = element.config?.style?.variantButtonSize || 40
+                      const variantButtonBgColor = element.config?.style?.variantButtonBgColor || "#10b981"
+                      const variantButtonBorderColor = element.config?.style?.variantButtonBorderColor || "#d1d5db"
+                      const variantButtonTextColor = element.config?.style?.variantButtonTextColor || "#000000"
+                      const variantButtonTextColorSelected = element.config?.style?.variantButtonTextColorSelected || "#ffffff"
+                      
+                      const buttonShapeClass = variantButtonShape === "rounded" ? "rounded-full" : "rounded-sm"
                       
                       return (
                         <button
                           key={valueId}
                           onClick={() => setSelectedOptionValues({ ...selectedOptionValues, [option.id]: valueId })}
-                          className={`relative px-4 py-2 border-2 rounded-sm text-sm font-medium transition-all flex items-center justify-center ${
+                          className={`relative px-4 py-2 border-2 text-sm font-medium transition-all flex items-center justify-center ${buttonShapeClass} ${
                             isSelected
                               ? ""
-                              : "border-gray-300 text-gray-900 hover:border-gray-400 bg-white"
+                              : "hover:border-gray-400 bg-white"
                           } ${!hasStock ? "opacity-60" : ""}`}
                           style={{
+                            minWidth: `${variantButtonSize}px`,
+                            minHeight: `${variantButtonSize}px`,
                             ...(isSelected ? {
-                              borderColor: buttonBgColor,
-                              backgroundColor: buttonBgColor,
-                              color: buttonTextColor,
-                            } : {}),
-                            minWidth: '48px',
-                            height: '40px',
+                              borderColor: variantButtonBgColor,
+                              backgroundColor: variantButtonBgColor,
+                              color: variantButtonTextColorSelected,
+                            } : {
+                              borderColor: variantButtonBorderColor,
+                              color: variantButtonTextColor,
+                            }),
                           }}
                         >
                           {valueLabel}
                           {!hasStock && (
                             <div 
-                              className="absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden rounded-sm"
+                              className={`absolute inset-0 flex items-center justify-center pointer-events-none overflow-hidden ${buttonShapeClass}`}
                             >
                               <div 
                                 className="w-[150%] h-[2px] bg-red-500"
@@ -786,29 +824,13 @@ export function ProductElements({
               variantOptions[variant.option3] = variant.option3Value
             }
             
-            console.log(`[Product Buttons] Checking variant ${variant.id}:`, {
-              variantName: variant.name,
-              variantOptions,
-              selectedOptionValues,
-              inventoryQty: variant.inventoryQty
-            })
-            
             // בדיקה שכל הבחירות תואמות ל-variant
             const allSelectionsMatch = Object.entries(selectedOptionValues).every(([optionId, valueId]) => {
               const selectedOption = product.options?.find(opt => opt.id === optionId)
               const optionName = selectedOption?.name || optionId
               const variantValue = variantOptions[optionName]
               const valLabel = valueIdToLabelMap[optionId]?.[valueId] || valueId
-              const matches = matchesValue(valueId, valLabel, variantValue)
-              console.log(`[Product Buttons] Selection match check:`, {
-                optionId,
-                optionName,
-                valueId,
-                valLabel,
-                variantValue,
-                matches
-              })
-              return matches
+              return matchesValue(valueId, valLabel, variantValue)
             })
             
             // בדיקה שכל ה-options של ה-variant תואמים לבחירות (לא יותר, לא פחות)
@@ -820,28 +842,12 @@ export function ProductElements({
               const variantValue = variantOptions[optionName]
               const valLabel = valueIdToLabelMap[option.id]?.[selectedValueId] || selectedValueId
               const matches = matchesValue(selectedValueId, valLabel, variantValue)
-              console.log(`[Product Buttons] Variant option match check:`, {
-                optionName,
-                selectedValueId,
-                valLabel,
-                variantValue,
-                matches
-              })
               return matches
             })
             
             const optionsCountMatch = Object.keys(variantOptions).length === Object.keys(selectedOptionValues).length
             
-            const isMatch = allSelectionsMatch && allVariantOptionsMatch && optionsCountMatch
-            
-            console.log(`[Product Buttons] Variant ${variant.id} match result:`, {
-              allSelectionsMatch,
-              allVariantOptionsMatch,
-              optionsCountMatch,
-              isMatch
-            })
-            
-            return isMatch
+            return allSelectionsMatch && allVariantOptionsMatch && optionsCountMatch
           })
           
           if (matchedVariant) {
@@ -851,19 +857,7 @@ export function ProductElements({
             isVariantOutOfStock = matchedVariant.inventoryQty !== null && 
                                   matchedVariant.inventoryQty !== undefined && 
                                   matchedVariant.inventoryQty <= 0
-            console.log(`[Product Buttons] Found matched variant:`, {
-              variantId: matchedVariant.id,
-              variantName: matchedVariant.name,
-              inventoryQty: matchedVariant.inventoryQty,
-              isVariantOutOfStock,
-              selectedOptionValues
-            })
           } else {
-            console.log(`[Product Buttons] No matched variant found for:`, {
-              selectedOptionValues,
-              totalVariants: product.variants?.length || 0,
-              optionsCount: product.options?.length || 0
-            })
             // אם לא מצאנו variant מתאים, נבדוק אם כל האופציות נבחרו
             // אם לא כל האופציות נבחרו, זה לא out of stock - פשוט צריך לבחור עוד אופציות
             const allOptionsSelected = product.options?.every(opt => selectedOptionValues[opt.id] !== undefined) || false
@@ -902,16 +896,6 @@ export function ProductElements({
           : (hasMatchedVariant 
               ? isVariantOutOfStock 
               : isProductOutOfStock)
-        
-        console.log(`[Product Buttons] Final check:`, {
-          hasMatchedVariant,
-          isProductOutOfStock,
-          isVariantOutOfStock,
-          sellWhenSoldOut: product.sellWhenSoldOut,
-          isOutOfStock,
-          matchedVariantId,
-          selectedOptionValues
-        })
         
         return (
           <div key={element.id} className="space-y-3">
@@ -1051,17 +1035,23 @@ export function ProductElements({
         ) : null
 
       case "custom-text":
-        return element.config?.content ? (
+        const customTextContent = element.config?.content || ""
+        return customTextContent ? (
           <div key={element.id} className="mb-6" style={elementStyle}>
             {element.config.title && (
               <h3 className="text-lg font-semibold text-gray-900 mb-2" style={elementStyle}>{element.config.title}</h3>
             )}
-            <p className="text-gray-700 whitespace-pre-line" style={elementStyle}>{element.config.content}</p>
+            <div 
+              className="text-gray-700 prose prose-sm max-w-none" 
+              style={elementStyle}
+              dangerouslySetInnerHTML={{ __html: customTextContent }}
+            />
           </div>
         ) : null
 
       case "custom-accordion":
-        return element.config?.content ? (
+        const accordionContent = element.config?.content || ""
+        return accordionContent ? (
           <div key={element.id} className="mb-6" style={elementStyle}>
             <details className="group">
               <summary className="cursor-pointer list-none">
@@ -1070,9 +1060,11 @@ export function ProductElements({
                   <ChevronRight className="w-5 h-5 text-gray-500 group-open:rotate-90 transition-transform" />
                 </div>
               </summary>
-              <div className="p-4 text-gray-700 whitespace-pre-line" style={elementStyle}>
-                {element.config.content}
-              </div>
+              <div 
+                className="p-4 text-gray-700 prose prose-sm max-w-none" 
+                style={elementStyle}
+                dangerouslySetInnerHTML={{ __html: accordionContent }}
+              />
             </details>
           </div>
         ) : null
@@ -1109,21 +1101,24 @@ export function ProductElements({
       }
 
       return (
-        <EditableProductElement
-          key={element.id}
-          elementId={element.id}
-          elementName={elementLabels[element.type]}
-          isEditing={isEditingLayout}
-          onMoveUp={() => onMoveElement(element.id, "up")}
-          onMoveDown={() => onMoveElement(element.id, "down")}
-          onToggleVisibility={() => onToggleElementVisibility(element.id)}
-          onOpenSettings={() => onOpenElementSettings(element.id)}
-          isVisible={element.visible}
-          canMoveUp={canMoveUp}
-          canMoveDown={canMoveDown}
-        >
-          {elementContent}
-        </EditableProductElement>
+        <>
+          {responsiveStyle}
+          <EditableProductElement
+            key={element.id}
+            elementId={element.id}
+            elementName={elementLabels[element.type]}
+            isEditing={isEditingLayout}
+            onMoveUp={() => onMoveElement(element.id, "up")}
+            onMoveDown={() => onMoveElement(element.id, "down")}
+            onToggleVisibility={() => onToggleElementVisibility(element.id)}
+            onOpenSettings={() => onOpenElementSettings(element.id)}
+            isVisible={element.visible}
+            canMoveUp={canMoveUp}
+            canMoveDown={canMoveDown}
+          >
+            {elementContent}
+          </EditableProductElement>
+        </>
       )
     }
 

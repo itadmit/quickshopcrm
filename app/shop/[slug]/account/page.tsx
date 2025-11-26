@@ -31,6 +31,10 @@ import {
   Plus,
   Edit,
   X,
+  Truck,
+  RefreshCw,
+  Crown,
+  Gift,
 } from "lucide-react"
 import Link from "next/link"
 import { StorefrontHeader } from "@/components/storefront/StorefrontHeader"
@@ -61,6 +65,10 @@ interface Order {
   paymentStatus?: string
   total: number
   createdAt: string
+  trackingNumber?: string | null
+  shippingTrackingNumber?: string | null
+  shippingProvider?: string | null
+  shippingStatus?: string | null
   items?: Array<{
     id: string
     quantity: number
@@ -111,6 +119,11 @@ export default function StorefrontAccountPage() {
     items: [] as Array<{ orderItemId: string; quantity: number; reason?: string }>,
   })
   const [creatingReturn, setCreatingReturn] = useState(false)
+  const [trackingStatuses, setTrackingStatuses] = useState<Record<string, any>>({})
+  const [loadingTracking, setLoadingTracking] = useState<Record<string, boolean>>({})
+  const [monthlyGift, setMonthlyGift] = useState<any>(null)
+  const [loadingMonthlyGift, setLoadingMonthlyGift] = useState(false)
+  const [claimingGift, setClaimingGift] = useState(false)
 
   // פונקציה לתרגום סטטוס לעברית
   const getStatusText = (status: string, paymentStatus?: string) => {
@@ -183,6 +196,73 @@ export default function StorefrontAccountPage() {
     }
   }, [activeTab, customer])
 
+  useEffect(() => {
+    if (customer?.id && shop?.id && customer?.premiumClubTier) {
+      fetchMonthlyGift()
+    }
+  }, [customer?.id, shop?.id, customer?.premiumClubTier])
+
+  const fetchMonthlyGift = async () => {
+    if (!customer?.id || !shop?.id) return
+    
+    setLoadingMonthlyGift(true)
+    try {
+      const response = await fetch(
+        `/api/premium-club/monthly-gift?shopId=${shop.id}&customerId=${customer.id}`
+      )
+      if (response.ok) {
+        const data = await response.json()
+        setMonthlyGift(data)
+      }
+    } catch (error) {
+      console.error("Error fetching monthly gift:", error)
+    } finally {
+      setLoadingMonthlyGift(false)
+    }
+  }
+
+  const claimMonthlyGift = async () => {
+    if (!customer?.id || !shop?.id) return
+    
+    setClaimingGift(true)
+    try {
+      const response = await fetch(`/api/premium-club/monthly-gift`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          shopId: shop.id,
+          customerId: customer.id,
+        }),
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        toast({
+          title: "מצוין!",
+          description: data.couponCode 
+            ? `קיבלת מתנה חודשית! קוד ההנחה שלך: ${data.couponCode}`
+            : "קיבלת מתנה חודשית!",
+        })
+        fetchMonthlyGift()
+      } else {
+        const error = await response.json()
+        toast({
+          title: "שגיאה",
+          description: error.error || "אירעה שגיאה בקבלת המתנה",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה בקבלת המתנה",
+        variant: "destructive",
+      })
+    } finally {
+      setClaimingGift(false)
+    }
+  }
+
   const fetchShopInfo = async () => {
     try {
       const response = await fetch(`/api/storefront/${slug}/info`)
@@ -232,6 +312,67 @@ export default function StorefrontAccountPage() {
     } catch (error) {
       console.error("Error fetching orders:", error)
     }
+  }
+
+  const fetchTrackingStatus = async (orderId: string) => {
+    if (loadingTracking[orderId]) return
+    
+    setLoadingTracking(prev => ({ ...prev, [orderId]: true }))
+    try {
+      const token = localStorage.getItem(`storefront_token_${slug}`)
+      const response = await fetch(`/api/storefront/${slug}/orders/${orderId}/tracking`, {
+        headers: {
+          "x-customer-id": token || "",
+        },
+      })
+      
+      if (response.ok) {
+        const data = await response.json()
+        setTrackingStatuses(prev => ({ ...prev, [orderId]: data }))
+      } else {
+        const error = await response.json()
+        toast({
+          title: "שגיאה",
+          description: error.error || "לא הצלחנו לקבל את סטטוס המעקב",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error fetching tracking status:", error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה בקבלת סטטוס המעקב",
+        variant: "destructive",
+      })
+    } finally {
+      setLoadingTracking(prev => ({ ...prev, [orderId]: false }))
+    }
+  }
+
+  const getTrackingStatusText = (status: string) => {
+    const statusMap: Record<string, string> = {
+      pending: "ממתין",
+      sent: "נשלח",
+      in_transit: "בדרך",
+      delivered: "נמסר",
+      cancelled: "בוטל",
+      failed: "נכשל",
+      returned: "הוחזר",
+    }
+    return statusMap[status] || status
+  }
+
+  const getTrackingStatusColor = (status: string) => {
+    const colorMap: Record<string, string> = {
+      pending: "bg-yellow-100 text-yellow-700 border-yellow-200",
+      sent: "bg-blue-100 text-blue-700 border-blue-200",
+      in_transit: "bg-purple-100 text-purple-700 border-purple-200",
+      delivered: "bg-green-100 text-green-700 border-green-200",
+      cancelled: "bg-red-100 text-red-700 border-red-200",
+      failed: "bg-red-100 text-red-700 border-red-200",
+      returned: "bg-orange-100 text-orange-700 border-orange-200",
+    }
+    return colorMap[status] || "bg-gray-100 text-gray-700 border-gray-200"
   }
 
   const fetchReturns = async (customerId: string) => {
@@ -719,6 +860,51 @@ export default function StorefrontAccountPage() {
                   </div>
                 </CardContent>
               </Card>
+
+              {/* Premium Club Monthly Gift */}
+              {customer?.premiumClubTier && monthlyGift && (
+                <Card className="mt-6 border-2 border-yellow-200 bg-gradient-to-br from-yellow-50 to-orange-50">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Crown className="w-5 h-5 text-yellow-600" />
+                      מתנה חודשית - מועדון פרימיום
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {monthlyGift.available ? (
+                      <>
+                        <div className="flex items-center gap-3 p-4 bg-white rounded-lg border border-yellow-200">
+                          <Gift className="w-8 h-8 text-yellow-600" />
+                          <div className="flex-1">
+                            <p className="font-semibold text-lg">יש לך מתנה חודשית זמינה!</p>
+                            <p className="text-sm text-gray-600">
+                              כחבר מועדון פרימיום ברמה {customer.premiumClubTier}, אתה זכאי למתנה חודשית
+                            </p>
+                          </div>
+                        </div>
+                        <Button
+                          onClick={claimMonthlyGift}
+                          disabled={claimingGift}
+                          className="w-full bg-yellow-600 hover:bg-yellow-700"
+                        >
+                          {claimingGift ? "מקבל מתנה..." : "קבל מתנה חודשית"}
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="text-center py-4">
+                        <p className="text-gray-600">
+                          {monthlyGift.message || "אין מתנה זמינה כרגע"}
+                        </p>
+                        {monthlyGift.claimedAt && (
+                          <p className="text-sm text-gray-500 mt-2">
+                            קיבלת מתנה ב-{new Date(monthlyGift.claimedAt).toLocaleDateString('he-IL')}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
             )}
 
             {activeTab === "orders" && (
@@ -739,43 +925,105 @@ export default function StorefrontAccountPage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {orders.map((order) => (
-                        <div
-                          key={order.id}
-                          className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-2">
-                                <Package className="w-4 h-4 text-gray-400" />
-                                <span className="font-semibold">
-                                  הזמנה #{order.orderNumber}
-                                </span>
-                                <Badge className={getStatusColor(order.status, order.paymentStatus)}>
-                                  {getStatusText(order.status, order.paymentStatus)}
-                                </Badge>
+                      {orders.map((order) => {
+                        const hasTracking = order.shippingTrackingNumber || order.trackingNumber
+                        const trackingStatus = trackingStatuses[order.id]
+                        const isLoadingTracking = loadingTracking[order.id]
+                        
+                        return (
+                          <div
+                            key={order.id}
+                            className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Package className="w-4 h-4 text-gray-400" />
+                                  <span className="font-semibold">
+                                    הזמנה #{order.orderNumber}
+                                  </span>
+                                  <Badge className={getStatusColor(order.status, order.paymentStatus)}>
+                                    {getStatusText(order.status, order.paymentStatus)}
+                                  </Badge>
+                                  {trackingStatus && (
+                                    <Badge className={getTrackingStatusColor(trackingStatus.status)}>
+                                      {getTrackingStatusText(trackingStatus.status)}
+                                    </Badge>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-4 text-sm text-gray-600">
+                                  <div className="flex items-center gap-1">
+                                    <Calendar className="w-4 h-4" />
+                                    {new Date(order.createdAt).toLocaleDateString("he-IL")}
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <Coins className="w-4 h-4" />
+                                    ₪{order.total.toFixed(2)}
+                                  </div>
+                                  {hasTracking && (
+                                    <div className="flex items-center gap-1">
+                                      <Truck className="w-4 h-4" />
+                                      <span className="text-xs">
+                                        {order.shippingTrackingNumber || order.trackingNumber}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                                {trackingStatus?.events && trackingStatus.events.length > 0 && (
+                                  <div className="mt-3 pt-3 border-t">
+                                    <div className="text-xs text-gray-600 mb-2">היסטוריית מעקב:</div>
+                                    <div className="space-y-1">
+                                      {trackingStatus.events.slice(0, 2).map((event: any, idx: number) => {
+                                        // בדיקה שהתאריך תקין
+                                        let eventDate: Date
+                                        try {
+                                          eventDate = event.date instanceof Date ? event.date : new Date(event.date)
+                                          if (isNaN(eventDate.getTime())) {
+                                            eventDate = new Date()
+                                          }
+                                        } catch {
+                                          eventDate = new Date()
+                                        }
+                                        
+                                        return (
+                                          <div key={idx} className="text-xs text-gray-500 flex items-center gap-2">
+                                            <span className="w-2 h-2 rounded-full bg-blue-400"></span>
+                                            <span>
+                                              {eventDate.toLocaleDateString("he-IL")} {eventDate.toLocaleTimeString("he-IL", { hour: "2-digit", minute: "2-digit" })}
+                                            </span>
+                                            <span>-</span>
+                                            <span>{event.description || "אירוע מעקב"}</span>
+                                          </div>
+                                        )
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
-                              <div className="flex items-center gap-4 text-sm text-gray-600">
-                                <div className="flex items-center gap-1">
-                                  <Calendar className="w-4 h-4" />
-                                  {new Date(order.createdAt).toLocaleDateString("he-IL")}
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Coins className="w-4 h-4" />
-                                  ₪{order.total.toFixed(2)}
-                                </div>
+                              <div className="flex items-center gap-2">
+                                {hasTracking && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => fetchTrackingStatus(order.id)}
+                                    disabled={isLoadingTracking}
+                                  >
+                                    <RefreshCw className={`w-4 h-4 ml-2 ${isLoadingTracking ? "animate-spin" : ""}`} />
+                                    רענון מעקב
+                                  </Button>
+                                )}
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => router.push(`/shop/${slug}/orders/${order.id}`)}
+                                >
+                                  צפה בהזמנה
+                                </Button>
                               </div>
                             </div>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => router.push(`/shop/${slug}/orders/${order.id}`)}
-                            >
-                              צפה בהזמנה
-                            </Button>
                           </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
                 </CardContent>

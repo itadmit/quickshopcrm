@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { cookies } from "next/headers"
 import { CheckCircle2, Package, Mail, Phone, MapPin, Calendar } from "lucide-react"
 import Link from "next/link"
+import { getBaseUrl } from "@/lib/utils"
 
 async function getOrder(orderId: string) {
   try {
@@ -192,7 +193,7 @@ export default async function PaymentSuccessPage({
                 if (shop) {
                   const shopUrl = shop.domain 
                     ? `https://${shop.domain}` 
-                    : `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/shop/${shop.slug}`
+                    : `${getBaseUrl()}/shop/${shop.slug}`
                   
                   const { emailTemplates, sendEmail } = await import("@/lib/email")
                   const emailTemplate = await emailTemplates.giftCard(

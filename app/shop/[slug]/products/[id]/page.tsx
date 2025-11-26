@@ -236,12 +236,14 @@ export default async function ProductPage({ params }: { params: { slug: string; 
   const themeSettings = (shop.themeSettings as any) || {}
   const galleryLayout = themeSettings.productGalleryLayout || 'standard'
   
-  // עדיפות: תבנית מ-DB > תבנית מ-themeSettings > null
-  const productPageLayout = productPageTemplate?.elements 
+  // עדיפות: shop.settings.productPageLayout (מה-DB) > תבנית מ-DB > תבנית מ-themeSettings > null
+  const settings = (shop.settings as any) || {}
+  const productPageLayout = settings.productPageLayout?.elements
+    ? { elements: settings.productPageLayout.elements }
+    : productPageTemplate?.elements 
     ? { elements: productPageTemplate.elements as any }
     : themeSettings.productPageLayout || null
     
-  const settings = (shop.settings as any) || {}
   const autoOpenCart = settings.autoOpenCartAfterAdd !== false
 
   return (

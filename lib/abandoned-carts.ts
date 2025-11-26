@@ -59,7 +59,7 @@ export async function identifyAbandonedCarts() {
             items: cart.items,
             // לינק ישיר לצ'ק אאוט עם העגלה
             checkoutUrl: shop?.slug 
-              ? `${process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000"}/shop/${shop.slug}/checkout?cartId=${cart.id}`
+              ? `${(await import('@/lib/utils')).getBaseUrl()}/shop/${shop.slug}/checkout?cartId=${cart.id}`
               : null,
           },
         },

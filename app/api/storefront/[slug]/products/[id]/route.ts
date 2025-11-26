@@ -21,6 +21,19 @@ export async function GET(
       return NextResponse.json({ error: "Shop not found" }, { status: 404 })
     }
 
+    // קבלת customerId מ-header (אם יש)
+    const customerId = req.headers.get("x-customer-id")
+    
+    // טעינת רמת מועדון פרימיום של הלקוח (אם יש)
+    let customerTier: string | null = null
+    if (customerId) {
+      const customer = await prisma.customer.findUnique({
+        where: { id: customerId },
+        select: { premiumClubTier: true },
+      })
+      customerTier = customer?.premiumClubTier || null
+    }
+
     // נסה למצוא את המוצר לפי ID או slug
     const product = await prisma.product.findFirst({
       where: {
@@ -107,6 +120,16 @@ export async function GET(
           availableProducts: allProducts
         }
       }, { status: 404 })
+    }
+
+    // בדיקת גישה למוצר בלעדי
+    if (product.exclusiveToTier && product.exclusiveToTier.length > 0) {
+      if (!customerTier || !product.exclusiveToTier.includes(customerTier)) {
+        return NextResponse.json(
+          { error: "מוצר זה זמין רק לחברי מועדון פרימיום ברמה מתאימה" },
+          { status: 403 }
+        )
+      }
     }
 
     // החזרת המוצר עם כל הנתונים כולל SEO

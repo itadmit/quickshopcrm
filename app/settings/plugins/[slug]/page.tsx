@@ -25,6 +25,7 @@ import {
   AlertCircle,
   Info,
   Download,
+  Crown,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 import Link from "next/link"
@@ -420,6 +421,15 @@ export default function PluginSettingsPage() {
                   <span className="text-sm">הגדרות</span>
                 </div>
               </div>
+              {plugin.slug === "premium-club" && (
+                <Link
+                  href="/premium-club"
+                  className="mt-2 px-4 py-3 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center gap-3 transition-colors"
+                >
+                  <Crown className="w-5 h-5 flex-shrink-0 text-yellow-500" />
+                  <span className="text-sm">מועדון פרימיום</span>
+                </Link>
+              )}
             </nav>
           </div>
         </div>
@@ -655,8 +665,22 @@ export default function PluginSettingsPage() {
                   </div>
                 )}
 
+                {/* Premium Club Config */}
+                {plugin.slug === "premium-club" && (
+                  <div className="text-center py-8">
+                    <Info className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                    <p className="text-gray-600 mb-4">הגדרות מועדון פרימיום זמינות בדף נפרד</p>
+                    <Button asChild className="prodify-gradient text-white">
+                      <Link href="/premium-club">
+                        <Settings className="w-4 h-4 ml-2" />
+                        פתח הגדרות מועדון פרימיום
+                      </Link>
+                    </Button>
+                  </div>
+                )}
+
                 {/* Generic Config - אם אין הגדרות ספציפיות */}
-                {!["google-analytics", "whatsapp-floating", "saturday-shutdown", "cash-on-delivery"].includes(plugin.slug) && (
+                {!["google-analytics", "whatsapp-floating", "saturday-shutdown", "cash-on-delivery", "premium-club"].includes(plugin.slug) && (
                   <div className="text-center py-8 text-gray-500">
                     <Info className="w-12 h-12 mx-auto mb-3 text-gray-400" />
                     <p>לתוסף זה אין הגדרות נוספות</p>

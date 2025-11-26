@@ -43,6 +43,7 @@ import {
   Bell,
   Image,
   Megaphone,
+  Crown,
 } from "lucide-react"
 import {
   Accordion,
@@ -64,7 +65,7 @@ const getInfluencerItems = (t: any) => [
 const getSalesItems = (t: any) => [
   { icon: Package, labelKey: "sidebar.products", href: "/products", permission: "products" },
   { icon: ShoppingCart, labelKey: "sidebar.orders", href: "/orders", permission: "orders" },
-  { icon: Users, labelKey: "sidebar.customers", href: "/customers", permission: "customers" },
+  { icon: Users, labelKey: "sidebar.contacts", href: "/contacts", permission: "customers" },
   { icon: Warehouse, labelKey: "sidebar.inventory", href: "/inventory", permission: "inventory" },
   { icon: Edit, labelKey: "sidebar.quickEdit", href: "/products/bulk-edit", permission: "products" },
 ]
@@ -110,6 +111,7 @@ const getSystemItems = (t: any) => [
 const getSettingsItems = (t: any) => [
   { icon: Settings, labelKey: "sidebar.settings", href: "/settings", permission: "settings" },
   { icon: Plug, labelKey: "sidebar.integrations", href: "/settings/integrations", permission: "integrations" },
+  { icon: TrendingUp, labelKey: "sidebar.trafficSources", href: "/traffic-sources", permission: "settings" },
 ]
 
 const getSuperAdminItems = (t: any) => [
@@ -151,10 +153,13 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
   useEffect(() => {
     // נחכה שה-session יטען לפני שנבצע fetch
     if (status === 'authenticated') {
-      fetchPermissions()
-      fetchUnreadCount()
-      fetchSubscriptionInfo()
-      fetchActivePlugins()
+      // הרצה מקבילית של כל הבקשות במקום סדרתית
+      Promise.all([
+        fetchPermissions(),
+        fetchUnreadCount(),
+        fetchSubscriptionInfo(),
+        fetchActivePlugins()
+      ]).catch(err => console.error('Error loading sidebar data:', err))
     }
     
     // טעינת הגדרת הסתרת כרטיס Trial
@@ -197,7 +202,10 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
 
   const fetchSubscriptionInfo = async () => {
     try {
-      const response = await fetch('/api/subscriptions/check')
+      const response = await fetch('/api/subscriptions/check', {
+        cache: 'force-cache',
+        next: { revalidate: 120 } // Revalidate every 2 minutes
+      })
       if (response.ok) {
         const data = await response.json()
         setSubscriptionInfo(data)
@@ -213,7 +221,10 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
 
   const fetchPermissions = async () => {
     try {
-      const response = await fetch('/api/users/permissions')
+      const response = await fetch('/api/users/permissions', {
+        cache: 'force-cache', // Cache permissions
+        next: { revalidate: 300 } // Revalidate every 5 minutes
+      })
       if (response.ok) {
         const data = await response.json()
         setPermissions(data.permissions || {})
@@ -280,11 +291,10 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
 
   const fetchUnreadCount = async () => {
     try {
-      const response = await fetch('/api/notifications')
+      const response = await fetch('/api/notifications/unread-count')
       if (response.ok) {
-        const notifications = await response.json()
-        const unread = notifications.filter((n: any) => !n.isRead).length
-        setUnreadCount(unread)
+        const data = await response.json()
+        setUnreadCount(data.count || 0)
       }
     } catch (error) {
       console.error('Error fetching notifications count:', error)
@@ -293,7 +303,10 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
 
   const fetchActivePlugins = async () => {
     try {
-      const response = await fetch('/api/plugins')
+      const response = await fetch('/api/plugins', {
+        cache: 'force-cache', // Cache plugins data
+        next: { revalidate: 60 } // Revalidate every 60 seconds
+      })
       if (response.ok) {
         const plugins = await response.json()
         // מסננים רק תוספים פעילים שיש להם menuItem
@@ -329,11 +342,14 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
   }
 
   return (
-    <div className={cn(
-      "w-full h-full bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col border-gray-200",
-      !hideLogo && "md:w-64",
-      isRTL ? 'border-l' : 'border-r'
-    )}>
+    <div 
+      dir={isRTL ? 'rtl' : 'ltr'}
+      className={cn(
+        "w-full h-full bg-gradient-to-b from-gray-50 to-gray-100 flex flex-col border-gray-200",
+        !hideLogo && "md:w-64",
+        isRTL ? 'border-l' : 'border-r'
+      )}
+    >
       {/* Logo - Hidden on mobile when hideLogo is true */}
       {!hideLogo && (
         <div className="h-16 border-b border-gray-200 flex items-center justify-center px-4 py-2">
@@ -349,7 +365,9 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
       )}
 
       {/* Main Navigation */}
-      <div className={cn("flex-1 overflow-y-auto p-4", hideLogo && "pt-4")}>
+      <div 
+        className={cn("flex-1 overflow-y-auto p-4 sidebar-scroll", hideLogo && "pt-4")}
+      >
         <Accordion 
           storageKey="sidebar-accordions" 
           className="space-y-1"
@@ -486,6 +504,34 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
                         >
                           <Icon className="w-5 h-5 flex-shrink-0" />
                           <span>{t(item.labelKey)}</span>
+                        </Link>
+                      )
+                    })}
+                  {/* תוספים עם menuItem בקטע שיווק */}
+                  {pluginMenuItems
+                    .filter((item: any) => item.section === 'marketing' && hasPermission(item.permission))
+                    .map((item: any) => {
+                      // מציאת האייקון לפי שם
+                      const iconMap: Record<string, any> = {
+                        'Crown': Crown,
+                        'Boxes': Boxes,
+                        'Star': Star,
+                      }
+                      const IconComponent = iconMap[item.icon] || Tag
+                      const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
+                      return (
+                        <Link
+                          key={`plugin-${item.pluginSlug}`}
+                          href={item.href}
+                          className={cn(
+                            "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors",
+                            isActive
+                              ? "bg-emerald-100 text-emerald-700"
+                              : "text-gray-700 hover:bg-gray-200"
+                          )}
+                        >
+                          <IconComponent className="w-5 h-5 flex-shrink-0" />
+                          <span>{item.labelKey ? t(item.labelKey) : (item.label || '')}</span>
                         </Link>
                       )
                     })}
