@@ -451,16 +451,6 @@ export default function NewProductPage() {
     )
   }
 
-<｜tool▁sep｜>new_string
-  // אם עדיין טוען חנויות, נציג skeleton
-  if (shopsLoading) {
-    return (
-      <AppLayout title="מוצר חדש">
-        <ProductFormSkeleton />
-      </AppLayout>
-    )
-  }
-
   // אם אין חנויות בכלל, נציג הודעה
   if (!selectedShop && shops.length === 0) {
     return (

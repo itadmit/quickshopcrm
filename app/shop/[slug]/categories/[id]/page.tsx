@@ -525,9 +525,6 @@ export default function CategoryPage() {
                       </span>
                     )}
                   </div>
-                  {product.availability === "OUT_OF_STOCK" && (
-                    <span className="text-xs text-red-600 mt-1 block">אזל מהמלאי</span>
-                  )}
                 </div>
               </Link>
             ))}
@@ -577,9 +574,6 @@ export default function CategoryPage() {
                       </span>
                     )}
                   </div>
-                  {product.availability === "OUT_OF_STOCK" && (
-                    <span className="text-sm text-red-600">אזל מהמלאי</span>
-                  )}
                 </div>
               </Link>
             ))}
@@ -631,9 +625,6 @@ export default function CategoryPage() {
                       </span>
                     )}
                   </div>
-                  {product.availability === "OUT_OF_STOCK" && (
-                    <Badge className="mt-2 bg-red-100 text-red-800">אזל מהמלאי</Badge>
-                  )}
                 </div>
               </Link>
             ))}

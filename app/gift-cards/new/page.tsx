@@ -16,7 +16,7 @@ import { Save, Gift, DollarSign, Mail, User, Calendar, MessageSquare } from "luc
 export default function NewGiftCardPage() {
   const router = useRouter()
   const { toast } = useToast()
-  const { selectedShop } = useShop()
+  const { selectedShop, shops } = useShop()
   const [saving, setSaving] = useState(false)
   
   const [formData, setFormData] = useState({
@@ -70,7 +70,7 @@ export default function NewGiftCardPage() {
         recipientName: formData.recipientName || undefined,
         senderName: formData.senderName || undefined,
         message: formData.message || undefined,
-        expiresAt: formData.expiresAt || undefined,
+        expiresAt: formData.expiresAt ? new Date(formData.expiresAt).toISOString() : undefined,
         sendEmail: formData.sendEmail, // האם לשלוח מייל
       }
 

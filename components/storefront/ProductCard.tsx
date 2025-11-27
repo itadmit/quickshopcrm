@@ -338,7 +338,7 @@ export function ProductCard({
               {showBadges && (
                 <div className={`absolute ${getBadgePositionClasses()} flex flex-col gap-2`}>
                   {product.availability === "OUT_OF_STOCK" && (
-                    <Badge className="bg-red-500 text-white shadow-lg rounded-md">
+                    <Badge className="bg-red-500 text-white shadow-lg rounded-md pointer-events-none">
                       אזל מהמלאי
                     </Badge>
                   )}
@@ -506,7 +506,7 @@ export function ProductCard({
                 {/* הצגת הנחה אוטומטית למטה אם יש */}
                 {applicableDiscount && (
                   <div className="flex items-center gap-2 flex-wrap">
-                    <Badge className="bg-green-100 hover:bg-green-100 text-green-800 border border-green-700 text-xs font-semibold whitespace-nowrap px-2 py-1 rounded-sm transition-none">
+                    <Badge className="bg-green-100 text-green-800 border border-green-700 text-xs font-semibold whitespace-nowrap px-2 py-1 rounded-sm transition-none">
                       הנחה נוספת: {applicableDiscount.title}
                     </Badge>
                     <span 

@@ -26,7 +26,7 @@ export function ProductBadges({ badges = [], isSoldOut, comparePrice, price }: P
   // הוספת SOLD OUT badge אם המוצר אזל
   if (isSoldOut) {
     badgesByPosition["top-right"].push({
-      text: "SOLD OUT",
+      text: "אזל מהמלאי",
       color: "#ef4444", // red-500
       position: "top-right"
     })

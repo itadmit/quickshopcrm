@@ -231,3 +231,4 @@ grep -r "paymentStatus" app/ components/
 **סטטוס כללי:** 🟡 כמעט מוכן - דורש תיקונים קטנים
 
 
+

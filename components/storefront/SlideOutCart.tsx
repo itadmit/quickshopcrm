@@ -533,9 +533,11 @@ export function SlideOutCart({ slug, isOpen, onClose, customerId, onCartUpdate, 
                       </div>
                     )}
                     {cart.automaticDiscount && cart.automaticDiscount > 0 && (
-                      <div className="flex justify-between text-sm text-green-600">
-                        <span>{cart.automaticDiscountTitle || 'הנחה אוטומטית'}</span>
-                        <span>₪{cart.automaticDiscount.toFixed(2)}-</span>
+                      <div className="flex items-center justify-between gap-2">
+                        <Badge className="bg-green-100 hover:bg-green-100 text-green-800 border border-green-700 text-xs font-semibold whitespace-nowrap px-2 py-1 rounded-sm">
+                          {cart.automaticDiscountTitle || 'הנחה אוטומטית'}
+                        </Badge>
+                        <span className="text-sm text-green-600 font-medium">₪{cart.automaticDiscount.toFixed(2)}-</span>
                       </div>
                     )}
                   </div>

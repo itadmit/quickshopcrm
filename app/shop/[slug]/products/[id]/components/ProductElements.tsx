@@ -220,6 +220,123 @@ export function ProductElements({
     )
   }
 
+  // פונקציה לבדיקת אם המוצר לא במלאי
+  const checkIfOutOfStock = () => {
+    // אם המוצר מאפשר מכירה בלי מלאי, תמיד זמין
+    if (product.sellWhenSoldOut) {
+      return false
+    }
+
+    // בדיקה אם המוצר עצמו לא במלאי
+    const isProductOutOfStock = product.availability === "OUT_OF_STOCK" || 
+      (product.inventoryEnabled && product.inventoryQty !== null && product.inventoryQty <= 0)
+
+    // אם יש variant שנבחר, נבדוק את המלאי שלו
+    if (selectedVariant && product.variants) {
+      const variant = product.variants.find((v) => v.id === selectedVariant)
+      if (variant) {
+        // אם יש variant, נבדוק את המלאי שלו
+        const isVariantOutOfStock = variant.inventoryQty !== null && 
+          variant.inventoryQty !== undefined && 
+          variant.inventoryQty <= 0
+        return isVariantOutOfStock
+      }
+    }
+
+    // אם יש options שנבחרו, נבדוק אם יש variant תואם
+    if (product.options && product.options.length > 0 && Object.keys(selectedOptionValues).length > 0) {
+      // בדיקה אם כל האופציות נבחרו
+      const allOptionsSelected = product.options.every(opt => selectedOptionValues[opt.id] !== undefined)
+      
+      // אם לא כל האופציות נבחרו, זה לא out of stock - פשוט צריך לבחור עוד אופציות
+      if (!allOptionsSelected) {
+        return false
+      }
+      
+      // בניית mapping של כל ה-values לפי optionId
+      const valueIdToLabelMap: Record<string, Record<string, string>> = {}
+      product.options.forEach(opt => {
+        valueIdToLabelMap[opt.id] = {}
+        const values = Array.isArray(opt.values) ? opt.values : []
+        values.forEach((val: any) => {
+          const vid = typeof val === 'object' ? val.id : val
+          const vlabel = typeof val === 'object' ? val.label : val
+          valueIdToLabelMap[opt.id][vid] = vlabel
+        })
+      })
+      
+      // פונקציה להשוואה בין valueId/valueLabel לבין optionValue
+      const matchesValue = (valId: string, valLabel: string, optionValue: string | null | undefined): boolean => {
+        if (!optionValue) return false
+        if (optionValue === valId || optionValue === valLabel) return true
+        const optionValueLower = optionValue.toLowerCase().trim()
+        const valIdLower = valId.toLowerCase().trim()
+        const valLabelLower = valLabel.toLowerCase().trim()
+        if (optionValueLower === valIdLower || optionValueLower === valLabelLower) return true
+        if (optionValueLower.includes(valLabelLower) || valLabelLower.includes(optionValueLower)) return true
+        return false
+      }
+      
+      // מציאת ה-variant שמתאים לכל הבחירות
+      const matchedVariant = product.variants?.find((variant: any) => {
+        const variantOptions: Record<string, string> = {}
+        if (variant.option1 && variant.option1Value) {
+          variantOptions[variant.option1] = variant.option1Value
+        }
+        if (variant.option2 && variant.option2Value) {
+          variantOptions[variant.option2] = variant.option2Value
+        }
+        if (variant.option3 && variant.option3Value) {
+          variantOptions[variant.option3] = variant.option3Value
+        }
+        
+        const allSelectionsMatch = Object.entries(selectedOptionValues).every(([optionId, valueId]) => {
+          const selectedOption = product.options?.find(opt => opt.id === optionId)
+          const optionName = selectedOption?.name || optionId
+          const variantValue = variantOptions[optionName]
+          const valLabel = valueIdToLabelMap[optionId]?.[valueId] || valueId
+          return matchesValue(valueId, valLabel, variantValue)
+        })
+        
+        const allVariantOptionsMatch = Object.keys(variantOptions).every(optionName => {
+          const option = product.options?.find(opt => opt.name === optionName)
+          if (!option) return false
+          const selectedValueId = selectedOptionValues[option.id]
+          if (!selectedValueId) return false
+          const variantValue = variantOptions[optionName]
+          const valLabel = valueIdToLabelMap[option.id]?.[selectedValueId] || selectedValueId
+          return matchesValue(selectedValueId, valLabel, variantValue)
+        })
+        
+        const optionsCountMatch = Object.keys(variantOptions).length === Object.keys(selectedOptionValues).length
+        
+        return allSelectionsMatch && allVariantOptionsMatch && optionsCountMatch
+      })
+      
+      if (matchedVariant) {
+        const isVariantOutOfStock = matchedVariant.inventoryQty !== null && 
+          matchedVariant.inventoryQty !== undefined && 
+          matchedVariant.inventoryQty <= 0
+        return isVariantOutOfStock
+      }
+      
+      // אם לא מצאנו variant מתאים אבל כל האופציות נבחרו, נבדוק את selectedVariant אם יש
+      if (selectedVariant && product.variants) {
+        const variant = product.variants.find((v: any) => v.id === selectedVariant)
+        if (variant) {
+          const isVariantOutOfStock = variant.inventoryQty !== null && 
+            variant.inventoryQty !== undefined && 
+            variant.inventoryQty <= 0
+          return isVariantOutOfStock
+        }
+      }
+    }
+
+    return isProductOutOfStock
+  }
+
+  const isOutOfStock = checkIfOutOfStock()
+
   const renderElement = (element: ProductPageElement, index?: number) => {
     if (!element.visible && !isEditingLayout) return null
 
@@ -285,8 +402,13 @@ export function ProductElements({
 
       case "product-name":
         return (
-          <div key={element.id} style={elementStyle}>
+          <div key={element.id} style={elementStyle} className="flex items-center gap-3 flex-wrap">
             <h1 style={elementStyle}>{product.seoTitle || product.name}</h1>
+            {isOutOfStock && (
+              <Badge className="bg-red-500 text-white shadow-lg rounded-md px-3 py-1 text-sm font-semibold pointer-events-none">
+                אזל מהמלאי
+              </Badge>
+            )}
           </div>
         )
 
@@ -355,7 +477,7 @@ export function ProductElements({
                       return (
                         <Badge 
                           key={discount.id}
-                          className="bg-green-100 hover:bg-green-100 text-green-800 border border-green-700 text-xs font-semibold whitespace-nowrap px-3 py-1.5 rounded-sm transition-none"
+                          className="bg-green-100 text-green-800 border border-green-700 text-xs font-semibold whitespace-nowrap px-3 py-1.5 rounded-sm transition-none pointer-events-none"
                         >
                           {discountLabel}{discount.title}
                         </Badge>

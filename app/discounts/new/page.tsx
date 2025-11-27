@@ -369,8 +369,8 @@ export default function NewDiscountPage() {
         maxDiscount: formData.maxDiscount ? parseFloat(formData.maxDiscount) : undefined,
         maxUses: formData.maxUses ? parseInt(formData.maxUses) : undefined,
         usesPerCustomer: parseInt(formData.usesPerCustomer),
-        startDate: formData.startDate || undefined,
-        endDate: formData.endDate || undefined,
+        startDate: formData.startDate && formData.startDate.trim() !== "" ? new Date(formData.startDate).toISOString() : undefined,
+        endDate: formData.endDate && formData.endDate.trim() !== "" ? new Date(formData.endDate).toISOString() : undefined,
         isActive: formData.isActive,
         isAutomatic: formData.type === "FREE_GIFT" ? true : formData.isAutomatic, // FREE_GIFT תמיד אוטומטי
         canCombine: formData.canCombine,

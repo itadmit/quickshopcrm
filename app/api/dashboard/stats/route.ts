@@ -65,13 +65,18 @@ export async function GET(req: NextRequest) {
     const ordersTotal = orders.length
     const ordersPending = orders.filter((o) => o.status === "PENDING").length
 
-    // Calculate revenue
-    const revenueTotal = orders.reduce((sum, order) => sum + order.total, 0)
+    // Calculate revenue - רק הזמנות שהושלמו (PAID, PROCESSING, SHIPPED, DELIVERED, COMPLETED)
+    const completedStatuses = ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'COMPLETED', 'CONFIRMED']
+    const completedOrders = orders.filter((order) => 
+      completedStatuses.includes(order.status.toUpperCase())
+    )
+    
+    const revenueTotal = completedOrders.reduce((sum, order) => sum + order.total, 0)
     
     // Revenue this month
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-    const revenueThisMonth = orders
+    const revenueThisMonth = completedOrders
       .filter((order) => new Date(order.createdAt) >= startOfMonth)
       .reduce((sum, order) => sum + order.total, 0)
 

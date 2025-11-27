@@ -19,8 +19,8 @@ const updateCouponSchema = z.object({
   maxDiscount: z.number().optional(),
   maxUses: z.number().int().optional(),
   usesPerCustomer: z.number().int().optional(),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
+  startDate: z.union([z.string().datetime(), z.literal("")]).optional(),
+  endDate: z.union([z.string().datetime(), z.literal("")]).optional(),
   isActive: z.boolean().optional(),
   applicableProducts: z.array(z.string()).optional(),
   applicableCategories: z.array(z.string()).optional(),
@@ -131,10 +131,10 @@ export async function PUT(
     // המרת תאריכים
     const updateData: any = { ...data }
     if (data.startDate !== undefined) {
-      updateData.startDate = data.startDate ? new Date(data.startDate) : null
+      updateData.startDate = data.startDate && data.startDate !== "" ? new Date(data.startDate) : null
     }
     if (data.endDate !== undefined) {
-      updateData.endDate = data.endDate ? new Date(data.endDate) : null
+      updateData.endDate = data.endDate && data.endDate !== "" ? new Date(data.endDate) : null
     }
     if (data.influencerId !== undefined) {
       updateData.influencerId = data.influencerId || null

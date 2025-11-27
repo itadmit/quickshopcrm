@@ -303,7 +303,7 @@ export default function DashboardPage() {
                       </div>
                       <h3 className="font-semibold text-sm md:text-base text-gray-900">{t('dashboard.quickActions.createStore.title')}</h3>
                     </div>
-                    <p className="text-xs md:text-sm text-gray-600 pr-13">
+                    <p className="text-xs md:text-sm text-gray-600 pr-12">
                       {t('dashboard.quickActions.createStore.description')}
                     </p>
                   </div>
@@ -321,7 +321,7 @@ export default function DashboardPage() {
                       </div>
                       <h3 className="font-semibold text-sm md:text-base text-gray-900">{t('dashboard.quickActions.addProducts.title')}</h3>
                     </div>
-                    <p className="text-xs md:text-sm text-gray-600 pr-13">
+                    <p className="text-xs md:text-sm text-gray-600 pr-12">
                       {t('dashboard.quickActions.addProducts.description')}
                     </p>
                   </div>
@@ -335,7 +335,7 @@ export default function DashboardPage() {
                       </div>
                       <h3 className="font-semibold text-sm md:text-base text-gray-900">{t('dashboard.quickActions.manageOrders.title')}</h3>
                     </div>
-                    <p className="text-xs md:text-sm text-gray-600 pr-13">
+                    <p className="text-xs md:text-sm text-gray-600 pr-12">
                       {t('dashboard.quickActions.manageOrders.description')}
                     </p>
                   </div>
@@ -349,7 +349,7 @@ export default function DashboardPage() {
                       </div>
                       <h3 className="font-semibold text-sm md:text-base text-gray-900">{t('dashboard.quickActions.setupPayments.title')}</h3>
                     </div>
-                    <p className="text-xs md:text-sm text-gray-600 pr-13">
+                    <p className="text-xs md:text-sm text-gray-600 pr-12">
                       {t('dashboard.quickActions.setupPayments.description')}
                     </p>
                   </div>

@@ -10,9 +10,19 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { TableSkeleton } from "@/components/skeletons/TableSkeleton"
-import { ShoppingBag, Search, Mail, Calendar, DollarSign, Send } from "lucide-react"
+import { ShoppingBag, Search, Mail, Calendar, DollarSign, Send, MoreVertical, Eye, Package } from "lucide-react"
 import { format } from "date-fns"
 import { he } from "date-fns/locale"
+import { MobileListView, MobileListItem } from "@/components/MobileListView"
+import { MobileFilters } from "@/components/MobileFilters"
+import { useMediaQuery } from "@/hooks/useMediaQuery"
+import { cn } from "@/lib/utils"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 interface AbandonedCart {
   id: string
@@ -37,6 +47,7 @@ export default function AbandonedCartsPage() {
   const [carts, setCarts] = useState<AbandonedCart[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+  const isMobile = useMediaQuery("(max-width: 768px)")
 
   useEffect(() => {
     if (selectedShop) {
@@ -109,6 +120,74 @@ export default function AbandonedCartsPage() {
       name.toLowerCase().includes(search.toLowerCase())
     )
   })
+
+  // Convert carts to mobile list format
+  const convertToMobileList = (): MobileListItem[] => {
+    return filteredCarts.map((cart) => {
+      const customerName = cart.customer
+        ? `${cart.customer.firstName || ""} ${cart.customer.lastName || ""}`.trim() || "לקוח אורח"
+        : "לקוח אורח"
+      const customerEmail = cart.customer?.email || ""
+      const total = calculateTotal(cart.items)
+      const itemsCount = cart.items && Array.isArray(cart.items)
+        ? cart.items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0)
+        : 0
+
+      const metadata = [
+        {
+          label: "",
+          value: format(new Date(cart.abandonedAt), "dd/MM/yyyy HH:mm", { locale: he }),
+          icon: <Calendar className="w-3 h-3 text-gray-400" />,
+        },
+      ]
+
+      if (customerEmail) {
+        metadata.push({
+          label: "",
+          value: customerEmail,
+          icon: <Mail className="w-3 h-3 text-gray-400" />,
+        })
+      }
+
+      const actions = [
+        {
+          label: "שלח אימייל שחזור",
+          icon: <Send className="w-4 h-4" />,
+          onClick: () => sendRecoveryEmail(cart.id),
+        },
+      ]
+
+      if (cart.customer) {
+        actions.push({
+          label: "צפה בפרופיל",
+          icon: <Eye className="w-4 h-4" />,
+          onClick: () => router.push(`/customers/${cart.customer!.id}`),
+        })
+      }
+
+      return {
+        id: cart.id,
+        title: customerName,
+        subtitle: customerEmail || "לקוח אורח",
+        badge: cart.recoveredAt
+          ? {
+              text: "שוחזר",
+              variant: "success" as const,
+            }
+          : undefined,
+        price: `₪${total.toFixed(2)}`,
+        metadata,
+        badges: [
+          {
+            text: `${itemsCount} פריטים`,
+            variant: "outline" as const,
+          },
+        ],
+        actions,
+        className: cart.recoveredAt ? 'bg-gray-50 opacity-75' : 'bg-gray-100',
+      }
+    })
+  }
 
   // הצגת מסך טעינה בזמן שהנתונים נטענים מהשרת
   if (shopLoading) {
@@ -188,11 +267,11 @@ export default function AbandonedCartsPage() {
           </Card>
         </div>
 
-        {/* Search */}
-        <Card>
-          <CardContent className="pt-6">
+        {/* Search - Desktop */}
+        <Card className="hidden md:block">
+          <CardContent className="p-4">
             <div className="relative">
-              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
                 placeholder="חיפוש לפי אימייל או שם לקוח..."
                 value={search}
@@ -203,6 +282,16 @@ export default function AbandonedCartsPage() {
           </CardContent>
         </Card>
 
+        {/* Filters - Mobile */}
+        <div className="md:hidden">
+          <MobileFilters
+            searchValue={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="חפש עגלה נטושה..."
+            isSearching={loading}
+          />
+        </div>
+
         {/* Carts List */}
         {loading ? (
           <TableSkeleton rows={5} columns={6} />
@@ -210,88 +299,144 @@ export default function AbandonedCartsPage() {
           <Card>
             <CardContent className="py-12 text-center">
               <ShoppingBag className="w-16 h-16 mx-auto mb-4 text-gray-400" />
-              <p className="text-gray-600">אין עגלות נטושות</p>
+              <h3 className="text-lg font-semibold mb-2 prodify-gradient-text">אין עגלות נטושות</h3>
+              <p className="text-gray-600">עדיין לא ננטשו עגלות בחנות שלך</p>
             </CardContent>
           </Card>
         ) : (
-          <div className="space-y-4">
-            {filteredCarts.map((cart) => (
-              <Card key={cart.id}>
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-4 mb-4">
-                        {cart.customer ? (
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <Mail className="w-4 h-4 text-gray-400" />
-                              <span className="font-semibold">
-                                {cart.customer.firstName} {cart.customer.lastName}
+          <>
+            {/* Desktop Table */}
+            <Card className="hidden md:block">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          לקוח
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          תאריך נטישה
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          פריטים
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          סטטוס
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          סכום
+                        </th>
+                        <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          פעולות
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredCarts.map((cart) => {
+                        const customerName = cart.customer
+                          ? `${cart.customer.firstName || ""} ${cart.customer.lastName || ""}`.trim() || "לקוח אורח"
+                          : "לקוח אורח"
+                        const customerEmail = cart.customer?.email || ""
+                        const total = calculateTotal(cart.items)
+                        const itemsCount = cart.items && Array.isArray(cart.items)
+                          ? cart.items.reduce((sum: number, item: any) => sum + (item.quantity || 0), 0)
+                          : 0
+
+                        return (
+                          <tr
+                            key={cart.id}
+                            className={cn(
+                              "hover:bg-gray-50 transition-colors",
+                              cart.recoveredAt && "bg-gray-50/50 opacity-75"
+                            )}
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">{customerName}</div>
+                                {customerEmail && (
+                                  <div className="text-sm text-gray-500">{customerEmail}</div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <Calendar className="w-4 h-4" />
+                                {format(new Date(cart.abandonedAt), "dd/MM/yyyy HH:mm", { locale: he })}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center gap-2 text-sm text-gray-600">
+                                <Package className="w-4 h-4" />
+                                {itemsCount} פריטים
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              {cart.recoveredAt ? (
+                                <Badge className="bg-green-100 text-green-800 border-green-200">
+                                  שוחזר
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-gray-600">
+                                  נטוש
+                                </Badge>
+                              )}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <span className="text-sm font-semibold text-gray-900">
+                                ₪{total.toFixed(2)}
                               </span>
-                            </div>
-                            <p className="text-sm text-gray-600">{cart.customer.email}</p>
-                          </div>
-                        ) : (
-                          <div>
-                            <span className="text-sm text-gray-500">לקוח אורח</span>
-                          </div>
-                        )}
-                        {cart.recoveredAt && (
-                          <Badge className="bg-green-100 text-green-800">
-                            שוחזר
-                          </Badge>
-                        )}
-                      </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                              <DropdownMenu dir="rtl">
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreVertical className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  {cart.customer && !cart.recoveredAt && (
+                                    <DropdownMenuItem
+                                      onClick={() => sendRecoveryEmail(cart.id)}
+                                      className="cursor-pointer"
+                                    >
+                                      <Send className="w-4 h-4 ml-2" />
+                                      שלח אימייל שחזור
+                                    </DropdownMenuItem>
+                                  )}
+                                  {cart.customer && (
+                                    <DropdownMenuItem
+                                      onClick={() => router.push(`/customers/${cart.customer!.id}`)}
+                                      className="cursor-pointer"
+                                    >
+                                      <Eye className="w-4 h-4 ml-2" />
+                                      צפה בפרופיל לקוח
+                                    </DropdownMenuItem>
+                                  )}
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
 
-                      <div className="space-y-2 mb-4">
-                        <div className="flex items-center gap-2 text-sm text-gray-600">
-                          <Calendar className="w-4 h-4" />
-                          ננטש: {format(new Date(cart.abandonedAt), "dd/MM/yyyy HH:mm", { locale: he })}
-                        </div>
-                        {cart.items && Array.isArray(cart.items) && (
-                          <div>
-                            <p className="text-sm font-medium mb-1">פריטים:</p>
-                            <ul className="text-sm text-gray-600 space-y-1">
-                              {cart.items.map((item: any, index: number) => (
-                                <li key={index}>
-                                  {item.name} x{item.quantity} - ₪{(item.price * item.quantity).toFixed(2)}
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        <div className="text-lg font-bold">
-                          סה"כ: ₪{calculateTotal(cart.items).toFixed(2)}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-2">
-                      {cart.customer && !cart.recoveredAt && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => sendRecoveryEmail(cart.id)}
-                        >
-                          <Send className="w-4 h-4 ml-2" />
-                          שלח אימייל שחזור
-                        </Button>
-                      )}
-                      {cart.customer && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => router.push(`/customers/${cart.customer!.id}`)}
-                        >
-                          צפה בפרופיל לקוח
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+            {/* Mobile List View */}
+            <div className="md:hidden">
+              <MobileListView
+                items={convertToMobileList()}
+                emptyState={{
+                  icon: <ShoppingBag className="w-16 h-16 mx-auto text-gray-400" />,
+                  title: "אין עגלות נטושות",
+                  description: "עדיין לא ננטשו עגלות בחנות שלך",
+                }}
+              />
+            </div>
+          </>
         )}
       </div>
     </AppLayout>

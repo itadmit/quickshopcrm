@@ -123,7 +123,7 @@ export default function EditGiftCardPage() {
         recipientName: formData.recipientName || undefined,
         senderName: formData.senderName || undefined,
         message: formData.message || undefined,
-        expiresAt: formData.expiresAt || undefined,
+        expiresAt: formData.expiresAt ? new Date(formData.expiresAt).toISOString() : undefined,
         isActive: formData.isActive,
       }
 

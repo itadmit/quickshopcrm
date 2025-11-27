@@ -11,7 +11,7 @@ const updateGiftCardSchema = z.object({
   recipientName: z.string().optional(),
   senderName: z.string().optional(),
   message: z.string().optional(),
-  expiresAt: z.string().datetime().optional(),
+  expiresAt: z.union([z.string().datetime(), z.literal("")]).optional(),
   isActive: z.boolean().optional(),
 })
 
@@ -94,8 +94,8 @@ export async function PUT(
     const data = updateGiftCardSchema.parse(body)
 
     const updateData: any = { ...data }
-    if (updateData.expiresAt) {
-      updateData.expiresAt = new Date(updateData.expiresAt)
+    if (updateData.expiresAt !== undefined) {
+      updateData.expiresAt = updateData.expiresAt && updateData.expiresAt !== "" ? new Date(updateData.expiresAt) : null
     }
 
     // עדכון כרטיס המתנה

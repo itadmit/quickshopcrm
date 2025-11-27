@@ -14,7 +14,7 @@ const createGiftCardSchema = z.object({
   recipientName: z.string().optional(),
   senderName: z.string().optional(),
   message: z.string().optional(),
-  expiresAt: z.string().datetime().optional(),
+  expiresAt: z.union([z.string().datetime(), z.literal("")]).optional(),
   isActive: z.boolean().default(true),
   sendEmail: z.boolean().default(true), // האם לשלוח מייל
 })
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
         recipientName: data.recipientName,
         senderName: data.senderName,
         message: data.message,
-        expiresAt: data.expiresAt ? new Date(data.expiresAt) : undefined,
+        expiresAt: data.expiresAt && data.expiresAt !== "" ? new Date(data.expiresAt) : undefined,
         isActive: data.isActive,
       },
     })

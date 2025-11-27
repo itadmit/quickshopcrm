@@ -349,26 +349,30 @@ export default function EditDiscountPage() {
         })
         
         // טעינת מוצרים/קטגוריות/לקוחות נבחרים
-        if (discount.applicableProducts && discount.applicableProducts.length > 0) {
-          setSelectedProducts(discount.applicableProducts.map((p: any) => p.productId))
+        // applicableProducts הוא מערך של מחרוזות (IDs) ולא אובייקטים
+        // טעינה לפי ה-target - רק את הרלוונטי
+        const target = discount.target || "ALL_PRODUCTS"
+        
+        if (target === "SPECIFIC_PRODUCTS" && discount.applicableProducts && Array.isArray(discount.applicableProducts) && discount.applicableProducts.length > 0) {
+          setSelectedProducts(discount.applicableProducts.filter((p: any) => typeof p === 'string'))
+        } else if (target === "EXCLUDE_PRODUCTS" && discount.excludedProducts && Array.isArray(discount.excludedProducts) && discount.excludedProducts.length > 0) {
+          setSelectedProducts(discount.excludedProducts.filter((p: any) => typeof p === 'string'))
         }
-        if (discount.applicableCategories && discount.applicableCategories.length > 0) {
-          setSelectedCategories(discount.applicableCategories.map((c: any) => c.categoryId))
+        
+        if (target === "SPECIFIC_CATEGORIES" && discount.applicableCategories && Array.isArray(discount.applicableCategories) && discount.applicableCategories.length > 0) {
+          setSelectedCategories(discount.applicableCategories.filter((c: any) => typeof c === 'string'))
+        } else if (target === "EXCLUDE_CATEGORIES" && discount.excludedCategories && Array.isArray(discount.excludedCategories) && discount.excludedCategories.length > 0) {
+          setSelectedCategories(discount.excludedCategories.filter((c: any) => typeof c === 'string'))
         }
-        if (discount.applicableCollections && discount.applicableCollections.length > 0) {
-          setSelectedCollections(discount.applicableCollections.map((c: any) => c.collectionId))
+        
+        if (target === "SPECIFIC_COLLECTIONS" && discount.applicableCollections && Array.isArray(discount.applicableCollections) && discount.applicableCollections.length > 0) {
+          setSelectedCollections(discount.applicableCollections.filter((c: any) => typeof c === 'string'))
+        } else if (target === "EXCLUDE_COLLECTIONS" && discount.excludedCollections && Array.isArray(discount.excludedCollections) && discount.excludedCollections.length > 0) {
+          setSelectedCollections(discount.excludedCollections.filter((c: any) => typeof c === 'string'))
         }
-        if (discount.excludedProducts && discount.excludedProducts.length > 0) {
-          setSelectedProducts(discount.excludedProducts.map((p: any) => p.productId))
-        }
-        if (discount.excludedCategories && discount.excludedCategories.length > 0) {
-          setSelectedCategories(discount.excludedCategories.map((c: any) => c.categoryId))
-        }
-        if (discount.excludedCollections && discount.excludedCollections.length > 0) {
-          setSelectedCollections(discount.excludedCollections.map((c: any) => c.collectionId))
-        }
-        if (discount.specificCustomers && discount.specificCustomers.length > 0) {
-          setSelectedCustomers(discount.specificCustomers.map((c: any) => c.customerId))
+        
+        if (discount.specificCustomers && Array.isArray(discount.specificCustomers) && discount.specificCustomers.length > 0) {
+          setSelectedCustomers(discount.specificCustomers.filter((c: any) => typeof c === 'string'))
         }
         
         // טעינת וריאציות של מוצר המתנה אם יש
@@ -476,8 +480,8 @@ export default function EditDiscountPage() {
         maxDiscount: formData.maxDiscount ? parseFloat(formData.maxDiscount) : undefined,
         maxUses: formData.maxUses ? parseInt(formData.maxUses) : undefined,
         usesPerCustomer: parseInt(formData.usesPerCustomer),
-        startDate: formData.startDate || undefined,
-        endDate: formData.endDate || undefined,
+        startDate: formData.startDate && formData.startDate.trim() !== "" ? new Date(formData.startDate).toISOString() : undefined,
+        endDate: formData.endDate && formData.endDate.trim() !== "" ? new Date(formData.endDate).toISOString() : undefined,
         isActive: formData.isActive,
         isAutomatic: true, // כל ההנחות הן אוטומטיות (בניגוד לקופונים שדורשים קוד)
         canCombine: formData.canCombine,

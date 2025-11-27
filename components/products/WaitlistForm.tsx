@@ -117,10 +117,10 @@ export function WaitlistForm({
             disabled={isSubmitting}
           />
         </div>
-        <Button
+        <button
           type="submit"
           disabled={isSubmitting || !email}
-          className="rounded-sm"
+          className="rounded-sm h-10 px-4 py-2 text-sm font-medium transition-opacity hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center whitespace-nowrap"
           style={{
             backgroundColor: theme?.primaryColor || "#000000",
             color: theme?.primaryTextColor || "#ffffff",
@@ -134,7 +134,7 @@ export function WaitlistForm({
           ) : (
             "שליחה"
           )}
-        </Button>
+        </button>
       </form>
     </div>
   )
