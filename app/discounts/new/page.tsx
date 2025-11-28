@@ -354,7 +354,7 @@ export default function NewDiscountPage() {
         customerTarget: formData.customerTarget,
         applicableProducts: formData.target === "SPECIFIC_PRODUCTS" ? selectedProducts : [],
         applicableCategories: formData.target === "SPECIFIC_CATEGORIES" ? selectedCategories : [],
-        applicableCollections: formData.target === "SPECIFIC_COLLECTIONS" ? selectedCollections : [],
+        applicableCollections: formData.target === "SPECIFIC_COLLECTIONS" ? selectedCategories : [],
         excludedProducts: formData.target === "EXCLUDE_PRODUCTS" ? selectedProducts : [],
         excludedCategories: formData.target === "EXCLUDE_CATEGORIES" ? selectedCategories : [],
         excludedCollections: formData.target === "EXCLUDE_COLLECTIONS" ? selectedCategories : [],

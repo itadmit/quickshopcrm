@@ -37,7 +37,7 @@ export function MobileBottomNav() {
                 <span className="text-xs font-medium">{t('dashboard.actions.addProduct')}</span>
               </Link>
 
-              <Link href="/collections/new" onClick={() => setIsActionsOpen(false)} className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 transition-colors">
+              <Link href="/categories/new" onClick={() => setIsActionsOpen(false)} className="flex flex-col items-center justify-center gap-2 p-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 transition-colors">
                 <div className="w-8 h-8 rounded-full bg-indigo-200 flex items-center justify-center text-indigo-700">
                   <Layers className="w-4 h-4" />
                 </div>

@@ -25,7 +25,7 @@ interface MediaPickerProps {
   onSelect: (files: string[]) => void
   selectedFiles?: string[]
   shopId?: string
-  entityType?: string // products, collections וכו'
+  entityType?: string // products, categories וכו'
   entityId?: string // ID של ה-entity או "new"
   multiple?: boolean
   title?: string

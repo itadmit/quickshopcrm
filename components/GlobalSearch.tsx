@@ -67,9 +67,9 @@ const getQuickLinks = (t: any) => [
   { 
     titleKey: "sidebar.categories", 
     icon: Archive, 
-    url: "/collections", 
+    url: "/categories", 
     categoryKey: "search.categories.navigation",
-    keywords: ["collections", "אוספים"]
+    keywords: ["categories", "קטגוריות"]
   },
   { 
     titleKey: "sidebar.bundles", 

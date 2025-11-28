@@ -341,9 +341,9 @@ export default function EditDiscountPage() {
         }
         
         if (target === "SPECIFIC_COLLECTIONS" && discount.applicableCollections && Array.isArray(discount.applicableCollections) && discount.applicableCollections.length > 0) {
-          setSelectedCollections(discount.applicableCollections.filter((c: any) => typeof c === 'string'))
+          setSelectedCategories(discount.applicableCollections.filter((c: any) => typeof c === 'string'))
         } else if (target === "EXCLUDE_COLLECTIONS" && discount.excludedCollections && Array.isArray(discount.excludedCollections) && discount.excludedCollections.length > 0) {
-          setSelectedCollections(discount.excludedCollections.filter((c: any) => typeof c === 'string'))
+          setSelectedCategories(discount.excludedCollections.filter((c: any) => typeof c === 'string'))
         }
         
         if (discount.specificCustomers && Array.isArray(discount.specificCustomers) && discount.specificCustomers.length > 0) {
@@ -1149,10 +1149,6 @@ export default function EditDiscountPage() {
                       <RadioGroupItem value="SPECIFIC_CATEGORIES" id="categories" />
                     </div>
                     <div className="flex items-center gap-3 flex-row-reverse">
-                      <Label htmlFor="collections" className="cursor-pointer flex-1 text-right">קטגוריות ספציפיות</Label>
-                      <RadioGroupItem value="SPECIFIC_COLLECTIONS" id="collections" />
-                    </div>
-                    <div className="flex items-center gap-3 flex-row-reverse">
                       <Label htmlFor="exclude-products" className="cursor-pointer flex-1 text-right">כל המוצרים חוץ מ-</Label>
                       <RadioGroupItem value="EXCLUDE_PRODUCTS" id="exclude-products" />
                     </div>
@@ -1281,64 +1277,6 @@ export default function EditDiscountPage() {
                   </div>
                 )}
 
-                {/* Collection Selection */}
-                {(formData.target === "SPECIFIC_COLLECTIONS" || formData.target === "EXCLUDE_COLLECTIONS") && (
-                  <div className="space-y-3">
-                    <Label>בחר קטגוריות:</Label>
-                    <div className="relative">
-                      <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <Input
-                        placeholder="חפש קטגוריות..."
-                        value={collectionSearch}
-                        onChange={(e) => setCollectionSearch(e.target.value)}
-                        className="pr-10"
-                      />
-                    </div>
-                    <div className="border rounded-lg p-3 max-h-60 overflow-y-auto space-y-2">
-                      {filteredCollections.length === 0 ? (
-                        <p className="text-sm text-gray-500 text-center py-4">לא נמצאו קטגוריות</p>
-                      ) : (
-                        filteredCollections.map((collection) => (
-                          <div key={collection.id} className="flex items-center gap-2">
-                            <Checkbox
-                              id={`collection-${collection.id}`}
-                              checked={selectedCollections.includes(collection.id)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setSelectedCollections([...selectedCollections, collection.id])
-                                } else {
-                                  setSelectedCollections(selectedCollections.filter(id => id !== collection.id))
-                                }
-                              }}
-                            />
-                            <Label htmlFor={`collection-${collection.id}`} className="cursor-pointer flex-1 text-sm">
-                              {collection.name}
-                            </Label>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    {selectedCollections.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {selectedCollections.map((collectionId) => {
-                          const collection = collections.find(c => c.id === collectionId)
-                          if (!collection) return null
-                          return (
-                            <div key={collectionId} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                              {collection.name}
-                              <button
-                                onClick={() => setSelectedCollections(selectedCollections.filter(id => id !== collectionId))}
-                                className="hover:bg-blue-200 rounded p-0.5"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
               </CardContent>
             </Card>
 
