@@ -135,38 +135,6 @@ export async function GET(
         transformedItem.categorySlug = categorySlug || null
       }
       
-      // אם זה קטגוריה
-      if (type === "collection" || item.type === "COLLECTION") {
-        let collectionId = item.collectionId
-        if (!collectionId && item.id?.startsWith("collection-")) {
-          collectionId = item.id.replace("collection-", "")
-        }
-        transformedItem.collectionId = collectionId || null
-        
-        // שליפת slug של הקטגוריה
-        let collectionSlug = null
-        if (item.url) {
-          const urlMatch = item.url.match(/\/collections\/(.+)/)
-          if (urlMatch) {
-            collectionSlug = urlMatch[1]
-          }
-        }
-        if (collectionId && !collectionSlug) {
-          const collectionData = await prisma.collection.findFirst({
-            where: {
-              id: collectionId,
-              shopId: shop.id,
-            },
-            select: {
-              slug: true,
-            },
-          })
-          if (collectionData) {
-            collectionSlug = collectionData.slug
-          }
-        }
-        transformedItem.collectionSlug = collectionSlug || null
-      }
       
       // אם זה קישור חיצוני
       if (type === "link" || item.type === "EXTERNAL") {

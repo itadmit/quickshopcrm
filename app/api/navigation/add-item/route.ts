@@ -7,10 +7,9 @@ import { z } from "zod"
 const addItemSchema = z.object({
   navigationId: z.string(),
   pageId: z.string().optional(),
-  collectionId: z.string().optional(),
   categoryId: z.string().optional(),
   label: z.string().min(1),
-  type: z.enum(["PAGE", "CATEGORY", "COLLECTION", "EXTERNAL"]),
+  type: z.enum(["PAGE", "CATEGORY", "EXTERNAL"]),
   url: z.string().optional().nullable(),
 })
 
@@ -47,10 +46,6 @@ export async function POST(req: NextRequest) {
         return item.id === `page-${data.pageId}` || 
                (item.type === "PAGE" && item.url === data.url)
       }
-      if (data.collectionId) {
-        return item.id === `collection-${data.collectionId}` || 
-               (item.type === "COLLECTION" && item.collectionId === data.collectionId)
-      }
       if (data.categoryId) {
         return item.id === `category-${data.categoryId}` || 
                (item.type === "CATEGORY" && item.categoryId === data.categoryId)
@@ -69,8 +64,6 @@ export async function POST(req: NextRequest) {
     let itemId: string
     if (data.pageId) {
       itemId = `page-${data.pageId}`
-    } else if (data.collectionId) {
-      itemId = `collection-${data.collectionId}`
     } else if (data.categoryId) {
       itemId = `category-${data.categoryId}`
     } else {
@@ -89,9 +82,6 @@ export async function POST(req: NextRequest) {
     // הוספת ID ספציפי לפי סוג
     if (data.pageId) {
       newItem.pageId = data.pageId
-    }
-    if (data.collectionId) {
-      newItem.collectionId = data.collectionId
     }
     if (data.categoryId) {
       newItem.categoryId = data.categoryId

@@ -1,15 +1,13 @@
 import { prisma } from "@/lib/prisma"
 
 export interface NavigationItem {
-  type: "link" | "page" | "category" | "collection"
+  type: "link" | "page" | "category"
   label: string
   url?: string
   pageId?: string
   pageSlug?: string
   categoryId?: string
   categorySlug?: string
-  collectionId?: string
-  collectionSlug?: string
   children?: NavigationItem[]
   image?: string
   columnTitle?: string
@@ -129,36 +127,6 @@ export async function getShopNavigation(
             }
           }
           
-          if (childType === "collection" || child.type === "COLLECTION") {
-            let collectionId = child.collectionId
-            let collectionSlug = null
-            
-            if (child.url) {
-              const urlMatch = child.url.match(/\/categories\/(.+)/)
-              if (urlMatch) {
-                collectionSlug = urlMatch[1]
-              }
-            }
-            if (collectionId && !collectionSlug) {
-              const collectionData = await prisma.collection.findFirst({
-                where: { id: collectionId, shopId: shop.id },
-                select: { slug: true },
-              })
-              if (collectionData) {
-                collectionSlug = collectionData.slug
-              }
-            }
-            
-            return {
-              type: "collection" as const,
-              label: child.label,
-              collectionId: collectionId || null,
-              collectionSlug: collectionSlug || null,
-              children: child.children ? await transformChildren(child.children) : undefined,
-              image: child.image || undefined,
-              columnTitle: child.columnTitle || undefined,
-            }
-          }
           
           return {
             type: "link" as const,
@@ -266,39 +234,6 @@ export async function getShopNavigation(
         }
         
         // אם זה קטגוריה
-        if (type === "collection" || item.type === "COLLECTION") {
-          let collectionId = item.collectionId
-          if (!collectionId && item.id?.startsWith("collection-")) {
-            collectionId = item.id.replace("collection-", "")
-          }
-          
-          let collectionSlug = null
-          if (item.url) {
-            const urlMatch = item.url.match(/\/categories\/(.+)/)
-            if (urlMatch) {
-              collectionSlug = urlMatch[1]
-            }
-          }
-          if (collectionId && !collectionSlug) {
-            const collectionData = await prisma.collection.findFirst({
-              where: { id: collectionId, shopId: shop.id },
-              select: { slug: true },
-            })
-            if (collectionData) {
-              collectionSlug = collectionData.slug
-            }
-          }
-          
-          return {
-            type: "collection",
-            label: item.label,
-            collectionId: collectionId || null,
-            collectionSlug: collectionSlug || null,
-            children: item.children ? await transformChildren(item.children) : undefined,
-            image: item.image || undefined,
-            columnTitle: item.columnTitle || undefined,
-          }
-        }
         
         // אם זה קישור חיצוני או כל דבר אחר
         return {
