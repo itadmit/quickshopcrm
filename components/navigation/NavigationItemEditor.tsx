@@ -12,13 +12,12 @@ import { cn } from "@/lib/utils"
 interface NavigationItem {
   id: string
   label: string
-  type: "PAGE" | "CATEGORY" | "COLLECTION" | "EXTERNAL"
+  type: "PAGE" | "CATEGORY" | "EXTERNAL"
   url: string | null
   position: number
   parentId: string | null
   children?: NavigationItem[]
   categoryId?: string
-  collectionId?: string
   image?: string
   bannerImage?: string
   columnTitle?: string
@@ -37,15 +36,10 @@ interface NavigationItemEditorProps {
   categorySearchQueries: Record<string, string>
   categorySearchResults: Record<string, Array<{ id: string; name: string; slug: string }>>
   loadingCategories: Record<string, boolean>
-  collectionSearchQueries: Record<string, string>
-  collectionSearchResults: Record<string, Array<{ id: string; name: string; slug: string }>>
-  loadingCollections: Record<string, boolean>
   onPageSearch: (itemId: string, query: string) => void
   onCategorySearch: (itemId: string, query: string) => void
-  onCollectionSearch: (itemId: string, query: string) => void
   onSelectPage: (itemId: string, page: { slug: string; title: string }) => void
   onSelectCategory: (itemId: string, category: { id: string; slug: string; name: string }) => void
-  onSelectCollection: (itemId: string, collection: { id: string; slug: string; name: string }) => void
   expandedItems: Set<string>
   onToggleExpand: (itemId: string) => void
   level?: number
@@ -64,15 +58,10 @@ export function NavigationItemEditor({
   categorySearchQueries,
   categorySearchResults,
   loadingCategories,
-  collectionSearchQueries,
-  collectionSearchResults,
-  loadingCollections,
   onPageSearch,
   onCategorySearch,
-  onCollectionSearch,
   onSelectPage,
   onSelectCategory,
-  onSelectCollection,
   expandedItems,
   onToggleExpand,
   level = 0,
@@ -124,7 +113,6 @@ export function NavigationItemEditor({
                 <SelectContent>
                   <SelectItem value="PAGE">דף</SelectItem>
                   <SelectItem value="CATEGORY">קטגוריה</SelectItem>
-                  <SelectItem value="COLLECTION">קטגוריה</SelectItem>
                   <SelectItem value="EXTERNAL">קישור חיצוני</SelectItem>
                 </SelectContent>
               </Select>
@@ -140,8 +128,6 @@ export function NavigationItemEditor({
                       onPageSearch(item.id, e.target.value)
                     } else if (item.type === "CATEGORY") {
                       onCategorySearch(item.id, e.target.value)
-                    } else if (item.type === "COLLECTION") {
-                      onCollectionSearch(item.id, e.target.value)
                     }
                   }}
                   onFocus={() => {
@@ -149,20 +135,18 @@ export function NavigationItemEditor({
                       onPageSearch(item.id, item.url || "")
                     } else if (item.type === "CATEGORY" && !categorySearchQueries[item.id]) {
                       onCategorySearch(item.id, item.url || "")
-                    } else if (item.type === "COLLECTION" && !collectionSearchQueries[item.id]) {
-                      onCollectionSearch(item.id, item.url || "")
                     }
                   }}
                   placeholder={
                     item.type === "PAGE" 
                       ? "חפש דף..." 
-                      : item.type === "CATEGORY" || item.type === "COLLECTION"
+                      : item.type === "CATEGORY"
                       ? "חפש קטגוריה..."
                       : "/page-slug"
                   }
-                  className={(item.type === "PAGE" || item.type === "CATEGORY" || item.type === "COLLECTION") ? "pr-10" : ""}
+                  className={(item.type === "PAGE" || item.type === "CATEGORY") ? "pr-10" : ""}
                 />
-                {(item.type === "PAGE" || item.type === "CATEGORY" || item.type === "COLLECTION") && (
+                {(item.type === "PAGE" || item.type === "CATEGORY") && (
                   <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 )}
               </div>
@@ -200,21 +184,6 @@ export function NavigationItemEditor({
                 </div>
               )}
               
-              {item.type === "COLLECTION" && collectionSearchResults[item.id] && collectionSearchResults[item.id].length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {collectionSearchResults[item.id].map((collection) => (
-                    <button
-                      key={collection.id}
-                      type="button"
-                      onClick={() => onSelectCollection(item.id, collection)}
-                      className="w-full text-right px-4 py-2 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0"
-                    >
-                      <div className="font-medium text-sm">{collection.name}</div>
-                      <div className="text-xs text-gray-500">{collection.slug}</div>
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
 

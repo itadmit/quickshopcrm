@@ -17,13 +17,12 @@ import { NavigationItemEditor } from "@/components/navigation/NavigationItemEdit
 interface NavigationItem {
   id: string
   label: string
-  type: "PAGE" | "CATEGORY" | "COLLECTION" | "EXTERNAL"
+  type: "PAGE" | "CATEGORY" | "EXTERNAL"
   url: string | null
   position: number
   parentId: string | null
   children?: NavigationItem[]
   categoryId?: string
-  collectionId?: string
   image?: string
   columnTitle?: string
 }
@@ -62,9 +61,6 @@ export default function NavigationPage() {
   const [categorySearchQueries, setCategorySearchQueries] = useState<Record<string, string>>({})
   const [categorySearchResults, setCategorySearchResults] = useState<Record<string, Array<{ id: string; name: string; slug: string }>>>({})
   const [loadingCategories, setLoadingCategories] = useState<Record<string, boolean>>({})
-  const [collectionSearchQueries, setCollectionSearchQueries] = useState<Record<string, string>>({})
-  const [collectionSearchResults, setCollectionSearchResults] = useState<Record<string, Array<{ id: string; name: string; slug: string }>>>({})
-  const [loadingCollections, setLoadingCollections] = useState<Record<string, boolean>>({})
   const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -372,8 +368,8 @@ export default function NavigationPage() {
     }
 
     // אם משנים תווית של קטגוריה, עדכן את כל הפריטים מאותו סוג עם אותו ID בכל התפריטים
-    if (updates.label && (currentItem.type === "CATEGORY" || currentItem.type === "COLLECTION")) {
-      const identifier = currentItem.type === "CATEGORY" ? currentItem.categoryId : currentItem.collectionId
+    if (updates.label && currentItem.type === "CATEGORY") {
+      const identifier = currentItem.categoryId
       
       if (identifier) {
         // עדכון בכל התפריטים (רקורסיבי)
@@ -384,9 +380,6 @@ export default function NavigationPage() {
                 if (currentItem.type === "CATEGORY" && item.categoryId === identifier) {
                 updated = { ...item, label: updates.label! }
                 }
-                if (currentItem.type === "COLLECTION" && item.collectionId === identifier) {
-                updated = { ...item, label: updates.label! }
-              }
             }
             if (updated.children && updated.children.length > 0) {
               updated = { ...updated, children: updateAllItems(updated.children) }
@@ -621,48 +614,6 @@ export default function NavigationPage() {
   }, [categorySearchQueries, selectedShop])
 
   // חיפוש קטגוריות עם debounce
-  useEffect(() => {
-    const timeouts: Record<string, NodeJS.Timeout> = {}
-    
-    Object.keys(collectionSearchQueries).forEach((itemId) => {
-      const query = collectionSearchQueries[itemId]
-      
-      if (timeouts[itemId]) {
-        clearTimeout(timeouts[itemId])
-      }
-      
-      timeouts[itemId] = setTimeout(async () => {
-        if (!selectedShop || !query.trim()) {
-          setCollectionSearchResults(prev => ({ ...prev, [itemId]: [] }))
-          return
-        }
-
-        setLoadingCollections(prev => ({ ...prev, [itemId]: true }))
-
-        try {
-          const response = await fetch(`/api/collections?shopId=${selectedShop.id}`)
-          if (response.ok) {
-            const collections = await response.json()
-            const searchTerm = query.toLowerCase()
-            const filtered = collections.filter((collection: any) =>
-              collection.name.toLowerCase().includes(searchTerm) ||
-              collection.slug.toLowerCase().includes(searchTerm)
-            ).slice(0, 5)
-            setCollectionSearchResults(prev => ({ ...prev, [itemId]: filtered }))
-          }
-        } catch (error) {
-          console.error("Error searching collections:", error)
-          setCollectionSearchResults(prev => ({ ...prev, [itemId]: [] }))
-        } finally {
-          setLoadingCollections(prev => ({ ...prev, [itemId]: false }))
-        }
-      }, 300)
-    })
-    
-    return () => {
-      Object.values(timeouts).forEach(timeout => clearTimeout(timeout))
-    }
-  }, [collectionSearchQueries, selectedShop])
 
   // בחירת דף
   const selectPage = (itemId: string, page: { slug: string; title: string }) => {
@@ -686,17 +637,6 @@ export default function NavigationPage() {
     setCategorySearchQueries(prev => ({ ...prev, [itemId]: "" }))
   }
 
-  // בחירת קטגוריה
-  const selectCollection = (itemId: string, collection: { id: string; slug: string; name: string }) => {
-    updateItem(itemId, {
-      url: `/categories/${collection.slug}`, // נשמור גם את ה-URL לצורך תצוגה
-      label: collection.name,
-      type: "COLLECTION",
-      collectionId: collection.id, // נשמור את ה-ID לשימוש בפרונט
-    })
-    setCollectionSearchResults(prev => ({ ...prev, [itemId]: [] }))
-    setCollectionSearchQueries(prev => ({ ...prev, [itemId]: "" }))
-  }
 
   if (!selectedShop) {
     return (
@@ -923,15 +863,10 @@ export default function NavigationPage() {
                           categorySearchQueries={categorySearchQueries}
                           categorySearchResults={categorySearchResults}
                           loadingCategories={loadingCategories}
-                          collectionSearchQueries={collectionSearchQueries}
-                          collectionSearchResults={collectionSearchResults}
-                          loadingCollections={loadingCollections}
                           onPageSearch={(itemId, query) => setPageSearchQueries(prev => ({ ...prev, [itemId]: query }))}
                           onCategorySearch={(itemId, query) => setCategorySearchQueries(prev => ({ ...prev, [itemId]: query }))}
-                          onCollectionSearch={(itemId, query) => setCollectionSearchQueries(prev => ({ ...prev, [itemId]: query }))}
                           onSelectPage={selectPage}
                           onSelectCategory={selectCategory}
-                          onSelectCollection={selectCollection}
                           expandedItems={expandedItems}
                           onToggleExpand={(itemId) => {
                             setExpandedItems(prev => {
