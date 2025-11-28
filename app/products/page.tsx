@@ -118,15 +118,15 @@ export default function ProductsPage() {
   // Filters
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [collectionFilter, setCollectionFilter] = useState<string>("all")
+  const [categoryFilter, setCategoryFilter] = useState<string>("all")
   const [sortBy, setSortBy] = useState<string>("createdAt")
   const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc")
   const [viewMode, setViewMode] = useState<"table" | "grid">("table")
   const [selectedProducts, setSelectedProducts] = useState<Set<string>>(new Set())
   const [isSearching, setIsSearching] = useState(false)
   
-  // Collections
-  const [collections, setCollections] = useState<Array<{ id: string; name: string }>>([])
+  // Categories
+  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
 
   // Mobile detection
   const isMobile = useMediaQuery("(max-width: 768px)")
@@ -146,12 +146,12 @@ export default function ProductsPage() {
   useEffect(() => {
     // טעינת הנתונים מיד - לא מחכים ל-selectedShop
     fetchProducts()
-  }, [pagination.page, statusFilter, collectionFilter, sortBy, sortOrder, selectedShop?.id])
+  }, [pagination.page, statusFilter, categoryFilter, sortBy, sortOrder, selectedShop?.id])
 
-  // Fetch collections
+  // Fetch categories
   useEffect(() => {
     if (selectedShop?.id) {
-      fetchCollections()
+      fetchCategories()
     }
   }, [selectedShop?.id])
 
@@ -171,20 +171,20 @@ export default function ProductsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search])
 
-  const fetchCollections = async () => {
+  const fetchCategories = async () => {
     // אם אין חנות נבחרת, נשתמש בחנות הראשונה
     const shopToUse = selectedShop || shops[0]
     if (!shopToUse?.id) return
     
     try {
-      const collectionsRes = await fetch(`/api/collections?shopId=${shopToUse.id}`)
+      const categoriesRes = await fetch(`/api/categories?shopId=${shopToUse.id}`)
 
-      if (collectionsRes.ok) {
-        const collectionsData = await collectionsRes.json()
-        setCollections(collectionsData)
+      if (categoriesRes.ok) {
+        const categoriesData = await categoriesRes.json()
+        setCategories(categoriesData)
       }
     } catch (error) {
-      console.error("Error fetching collections:", error)
+      console.error("Error fetching categories:", error)
     }
   }
 
@@ -196,7 +196,7 @@ export default function ProductsPage() {
         page: pagination.page.toString(),
         limit: pagination.limit.toString(),
         ...(statusFilter !== "all" && { status: statusFilter }),
-        ...(collectionFilter !== "all" && { collectionId: collectionFilter }),
+        ...(categoryFilter !== "all" && { categoryId: categoryFilter }),
         ...(search && { search }),
         ...((selectedShop || shops[0])?.id && { shopId: (selectedShop || shops[0])?.id }),
       })
@@ -510,9 +510,9 @@ export default function ProductsPage() {
   // Convert products to mobile list format
   const convertToMobileList = (): MobileListItem[] => {
     return products.map((product) => {
-      // Get first collection name (קטגוריה במערכת)
-      const categoryName = (product as any).collections && (product as any).collections.length > 0 
-        ? (product as any).collections[0].collection?.name 
+      // Get first category name
+      const categoryName = (product as any).categories && (product as any).categories.length > 0 
+        ? (product as any).categories[0].category?.name 
         : null;
 
       const formattedPrice = formatProductPrice(product as any);
@@ -593,11 +593,11 @@ export default function ProductsPage() {
       id: "collection",
       label: "קטגוריה",
       type: "select",
-      value: collectionFilter,
-      onChange: setCollectionFilter,
+      value: categoryFilter,
+      onChange: setCategoryFilter,
       options: [
         { value: "all", label: "כל הקטגוריות" },
-        ...collections.map(c => ({ value: c.id, label: c.name }))
+        ...categories.map(c => ({ value: c.id, label: c.name }))
       ]
     },
     {
@@ -762,16 +762,16 @@ export default function ProductsPage() {
                 )}
               </div>
 
-              {/* Collection Filter */}
-              <Select value={collectionFilter} onValueChange={setCollectionFilter}>
+              {/* Category Filter */}
+              <Select value={categoryFilter} onValueChange={setCategoryFilter}>
                 <SelectTrigger className="w-full md:w-[200px] flex-shrink-0">
                   <SelectValue placeholder="כל הקטגוריות" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">כל הקטגוריות</SelectItem>
-                  {collections.map((collection) => (
-                    <SelectItem key={collection.id} value={collection.id}>
-                      {collection.name}
+                  {categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1040,16 +1040,16 @@ export default function ProductsPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {(product as any).collections && (product as any).collections.length > 0 ? (
+                        {(product as any).categories && (product as any).categories.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
-                            {(product as any).collections.slice(0, 2).map((col: any) => (
-                              <Badge key={col.collectionId} variant="outline" className="text-xs">
-                                {col.collection?.name || 'קטגוריה'}
+                            {(product as any).categories.slice(0, 2).map((cat: any) => (
+                              <Badge key={cat.categoryId} variant="outline" className="text-xs">
+                                {cat.category?.name || 'קטגוריה'}
                               </Badge>
                             ))}
-                            {(product as any).collections.length > 2 && (
+                            {(product as any).categories.length > 2 && (
                               <Badge variant="outline" className="text-xs">
-                                +{(product as any).collections.length - 2}
+                                +{(product as any).categories.length - 2}
                               </Badge>
                             )}
                           </div>

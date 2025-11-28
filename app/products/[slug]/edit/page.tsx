@@ -207,7 +207,7 @@ export default function EditProductPage() {
           seoTitle: data.seoTitle || "",
           seoDescription: data.seoDescription || "",
           tags: Array.isArray(data.tags) ? data.tags.map((t: any) => (typeof t === 'string' ? t : t.name)) : [],
-          categories: data.collections?.map((c: any) => c.collectionId) || [],
+          categories: data.categories?.map((c: any) => c.categoryId) || [],
           badges: Array.isArray(data.badges) ? data.badges : [],
           pageTemplateId: data.pageTemplateId || "",
           exclusiveToTier: Array.isArray(data.exclusiveToTier) ? data.exclusiveToTier : [],

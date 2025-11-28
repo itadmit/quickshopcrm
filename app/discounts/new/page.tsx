@@ -29,10 +29,6 @@ interface Category {
   name: string
 }
 
-interface Collection {
-  id: string
-  name: string
-}
 
 interface Customer {
   id: string
@@ -48,16 +44,13 @@ export default function NewDiscountPage() {
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(false)
   
-  // Products/Categories/Collections state
+  // Products/Categories state
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const [collections, setCollections] = useState<Collection[]>([])
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [selectedCollections, setSelectedCollections] = useState<string[]>([])
   const [productSearch, setProductSearch] = useState("")
   const [categorySearch, setCategorySearch] = useState("")
-  const [collectionSearch, setCollectionSearch] = useState("")
   
   // Customers state
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -105,7 +98,6 @@ export default function NewDiscountPage() {
     if (selectedShop) {
       fetchProducts()
       fetchCategories()
-      fetchCollections()
       fetchCustomers()
     }
   }, [selectedShop])
@@ -154,20 +146,6 @@ export default function NewDiscountPage() {
     }
   }
 
-  const fetchCollections = async () => {
-    const shopToUse = selectedShop || shops[0]
-    if (!shopToUse) return
-    try {
-      const shopToUseForCollections = selectedShop || shops[0]
-      const response = await fetch(`/api/collections?shopId=${shopToUseForCollections.id}`)
-      if (response.ok) {
-        const data = await response.json()
-        setCollections(data || [])
-      }
-    } catch (error) {
-      console.error("Error fetching collections:", error)
-    }
-  }
 
   const fetchCustomers = async () => {
     const shopToUse = selectedShop || shops[0]
@@ -207,9 +185,6 @@ export default function NewDiscountPage() {
     c.name.toLowerCase().includes(categorySearch.toLowerCase())
   )
 
-  const filteredCollections = collections.filter(c => 
-    c.name.toLowerCase().includes(collectionSearch.toLowerCase())
-  )
 
   const filteredCustomers = customers.filter(c => {
     const searchLower = customerSearch.toLowerCase()
@@ -382,7 +357,7 @@ export default function NewDiscountPage() {
         applicableCollections: formData.target === "SPECIFIC_COLLECTIONS" ? selectedCollections : [],
         excludedProducts: formData.target === "EXCLUDE_PRODUCTS" ? selectedProducts : [],
         excludedCategories: formData.target === "EXCLUDE_CATEGORIES" ? selectedCategories : [],
-        excludedCollections: formData.target === "EXCLUDE_COLLECTIONS" ? selectedCollections : [],
+        excludedCollections: formData.target === "EXCLUDE_COLLECTIONS" ? selectedCategories : [],
         customerTiers: [],
         specificCustomers: formData.customerTarget === "SPECIFIC_CUSTOMERS" ? selectedCustomers : [],
         // שדות חדשים עבור FREE_GIFT
@@ -1064,20 +1039,12 @@ export default function NewDiscountPage() {
                       <RadioGroupItem value="SPECIFIC_CATEGORIES" id="categories" />
                     </div>
                     <div className="flex items-center gap-3 flex-row-reverse">
-                      <Label htmlFor="collections" className="cursor-pointer flex-1 text-right">קטגוריות ספציפיות</Label>
-                      <RadioGroupItem value="SPECIFIC_COLLECTIONS" id="collections" />
-                    </div>
-                    <div className="flex items-center gap-3 flex-row-reverse">
                       <Label htmlFor="exclude-products" className="cursor-pointer flex-1 text-right">כל המוצרים חוץ מ-</Label>
                       <RadioGroupItem value="EXCLUDE_PRODUCTS" id="exclude-products" />
                     </div>
                     <div className="flex items-center gap-3 flex-row-reverse">
                       <Label htmlFor="exclude-categories" className="cursor-pointer flex-1 text-right">כל המוצרים חוץ מקטגוריות</Label>
                       <RadioGroupItem value="EXCLUDE_CATEGORIES" id="exclude-categories" />
-                    </div>
-                    <div className="flex items-center gap-3 flex-row-reverse">
-                      <Label htmlFor="exclude-collections" className="cursor-pointer flex-1 text-right">כל המוצרים חוץ מקטגוריות</Label>
-                      <RadioGroupItem value="EXCLUDE_COLLECTIONS" id="exclude-collections" />
                     </div>
                   </RadioGroup>
                 </div>
@@ -1200,64 +1167,6 @@ export default function NewDiscountPage() {
                   </div>
                 )}
 
-                {/* Collection Selection */}
-                {(formData.target === "SPECIFIC_COLLECTIONS" || formData.target === "EXCLUDE_COLLECTIONS") && (
-                  <div className="space-y-3">
-                    <Label>בחר קטגוריות:</Label>
-                    <div className="relative">
-                      <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <Input
-                        placeholder="חפש קטגוריות..."
-                        value={collectionSearch}
-                        onChange={(e) => setCollectionSearch(e.target.value)}
-                        className="pr-10"
-                      />
-                    </div>
-                    <div className="border rounded-lg p-3 max-h-60 overflow-y-auto space-y-2">
-                      {filteredCollections.length === 0 ? (
-                        <p className="text-sm text-gray-500 text-center py-4">לא נמצאו קטגוריות</p>
-                      ) : (
-                        filteredCollections.map((collection) => (
-                          <div key={collection.id} className="flex items-center gap-2">
-                            <Checkbox
-                              id={`collection-${collection.id}`}
-                              checked={selectedCollections.includes(collection.id)}
-                              onCheckedChange={(checked) => {
-                                if (checked) {
-                                  setSelectedCollections([...selectedCollections, collection.id])
-                                } else {
-                                  setSelectedCollections(selectedCollections.filter(id => id !== collection.id))
-                                }
-                              }}
-                            />
-                            <Label htmlFor={`collection-${collection.id}`} className="cursor-pointer flex-1 text-sm">
-                              {collection.name}
-                            </Label>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    {selectedCollections.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {selectedCollections.map((collectionId) => {
-                          const collection = collections.find(c => c.id === collectionId)
-                          if (!collection) return null
-                          return (
-                            <div key={collectionId} className="flex items-center gap-1 bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">
-                              {collection.name}
-                              <button
-                                onClick={() => setSelectedCollections(selectedCollections.filter(id => id !== collectionId))}
-                                className="hover:bg-blue-200 rounded p-0.5"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-                          )
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
               </CardContent>
             </Card>
 

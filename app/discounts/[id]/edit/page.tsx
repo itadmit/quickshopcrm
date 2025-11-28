@@ -29,10 +29,6 @@ interface Category {
   name: string
 }
 
-interface Collection {
-  id: string
-  name: string
-}
 
 interface Customer {
   id: string
@@ -50,16 +46,13 @@ export default function EditDiscountPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   
-  // Products/Categories/Collections state
+  // Products/Categories state
   const [products, setProducts] = useState<Product[]>([])
   const [categories, setCategories] = useState<Category[]>([])
-  const [collections, setCollections] = useState<Collection[]>([])
   const [selectedProducts, setSelectedProducts] = useState<string[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
-  const [selectedCollections, setSelectedCollections] = useState<string[]>([])
   const [productSearch, setProductSearch] = useState("")
   const [categorySearch, setCategorySearch] = useState("")
-  const [collectionSearch, setCollectionSearch] = useState("")
   
   // Customers state
   const [customers, setCustomers] = useState<Customer[]>([])
@@ -113,7 +106,6 @@ export default function EditDiscountPage() {
     if (selectedShop) {
       fetchProducts()
       fetchCategories()
-      fetchCollections()
       fetchCustomers()
     }
   }, [selectedShop])
@@ -162,20 +154,6 @@ export default function EditDiscountPage() {
     }
   }
 
-  const fetchCollections = async () => {
-    const shopToUse = selectedShop || shops[0]
-    if (!shopToUse) return
-    try {
-      const shopToUseForCollections = selectedShop || shops[0]
-      const response = await fetch(`/api/collections?shopId=${shopToUseForCollections.id}`)
-      if (response.ok) {
-        const data = await response.json()
-        setCollections(data || [])
-      }
-    } catch (error) {
-      console.error("Error fetching collections:", error)
-    }
-  }
 
   const fetchCustomers = async () => {
     const shopToUse = selectedShop || shops[0]
@@ -215,9 +193,6 @@ export default function EditDiscountPage() {
     c.name.toLowerCase().includes(categorySearch.toLowerCase())
   )
 
-  const filteredCollections = collections.filter(c => 
-    c.name.toLowerCase().includes(collectionSearch.toLowerCase())
-  )
 
   const filteredCustomers = customers.filter(c => {
     const searchLower = customerSearch.toLowerCase()
@@ -490,10 +465,10 @@ export default function EditDiscountPage() {
         customerTarget: formData.customerTarget,
         applicableProducts: formData.target === "SPECIFIC_PRODUCTS" ? selectedProducts : [],
         applicableCategories: formData.target === "SPECIFIC_CATEGORIES" ? selectedCategories : [],
-        applicableCollections: formData.target === "SPECIFIC_COLLECTIONS" ? selectedCollections : [],
+        applicableCollections: formData.target === "SPECIFIC_COLLECTIONS" ? selectedCategories : [],
         excludedProducts: formData.target === "EXCLUDE_PRODUCTS" ? selectedProducts : [],
         excludedCategories: formData.target === "EXCLUDE_CATEGORIES" ? selectedCategories : [],
-        excludedCollections: formData.target === "EXCLUDE_COLLECTIONS" ? selectedCollections : [],
+        excludedCollections: formData.target === "EXCLUDE_COLLECTIONS" ? selectedCategories : [],
         customerTiers: [],
         specificCustomers: formData.customerTarget === "SPECIFIC_CUSTOMERS" ? selectedCustomers : [],
         // שדות חדשים עבור FREE_GIFT
@@ -1184,10 +1159,6 @@ export default function EditDiscountPage() {
                     <div className="flex items-center gap-3 flex-row-reverse">
                       <Label htmlFor="exclude-categories" className="cursor-pointer flex-1 text-right">כל המוצרים חוץ מקטגוריות</Label>
                       <RadioGroupItem value="EXCLUDE_CATEGORIES" id="exclude-categories" />
-                    </div>
-                    <div className="flex items-center gap-3 flex-row-reverse">
-                      <Label htmlFor="exclude-collections" className="cursor-pointer flex-1 text-right">כל המוצרים חוץ מקטגוריות</Label>
-                      <RadioGroupItem value="EXCLUDE_COLLECTIONS" id="exclude-collections" />
                     </div>
                   </RadioGroup>
                 </div>

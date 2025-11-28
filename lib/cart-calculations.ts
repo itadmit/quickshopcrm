@@ -455,21 +455,21 @@ async function calculateAutomaticDiscounts(
         productMatch = false
       }
     } else if (autoDiscount.target === "SPECIFIC_COLLECTIONS") {
-      // צריך לבדוק אם יש מוצרים בקטגוריות הספציפיות
+      // תאימות לאחור - אם יש applicableCollections, נשתמש בקטגוריות
       if (autoDiscount.applicableCollections && Array.isArray(autoDiscount.applicableCollections) && autoDiscount.applicableCollections.length > 0) {
         const productIds = enrichedItems.map(item => item.productId)
-        const productsWithCollections = await prisma.product.findMany({
+        const productsWithCategories = await prisma.product.findMany({
           where: {
             id: { in: productIds },
-            collections: {
+            categories: {
               some: {
-                collectionId: { in: autoDiscount.applicableCollections }
+                categoryId: { in: autoDiscount.applicableCollections }
               }
             }
           },
           select: { id: true }
         })
-        productMatch = productsWithCollections.length > 0
+        productMatch = productsWithCategories.length > 0
       } else {
         productMatch = false
       }
@@ -500,21 +500,21 @@ async function calculateAutomaticDiscounts(
         productMatch = true
       }
     } else if (autoDiscount.target === "EXCLUDE_COLLECTIONS") {
-      // צריך לבדוק שאין מוצרים בקטגוריות המבודדות
+      // תאימות לאחור - אם יש excludedCollections, נשתמש בקטגוריות
       if (autoDiscount.excludedCollections && Array.isArray(autoDiscount.excludedCollections) && autoDiscount.excludedCollections.length > 0) {
         const productIds = enrichedItems.map(item => item.productId)
-        const productsInExcludedCollections = await prisma.product.findMany({
+        const productsInExcludedCategories = await prisma.product.findMany({
           where: {
             id: { in: productIds },
-            collections: {
+            categories: {
               some: {
-                collectionId: { in: autoDiscount.excludedCollections }
+                categoryId: { in: autoDiscount.excludedCollections }
               }
             }
           },
           select: { id: true }
         })
-        productMatch = productsInExcludedCollections.length === 0
+        productMatch = productsInExcludedCategories.length === 0
       } else {
         productMatch = true
       }
