@@ -72,23 +72,28 @@ export async function GET(
       where.displayType = "global"
     }
 
-    const sizeCharts = await prisma.sizeChart.findMany({
-      where,
-      select: {
-        id: true,
-        name: true,
-        content: true,
-        imageUrl: true,
-        displayType: true,
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    })
+    // בדיקה שהמודל קיים
+    if (prisma && 'sizeChart' in prisma && typeof (prisma as any).sizeChart?.findMany === 'function') {
+      const sizeCharts = await (prisma as any).sizeChart.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          content: true,
+          imageUrl: true,
+          displayType: true,
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      })
 
-    return NextResponse.json(sizeCharts)
+      return NextResponse.json(sizeCharts)
+    } else {
+      // אם המודל לא קיים, נחזיר מערך ריק
+      return NextResponse.json([])
+    }
   } catch (error) {
-    console.error("Error fetching size charts:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

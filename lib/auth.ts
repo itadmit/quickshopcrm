@@ -167,8 +167,9 @@ export const authOptions: NextAuthOptions = {
             })
             
             if (!existingUser) {
-              // המשתמש נמחק - נזרוק שגיאה שתגרום ל-NextAuth לנקות את ה-session
-              throw new Error('User has been deleted')
+              // המשתמש נמחק - נחזיר null כדי ש-NextAuth ינקה את ה-session
+              console.warn('User has been deleted, clearing session')
+              return null as any
             }
             
             // עדכון הנתונים מה-DB
@@ -178,8 +179,8 @@ export const authOptions: NextAuthOptions = {
             token.companyId = existingUser.companyId
           } catch (error) {
             console.error('Error checking user in JWT callback:', error)
-            // נזרוק את השגיאה הלאה כדי ש-NextAuth יטפל בה
-            throw error
+            // במקרה של שגיאה אחרת, נחזיר null כדי לא ליצור לולאה אינסופית
+            return null as any
           }
         }
         
@@ -194,9 +195,9 @@ export const authOptions: NextAuthOptions = {
       }
     },
     async session({ session, token }) {
-      // אם token חסר, זה אומר שה-JWT callback נכשל - נזרוק שגיאה
+      // אם token חסר, זה אומר שה-JWT callback נכשל או שהמשתמש נמחק - נחזיר session ריק
       if (!token || !token.id) {
-        throw new Error('Invalid token')
+        return null as any
       }
       
       try {
@@ -207,8 +208,9 @@ export const authOptions: NextAuthOptions = {
         })
         
         if (!existingUser) {
-          // המשתמש נמחק - נזרוק שגיאה
-          throw new Error('User not found')
+          // המשתמש נמחק - נחזיר null כדי ש-NextAuth ינקה את ה-session
+          console.warn('User not found in session callback, clearing session')
+          return null as any
         }
         
         if (session.user) {
@@ -222,8 +224,8 @@ export const authOptions: NextAuthOptions = {
         return session
       } catch (error: any) {
         console.error('Error in session callback:', error)
-        // נזרוק את השגיאה כדי ש-NextAuth ינקה את ה-session
-        throw error
+        // במקרה של שגיאה, נחזיר null כדי ש-NextAuth ינקה את ה-session
+        return null as any
       }
     }
   },

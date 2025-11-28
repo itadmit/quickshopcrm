@@ -15,9 +15,10 @@ interface SEOData {
 interface SEOCardProps {
   data: SEOData
   onChange: (data: Partial<SEOData>) => void
+  showSlug?: boolean // האם להציג את שדה הסלאג
 }
 
-export function SEOCard({ data, onChange }: SEOCardProps) {
+export function SEOCard({ data, onChange, showSlug = true }: SEOCardProps) {
   return (
     <Card>
       <CardHeader>
@@ -41,18 +42,20 @@ export function SEOCard({ data, onChange }: SEOCardProps) {
           </p>
         </div>
         
-        <div className="space-y-2">
-          <Label htmlFor="slug">כתובת URL (Slug)</Label>
-          <Input
-            id="slug"
-            value={data.slug}
-            onChange={(e) => onChange({ slug: e.target.value })}
-            placeholder="לדוגמה: חולצת-טי-שירט"
-          />
-          <p className="text-sm text-gray-500">
-            השאר ריק כדי ליצור אוטומטית מהשם
-          </p>
-        </div>
+        {showSlug && (
+          <div className="space-y-2">
+            <Label htmlFor="slug">כתובת URL (Slug)</Label>
+            <Input
+              id="slug"
+              value={data.slug}
+              onChange={(e) => onChange({ slug: e.target.value })}
+              placeholder="לדוגמה: חולצת-טי-שירט"
+            />
+            <p className="text-sm text-gray-500">
+              השאר ריק כדי ליצור אוטומטית מהשם
+            </p>
+          </div>
+        )}
         
         <div className="space-y-2">
           <Label htmlFor="seoDescription">תיאור SEO</Label>

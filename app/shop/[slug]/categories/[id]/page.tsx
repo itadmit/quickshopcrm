@@ -140,7 +140,7 @@ export default function CategoryPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams()
-      params.append("collection", categoryId)
+      params.append("category", categoryId)
       if (filters.availability) {
         params.append("availability", filters.availability)
       }
@@ -633,7 +633,7 @@ export default function CategoryPage() {
       </main>
 
       {/* Admin Bar - רק למנהלים */}
-      <AdminBar slug={slug} pageType="collection" collectionId={categoryId} />
+      <AdminBar slug={slug} pageType="category" categoryId={categoryId} />
     </div>
   )
 }

@@ -37,6 +37,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Eye,
+  EyeOff,
   FileText,
   CheckCircle2,
   XCircle,
@@ -64,6 +65,7 @@ interface Product {
   price: number
   comparePrice: number | null
   status: "DRAFT" | "PUBLISHED" | "ARCHIVED"
+  isHidden?: boolean
   images: string[]
   inventoryQty: number
   availability: string
@@ -304,6 +306,37 @@ export default function ProductsPage() {
     }
   }
 
+  const handleToggleVisibility = async (productId: string, currentHidden: boolean) => {
+    try {
+      const response = await fetch(`/api/products/${productId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ isHidden: !currentHidden }),
+      })
+
+      if (response.ok) {
+        toast({
+          title: "הצלחה",
+          description: currentHidden ? "המוצר הוצג בחנות" : "המוצר הוסתר מהחנות",
+        })
+        fetchProducts()
+      } else {
+        toast({
+          title: "שגיאה",
+          description: "לא הצלחנו לעדכן את המוצר",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error toggling visibility:", error)
+      toast({
+        title: "שגיאה",
+        description: "אירעה שגיאה בעדכון המוצר",
+        variant: "destructive",
+      })
+    }
+  }
+
   const handleBulkDelete = async () => {
     const selectedArray = Array.from(selectedProducts)
     if (selectedArray.length === 0) {
@@ -521,6 +554,12 @@ export default function ProductsPage() {
         comparePrice: formattedComparePrice || undefined,
         inventory: totalInventory,
         status: product.status,
+        badge: product.isHidden
+          ? {
+              text: "מוסתר",
+              variant: "outline" as const,
+            }
+          : undefined,
         metadata: metadata,
       actions: [
         {
@@ -909,10 +948,20 @@ export default function ProductsPage() {
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-sm font-medium text-gray-900">{product.name}</div>
-                        {product.shop && (
-                          <div className="text-sm text-gray-500">{product.shop.name}</div>
-                        )}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <div className="text-sm font-medium text-gray-900">{product.name}</div>
+                          {product.isHidden && (
+                            <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-[10px] px-1.5 py-0 h-4 leading-none">
+                              <EyeOff className="w-2.5 h-2.5 ml-0.5 inline" />
+                              מוסתר
+                            </Badge>
+                          )}
+                          {product.status !== "PUBLISHED" && (
+                            <div className="flex-shrink-0">
+                              {getStatusBadge(product.status)}
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">
@@ -1030,6 +1079,19 @@ export default function ProductsPage() {
                               <Copy className="w-4 h-4 flex-shrink-0" />
                               שכפל
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleToggleVisibility(product.id, product.isHidden || false)} className="flex flex-row-reverse items-center gap-2 cursor-pointer">
+                              {product.isHidden ? (
+                                <>
+                                  <Eye className="w-4 h-4 flex-shrink-0" />
+                                  הצג בחנות
+                                </>
+                              ) : (
+                                <>
+                                  <EyeOff className="w-4 h-4 flex-shrink-0" />
+                                  הסתר מהחנות
+                                </>
+                              )}
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => handleArchive(product.id)} className="flex flex-row-reverse items-center gap-2 cursor-pointer">
                               <Archive className="w-4 h-4 flex-shrink-0" />
                               העבר לארכיון
@@ -1072,7 +1134,13 @@ export default function ProductsPage() {
                       <Package className="w-16 h-16 text-gray-400" />
                     </div>
                   )}
-                  <div className="absolute top-2 left-2">
+                  <div className="absolute top-2 left-2 flex flex-col gap-1">
+                    {product.isHidden && (
+                      <Badge className="bg-orange-100 text-orange-800 border-orange-200 text-[10px] px-1.5 py-0 h-4 leading-none">
+                        <EyeOff className="w-2.5 h-2.5 ml-0.5 inline" />
+                        מוסתר
+                      </Badge>
+                    )}
                     {getStatusBadge(product.status)}
                   </div>
                 </div>

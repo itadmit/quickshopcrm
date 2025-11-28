@@ -67,7 +67,6 @@ export async function GET(
     const cookieStore = await cookies()
     const sessionId = cookieStore.get("cart_session")?.value
     const customerId = req.headers.get("x-customer-id") || null
-    console.log('🛒 GET /api/storefront/[slug]/cart - customerId from header:', customerId || 'null (no customer)')
 
     // שימוש בפונקציה המרכזית למציאת עגלה
     const cart = await findCart(shop.id, sessionId, customerId)
@@ -408,7 +407,6 @@ export async function POST(
     // מציאת או יצירת עגלה - שימוש בפונקציה שמבטיחה עגלה אחת
     let cart = await findCart(shop.id, sessionId, customerId)
     
-    console.log('🛒 Cart found:', cart ? cart.id : 'NOT FOUND')
 
     const items = cart ? (cart.items as any[]) : []
     console.log('📋 Current items in cart:', items.length)
@@ -1244,12 +1242,6 @@ export async function DELETE(
       if (!item.isGift) return true
       const itemKey = `${item.productId}-${item.variantId || 'null'}`
       return relevantGiftIds.has(itemKey)
-    })
-
-    console.log('🎁 Gift items check:', {
-      before: items.filter((i: any) => i.isGift).length,
-      after: filteredItems.filter((i: any) => i.isGift).length,
-      removed: items.filter((i: any) => i.isGift).length - filteredItems.filter((i: any) => i.isGift).length
     })
 
     const updatedCart = await prisma.cart.update({

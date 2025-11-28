@@ -18,29 +18,65 @@ export async function GET(req: NextRequest) {
     const companyId = session.user.companyId
 
     // קבלת כל התוספים הזמינים
-    const availablePlugins = getAllPlugins()
+    let availablePlugins = []
+    try {
+      availablePlugins = getAllPlugins()
+    } catch (registryError: any) {
+      return NextResponse.json(
+        { error: "שגיאה בקבלת תוספים", details: registryError?.message || "שגיאה בטעינת רשימת התוספים" },
+        { status: 500 }
+      )
+    }
 
     // קבלת תוספים מותקנים וגלובליים (כולל תוספים שהסופר אדמין ערך)
     // רק תוספים שהם isInstalled = true
-    const installedPlugins = await prisma.plugin.findMany({
-      where: {
-        isInstalled: true, // רק תוספים מותקנים
-        OR: [
-          { shopId: shopId || null },
-          { companyId: companyId },
+    let installedPlugins = []
+    let activeSubscriptions = []
+    
+    // ניסיון לגשת למודלים - אם הם לא קיימים, נמשיך עם רשימות ריקות
+    // בדיקה שהמודלים קיימים ב-Prisma client
+    if (prisma && 'plugin' in prisma && typeof (prisma as any).plugin?.findMany === 'function') {
+      try {
+        // בניית תנאי החיפוש - תוספים פר חנות או גלובליים
+        const whereConditions: any[] = [
           { shopId: null, companyId: null }, // גלובליים - תוספים שהסופר אדמין ערך
-        ],
-      },
-    })
+        ]
+        
+        // אם יש shopId, נחפש תוספים ספציפיים לחנות הזו
+        if (shopId) {
+          whereConditions.unshift({ shopId: shopId }) // תוספים ספציפיים לחנות
+        } else {
+          // אם אין shopId, נחפש תוספים ברמת החברה
+          whereConditions.unshift({ companyId: companyId }) // תוספים ברמת החברה
+        }
+        
+        installedPlugins = await (prisma as any).plugin.findMany({
+          where: {
+            isInstalled: true, // רק תוספים מותקנים
+            OR: whereConditions,
+          },
+        })
+      } catch (pluginError: any) {
+        // אם יש שגיאה, נמשיך עם רשימה ריקה
+        installedPlugins = []
+      }
+    }
 
-    // קבלת מנויים פעילים
-    const activeSubscriptions = await prisma.pluginSubscription.findMany({
-      where: {
-        companyId,
-        status: "ACTIVE",
-        isActive: true,
-      },
-    })
+    if (prisma && 'pluginSubscription' in prisma && typeof (prisma as any).pluginSubscription?.findMany === 'function') {
+      try {
+        // קבלת מנויים פעילים
+        activeSubscriptions = await (prisma as any).pluginSubscription.findMany({
+          where: {
+            companyId,
+            status: "ACTIVE",
+            isActive: true,
+          },
+        })
+      } catch (subscriptionError: any) {
+        // אם יש שגיאה, נמשיך עם רשימה ריקה
+        activeSubscriptions = []
+      }
+    }
 
     // מיזוג התוספים עם מצב ההתקנה
     const pluginsWithStatus = availablePlugins.map(plugin => {
@@ -78,7 +114,6 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json(pluginsWithStatus)
   } catch (error: any) {
-    console.error("Error fetching plugins:", error)
     return NextResponse.json(
       { error: "שגיאה בקבלת תוספים", details: error.message },
       { status: 500 }
@@ -125,7 +160,6 @@ export async function POST(req: NextRequest) {
       plugin: installed,
     })
   } catch (error: any) {
-    console.error("Error installing plugin:", error)
     return NextResponse.json(
       { error: "שגיאה בהתקנת תוסף", details: error.message },
       { status: 500 }

@@ -129,19 +129,21 @@ export async function PUT(
     }
 
     // עדכון האוסף
+    const updateData: any = {}
+    
+    if (data.name !== undefined) updateData.name = data.name
+    if (data.slug !== undefined) updateData.slug = data.slug
+    if (data.description !== undefined) updateData.description = data.description
+    if (data.image !== undefined) updateData.image = data.image
+    if (data.type !== undefined) updateData.type = data.type
+    if (data.isPublished !== undefined) updateData.isPublished = data.isPublished
+    if (data.rules !== undefined) updateData.rules = data.rules
+    if (data.seoTitle !== undefined) updateData.seoTitle = data.seoTitle
+    if (data.seoDescription !== undefined) updateData.seoDescription = data.seoDescription
+
     const collection = await prisma.collection.update({
       where: { id: existingCollection.id },
-      data: {
-        name: data.name,
-        slug: data.slug,
-        description: data.description,
-        image: data.image,
-        type: data.type,
-        isPublished: data.isPublished,
-        rules: data.rules,
-        seoTitle: data.seoTitle,
-        seoDescription: data.seoDescription,
-      },
+      data: updateData,
     })
 
     // עדכון מוצרים - ידני או אוטומטי

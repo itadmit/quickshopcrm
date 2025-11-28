@@ -507,7 +507,7 @@ export function ProductCard({
                 {applicableDiscount && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <Badge className="bg-green-100 text-green-800 border border-green-700 text-xs font-semibold whitespace-nowrap px-2 py-1 rounded-sm transition-none">
-                      הנחה נוספת: {applicableDiscount.title}
+                      {applicableDiscount.title}
                     </Badge>
                     <span 
                       className="text-base font-bold"

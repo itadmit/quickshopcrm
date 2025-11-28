@@ -44,7 +44,6 @@ export default function NewProductPage() {
   // Form state
   const [formData, setFormData] = useState({
     name: "",
-    slug: "",
     description: "",
     sku: "",
     price: "",
@@ -68,7 +67,7 @@ export default function NewProductPage() {
       width: "",
       height: "",
     },
-    status: "DRAFT" as "DRAFT" | "PUBLISHED" | "ARCHIVED",
+    status: "PUBLISHED" as "DRAFT" | "PUBLISHED" | "ARCHIVED",
     scheduledPublishDate: "",
     notifyOnPublish: false,
     images: [] as string[],
@@ -119,36 +118,36 @@ export default function NewProductPage() {
     }
   }, [shopsLoading])
 
-  // Generate slug from name
-  const generateSlug = (name: string) => {
-    return name
-      .trim()
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^\u0590-\u05FFa-zA-Z0-9\-]+/g, "")
-      .replace(/-+/g, "-")
-      .replace(/^-+|-+$/g, "")
-  }
-
   const handleNameChange = (name: string) => {
     setFormData(prev => ({
       ...prev,
-      name,
-      slug: prev.slug || generateSlug(name)
+      name
     }))
   }
 
   const handleMediaSelect = (files: string[]) => {
-    setFormData(prev => ({
-      ...prev,
-      images: [...prev.images, ...files]
-    }))
+    setFormData(prev => {
+      // הוסף רק תמונות שלא קיימות כבר
+      const existingImages = new Set(prev.images)
+      const newImages = files.filter(file => !existingImages.has(file))
+      return {
+        ...prev,
+        images: [...prev.images, ...newImages]
+      }
+    })
   }
 
   const removeImage = (index: number) => {
     setFormData(prev => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
+    }))
+  }
+
+  const handleReorderImages = (newOrder: string[]) => {
+    setFormData(prev => ({
+      ...prev,
+      images: newOrder
     }))
   }
 
@@ -208,7 +207,7 @@ export default function NewProductPage() {
       const payload: any = {
         shopId: shopToUse.id,
         name: formData.name,
-        slug: formData.slug || generateSlug(formData.name),
+        // לא נשלח slug - ייווצר אוטומטית ב-API
         price: hasVariants ? 0 : (safeParseFloat(formData.price) ?? 0),
         taxEnabled: formData.taxEnabled,
         inventoryEnabled: formData.inventoryEnabled,
@@ -251,7 +250,8 @@ export default function NewProductPage() {
       if (formData.availableDate && formData.availableDate.trim()) {
         payload.availableDate = new Date(formData.availableDate).toISOString()
       }
-      if (formData.badges && formData.badges.length > 0) {
+      // שמור badges גם אם המערך ריק
+      if (formData.badges !== undefined) {
         payload.badges = formData.badges
       }
       if (!hasVariants) {
@@ -520,6 +520,7 @@ export default function NewProductPage() {
                   entityId="new"
               onSelect={handleMediaSelect}
               onRemove={removeImage}
+              onReorder={handleReorderImages}
               mediaPickerOpen={mediaPickerOpen}
               onMediaPickerChange={setMediaPickerOpen}
             />
@@ -708,10 +709,11 @@ export default function NewProductPage() {
             <SEOCard
               data={{
                 seoTitle: formData.seoTitle,
-                slug: formData.slug,
+                slug: "", // לא נחוץ ביצירה - ייווצר אוטומטית
                 seoDescription: formData.seoDescription,
               }}
               onChange={(data) => setFormData(prev => ({ ...prev, ...data }))}
+              showSlug={false}
             />
           </div>
         </div>

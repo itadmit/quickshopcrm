@@ -27,7 +27,7 @@ interface Collection {
   description: string | null
   image: string | null
   type: "MANUAL" | "AUTOMATIC"
-  isPublished: boolean
+  isPublished?: boolean
   createdAt: string
   _count?: {
     products: number

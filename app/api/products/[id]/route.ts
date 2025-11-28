@@ -24,6 +24,7 @@ const updateProductSchema = z.object({
   weight: z.union([z.number(), z.null()]).optional(),
   dimensions: z.any().optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).optional(),
+  isHidden: z.boolean().optional(),
   scheduledPublishDate: z.union([z.string().datetime(), z.null(), z.literal("")]).optional(),
   notifyOnPublish: z.boolean().optional(),
   images: z.array(z.string()).optional(),
@@ -36,10 +37,12 @@ const updateProductSchema = z.object({
   seoDescription: z.union([z.string(), z.null()]).optional(),
   customFields: z.any().optional(),
   badges: z.any().optional(),
+  tags: z.array(z.string()).optional(),
   categories: z.array(z.string()).optional(),
   addonIds: z.array(z.string()).optional(),
   pageTemplateId: z.union([z.string(), z.null()]).optional(),
   defaultVariantId: z.union([z.string(), z.null()]).optional(),
+  exclusiveToTier: z.array(z.string()).optional(),
 })
 
 // GET - קבלת פרטי מוצר
@@ -72,9 +75,9 @@ export async function GET(
             domain: true,
           },
         },
-        collections: {
+        categories: {
           include: {
-            collection: true,
+            category: true,
           },
         },
         tags: true,
@@ -96,7 +99,25 @@ export async function GET(
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
 
-    return NextResponse.json(product)
+    // הוסף badges, pageTemplateId, exclusiveToTier ושדות נוספים מ-customFields אם קיימים
+    const customFields = (product.customFields || {}) as any
+    
+    const productWithExtras = {
+      ...product,
+      badges: customFields.badges || [],
+      pageTemplateId: customFields.pageTemplateId || null,
+      exclusiveToTier: customFields.exclusiveToTier || [],
+      trackInventory: customFields.trackInventory ?? true,
+      sellWhenSoldOut: customFields.sellWhenSoldOut ?? false,
+      priceByWeight: customFields.priceByWeight ?? false,
+      showPricePer100ml: customFields.showPricePer100ml ?? false,
+      pricePer100ml: customFields.pricePer100ml ?? null,
+      isGiftCard: customFields.isGiftCard ?? false,
+      notifyOnPublish: customFields.notifyOnPublish ?? false,
+      scheduledPublishDate: customFields.scheduledPublishDate || null,
+    }
+
+    return NextResponse.json(productWithExtras)
   } catch (error) {
     console.error("Error fetching product:", error)
     return NextResponse.json(
@@ -182,11 +203,105 @@ async function updateProduct(
       updateData.scheduledPublishDate = null
     }
 
-    // הסר addonIds ו-categories מה-updateData (הם לא חלק מהמודל של Product)
+    // הסר שדות שלא קיימים במודל Product
     const addonIds = updateData.addonIds
     const categories = updateData.categories
+    const defaultVariantId = updateData.defaultVariantId
+    const tags = updateData.tags
+    const badges = updateData.badges
+    const pageTemplateId = updateData.pageTemplateId
+    const exclusiveToTier = updateData.exclusiveToTier
+    const pricePer100ml = updateData.pricePer100ml
+    
+    // שדות שלא קיימים במודל - נמחקים
     delete updateData.addonIds
     delete updateData.categories
+    delete updateData.defaultVariantId
+    delete updateData.trackInventory
+    delete updateData.sellWhenSoldOut
+    delete updateData.priceByWeight
+    delete updateData.showPricePer100ml
+    delete updateData.pricePer100ml
+    delete updateData.isGiftCard
+    delete updateData.notifyOnPublish
+    delete updateData.scheduledPublishDate
+    delete updateData.badges
+    delete updateData.pageTemplateId
+    delete updateData.tags
+    delete updateData.exclusiveToTier
+    
+    // עדכון customFields עם badges, pageTemplateId, exclusiveToTier ושדות נוספים אם קיימים
+    const existingCustomFields = (existingProduct.customFields || {}) as any
+    const newCustomFields = (updateData.customFields || {}) as any
+    let currentCustomFields = { ...existingCustomFields, ...newCustomFields }
+    
+    // עדכון badges
+    if (badges !== undefined) {
+      if (badges === null) {
+        // אם badges הוא null במפורש, הסר אותו מ-customFields
+        const { badges: _, ...restCustomFields } = currentCustomFields
+        currentCustomFields = restCustomFields
+      } else if (Array.isArray(badges)) {
+        // שמור את badges (גם אם המערך ריק)
+        currentCustomFields.badges = badges
+      }
+    }
+    
+    // עדכון pageTemplateId
+    if (pageTemplateId !== undefined) {
+      if (pageTemplateId === null || pageTemplateId === "") {
+        // הסר pageTemplateId מ-customFields
+        const { pageTemplateId: _, ...restCustomFields } = currentCustomFields
+        currentCustomFields = restCustomFields
+      } else {
+        currentCustomFields.pageTemplateId = pageTemplateId
+      }
+    }
+    
+    // עדכון exclusiveToTier
+    if (exclusiveToTier !== undefined) {
+      if (exclusiveToTier === null || (Array.isArray(exclusiveToTier) && exclusiveToTier.length === 0)) {
+        // הסר exclusiveToTier מ-customFields
+        const { exclusiveToTier: _, ...restCustomFields } = currentCustomFields
+        currentCustomFields = restCustomFields
+      } else if (Array.isArray(exclusiveToTier)) {
+        currentCustomFields.exclusiveToTier = exclusiveToTier
+      }
+    }
+    
+    // עדכון שדות נוספים שלא קיימים במודל Product
+    if (data.trackInventory !== undefined) {
+      currentCustomFields.trackInventory = data.trackInventory
+    }
+    if (data.sellWhenSoldOut !== undefined) {
+      currentCustomFields.sellWhenSoldOut = data.sellWhenSoldOut
+    }
+    if (data.priceByWeight !== undefined) {
+      currentCustomFields.priceByWeight = data.priceByWeight
+    }
+    if (data.showPricePer100ml !== undefined) {
+      currentCustomFields.showPricePer100ml = data.showPricePer100ml
+    }
+    if (pricePer100ml !== undefined) {
+      currentCustomFields.pricePer100ml = pricePer100ml
+    }
+    if (data.isGiftCard !== undefined) {
+      currentCustomFields.isGiftCard = data.isGiftCard
+    }
+    if (data.notifyOnPublish !== undefined) {
+      currentCustomFields.notifyOnPublish = data.notifyOnPublish
+    }
+    if (data.scheduledPublishDate !== undefined) {
+      if (data.scheduledPublishDate === null || data.scheduledPublishDate === "") {
+        const { scheduledPublishDate: _, ...restCustomFields } = currentCustomFields
+        currentCustomFields = restCustomFields
+      } else {
+        currentCustomFields.scheduledPublishDate = data.scheduledPublishDate
+      }
+    }
+    
+    // עדכון customFields ב-updateData
+    updateData.customFields = Object.keys(currentCustomFields).length > 0 ? currentCustomFields : null
 
     // עדכון המוצר
     const product = await prisma.product.update({
@@ -204,30 +319,58 @@ async function updateProduct(
       },
     })
 
-    // עדכון קטגוריות (collections)
+    // עדכון תגיות (tags)
+    if (tags !== undefined) {
+      try {
+        // מחיקת כל התגיות הקיימות
+        await prisma.productTag.deleteMany({
+          where: { productId: product.id },
+        })
+
+        // הוספת תגיות חדשות (גם אם tags הוא מערך ריק, נמחק את כל התגיות)
+        if (tags && Array.isArray(tags) && tags.length > 0) {
+          await Promise.all(
+            tags.map(async (tagName: string) => {
+              if (tagName && tagName.trim()) {
+                await prisma.productTag.create({
+                  data: {
+                    productId: product.id,
+                    name: tagName.trim(),
+                  },
+                })
+              }
+            })
+          )
+        }
+      } catch (error) {
+        console.error("Error updating product tags:", error)
+        // לא נכשיל את כל הבקשה בגלל שגיאה בתגיות
+      }
+    }
+
+    // עדכון קטגוריות
     if (categories !== undefined) {
       try {
         // מחיקת כל הקטגוריות הקיימות
-        await prisma.productCollection.deleteMany({
+        await prisma.productCategory.deleteMany({
           where: { productId: product.id },
         })
 
         // הוספת קטגוריות חדשות
         if (Array.isArray(categories) && categories.length > 0) {
           await Promise.all(
-            categories.map(async (collectionId: string) => {
-              await prisma.productCollection.create({
+            categories.map(async (categoryId: string) => {
+              await prisma.productCategory.create({
                 data: {
                   productId: product.id,
-                  collectionId: collectionId,
-                  position: 0,
+                  categoryId: categoryId,
                 },
               })
             })
           )
         }
       } catch (error) {
-        console.error("Error updating product collections:", error)
+        console.error("Error updating product categories:", error)
         // לא נכשיל את כל הבקשה בגלל שגיאה בקטגוריות
       }
     }

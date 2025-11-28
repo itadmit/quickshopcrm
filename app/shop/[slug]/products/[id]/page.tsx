@@ -32,9 +32,9 @@ export default async function ProductPage({ params }: { params: { slug: string; 
       include: {
         variants: true,
         options: true,
-        collections: {
+        categories: {
           include: {
-            collection: true,
+            category: true,
           },
         },
         customFieldValues: {
@@ -80,36 +80,43 @@ export default async function ProductPage({ params }: { params: { slug: string; 
     notFound()
   }
 
-  // Get product category IDs and collection IDs
-  const productCategoryIds = product.collections?.map((pc: any) => pc.collection?.categoryId).filter(Boolean) || []
-  const productCollectionIds = product.collections?.map((pc: any) => pc.collection?.id).filter(Boolean) || []
+  // Get product category IDs
+  const productCategoryIds = product.categories?.map((pc: any) => pc.category?.id).filter(Boolean) || []
 
   // טעינת תבנית עמוד מוצר - עדיפות: תבנית ספציפית למוצר > ברירת מחדל
   let productPageTemplate: { elements: any } | null = null
   
   // אם יש תבנית ספציפית למוצר
   if ((product as any).pageTemplateId) {
-    const template = await (prisma as any).productPageTemplate.findUnique({
-      where: { id: (product as any).pageTemplateId },
-      select: { elements: true },
-    })
-    if (template) {
-      productPageTemplate = { elements: template.elements }
+    try {
+      const template = await prisma.productPageTemplate.findUnique({
+        where: { id: (product as any).pageTemplateId },
+        select: { elements: true },
+      })
+      if (template) {
+        productPageTemplate = { elements: template.elements }
+      }
+    } catch (error) {
+      // מודל לא קיים - דלג
     }
   }
   
   // אם אין תבנית ספציפית, נשתמש בתבנית ברירת מחדל
   if (!productPageTemplate) {
-    const defaultTemplate = await (prisma as any).productPageTemplate.findFirst({
-      where: {
-        shopId: shop.id,
-        isActive: true,
-        isDefault: true,
-      },
-      select: { elements: true },
-    })
-    if (defaultTemplate) {
-      productPageTemplate = { elements: defaultTemplate.elements }
+    try {
+      const defaultTemplate = await prisma.productPageTemplate.findFirst({
+        where: {
+          shopId: shop.id,
+          isActive: true,
+          isDefault: true,
+        },
+        select: { elements: true },
+      })
+      if (defaultTemplate) {
+        productPageTemplate = { elements: defaultTemplate.elements }
+      }
+    } catch (error) {
+      // מודל לא קיים - דלג
     }
   }
 

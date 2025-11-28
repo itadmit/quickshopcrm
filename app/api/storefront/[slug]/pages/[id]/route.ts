@@ -56,6 +56,7 @@ export async function GET(
           id: { in: page.selectedProducts as string[] },
           shopId: shop.id,
           status: "PUBLISHED",
+          isHidden: false,
         },
         select: {
           id: true,

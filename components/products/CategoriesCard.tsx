@@ -32,11 +32,11 @@ export function CategoriesCard({ selectedCategories, onChange, shopId, productId
   const [loading, setLoading] = useState(true)
   const [newCategoryName, setNewCategoryName] = useState("")
   const [dialogOpen, setDialogOpen] = useState(false)
-  const [automaticCollections, setAutomaticCollections] = useState<string[]>([])
+  const [automaticCategories, setAutomaticCategories] = useState<string[]>([])
 
   const fetchCategories = async () => {
     try {
-      const response = await fetch(`/api/collections?shopId=${shopId}`)
+      const response = await fetch(`/api/categories?shopId=${shopId}`)
       if (response.ok) {
         const data = await response.json()
         setCategories(data)
@@ -48,17 +48,17 @@ export function CategoriesCard({ selectedCategories, onChange, shopId, productId
     }
   }
 
-  const fetchAutomaticCollections = useCallback(async () => {
+  const fetchAutomaticCategories = useCallback(async () => {
     if (!productId) return
     
     try {
-      const response = await fetch(`/api/products/${productId}/automatic-collections`)
+      const response = await fetch(`/api/products/${productId}/automatic-categories`)
       if (response.ok) {
         const data = await response.json()
-        setAutomaticCollections(data.automaticCollections?.map((c: any) => c.id) || [])
+        setAutomaticCategories(data.automaticCategories?.map((c: any) => c.id) || [])
       }
     } catch (error) {
-      console.error("Error fetching automatic collections:", error)
+      console.error("Error fetching automatic categories:", error)
     }
   }, [productId])
 
@@ -71,16 +71,24 @@ export function CategoriesCard({ selectedCategories, onChange, shopId, productId
     
     // Debounce כדי למנוע קריאות API מיותרות
     const timer = setTimeout(() => {
-      fetchAutomaticCollections()
+      fetchAutomaticCategories()
     }, 500) // 500ms delay
     
     return () => clearTimeout(timer)
-  }, [productId, refreshTrigger, fetchAutomaticCollections])
+  }, [productId, refreshTrigger, fetchAutomaticCategories])
 
-  // Collections לא תומכים בהיררכיה, אז פשוט נציג אותם כרשימה שטוחה
-  const categoryTree = useMemo(() => categories, [categories])
-
-  // Collections לא תומכים בהיררכיה, אז לא צריך expand/collapse
+  // בניית עץ קטגוריות עם תמיכה בהיררכיה
+  const categoryTree = useMemo(() => {
+    const buildTree = (items: Category[], parentId: string | null = null): Category[] => {
+      return items
+        .filter(item => (item as any).parentId === parentId)
+        .map(item => ({
+          ...item,
+          children: buildTree(items, item.id),
+        }))
+    }
+    return buildTree(categories)
+  }, [categories])
 
   const toggleCategory = (categoryId: string) => {
     if (selectedCategories.includes(categoryId)) {
@@ -101,13 +109,12 @@ export function CategoriesCard({ selectedCategories, onChange, shopId, productId
     }
 
     try {
-      const response = await fetch("/api/collections", {
+      const response = await fetch("/api/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           shopId,
           name: newCategoryName,
-          type: "MANUAL",
         }),
       })
 
@@ -141,7 +148,7 @@ export function CategoriesCard({ selectedCategories, onChange, shopId, productId
   const renderCategory = (category: Category) => {
     const isSelected = selectedCategories.includes(category.id)
     const isAutomatic = category.type === "AUTOMATIC"
-    const isInAutomatic = productId && automaticCollections.includes(category.id)
+    const isInAutomatic = productId && automaticCategories.includes(category.id)
 
     return (
       <div key={category.id}>
@@ -227,7 +234,7 @@ export function CategoriesCard({ selectedCategories, onChange, shopId, productId
         ) : (
           <div className="space-y-1 max-h-96 overflow-y-auto">
             {categoryTree.map(category => renderCategory(category))}
-            {productId && automaticCollections.length > 0 && (
+            {productId && automaticCategories.length > 0 && (
               <div className="mt-4 pt-4 border-t">
                 <p className="text-xs text-gray-500 mb-2">
                   <Sparkles className="w-3 h-3 inline ml-1" />

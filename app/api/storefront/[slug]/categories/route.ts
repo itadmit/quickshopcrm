@@ -35,18 +35,32 @@ export async function GET(
       return NextResponse.json({ error: "Shop not found" }, { status: 404 })
     }
 
-    // שליפת collections (שאנחנו קוראים להן קטגוריות)
-    const collections = await prisma.collection.findMany({
+    // שליפת קטגוריות
+    const categories = await prisma.category.findMany({
       where: {
         shopId: shop.id,
       },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        image: true,
-        type: true,
+      include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            image: true,
+            _count: {
+              select: {
+                products: true,
+              },
+            },
+          },
+        },
         _count: {
           select: {
             products: true,
@@ -58,7 +72,7 @@ export async function GET(
       },
     })
 
-    return NextResponse.json(collections)
+    return NextResponse.json(categories)
   } catch (error) {
     console.error("Error fetching categories:", error)
     return NextResponse.json(

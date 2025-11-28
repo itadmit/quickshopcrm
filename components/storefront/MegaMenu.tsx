@@ -6,15 +6,13 @@ import { ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface NavigationItem {
-  type: "link" | "page" | "category" | "collection"
+  type: "link" | "page" | "category"
   label: string
   url?: string
   pageId?: string
   pageSlug?: string
   categoryId?: string
   categorySlug?: string
-  collectionId?: string
-  collectionSlug?: string
   children?: NavigationItem[]
   image?: string
   columnTitle?: string
@@ -124,10 +122,6 @@ export function MegaMenu({ item, slug, onClose }: MegaMenuProps) {
       // שימוש ב-slug אם קיים, אחרת ב-ID (תאימות לאחור)
       const categoryIdentifier = childItem.categorySlug || childItem.categoryId
       return `/shop/${slug}/categories/${categoryIdentifier}`
-    } else if (childItem.type === "collection") {
-      // שימוש ב-slug אם קיים, אחרת ב-ID (תאימות לאחור)
-      const collectionIdentifier = childItem.collectionSlug || childItem.collectionId
-      return `/shop/${slug}/categories/${collectionIdentifier}`
     } else if (childItem.type === "link") {
       return childItem.url || "#"
     }

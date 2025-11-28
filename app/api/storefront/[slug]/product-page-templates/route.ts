@@ -44,16 +44,6 @@ export async function GET(
       select: { 
         id: true, 
         companyId: true,
-        productPageTemplates: {
-          where: { isActive: true },
-          orderBy: { createdAt: 'desc' },
-          select: {
-            id: true,
-            name: true,
-            elements: true,
-            createdAt: true,
-          },
-        },
       },
     })
 
@@ -66,7 +56,11 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
     }
 
-    return NextResponse.json({ templates: shop.productPageTemplates })
+    // קבלת תבניות מוצר - מודל לא קיים כרגע, מחזירים רשימה ריקה
+    // TODO: להוסיף מודל ProductPageTemplate ל-Prisma schema
+    const templates: any[] = []
+
+    return NextResponse.json({ templates })
   } catch (error) {
     console.error("Error fetching product page templates:", error)
     return NextResponse.json(
@@ -100,20 +94,12 @@ export async function POST(
     const body = await req.json()
     const data = createTemplateSchema.parse(body)
 
-    const template = await prisma.productPageTemplate.create({
-      data: {
-        shopId: shop.id,
-        name: data.name,
-        elements: data.elements.sort((a, b) => a.position - b.position),
-        productIds: [],
-        categoryIds: [],
-        collectionIds: [],
-        isDefault: false,
-        isActive: data.isActive,
-      },
-    })
-
-    return NextResponse.json({ template }, { status: 201 })
+    // מודל לא קיים כרגע - מחזירים שגיאה
+    // TODO: להוסיף מודל ProductPageTemplate ל-Prisma schema
+    return NextResponse.json(
+      { error: "Product page templates are not yet implemented" },
+      { status: 501 }
+    )
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

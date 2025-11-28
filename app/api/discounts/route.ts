@@ -105,7 +105,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const data = createDiscountSchema.parse(body)
 
-    console.log('🎁 Creating discount:', {
       type: data.type,
       isAutomatic: data.isAutomatic,
       giftProductId: data.giftProductId,
@@ -165,7 +164,6 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    console.log('🎁 Discount created:', {
       id: discount.id,
       type: discount.type,
       isAutomatic: discount.isAutomatic,

@@ -598,13 +598,16 @@ async function calculateAutomaticDiscounts(
 
 /**
  * חישוב הנחה מקופון
+ * @param subtotal - הסכום לחישוב ההנחה (אחרי הנחות אוטומטיות אם יש)
+ * @param originalSubtotal - הסכום המקורי (לפני כל הנחות) לבדיקת minOrder
  */
 async function calculateCouponDiscount(
   shopId: string,
   couponCode: string | null,
   enrichedItems: EnrichedCartItem[],
   subtotal: number,
-  customerId?: string | null
+  customerId?: string | null,
+  originalSubtotal?: number // הסכום המקורי לבדיקת minOrder
 ): Promise<{ discount: number; customerDiscountFromCoupon?: number; status?: { isValid: boolean; reason?: string; minOrderRequired?: number } }> {
   if (!couponCode) {
     return { discount: 0 }
@@ -636,8 +639,18 @@ async function calculateCouponDiscount(
     }
   }
 
-  // בדיקת minOrder
-  if (coupon.minOrder && subtotal < coupon.minOrder) {
+  // בדיקת minOrder - על הסכום המקורי (לפני הנחות)
+  const subtotalForMinOrder = originalSubtotal !== undefined 
+    ? originalSubtotal 
+    : enrichedItems.reduce((sum, item) => {
+        if (!item.isGift) {
+          const basePrice = item.variant?.price || item.product.price
+          return sum + (basePrice * item.quantity) + (item.addonsTotal || 0)
+        }
+        return sum
+      }, 0)
+  
+  if (coupon.minOrder && subtotalForMinOrder < coupon.minOrder) {
     return { 
       discount: 0,
       status: { 
@@ -1317,14 +1330,38 @@ export async function calculateCart(
   const automaticDiscount = automaticDiscountResult.amount
   const automaticDiscountTitle = automaticDiscountResult.title
 
-  // חישוב הנחה מקופון
-  const couponResult = await calculateCouponDiscount(
-    shopId,
-    couponCode,
-    enrichedItems,
-    subtotal,
-    customerId
-  )
+  // חישוב הנחה מקופון - על הסכום אחרי ההנחה האוטומטית
+  // קודם בודקים אם הקופון יכול לשלב עם הנחות אחרות
+  let couponResult = { discount: 0, customerDiscountFromCoupon: 0, status: { isValid: true } as any }
+  
+  if (couponCode) {
+    const coupon = await prisma.coupon.findUnique({
+      where: { code: couponCode },
+    })
+    
+    // אם יש הנחה אוטומטית והקופון לא יכול לשלב, לא מחשבים קופון
+    if (automaticDiscount > 0 && coupon && !coupon.canCombine) {
+      couponResult = {
+        discount: 0,
+        customerDiscountFromCoupon: 0,
+        status: { 
+          isValid: false, 
+          reason: 'הקופון לא ניתן לשילוב עם הנחות אוטומטיות. אנא הסר את הקופון או את ההנחה האוטומטית' 
+        }
+      }
+    } else {
+      // מחשבים קופון על הסכום אחרי ההנחה האוטומטית
+      const subtotalAfterAutomaticDiscount = Math.max(0, subtotal - automaticDiscount) // לא פחות מ-0
+      couponResult = await calculateCouponDiscount(
+        shopId,
+        couponCode,
+        enrichedItems,
+        subtotalAfterAutomaticDiscount, // משתמשים בסכום אחרי ההנחה האוטומטית לחישוב ההנחה
+        customerId,
+        subtotal // הסכום המקורי לבדיקת minOrder
+      )
+    }
+  }
 
   // חישוב הנחת לקוח רשום מקופון
   const customerDiscountFromCoupon = couponResult.customerDiscountFromCoupon || 0
@@ -1418,7 +1455,8 @@ export async function calculateCart(
   const totalDiscount = automaticDiscount + couponResult.discount
   const pricesIncludeTax = shop?.pricesIncludeTax ?? true // ברירת מחדל: המחירים כוללים מע"מ
   
-  const finalPrice = subtotal - totalDiscount - customerDiscountTotal - customerDiscountFromCoupon
+  // הגנה מפני הנחות גדולות מדי - לא פחות מ-0
+  const finalPrice = Math.max(0, subtotal - totalDiscount - customerDiscountTotal - customerDiscountFromCoupon)
   
   let tax = 0
   let total = 0

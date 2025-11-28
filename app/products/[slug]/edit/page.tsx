@@ -206,11 +206,11 @@ export default function EditProductPage() {
           maxQuantity: data.maxQuantity?.toString() || "",
           seoTitle: data.seoTitle || "",
           seoDescription: data.seoDescription || "",
-          tags: data.tags?.map((t: any) => t.name) || [],
+          tags: Array.isArray(data.tags) ? data.tags.map((t: any) => (typeof t === 'string' ? t : t.name)) : [],
           categories: data.collections?.map((c: any) => c.collectionId) || [],
-          badges: data.badges || [],
+          badges: Array.isArray(data.badges) ? data.badges : [],
           pageTemplateId: data.pageTemplateId || "",
-          exclusiveToTier: data.exclusiveToTier || [],
+          exclusiveToTier: Array.isArray(data.exclusiveToTier) ? data.exclusiveToTier : [],
         })
         
         // טעינת תבניות זמינות
@@ -301,16 +301,28 @@ export default function EditProductPage() {
   }
 
   const handleMediaSelect = (files: string[]) => {
-    setFormData(prev => ({
-      ...prev,
-      images: [...prev.images, ...files]
-    }))
+    setFormData(prev => {
+      // הוסף רק תמונות שלא קיימות כבר
+      const existingImages = new Set(prev.images)
+      const newImages = files.filter(file => !existingImages.has(file))
+      return {
+        ...prev,
+        images: [...prev.images, ...newImages]
+      }
+    })
   }
 
   const removeImage = (index: number) => {
     setFormData(prev => ({
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
+    }))
+  }
+
+  const handleReorderImages = (newOrder: string[]) => {
+    setFormData(prev => ({
+      ...prev,
+      images: newOrder
     }))
   }
 
@@ -383,7 +395,7 @@ export default function EditProductPage() {
         tags: formData.tags,
         categories: formData.categories,
         customFields: customFieldValues,
-        badges: formData.badges.length > 0 ? formData.badges : null,
+        badges: formData.badges,
         addonIds: productAddonIds,
         pageTemplateId: formData.pageTemplateId || null,
         defaultVariantId: defaultVariantId,
@@ -692,6 +704,7 @@ export default function EditProductPage() {
               entityId={product.id}
               onSelect={handleMediaSelect}
               onRemove={removeImage}
+              onReorder={handleReorderImages}
               mediaPickerOpen={mediaPickerOpen}
               onMediaPickerChange={setMediaPickerOpen}
             />

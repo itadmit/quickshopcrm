@@ -469,17 +469,13 @@ export function ProductElements({
               {applicableDiscounts.length > 0 && (
                 <div className="flex flex-col gap-2 pt-1">
                   <div className="flex items-center gap-3 flex-wrap">
-                    {applicableDiscounts.map((discount, index) => {
-                      // אם יש comparePrice (קו מחוק), זה "הנחה נוספת", אחרת רק "הנחה"
-                      const discountLabel = product.comparePrice 
-                        ? (index === 0 ? 'הנחה נוספת: ' : '')
-                        : (index === 0 ? 'הנחה: ' : '')
+                    {applicableDiscounts.map((discount) => {
                       return (
                         <Badge 
                           key={discount.id}
                           className="bg-green-100 text-green-800 border border-green-700 text-xs font-semibold whitespace-nowrap px-3 py-1.5 rounded-sm transition-none pointer-events-none"
                         >
-                          {discountLabel}{discount.title}
+                          {discount.title}
                         </Badge>
                       )
                     })}

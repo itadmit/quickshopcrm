@@ -32,15 +32,13 @@ interface Shop {
 }
 
 interface NavigationItem {
-  type: "link" | "page" | "category" | "collection"
+  type: "link" | "page" | "category"
   label: string
   url?: string
   pageId?: string
   pageSlug?: string
   categoryId?: string
   categorySlug?: string
-  collectionId?: string
-  collectionSlug?: string
   children?: NavigationItem[]
   image?: string
   columnTitle?: string
@@ -353,18 +351,6 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
         <Link
           key={index}
           href={`/shop/${slug}/categories/${categoryIdentifier}`}
-          className="text-gray-700 hover:text-gray-900 transition-colors text-sm font-medium"
-        >
-          {item.label}
-        </Link>
-      )
-    } else if (item.type === "collection") {
-      // שימוש ב-slug אם קיים, אחרת ב-ID (תאימות לאחור)
-      const collectionIdentifier = item.collectionSlug || item.collectionId
-      return (
-        <Link
-          key={index}
-          href={`/shop/${slug}/categories/${collectionIdentifier}`}
           className="text-gray-700 hover:text-gray-900 transition-colors text-sm font-medium"
         >
           {item.label}

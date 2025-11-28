@@ -139,6 +139,23 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
   const [pluginMenuItems, setPluginMenuItems] = useState<any[]>([])
   const [hideTrialCard, setHideTrialCard] = useState(false)
   
+  // קבלת החנות הנוכחית מ-localStorage או context
+  const [currentShopId, setCurrentShopId] = useState<string | null>(null)
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedShopData = localStorage.getItem('selectedShopData')
+      if (savedShopData) {
+        try {
+          const shop = JSON.parse(savedShopData)
+          setCurrentShopId(shop.id)
+        } catch (err) {
+          console.error('Error loading shop from localStorage:', err)
+        }
+      }
+    }
+  }, [])
+  
   // Get menu items with translations
   const menuItems = getMenuItems(t)
   const influencerItems = getInfluencerItems(t)
@@ -168,7 +185,7 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
       const hidden = localStorage.getItem('hide-trial-card')
       setHideTrialCard(hidden === 'true')
     }
-  }, [status])
+  }, [status, currentShopId])
 
   useEffect(() => {
     // רענון כל 30 שניות - רק אם מחובר
@@ -180,7 +197,7 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
       fetchActivePlugins() // עדכון תוספים כל 30 שניות
     }, 30000)
     return () => clearInterval(interval)
-  }, [status])
+  }, [status, currentShopId])
 
   // האזנה ל-events של עדכון תוספים
   useEffect(() => {
@@ -304,7 +321,12 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
 
   const fetchActivePlugins = async () => {
     try {
-      const response = await fetch('/api/plugins', {
+      // בניית URL עם shopId אם יש
+      const url = currentShopId 
+        ? `/api/plugins?shopId=${currentShopId}` 
+        : '/api/plugins'
+        
+      const response = await fetch(url, {
         cache: 'force-cache', // Cache plugins data
         next: { revalidate: 60 } // Revalidate every 60 seconds
       })

@@ -14,7 +14,7 @@ interface NotFoundPageProps {
   theme?: any
   title?: string
   message?: string
-  type?: "category" | "product" | "collection" | "page" | "general"
+  type?: "category" | "product" | "page" | "general"
 }
 
 export function NotFoundPage({
@@ -36,10 +36,6 @@ export function NotFoundPage({
     product: {
       title: "מוצר לא נמצא",
       message: "מצטערים, המוצר שחיפשת אינו קיים או הוסר מהמערכת.",
-    },
-    collection: {
-      title: "אוסף לא נמצא",
-      message: "מצטערים, האוסף שחיפשת אינו קיים או הוסר מהמערכת.",
     },
     page: {
       title: "דף לא נמצא",

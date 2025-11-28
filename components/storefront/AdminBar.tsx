@@ -8,13 +8,13 @@ import { useStorefrontData } from "./StorefrontDataProvider"
 
 interface AdminBarProps {
   slug: string
-  pageType?: 'home' | 'product' | 'collection' | 'page' | 'checkout' | 'other'
+  pageType?: 'home' | 'product' | 'category' | 'page' | 'checkout' | 'other'
   pageId?: string
-  collectionId?: string
+  categoryId?: string
   productSlug?: string
 }
 
-export function AdminBar({ slug, pageType = 'other', pageId, collectionId, productSlug }: AdminBarProps) {
+export function AdminBar({ slug, pageType = 'other', pageId, categoryId, productSlug }: AdminBarProps) {
   const { isAdmin } = useStorefrontData()
   const [mounted, setMounted] = useState(false)
   const [isHidden, setIsHidden] = useState(false)
@@ -34,8 +34,8 @@ export function AdminBar({ slug, pageType = 'other', pageId, collectionId, produ
         return '/customize?page=home'
       case 'product':
         return productSlug ? `/customize?page=product&id=${productSlug}` : '/customize?page=product'
-      case 'collection':
-        return collectionId ? `/customize?page=category&id=${collectionId}` : '/customize?page=category'
+      case 'category':
+        return categoryId ? `/customize?page=category&id=${categoryId}` : '/customize?page=category'
       case 'page':
         return '/customize'
       default:
@@ -48,8 +48,8 @@ export function AdminBar({ slug, pageType = 'other', pageId, collectionId, produ
     switch (pageType) {
       case 'product':
         return productSlug ? `/products/${productSlug}/edit` : '/products'
-      case 'collection':
-        return collectionId ? `/collections/${collectionId}` : '/collections'
+      case 'category':
+        return categoryId ? `/categories/${categoryId}` : '/categories'
       case 'page':
         return pageId ? `/pages/${pageId}` : '/pages'
       default:
@@ -96,7 +96,7 @@ export function AdminBar({ slug, pageType = 'other', pageId, collectionId, produ
               </Link>
 
               {/* Edit Page/Product Button */}
-              {(pageType === 'product' || pageType === 'collection' || pageType === 'page') && (
+              {(pageType === 'product' || pageType === 'category' || pageType === 'page') && (
                 <Link href={getDashboardLink()} target="_blank">
                   <Button
                     variant="outline"

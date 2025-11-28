@@ -147,29 +147,8 @@ export async function GET(
       discountedPrice: number
     }> = []
 
-    console.log('🎁 Product discounts API - Starting calculation:', {
-      basePrice,
-      customerId: customerId || 'null',
-      discountsCount: activeAutomaticDiscounts.length,
-      discounts: activeAutomaticDiscounts.map(d => ({
-        id: d.id,
-        title: d.title,
-        priority: d.priority,
-        canCombine: d.canCombine,
-        customerTarget: d.customerTarget,
-      }))
-    })
 
     for (const discount of activeAutomaticDiscounts) {
-      console.log('🎁 Product discounts API - Checking discount:', {
-        discountId: discount.id,
-        title: discount.title,
-        target: discount.target,
-        customerTarget: discount.customerTarget,
-        productId: product.id,
-        productCategories: product.categories.map(c => c.categoryId),
-        productCollections: product.collections.map(c => c.collectionId),
-      })
 
       // בדיקת customerTarget
       let customerMatch = false
@@ -184,12 +163,6 @@ export async function GET(
       }
 
       if (!customerMatch) {
-        console.log('🎁 Product discounts API - Discount skipped: customerTarget mismatch', {
-          discountId: discount.id,
-          title: discount.title,
-          customerTarget: discount.customerTarget,
-          customerId: customerId || 'null',
-        })
         continue
       }
 
@@ -234,12 +207,6 @@ export async function GET(
       }
 
       if (!productMatch) {
-        console.log('🎁 Product discounts API - Discount skipped: productMatch mismatch', {
-          discountId: discount.id,
-          title: discount.title,
-          target: discount.target,
-          productId: product.id,
-        })
         continue
       }
 
@@ -257,25 +224,14 @@ export async function GET(
 
       // רק הנחות עם מחיר מוזל (PERCENTAGE או FIXED) יוצגו
       if (discountedPrice !== null && discountedPrice < currentPrice) {
-        console.log('🎁 Product discounts API - Discount applicable:', {
-          discountId: discount.id,
-          title: discount.title,
-          priority: discount.priority,
-          canCombine: discount.canCombine,
-          discountedPrice,
-          currentPrice,
-          appliedDiscountsCount: appliedDiscounts.length,
-        })
 
         // אם לא ניתן לשלב, בודקים אם יש הנחות קודמות שהוחלו
         // אם יש, לא מחשבים את ההנחה הזו ועוצרים
         if (!discount.canCombine) {
           // אם יש הנחות קודמות שהוחלו, לא מחשבים את ההנחה הזו ועוצרים
           if (appliedDiscounts.length > 0) {
-            console.log('🎁 Product discounts API - Cannot combine, stopping. Applied discounts:', appliedDiscounts.map(d => d.title))
             break
           }
-          console.log('🎁 Product discounts API - Cannot combine, no previous discounts, applying this one:', discount.title)
           // אם אין הנחות קודמות, מחשבים ומחילים את ההנחה הזו
           // originalPrice הוא המחיר לפני ההנחה הזו (currentPrice)
           appliedDiscounts.push({
@@ -290,7 +246,6 @@ export async function GET(
           break
         }
         
-        console.log('🎁 Product discounts API - Can combine, applying discount:', discount.title)
         // אם ניתן לשלב, מחשבים ומחילים את ההנחה
         // originalPrice הוא המחיר לפני ההנחה הזו (currentPrice)
         appliedDiscounts.push({
@@ -307,10 +262,6 @@ export async function GET(
     }
 
     // החזרת כל ההנחות שהוחלו
-    console.log('🎁 Product discounts API - Final result:', {
-      appliedDiscounts: appliedDiscounts.map(d => d.title),
-      discountsCount: appliedDiscounts.length,
-    })
     return NextResponse.json({ discounts: appliedDiscounts })
   } catch (error) {
     console.error("Error fetching product discounts:", error)

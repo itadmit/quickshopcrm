@@ -35,8 +35,8 @@ export async function GET(
       return NextResponse.json({ error: "Shop not found" }, { status: 404 })
     }
 
-    // שליפת collection (שאנחנו קוראים לה קטגוריה)
-    const collection = await prisma.collection.findFirst({
+    // שליפת קטגוריה
+    const category = await prisma.category.findFirst({
       where: {
         OR: [
           { id: params.id },
@@ -44,16 +44,27 @@ export async function GET(
         ],
         shopId: shop.id,
       },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        description: true,
-        image: true,
-        type: true,
-        rules: true,
-        seoTitle: true,
-        seoDescription: true,
+      include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            image: true,
+            _count: {
+              select: {
+                products: true,
+              },
+            },
+          },
+        },
         _count: {
           select: {
             products: true,
@@ -62,24 +73,11 @@ export async function GET(
       },
     })
 
-    if (!collection) {
+    if (!category) {
       return NextResponse.json({ error: "Category not found" }, { status: 404 })
     }
 
-    // המרה לפורמט של קטגוריה (כדי שהפרונט ימשיך לעבוד)
-    const categoryFormat = {
-      id: collection.id,
-      name: collection.name,
-      slug: collection.slug,
-      description: collection.description,
-      image: collection.image,
-      parentId: null, // collections אין להן parent
-      parent: null,
-      children: [], // collections אין להן children
-      _count: collection._count,
-    }
-
-    return NextResponse.json(categoryFormat)
+    return NextResponse.json(category)
   } catch (error) {
     console.error("Error fetching category:", error)
     return NextResponse.json(

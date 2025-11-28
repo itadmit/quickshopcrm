@@ -62,15 +62,13 @@ interface ThemeSettings {
 }
 
 interface NavigationItem {
-  type: "link" | "page" | "category" | "collection"
+  type: "link" | "page" | "category"
   label: string
   url?: string
   pageId?: string
   pageSlug?: string
   categoryId?: string
   categorySlug?: string
-  collectionId?: string
-  collectionSlug?: string
   children?: NavigationItem[]
 }
 

@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
         description: data.description,
         image: data.image,
         type: data.type,
-        isPublished: data.isPublished ?? true, // ברירת מחדל - פורסם
+        isPublished: data.isPublished ?? true,
         rules: data.rules,
         seoTitle: data.seoTitle,
         seoDescription: data.seoDescription,

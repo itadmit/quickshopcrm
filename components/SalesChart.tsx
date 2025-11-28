@@ -17,27 +17,41 @@ interface SalesChartProps {
 export function SalesChart({ data }: SalesChartProps) {
   const isMobile = useMediaQuery("(max-width: 768px)")
 
-  // Default mock data if no data provided
-  const chartData = data || [
-    { date: '1/11', sales: 420, orders: 3 },
-    { date: '2/11', sales: 580, orders: 5 },
-    { date: '3/11', sales: 350, orders: 2 },
-    { date: '4/11', sales: 820, orders: 7 },
-    { date: '5/11', sales: 650, orders: 4 },
-    { date: '6/11', sales: 890, orders: 8 },
-    { date: '7/11', sales: 1200, orders: 10 },
-    { date: '8/11', sales: 950, orders: 6 },
-    { date: '9/11', sales: 1100, orders: 9 },
-    { date: '10/11', sales: 780, orders: 5 },
-    { date: '11/11', sales: 1350, orders: 12 },
-    { date: '12/11', sales: 920, orders: 7 },
-    { date: '13/11', sales: 1050, orders: 8 },
-    { date: '14/11', sales: 1180, orders: 10 },
-  ]
+  // Use provided data or empty array (no mock data)
+  const chartData = data || []
 
   const totalSales = chartData.reduce((sum, item) => sum + item.sales, 0)
   const totalOrders = chartData.reduce((sum, item) => sum + item.orders, 0)
   const avgOrder = totalOrders > 0 ? totalSales / totalOrders : 0
+
+  // If no data, show empty state
+  if (chartData.length === 0) {
+    return (
+      <Card className={cn("shadow-sm hover-lift", isMobile && "border-0")}>
+        <CardHeader className={cn(isMobile ? "p-3" : "p-6")}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <TrendingUp className={cn("text-emerald-600", isMobile ? "w-4 h-4" : "w-5 h-5")} />
+              <CardTitle className={cn(isMobile && "text-base")}>מכירות אחרונות</CardTitle>
+            </div>
+            <div className="text-left">
+              <div className={cn("font-bold text-emerald-600", isMobile ? "text-lg" : "text-2xl")}>
+                ₪0
+              </div>
+              <p className="text-xs text-gray-500">
+                0 הזמנות | ממוצע ₪0
+              </p>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className={cn(isMobile ? "px-2 pb-2" : "p-6 pt-0")}>
+          <div className="flex items-center justify-center h-[200px] md:h-[250px] text-gray-400">
+            <p className="text-sm">אין נתוני מכירות להצגה</p>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <Card className={cn("shadow-sm hover-lift", isMobile && "border-0")}>

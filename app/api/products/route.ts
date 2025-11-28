@@ -25,7 +25,7 @@ const createProductSchema = z.object({
   isGiftCard: z.boolean().default(false),
   weight: z.union([z.number(), z.null()]).optional(),
   dimensions: z.any().optional(),
-  status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).default("DRAFT"),
+  status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).default("PUBLISHED"),
   scheduledPublishDate: z.union([z.string().datetime(), z.null(), z.literal("")]).optional(),
   notifyOnPublish: z.boolean().default(false),
   images: z.array(z.string()).default([]),
@@ -41,6 +41,7 @@ const createProductSchema = z.object({
   categories: z.array(z.string()).optional(),
   addonIds: z.array(z.string()).optional(),
   defaultVariantId: z.union([z.string(), z.null()]).optional(),
+  exclusiveToTier: z.array(z.string()).optional(),
 })
 
 // GET - קבלת כל המוצרים
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get("status")
     const search = searchParams.get("search")
     const ids = searchParams.get("ids")
-    const collectionId = searchParams.get("collectionId")
+    const categoryId = searchParams.get("categoryId") || searchParams.get("collectionId")
     const page = parseInt(searchParams.get("page") || "1")
     const limit = parseInt(searchParams.get("limit") || "20")
 
@@ -80,10 +81,10 @@ export async function GET(req: NextRequest) {
       where.id = { in: idsArray }
     }
 
-    if (collectionId) {
-      where.collections = {
+    if (categoryId) {
+      where.categories = {
         some: {
-          collectionId: collectionId
+          categoryId: categoryId
         }
       }
     }
@@ -107,6 +108,7 @@ export async function GET(req: NextRequest) {
           price: true,
           comparePrice: true,
           status: true,
+          isHidden: true,
           images: true,
           inventoryQty: true,
           availability: true,
@@ -139,10 +141,10 @@ export async function GET(req: NextRequest) {
               position: 'asc',
             },
           },
-          collections: {
+          categories: {
             select: {
-              collectionId: true,
-              collection: {
+              categoryId: true,
+              category: {
                 select: {
                   name: true,
                 },
@@ -207,7 +209,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Shop not found" }, { status: 404 })
     }
 
-    // יצירת slug אם לא סופק (supports Hebrew and English)
+    // יצירת slug אוטומטית מהשם (supports Hebrew and English)
     let slug = data.slug
     if (!slug) {
       slug = data.name
@@ -219,33 +221,102 @@ export async function POST(req: NextRequest) {
         .replace(/^-+|-+$/g, "") // Remove leading/trailing hyphens
     }
 
-    // בדיקה אם slug כבר קיים בחנות זו
-    const existingProduct = await prisma.product.findFirst({
-      where: {
-        shopId: data.shopId,
-        slug,
-      },
-    })
+    // בדיקה אם slug כבר קיים בחנות זו ויצירת slug ייחודי עם מספרים עוקבים
+    let baseSlug = slug
+    let counter = 1
+    let uniqueSlug = slug
+    
+    while (true) {
+      const existingProduct = await prisma.product.findFirst({
+        where: {
+          shopId: data.shopId,
+          slug: uniqueSlug,
+        },
+      })
 
-    if (existingProduct) {
-      slug = `${slug}-${Date.now()}`
+      if (!existingProduct) {
+        break // מצאנו slug ייחודי
+      }
+
+      // נסה עם מספר עוקב
+      uniqueSlug = `${baseSlug}-${counter}`
+      counter++
     }
+
+    slug = uniqueSlug
 
     // המרת availableDate אם קיים
+    const addonIds = data.addonIds
+    const categories = data.categories
+    const defaultVariantId = data.defaultVariantId
+    const tags = data.tags || []
+    const badges = data.badges || []
+    const exclusiveToTier = data.exclusiveToTier || []
+    
+    // בניית customFields עם badges, exclusiveToTier ושדות נוספים שלא קיימים במודל Product
+    const customFieldsData: any = data.customFields || {}
+    // שמור badges גם אם המערך ריק
+    if (badges !== undefined) {
+      customFieldsData.badges = badges
+    }
+    // שמור exclusiveToTier גם אם המערך ריק
+    if (exclusiveToTier !== undefined) {
+      customFieldsData.exclusiveToTier = exclusiveToTier
+    }
+    // שמירת שדות שלא קיימים במודל Product
+    if (data.trackInventory !== undefined) {
+      customFieldsData.trackInventory = data.trackInventory
+    }
+    if (data.sellWhenSoldOut !== undefined) {
+      customFieldsData.sellWhenSoldOut = data.sellWhenSoldOut
+    }
+    if (data.priceByWeight !== undefined) {
+      customFieldsData.priceByWeight = data.priceByWeight
+    }
+    if (data.showPricePer100ml !== undefined) {
+      customFieldsData.showPricePer100ml = data.showPricePer100ml
+    }
+    if (data.pricePer100ml !== undefined && data.pricePer100ml !== null) {
+      customFieldsData.pricePer100ml = data.pricePer100ml
+    }
+    if (data.isGiftCard !== undefined) {
+      customFieldsData.isGiftCard = data.isGiftCard
+    }
+    if (data.notifyOnPublish !== undefined) {
+      customFieldsData.notifyOnPublish = data.notifyOnPublish
+    }
+    if (data.scheduledPublishDate) {
+      customFieldsData.scheduledPublishDate = data.scheduledPublishDate
+    }
+    
+    // בניית productData רק עם השדות הקיימים במודל Product
     const productData: any = {
-      ...data,
+      shopId: data.shopId,
+      name: data.name,
       slug,
+      description: data.description || null,
+      sku: data.sku || null,
+      price: data.price,
+      comparePrice: data.comparePrice || null,
+      cost: data.cost || null,
+      taxEnabled: data.taxEnabled,
+      inventoryEnabled: data.inventoryEnabled,
+      inventoryQty: data.inventoryQty,
+      lowStockAlert: data.lowStockAlert || null,
+      weight: data.weight || null,
+      dimensions: data.dimensions || null,
+      status: data.status,
+      isHidden: data.isHidden || false,
+      images: data.images || [],
+      video: data.video || null,
+      minQuantity: data.minQuantity || null,
+      maxQuantity: data.maxQuantity || null,
+      availability: data.availability,
+      availableDate: data.availableDate ? new Date(data.availableDate) : null,
+      seoTitle: data.seoTitle || null,
+      seoDescription: data.seoDescription || null,
+      customFields: Object.keys(customFieldsData).length > 0 ? customFieldsData : null,
     }
-
-    if (productData.availableDate) {
-      productData.availableDate = new Date(productData.availableDate)
-    }
-
-    // הסר addonIds ו-categories מה-productData (הם לא חלק מהמודל של Product)
-    const addonIds = productData.addonIds
-    const categories = productData.categories
-    delete productData.addonIds
-    delete productData.categories
 
     // יצירת מוצר
     const product = await prisma.product.create({
@@ -260,23 +331,49 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // שמירת קטגוריות (collections)
+    // שמירת קטגוריות
     if (categories && Array.isArray(categories) && categories.length > 0) {
       try {
         await Promise.all(
-          categories.map(async (collectionId: string) => {
-            await prisma.productCollection.create({
+          categories.map(async (categoryId: string) => {
+            await prisma.productCategory.create({
               data: {
                 productId: product.id,
-                collectionId: collectionId,
-                position: 0,
+                categoryId: categoryId,
               },
             })
           })
         )
       } catch (error) {
-        console.error("Error creating product collections:", error)
+        console.error("Error creating product categories:", error)
         // לא נכשיל את כל הבקשה בגלל שגיאה בקטגוריות
+      }
+    }
+
+    // שמירת תגיות (tags)
+    if (tags && Array.isArray(tags) && tags.length > 0) {
+      try {
+        // מחיקת כל התגיות הקיימות
+        await prisma.productTag.deleteMany({
+          where: { productId: product.id },
+        })
+
+        // הוספת תגיות חדשות
+        await Promise.all(
+          tags.map(async (tagName: string) => {
+            if (tagName && tagName.trim()) {
+              await prisma.productTag.create({
+                data: {
+                  productId: product.id,
+                  name: tagName.trim(),
+                },
+              })
+            }
+          })
+        )
+      } catch (error) {
+        console.error("Error creating product tags:", error)
+        // לא נכשיל את כל הבקשה בגלל שגיאה בתגיות
       }
     }
 

@@ -57,6 +57,7 @@ export default function EditCollectionPage() {
     description: "",
     image: "",
     type: "MANUAL" as "MANUAL" | "AUTOMATIC",
+    isPublished: false,
     seoTitle: "",
     seoDescription: "",
   })
@@ -93,6 +94,7 @@ export default function EditCollectionPage() {
           description: collection.description || "",
           image: collection.image || "",
           type: collection.type || "MANUAL",
+          isPublished: collection.isPublished ?? false,
           seoTitle: collection.seoTitle || "",
           seoDescription: collection.seoDescription || "",
         })
@@ -331,6 +333,7 @@ export default function EditCollectionPage() {
         description: formData.description || undefined,
         image: formData.image || undefined,
         type: formData.type,
+        isPublished: formData.isPublished ?? false,
         seoTitle: formData.seoTitle || undefined,
         seoDescription: formData.seoDescription || undefined,
         productIds: selectedProducts.map(p => p.product.id),
@@ -357,12 +360,8 @@ export default function EditCollectionPage() {
           description: "הקטגוריה עודכנה בהצלחה",
         })
         
-        // אם slug השתנה, נווט לכתובת החדשה
-        if (updated.slug !== collectionSlug) {
-          router.push(`/collections/${updated.slug}`)
-        } else {
-          fetchCollection()
-        }
+        // חזרה לעמוד הקטגוריות אחרי שמירה מוצלחת
+        router.push("/collections")
       } else {
         const error = await response.json()
         toast({
@@ -817,6 +816,39 @@ export default function EditCollectionPage() {
 
           {/* סרגל צד */}
           <div className="space-y-6">
+            {/* סטטוס פרסום */}
+            <Card>
+              <CardHeader>
+                <CardTitle>פרסום</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-0.5">
+                    <Label htmlFor="isPublished" className="cursor-pointer">
+                      פרסם קטגוריה
+                    </Label>
+                    <p className="text-sm text-gray-500">
+                      {formData.isPublished 
+                        ? "הקטגוריה מוצגת בחנות" 
+                        : "הקטגוריה בסטטוס טיוטה"}
+                    </p>
+                  </div>
+                  <Checkbox
+                    id="isPublished"
+                    checked={formData.isPublished}
+                    onCheckedChange={(checked) =>
+                      setFormData((prev) => ({ ...prev, isPublished: checked as boolean }))
+                    }
+                  />
+                </div>
+                {formData.isPublished ? (
+                  <Badge className="bg-green-100 text-green-800">פורסם</Badge>
+                ) : (
+                  <Badge variant="secondary">טיוטה</Badge>
+                )}
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader>
                 <CardTitle>מידע</CardTitle>

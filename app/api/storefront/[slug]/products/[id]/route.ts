@@ -43,6 +43,7 @@ export async function GET(
         ],
         shopId: shop.id,
         status: "PUBLISHED",
+        isHidden: false,
       },
       include: {
         categories: {

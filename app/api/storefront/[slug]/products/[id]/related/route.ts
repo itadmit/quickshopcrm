@@ -32,6 +32,7 @@ export async function GET(
         ],
         shopId: shop.id,
         status: "PUBLISHED",
+        isHidden: false,
       },
       include: {
         categories: {
@@ -58,6 +59,7 @@ export async function GET(
           where: {
             shopId: shop.id,
             status: "PUBLISHED",
+            isHidden: false,
             availability: {
               not: "OUT_OF_STOCK",
             },
@@ -96,6 +98,7 @@ export async function GET(
             where: {
               shopId: shop.id,
               status: "PUBLISHED",
+              isHidden: false,
               availability: {
                 not: "OUT_OF_STOCK",
               },
@@ -135,6 +138,7 @@ export async function GET(
         where: {
           shopId: shop.id,
           status: "PUBLISHED",
+          isHidden: false,
           availability: {
             not: "OUT_OF_STOCK",
           },

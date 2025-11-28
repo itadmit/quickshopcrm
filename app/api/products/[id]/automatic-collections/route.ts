@@ -56,7 +56,6 @@ export async function GET(
       where: {
         shopId: product.shopId,
         type: "AUTOMATIC",
-        isPublished: true,
       },
       select: {
         id: true,

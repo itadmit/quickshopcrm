@@ -36,7 +36,7 @@ export async function GET(
     }
 
     const { searchParams } = new URL(req.url)
-    const collection = searchParams.get("collection")
+    const collection = searchParams.get("collection") || searchParams.get("category")
     const search = searchParams.get("search")
     const minPrice = searchParams.get("minPrice")
     const maxPrice = searchParams.get("maxPrice")
@@ -84,6 +84,7 @@ export async function GET(
     const where: any = {
       shopId: shop.id,
       status: "PUBLISHED",
+      isHidden: false,
       availability: {
         not: "DISCONTINUED",
       },
@@ -101,13 +102,14 @@ export async function GET(
       })
     }
 
-    // קטגוריה (collections)
+    // קטגוריה - תמיכה גם ב-ID וגם ב-slug
     if (collection) {
-      where.collections = {
+      where.categories = {
         some: {
-          collection: {
-            slug: collection,
-          },
+          OR: [
+            { categoryId: collection },
+            { category: { slug: collection } },
+          ],
         },
       }
     }
