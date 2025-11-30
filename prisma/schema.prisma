@@ -391,6 +391,7 @@ model ProductCategory {
   id         String   @id @default(cuid())
   productId  String
   categoryId String
+  position   Int      @default(0)
   category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
@@ -1542,6 +1543,7 @@ enum ProductAvailability {
 enum OrderStatus {
   PENDING
   CONFIRMED
+  PAID
   PROCESSING
   SHIPPED
   DELIVERED

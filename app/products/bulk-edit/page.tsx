@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
 import { Checkbox } from "@/components/ui/checkbox"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,6 +22,10 @@ import {
   Columns,
   Loader2,
   Package,
+  Search,
+  Copy,
+  Eye,
+  EyeOff,
 } from "lucide-react"
 
 interface ProductVariant {
@@ -63,16 +68,16 @@ interface BulkEditRow {
   productId: string
   variantId?: string
   name: string
-  status?: "DRAFT" | "PUBLISHED" | "ARCHIVED"
   sku: string | null
   price: number | null
   comparePrice: number | null
   cost: number | null
   inventoryQty: number
-  availableQty: number
   onHandQty: number
   vendor: string | null
   category: string | null
+  categoryId: string | null
+  isHidden: boolean
   isVariant: boolean
   image?: string | null
   images?: string[]
@@ -80,14 +85,13 @@ interface BulkEditRow {
 }
 
 type ColumnKey = 
+  | "product-id"
   | "product-title"
-  | "status"
   | "product-category"
   | "vendor"
   | "base-price"
   | "compare-price"
   | "cost"
-  | "available-quantity"
   | "on-hand-quantity"
   | "sku"
 
@@ -99,14 +103,13 @@ interface Column {
 }
 
 const AVAILABLE_COLUMNS: Column[] = [
+  { key: "product-id", label: "ID מוצר", editable: false, type: "text" },
   { key: "product-title", label: "שם מוצר", editable: true, type: "text" },
-  { key: "status", label: "סטטוס", editable: true, type: "status" },
   { key: "product-category", label: "קטגוריה", editable: true, type: "select" },
   { key: "vendor", label: "ספק", editable: true, type: "text" },
   { key: "base-price", label: "מחיר בסיס", editable: true, type: "number" },
   { key: "compare-price", label: "מחיר לפני הנחה", editable: true, type: "number" },
   { key: "cost", label: "עלות", editable: true, type: "number" },
-  { key: "available-quantity", label: "כמות זמינה", editable: true, type: "number" },
   { key: "on-hand-quantity", label: "כמות במלאי", editable: true, type: "number" },
   { key: "sku", label: "מקט", editable: true, type: "text" },
 ]
@@ -121,14 +124,17 @@ export default function BulkEditPage() {
   const [saving, setSaving] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [visibleColumns, setVisibleColumns] = useState<ColumnKey[]>([
+    "product-id",
     "product-title",
-    "status",
+    "sku",
     "base-price",
-    "available-quantity",
     "on-hand-quantity",
+    "product-category",
   ])
+  const [searchQuery, setSearchQuery] = useState("")
+  const [filterStatus, setFilterStatus] = useState<"all" | "active" | "hidden">("all")
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set())
-  const [categories, setCategories] = useState<Array<{ id: string; name: string }>>([])
+  const [categories, setCategories] = useState<Array<{ id: string; name: string; parentId: string | null; parent?: any }>>([])
   const cellRefs = useRef<Map<string, HTMLInputElement | HTMLButtonElement>>(new Map())
 
   // קבלת מוצרים נבחרים מ-query params או טעינת כל המוצרים
@@ -172,6 +178,157 @@ export default function BulkEditPage() {
     }
   }
 
+  // בניית עץ קטגוריות היררכי
+  const categoryTree = useMemo(() => {
+    const buildTree = (items: any[], parentId: string | null = null): any[] => {
+      return items
+        .filter(item => item.parentId === parentId)
+        .map(item => ({
+          ...item,
+          children: buildTree(items, item.id),
+        }))
+    }
+    return buildTree(categories)
+  }, [categories])
+
+  // פונקציה להעתקת ערך לכולם
+  const copyToAll = (columnKey: ColumnKey) => {
+    if (selectedRows.size === 0) {
+      toast({
+        title: "שגיאה",
+        description: "יש לבחור לפחות שורה אחת",
+        variant: "destructive",
+      })
+      return
+    }
+
+    const firstSelectedRow = rows.find(row => selectedRows.has(row.id))
+    if (!firstSelectedRow) return
+
+    let valueToCopy: any = null
+    switch (columnKey) {
+      case "product-category":
+        valueToCopy = firstSelectedRow.category
+        break
+      case "vendor":
+        valueToCopy = firstSelectedRow.vendor
+        break
+      case "base-price":
+        valueToCopy = firstSelectedRow.price
+        break
+      case "compare-price":
+        valueToCopy = firstSelectedRow.comparePrice
+        break
+      case "cost":
+        valueToCopy = firstSelectedRow.cost
+        break
+      case "on-hand-quantity":
+        valueToCopy = firstSelectedRow.onHandQty
+        break
+      case "sku":
+        valueToCopy = firstSelectedRow.sku
+        break
+    }
+
+    if (valueToCopy !== null) {
+      setRows(prevRows => prevRows.map(row => {
+        if (selectedRows.has(row.id)) {
+          const updated = { ...row }
+          switch (columnKey) {
+            case "product-category":
+              updated.category = valueToCopy
+              updated.categoryId = firstSelectedRow.categoryId
+              break
+            case "vendor":
+              updated.vendor = valueToCopy
+              break
+            case "base-price":
+              updated.price = valueToCopy
+              break
+            case "compare-price":
+              updated.comparePrice = valueToCopy
+              break
+            case "cost":
+              updated.cost = valueToCopy
+              break
+            case "on-hand-quantity":
+              updated.onHandQty = valueToCopy
+              updated.inventoryQty = valueToCopy
+              break
+            case "sku":
+              updated.sku = valueToCopy
+              break
+          }
+          return updated
+        }
+        return row
+      }))
+      setHasUnsavedChanges(true)
+      toast({
+        title: "הצלחה",
+        description: "הערך הועתק לכל השורות הנבחרות",
+      })
+    }
+  }
+
+  // סינון וחיפוש
+  const filteredRows = useMemo(() => {
+    let filtered = rows
+
+    // סינון לפי חיפוש
+    if (searchQuery) {
+      filtered = filtered.filter(row => 
+        row.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        row.sku?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        row.productId.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    }
+
+    // סינון לפי סטטוס פעיל/לא פעיל
+    if (filterStatus === "active") {
+      filtered = filtered.filter(row => !row.isHidden)
+    } else if (filterStatus === "hidden") {
+      filtered = filtered.filter(row => row.isHidden)
+    }
+
+    return filtered
+  }, [rows, searchQuery, filterStatus])
+
+  // פונקציה להחלפת סטטוס פעיל/לא פעיל
+  const toggleVisibility = (rowId: string) => {
+    setRows(prevRows => prevRows.map(row => {
+      if (row.id === rowId) {
+        return { ...row, isHidden: !row.isHidden }
+      }
+      return row
+    }))
+    setHasUnsavedChanges(true)
+  }
+
+  // פונקציה להחלפת סטטוס פעיל/לא פעיל לכולם
+  const toggleVisibilityForAll = (isHidden: boolean) => {
+    if (selectedRows.size === 0) {
+      toast({
+        title: "שגיאה",
+        description: "יש לבחור לפחות שורה אחת",
+        variant: "destructive",
+      })
+      return
+    }
+
+    setRows(prevRows => prevRows.map(row => {
+      if (selectedRows.has(row.id)) {
+        return { ...row, isHidden }
+      }
+      return row
+    }))
+    setHasUnsavedChanges(true)
+    toast({
+      title: "הצלחה",
+      description: `כל השורות הנבחרות ${isHidden ? "הוסתרו" : "הופעלו"}`,
+    })
+  }
+
   const fetchProducts = async () => {
     const shopToUse = selectedShop || shops[0]
     if (!shopToUse) {
@@ -206,16 +363,16 @@ export default function BulkEditPage() {
             type: "product",
             productId: product.id,
             name: product.name,
-            status: product.status,
             sku: product.sku,
             price: product.price,
             comparePrice: defaultComparePrice,
             cost: product.cost,
             inventoryQty: product.inventoryQty,
-            availableQty: product.inventoryQty,
             onHandQty: product.inventoryQty,
             vendor: product.vendor,
             category: product.category,
+            categoryId: product.categories?.[0]?.categoryId || product.categories?.[0]?.category?.id || null,
+            isHidden: (product as any).isHidden || false,
             isVariant: false,
             image: productImage,
             images: product.images || undefined,
@@ -240,10 +397,11 @@ export default function BulkEditPage() {
                 comparePrice: variantComparePrice,
                 cost: variant.cost ?? product.cost,
                 inventoryQty: variant.inventoryQty,
-                availableQty: variant.inventoryQty,
                 onHandQty: variant.inventoryQty,
                 vendor: product.vendor,
                 category: product.category,
+                categoryId: product.categories?.[0]?.categoryId || product.categories?.[0]?.category?.id || null,
+                isHidden: (product as any).isHidden || false,
                 isVariant: true,
                 image: variantImage,
                 images: product.images || undefined,
@@ -284,11 +442,11 @@ export default function BulkEditPage() {
           const updated = { ...row }
           
           switch (columnKey) {
+            case "product-id":
+              // לא ניתן לערוך ID
+              break
             case "product-title":
               updated.name = value
-              break
-            case "status":
-              updated.status = value
               break
             case "product-category":
               updated.category = value
@@ -307,9 +465,6 @@ export default function BulkEditPage() {
               break
             case "cost":
               updated.cost = value !== "" ? parseFloat(value) || null : null
-              break
-            case "available-quantity":
-              updated.availableQty = parseInt(value) || 0
               break
             case "on-hand-quantity":
               updated.onHandQty = parseInt(value) || 0
@@ -379,16 +534,17 @@ export default function BulkEditPage() {
         if (row.type === "product") {
           // עדכון מוצר
           if (row.name !== original.name) changes.name = row.name
-          if (row.status !== original.status) changes.status = row.status
           if (row.sku !== original.sku) changes.sku = row.sku
           if (row.price !== original.price) changes.price = row.price
           if (row.comparePrice !== original.comparePrice) changes.comparePrice = row.comparePrice
           if (row.cost !== original.cost) changes.cost = row.cost
           if (row.inventoryQty !== original.inventoryQty) changes.inventoryQty = row.inventoryQty
-          // עדכון קטגוריה - השוואה לפי שם הקטגוריה
-          const originalCategory = original.categories?.[0]?.category?.name || null
-          if (row.category !== originalCategory) {
-            changes.category = row.category || ""
+          if (row.isHidden !== (original.isHidden || false)) changes.isHidden = row.isHidden
+          
+          // עדכון קטגוריה - השוואה לפי ID הקטגוריה
+          const originalCategoryId = original.categories?.[0]?.categoryId || original.categories?.[0]?.category?.id || null
+          if (row.categoryId !== originalCategoryId) {
+            changes.categories = row.categoryId ? [row.categoryId] : []
           }
           
           if (Object.keys(changes).length > 0) {
@@ -513,6 +669,12 @@ export default function BulkEditPage() {
     let value: any = ""
     
     switch (column.key) {
+      case "product-id":
+        return (
+          <div className="text-sm text-gray-600 font-mono">
+            {row.productId.substring(0, 8)}...
+          </div>
+        )
       case "product-title":
         // עבור שם מוצר, נציג תמונה + שם
         return (
@@ -540,9 +702,6 @@ export default function BulkEditPage() {
             />
           </div>
         )
-      case "status":
-        value = row.status
-        break
       case "product-category":
         value = row.category || ""
         break
@@ -558,9 +717,6 @@ export default function BulkEditPage() {
       case "cost":
         value = row.cost ?? ""
         break
-      case "available-quantity":
-        value = row.availableQty
-        break
       case "on-hand-quantity":
         value = row.onHandQty
         break
@@ -569,56 +725,46 @@ export default function BulkEditPage() {
         break
     }
 
-    if (column.type === "status") {
-      // המרת ערך סטטוס לעברית לתצוגה
-      const statusDisplay = value === "PUBLISHED" ? "פורסם" : 
-                           value === "DRAFT" ? "טיוטה" : 
-                           value === "ARCHIVED" ? "ארכיון" : ""
-      
-      return (
-        <Input
-          type="text"
-          value={statusDisplay}
-          onChange={(e) => {
-            const inputValue = e.target.value
-            // המרת עברית לאנגלית
-            let newStatus: "PUBLISHED" | "DRAFT" | "ARCHIVED" | "" = ""
-            if (inputValue === "פורסם" || inputValue === "PUBLISHED") {
-              newStatus = "PUBLISHED"
-            } else if (inputValue === "טיוטה" || inputValue === "DRAFT") {
-              newStatus = "DRAFT"
-            } else if (inputValue === "ארכיון" || inputValue === "ARCHIVED") {
-              newStatus = "ARCHIVED"
-            } else if (inputValue === "") {
-              newStatus = ""
-            }
-            if (newStatus !== "" || inputValue === "") {
-              updateRow(row.id, column.key, newStatus)
-            }
-          }}
-          onKeyDown={(e) => handleKeyDown(e, row.id, column.key)}
-          placeholder="פורסם / טיוטה / ארכיון"
-          className="h-9 w-full border border-gray-200 rounded-md bg-white px-3 py-2 text-sm hover:border-gray-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
-          ref={(el) => {
-            if (el) cellRefs.current.set(cellKey, el)
-          }}
-        />
-      )
-    }
-
     if (column.key === "product-category") {
+      // בניית עץ קטגוריות היררכי
+      const buildCategoryOptions = (cats: any[], level = 0): any[] => {
+        const options: any[] = []
+        cats.forEach(cat => {
+          const prefix = level > 0 ? "  ".repeat(level) + "└ " : ""
+          options.push({ value: cat.id, label: `${prefix}${cat.name}` })
+          if (cat.children && cat.children.length > 0) {
+            options.push(...buildCategoryOptions(cat.children, level + 1))
+          }
+        })
+        return options
+      }
+
+      const categoryOptions = buildCategoryOptions(categoryTree)
+
       return (
-        <Input
-          type="text"
-          value={value}
-          onChange={(e) => updateRow(row.id, column.key, e.target.value)}
-          onKeyDown={(e) => handleKeyDown(e, row.id, column.key)}
-          placeholder="הזן קטגוריה"
-          className="h-9 w-full border border-gray-200 rounded-md bg-white px-3 py-2 text-sm hover:border-gray-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors"
-          ref={(el) => {
-            if (el) cellRefs.current.set(cellKey, el)
+        <Select
+          value={row.categoryId || ""}
+          onValueChange={(categoryId) => {
+            const selectedCategory = categories.find(c => c.id === categoryId)
+            updateRow(row.id, column.key, selectedCategory?.name || "")
+            setRows(prevRows => prevRows.map(r => 
+              r.id === row.id ? { ...r, categoryId, category: selectedCategory?.name || "" } : r
+            ))
+            setHasUnsavedChanges(true)
           }}
-        />
+        >
+          <SelectTrigger className="h-9 w-full border border-gray-200 rounded-md bg-white px-3 py-2 text-sm hover:border-gray-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors">
+            <SelectValue placeholder="בחר קטגוריה" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="">ללא קטגוריה</SelectItem>
+            {categoryOptions.map(option => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       )
     }
 
@@ -710,7 +856,8 @@ export default function BulkEditPage() {
                 עריכה קבוצתית
               </h1>
               <p className="text-sm text-gray-500">
-                עריכת {rows.length} {rows.length === 1 ? "מוצר" : "מוצרים"}
+                עריכת {filteredRows.length} {filteredRows.length === 1 ? "מוצר" : "מוצרים"}
+                {filteredRows.length !== rows.length && ` מתוך ${rows.length}`}
               </p>
             </div>
             {hasUnsavedChanges && (
@@ -785,36 +932,126 @@ export default function BulkEditPage() {
             </CardContent>
           </Card>
         ) : (
-          <Card className="border-0 shadow-lg">
-            <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 border-b-2 border-gray-200">
-                      <th className="text-right px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider w-12 sticky right-0 bg-gradient-to-r from-gray-50 to-gray-100/50 z-10">
-                        <Checkbox
-                          checked={selectedRows.size === rows.length && rows.length > 0}
-                          onCheckedChange={(checked) => {
-                            if (checked) {
-                              setSelectedRows(new Set(rows.map((r) => r.id)))
-                            } else {
-                              setSelectedRows(new Set())
-                            }
-                          }}
-                        />
-                      </th>
-                      {visibleColumnsData.map((column) => (
-                        <th
+          <>
+            {/* סינון וחיפוש */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex flex-col md:flex-row gap-4">
+                  <div className="flex-1 relative">
+                    <Search className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Input
+                      placeholder="חיפוש לפי שם, מקט או ID..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pr-10"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={filterStatus === "all" ? "default" : "outline"}
+                      onClick={() => setFilterStatus("all")}
+                      size="sm"
+                    >
+                      הכל
+                    </Button>
+                    <Button
+                      variant={filterStatus === "active" ? "default" : "outline"}
+                      onClick={() => setFilterStatus("active")}
+                      size="sm"
+                    >
+                      <Eye className="w-4 h-4 ml-2" />
+                      פעיל
+                    </Button>
+                    <Button
+                      variant={filterStatus === "hidden" ? "default" : "outline"}
+                      onClick={() => setFilterStatus("hidden")}
+                      size="sm"
+                    >
+                      <EyeOff className="w-4 h-4 ml-2" />
+                      מוסתר
+                    </Button>
+                  </div>
+                  {selectedRows.size > 0 && (
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleVisibilityForAll(false)}
+                      >
+                        <Eye className="w-4 h-4 ml-2" />
+                        הפעל נבחרים
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => toggleVisibilityForAll(true)}
+                      >
+                        <EyeOff className="w-4 h-4 ml-2" />
+                        הסתר נבחרים
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* כפתורי העתק לכולם */}
+            {selectedRows.size > 0 && (
+              <Card>
+                <CardContent className="pt-6">
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-sm text-gray-600 self-center">העתק לכולם:</span>
+                    {visibleColumnsData
+                      .filter(col => col.editable && col.key !== "product-id" && col.key !== "product-title")
+                      .map((column) => (
+                        <Button
                           key={column.key}
-                          className="text-right px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-l border-gray-200/50 first:border-l-0"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => copyToAll(column.key)}
                         >
+                          <Copy className="w-3 h-3 ml-1" />
                           {column.label}
-                        </th>
+                        </Button>
                       ))}
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-100">
-                    {rows.map((row, index) => (
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            <Card className="border-0 shadow-lg">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-gradient-to-r from-gray-50 to-gray-100/50 border-b-2 border-gray-200">
+                        <th className="text-right px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider w-12 sticky right-0 bg-gradient-to-r from-gray-50 to-gray-100/50 z-10">
+                          <Checkbox
+                            checked={selectedRows.size === filteredRows.length && filteredRows.length > 0}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedRows(new Set(filteredRows.map((r) => r.id)))
+                              } else {
+                                setSelectedRows(new Set())
+                              }
+                            }}
+                          />
+                        </th>
+                        <th className="text-right px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-l border-gray-200/50">
+                          פעיל/מוסתר
+                        </th>
+                        {visibleColumnsData.map((column) => (
+                          <th
+                            key={column.key}
+                            className="text-right px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-l border-gray-200/50 first:border-l-0"
+                          >
+                            {column.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-100">
+                      {filteredRows.map((row, index) => (
                       <tr
                         key={row.id}
                         className={`
@@ -840,6 +1077,20 @@ export default function BulkEditPage() {
                               setSelectedRows(newSelected)
                             }}
                           />
+                        </td>
+                        <td className="px-6 py-3 border-l border-gray-200/30">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleVisibility(row.id)}
+                            className="h-8 w-8 p-0"
+                          >
+                            {row.isHidden ? (
+                              <EyeOff className="w-4 h-4 text-gray-400" />
+                            ) : (
+                              <Eye className="w-4 h-4 text-green-600" />
+                            )}
+                          </Button>
                         </td>
                         {visibleColumnsData.map((column) => (
                           <td

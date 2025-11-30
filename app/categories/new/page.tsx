@@ -11,7 +11,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useOptimisticToast as useToast } from "@/hooks/useOptimisticToast"
-import { Save, FolderOpen, Image as ImageIcon, Upload, Search, X, Plus, Filter, Eye } from "lucide-react"
+import { Save, FolderOpen, Image as ImageIcon, Upload, Search, X, Plus, Filter, Eye, ChevronUp, ChevronDown } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { MediaPicker } from "@/components/MediaPicker"
 import { Switch } from "@/components/ui/switch"
@@ -179,20 +179,48 @@ export default function NewCategoryPage() {
   }
 
   const addProduct = (product: Product) => {
-    setSelectedProducts(prev => [
-      ...prev,
-      {
-        id: `temp-${Date.now()}`,
-        position: prev.length,
-        product
-      }
-    ])
+    setSelectedProducts(prev => {
+      const newProducts = [
+        ...prev,
+        {
+          id: product.id,
+          position: prev.length,
+          product
+        }
+      ]
+      return newProducts
+    })
     setSearchQuery("")
     setSearchResults([])
   }
 
   const removeProduct = (productId: string) => {
-    setSelectedProducts(prev => prev.filter(p => p.product.id !== productId))
+    setSelectedProducts(prev => {
+      const filtered = prev.filter(p => p.product.id !== productId)
+      // עדכון position לאחר הסרה
+      return filtered.map((p, index) => ({ ...p, position: index }))
+    })
+  }
+
+  const moveProduct = (index: number, direction: "up" | "down") => {
+    const sortedProducts = [...selectedProducts].sort((a, b) => a.position - b.position)
+    
+    if (
+      (direction === "up" && index === 0) ||
+      (direction === "down" && index === sortedProducts.length - 1)
+    ) {
+      return
+    }
+
+    const newIndex = direction === "up" ? index - 1 : index + 1
+    ;[sortedProducts[index], sortedProducts[newIndex]] = [sortedProducts[newIndex], sortedProducts[index]]
+    
+    // עדכון position
+    sortedProducts.forEach((p, i) => {
+      p.position = i
+    })
+    
+    setSelectedProducts(sortedProducts)
   }
 
   const addRule = () => {
@@ -264,7 +292,9 @@ export default function NewCategoryPage() {
         image: formData.image || undefined,
         type: formData.type,
         isPublished: formData.isPublished,
-        productIds: formData.type === "MANUAL" ? selectedProducts.map(p => p.product.id) : [],
+        productIds: formData.type === "MANUAL" ? selectedProducts
+          .sort((a, b) => a.position - b.position)
+          .map(p => p.product.id) : [],
       }
 
       // הוספת rules אם זה אוטומטי
@@ -670,11 +700,34 @@ export default function NewCategoryPage() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {selectedProducts.map((item) => (
+                      {selectedProducts
+                        .sort((a, b) => a.position - b.position)
+                        .map((item, index) => (
                         <div
                           key={item.product.id}
                           className="flex items-center gap-3 p-3 border rounded-lg bg-white"
                         >
+                          <div className="flex flex-col gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => moveProduct(index, "up")}
+                              disabled={index === 0}
+                            >
+                              <ChevronUp className="w-4 h-4 text-gray-400" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-6 w-6 p-0"
+                              onClick={() => moveProduct(index, "down")}
+                              disabled={index === selectedProducts.length - 1}
+                            >
+                              <ChevronDown className="w-4 h-4 text-gray-400" />
+                            </Button>
+                          </div>
+
                           {item.product.images?.[0] ? (
                             <img
                               src={item.product.images[0]}

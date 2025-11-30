@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { OrderStatus } from "@prisma/client"
 
 export async function POST(req: NextRequest) {
   try {
@@ -593,8 +594,7 @@ export async function POST(req: NextRequest) {
           tax: 111.58,
           discount: 0,
           total: 731.48,
-          status: 'PAID',
-          fulfillmentStatus: 'UNFULFILLED',
+          status: OrderStatus.PAID,
           paymentMethod: 'Credit Card',
           paidAt: new Date(), // שולם היום
           items: {
@@ -629,8 +629,7 @@ export async function POST(req: NextRequest) {
           tax: 29.68,
           discount: 0,
           total: 194.58,
-          status: 'SHIPPED',
-          fulfillmentStatus: 'FULFILLED',
+          status: OrderStatus.SHIPPED,
           paymentMethod: 'Credit Card',
           trackingNumber: 'TRACK123456',
           paidAt: new Date(), // שולם היום
@@ -667,8 +666,7 @@ export async function POST(req: NextRequest) {
           tax: 134.96,
           discount: 50,
           total: 834.76,
-          status: 'DELIVERED',
-          fulfillmentStatus: 'FULFILLED',
+          status: OrderStatus.DELIVERED,
           paymentMethod: 'Credit Card',
           couponCode: 'SUMMER50',
           paidAt: new Date(), // שולם היום

@@ -149,11 +149,22 @@ export async function GET(
       where.AND = searchConditions
     }
 
-    const orderBy: any = {}
-    orderBy[sortBy] = sortOrder
+    // אם יש קטגוריה, נטען את כל המוצרים ונמיין לפי position
+    // אחרת נמיין לפי sortBy הרגיל
+    let orderBy: any = {}
+    
+    if (!collection) {
+      orderBy[sortBy] = sortOrder
+    }
 
-    const [products, total] = await Promise.all([
-      prisma.product.findMany({
+    // אם יש קטגוריה, נטען את כל המוצרים ונמיין לפי position
+    // אחרת נטען עם pagination רגיל
+    let allProducts: any[] = []
+    let total: number
+    
+    if (collection) {
+      // טעינת כל המוצרים בקטגוריה עם position
+      const productsWithPosition = await prisma.product.findMany({
         where,
         select: {
           id: true,
@@ -167,6 +178,18 @@ export async function GET(
           inventoryQty: true,
           status: true,
           createdAt: true,
+          categories: {
+            where: {
+              OR: [
+                { categoryId: collection },
+                { category: { slug: collection } },
+              ],
+            },
+            select: {
+              position: true,
+            },
+            take: 1,
+          },
           variants: {
             select: {
               id: true,
@@ -196,15 +219,78 @@ export async function GET(
             },
           },
         },
-        orderBy,
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.product.count({ where }),
-    ])
+      })
+      
+      // מיון לפי position
+      allProducts = productsWithPosition.sort((a, b) => {
+        const aPosition = a.categories?.[0]?.position ?? 999999
+        const bPosition = b.categories?.[0]?.position ?? 999999
+        return aPosition - bPosition
+      })
+      
+      total = allProducts.length
+      
+      // pagination ידני
+      allProducts = allProducts.slice((page - 1) * limit, page * limit)
+    } else {
+      // טעינה רגילה עם pagination
+      const result = await Promise.all([
+        prisma.product.findMany({
+          where,
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            description: true,
+            price: true,
+            comparePrice: true,
+            images: true,
+            availability: true,
+            inventoryQty: true,
+            status: true,
+            createdAt: true,
+            variants: {
+              select: {
+                id: true,
+                name: true,
+                price: true,
+                comparePrice: true,
+                inventoryQty: true,
+                sku: true,
+                option1: true,
+                option1Value: true,
+                option2: true,
+                option2Value: true,
+                option3: true,
+                option3Value: true,
+              },
+            },
+            options: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                values: true,
+                position: true,
+              },
+              orderBy: {
+                position: 'asc',
+              },
+            },
+          },
+          orderBy,
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        prisma.product.count({ where }),
+      ])
+      
+      allProducts = result[0]
+      total = result[1]
+    }
 
     return NextResponse.json({
-      products,
+      products: allProducts,
       pagination: {
         page,
         limit,

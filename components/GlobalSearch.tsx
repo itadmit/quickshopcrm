@@ -571,20 +571,12 @@ export function GlobalSearch({ isMobile = false, autoFocus = false, onSelect }: 
           placeholder={t('search.placeholder')}
           className={cn(
             "pr-11 h-11 text-sm",
-            isMobile ? "pl-3" : "pl-20"
+            isMobile ? "pl-3" : "pl-3"
           )}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           onFocus={() => setIsOpen(true)}
         />
-        {!isMobile && (
-          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
-            <kbd className="px-2 py-1 text-xs bg-gray-100 border border-gray-200 rounded flex items-center justify-center h-5">
-              <Command className="w-3 h-3" />
-            </kbd>
-            <kbd className="px-2 py-1 text-xs bg-gray-100 border border-gray-200 rounded flex items-center justify-center h-5">K</kbd>
-          </div>
-        )}
       </div>
 
       {isOpen && (

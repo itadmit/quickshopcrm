@@ -42,6 +42,7 @@ export async function GET(req: NextRequest) {
         cost: true,
         inventoryQty: true,
         availability: true,
+        isHidden: true,
         images: true,
         variants: {
           select: {
@@ -69,6 +70,7 @@ export async function GET(req: NextRequest) {
           include: {
             category: {
               select: {
+                id: true,
                 name: true,
               },
             },
@@ -93,9 +95,13 @@ export async function GET(req: NextRequest) {
       cost: product.cost,
       inventoryQty: product.inventoryQty,
       availability: product.availability,
+      isHidden: product.isHidden || false,
       vendor: null, // TODO: להוסיף שדה vendor למוצר אם נדרש
       category: product.categories[0]?.category?.name || null,
-      categories: product.categories, // שמירת הקטגוריות המלאות להשוואה
+      categories: product.categories.map(pc => ({
+        categoryId: pc.category.id,
+        category: pc.category,
+      })), // שמירת הקטגוריות המלאות להשוואה
       images: product.images || [],
       variants: product.variants,
     }))

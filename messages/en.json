@@ -206,7 +206,7 @@
     }
   },
   "search": {
-    "placeholder": "Search products, orders, customers, plugins... (Ctrl+K)",
+    "placeholder": "Search products, orders, customers, plugins...",
     "searching": "Searching...",
     "noResults": "No results found",
     "for": "for",

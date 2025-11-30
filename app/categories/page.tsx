@@ -30,6 +30,20 @@ interface Category {
   type?: "MANUAL" | "AUTOMATIC"
   isPublished?: boolean
   createdAt: string
+  parent?: {
+    id: string
+    name: string
+    slug: string
+  } | null
+  children?: Array<{
+    id: string
+    name: string
+    slug: string
+    image: string | null
+    _count?: {
+      products: number
+    }
+  }>
   _count?: {
     products: number
   }
@@ -262,8 +276,20 @@ export default function CategoriesPage() {
                           )}
                         </td>
                         <td className="px-6 py-4">
-                          <div className="text-sm font-medium text-gray-900">{category.name}</div>
+                          <div className="text-sm font-medium text-gray-900">
+                            {category.parent && (
+                              <span className="text-xs text-gray-400 mr-2">
+                                {category.parent.name} ›
+                              </span>
+                            )}
+                            {category.name}
+                          </div>
                           <div className="text-xs text-gray-500">{category.slug}</div>
+                          {category.children && category.children.length > 0 && (
+                            <div className="text-xs text-gray-400 mt-1">
+                              {category.children.length} תתי קטגוריות
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-4">
                           <div className="text-sm text-gray-700 max-w-xs truncate">

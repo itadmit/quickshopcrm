@@ -58,6 +58,26 @@ export async function GET(req: NextRequest) {
         type: true,
         isPublished: true,
         createdAt: true,
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            image: true,
+            _count: {
+              select: {
+                products: true,
+              },
+            },
+          },
+        },
         _count: {
           select: {
             products: true,
@@ -157,11 +177,12 @@ export async function POST(req: NextRequest) {
     // הוספת מוצרים אם זה MANUAL
     if (data.type === "MANUAL" && data.productIds && data.productIds.length > 0) {
       await Promise.all(
-        data.productIds.map((productId) =>
+        data.productIds.map((productId, index) =>
           prisma.productCategory.create({
             data: {
               productId,
               categoryId: category.id,
+              position: index,
             },
           })
         )
@@ -173,22 +194,15 @@ export async function POST(req: NextRequest) {
       const { applyCollectionRules } = await import("@/lib/collection-engine")
       const matchingProductIds = await applyCollectionRules(data.shopId, data.rules)
       
-      // הוספת מוצרים לקטגוריה
+      // הוספת מוצרים לקטגוריה עם position
       if (matchingProductIds.length > 0) {
-        // יצירה ב-batch עם upsert כדי למנוע כפילויות
-        await prisma.$transaction(
-          matchingProductIds.map((productId) =>
-            prisma.productCategory.upsert({
-              where: {
-                productId_categoryId: {
-                  productId,
-                  categoryId: category.id,
-                },
-              },
-              update: {},
-              create: {
+        await Promise.all(
+          matchingProductIds.map((productId, index) =>
+            prisma.productCategory.create({
+              data: {
                 productId,
                 categoryId: category.id,
+                position: index,
               },
             })
           )

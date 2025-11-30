@@ -58,6 +58,7 @@ export async function GET(
         },
         products: {
           select: {
+            position: true,
             product: {
               select: {
                 id: true,
@@ -68,6 +69,9 @@ export async function GET(
                 status: true,
               },
             },
+          },
+          orderBy: {
+            position: "asc",
           },
         },
         _count: {
@@ -166,14 +170,15 @@ export async function PUT(
         where: { categoryId: category.id },
       })
       
-      // הוספת המוצרים החדשים
+      // הוספת המוצרים החדשים עם position
       if (data.productIds.length > 0) {
         await Promise.all(
-          data.productIds.map((productId) =>
+          data.productIds.map((productId, index) =>
             prisma.productCategory.create({
               data: {
                 productId,
                 categoryId: category.id,
+                position: index,
               },
             })
           )
@@ -191,21 +196,15 @@ export async function PUT(
         where: { categoryId: category.id },
       })
       
-      // הוספת המוצרים החדשים
+      // הוספת המוצרים החדשים עם position
       if (matchingProductIds.length > 0) {
-        await prisma.$transaction(
-          matchingProductIds.map((productId) =>
-            prisma.productCategory.upsert({
-              where: {
-                productId_categoryId: {
-                  productId,
-                  categoryId: category.id,
-                },
-              },
-              update: {},
-              create: {
+        await Promise.all(
+          matchingProductIds.map((productId, index) =>
+            prisma.productCategory.create({
+              data: {
                 productId,
                 categoryId: category.id,
+                position: index,
               },
             })
           )

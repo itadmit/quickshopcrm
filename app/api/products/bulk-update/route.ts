@@ -56,8 +56,8 @@ export async function POST(req: NextRequest) {
             continue
           }
 
-          // הפרדת עדכון קטגוריה (collections) מעדכונים רגילים
-          const { category, ...otherChanges } = update.changes as any
+          // הפרדת עדכון קטגוריה מעדכונים רגילים
+          const { categories, ...otherChanges } = update.changes as any
           
           // עדכון המוצר (ללא קטגוריה)
           if (Object.keys(otherChanges).length > 0) {
@@ -67,31 +67,26 @@ export async function POST(req: NextRequest) {
             })
           }
 
-          // עדכון קטגוריה (collections) אם קיים
-          if (category !== undefined) {
+          // עדכון קטגוריות אם קיים
+          if (categories !== undefined) {
             // מחיקת כל הקטגוריות הקיימות של המוצר
-            await prisma.productCollection.deleteMany({
+            await prisma.productCategory.deleteMany({
               where: { productId: update.productId },
             })
 
-            // אם יש קטגוריה חדשה, חיפוש לפי שם ויצירת קישור
-            if (category && category !== "") {
-              const collectionRecord = await prisma.collection.findFirst({
-                where: {
-                  name: category,
-                  shopId: product.shopId,
-                },
-              })
-
-              if (collectionRecord) {
-                await prisma.productCollection.create({
-                  data: {
-                    productId: update.productId,
-                    collectionId: collectionRecord.id,
-                    position: 0,
-                  },
-                })
-              }
+            // אם יש קטגוריות חדשות, יצירת קישורים
+            if (Array.isArray(categories) && categories.length > 0) {
+              await Promise.all(
+                categories.map((categoryId: string, index: number) =>
+                  prisma.productCategory.create({
+                    data: {
+                      productId: update.productId,
+                      categoryId: categoryId,
+                      position: index,
+                    },
+                  })
+                )
+              )
             }
           }
 
