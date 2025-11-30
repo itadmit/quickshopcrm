@@ -167,9 +167,14 @@ export const authOptions: NextAuthOptions = {
             })
             
             if (!existingUser) {
-              // המשתמש נמחק - נחזיר null כדי ש-NextAuth ינקה את ה-session
-              console.warn('User has been deleted, clearing session')
-              return null as any
+              // המשתמש נמחק - נסמן את ה-token כחסר משתמש
+              console.warn('User has been deleted, marking token as invalid')
+              token.id = null
+              token.email = null
+              token.name = null
+              token.role = null
+              token.companyId = null
+              return token
             }
             
             // עדכון הנתונים מה-DB
@@ -179,8 +184,13 @@ export const authOptions: NextAuthOptions = {
             token.companyId = existingUser.companyId
           } catch (error) {
             console.error('Error checking user in JWT callback:', error)
-            // במקרה של שגיאה אחרת, נחזיר null כדי לא ליצור לולאה אינסופית
-            return null as any
+            // במקרה של שגיאה אחרת, נסמן את ה-token כחסר משתמש
+            token.id = null
+            token.email = null
+            token.name = null
+            token.role = null
+            token.companyId = null
+            return token
           }
         }
         
@@ -195,9 +205,14 @@ export const authOptions: NextAuthOptions = {
       }
     },
     async session({ session, token }) {
-      // אם token חסר, זה אומר שה-JWT callback נכשל או שהמשתמש נמחק - נחזיר session ריק
-      if (!token || !token.id) {
-        return null as any
+      // אם token חסר או אין id, זה אומר שה-JWT callback נכשל או שהמשתמש נמחק
+      if (!token || !token.id || !token.email) {
+        // נחזיר session ריק עם user null
+        return {
+          ...session,
+          user: null,
+          expires: new Date().toISOString()
+        }
       }
       
       try {
@@ -208,9 +223,13 @@ export const authOptions: NextAuthOptions = {
         })
         
         if (!existingUser) {
-          // המשתמש נמחק - נחזיר null כדי ש-NextAuth ינקה את ה-session
+          // המשתמש נמחק - נחזיר session ריק
           console.warn('User not found in session callback, clearing session')
-          return null as any
+          return {
+            ...session,
+            user: null,
+            expires: new Date().toISOString()
+          }
         }
         
         if (session.user) {
@@ -218,14 +237,18 @@ export const authOptions: NextAuthOptions = {
           session.user.name = existingUser.name
           session.user.role = existingUser.role
           session.user.companyId = existingUser.companyId
-          session.user.companyName = token.companyName as string
+          session.user.companyName = token.companyName as string || ''
         }
         
         return session
       } catch (error: any) {
         console.error('Error in session callback:', error)
-        // במקרה של שגיאה, נחזיר null כדי ש-NextAuth ינקה את ה-session
-        return null as any
+        // במקרה של שגיאה, נחזיר session ריק
+        return {
+          ...session,
+          user: null,
+          expires: new Date().toISOString()
+        }
       }
     }
   },

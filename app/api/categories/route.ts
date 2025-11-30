@@ -11,6 +11,10 @@ const createCategorySchema = z.object({
   description: z.string().optional(),
   image: z.string().optional(),
   parentId: z.string().optional(),
+  type: z.enum(["MANUAL", "AUTOMATIC"]).default("MANUAL"),
+  rules: z.any().optional(),
+  productIds: z.array(z.string()).optional(),
+  isPublished: z.boolean().default(true),
 })
 
 // GET - קבלת כל הקטגוריות
@@ -51,6 +55,14 @@ export async function GET(req: NextRequest) {
         description: true,
         image: true,
         parentId: true,
+        type: true,
+        isPublished: true,
+        createdAt: true,
+        _count: {
+          select: {
+            products: true,
+          },
+        },
       },
       orderBy: {
         name: "asc",
@@ -136,8 +148,53 @@ export async function POST(req: NextRequest) {
         description: data.description,
         image: data.image,
         parentId: data.parentId,
+        type: data.type || "MANUAL",
+        rules: data.rules,
+        isPublished: data.isPublished ?? true,
       },
     })
+
+    // הוספת מוצרים אם זה MANUAL
+    if (data.type === "MANUAL" && data.productIds && data.productIds.length > 0) {
+      await Promise.all(
+        data.productIds.map((productId) =>
+          prisma.productCategory.create({
+            data: {
+              productId,
+              categoryId: category.id,
+            },
+          })
+        )
+      )
+    }
+
+    // אם זה AUTOMATIC, נשתמש ב-collection-engine לעדכון
+    if (data.type === "AUTOMATIC" && data.rules) {
+      const { applyCollectionRules } = await import("@/lib/collection-engine")
+      const matchingProductIds = await applyCollectionRules(data.shopId, data.rules)
+      
+      // הוספת מוצרים לקטגוריה
+      if (matchingProductIds.length > 0) {
+        // יצירה ב-batch עם upsert כדי למנוע כפילויות
+        await prisma.$transaction(
+          matchingProductIds.map((productId) =>
+            prisma.productCategory.upsert({
+              where: {
+                productId_categoryId: {
+                  productId,
+                  categoryId: category.id,
+                },
+              },
+              update: {},
+              create: {
+                productId,
+                categoryId: category.id,
+              },
+            })
+          )
+        )
+      }
+    }
 
     return NextResponse.json(category)
   } catch (error: any) {

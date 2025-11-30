@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useSession } from "next-auth/react"
@@ -64,6 +64,7 @@ const getInfluencerItems = (t: any) => [
 
 const getSalesItems = (t: any) => [
   { icon: Package, labelKey: "sidebar.products", href: "/products", permission: "products" },
+  { icon: FolderOpen, labelKey: "sidebar.categories", href: "/categories", permission: "categories" },
   { icon: ShoppingCart, labelKey: "sidebar.orders", href: "/orders", permission: "orders" },
   { icon: Users, labelKey: "sidebar.contacts", href: "/contacts", permission: "customers" },
   { icon: Warehouse, labelKey: "sidebar.inventory", href: "/inventory", permission: "inventory" },
@@ -73,7 +74,6 @@ const getSalesItems = (t: any) => [
 const getMarketingItems = (t: any) => [
   { icon: Tag, labelKey: "sidebar.discounts", href: "/discounts", permission: "discounts" },
   { icon: Tag, labelKey: "sidebar.coupons", href: "/coupons", permission: "coupons" },
-  { icon: FolderOpen, labelKey: "sidebar.categories", href: "/categories", permission: "categories" },
   { icon: Gift, labelKey: "sidebar.giftCards", href: "/gift-cards", permission: "gift_cards" },
   { icon: ShoppingBag, labelKey: "sidebar.abandonedCarts", href: "/abandoned-carts", permission: "abandoned_carts" },
   { icon: Bell, labelKey: "sidebar.waitlist", href: "/waitlist", permission: "products" },
@@ -168,80 +168,10 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
   const settingsItems = getSettingsItems(t)
   const superAdminItems = getSuperAdminItems(t)
 
-  useEffect(() => {
-    // נחכה שה-session יטען לפני שנבצע fetch
-    if (status === 'authenticated') {
-      // הרצה מקבילית של כל הבקשות במקום סדרתית
-      Promise.all([
-        fetchPermissions(),
-        fetchUnreadCount(),
-        fetchSubscriptionInfo(),
-        fetchActivePlugins()
-      ]).catch(err => console.error('Error loading sidebar data:', err))
-    }
-    
-    // טעינת הגדרת הסתרת כרטיס Trial
-    if (typeof window !== 'undefined') {
-      const hidden = localStorage.getItem('hide-trial-card')
-      setHideTrialCard(hidden === 'true')
-    }
-  }, [status, currentShopId])
-
-  useEffect(() => {
-    // רענון כל 30 שניות - רק אם מחובר
-    if (status !== 'authenticated') return
-    
-    const interval = setInterval(() => {
-      fetchUnreadCount()
-      fetchSubscriptionInfo()
-      fetchActivePlugins() // עדכון תוספים כל 30 שניות
-    }, 30000)
-    return () => clearInterval(interval)
-  }, [status, currentShopId])
-
-  // האזנה ל-events של עדכון תוספים
-  useEffect(() => {
-    if (status !== 'authenticated') return
-
-    const handlePluginUpdate = () => {
-      fetchActivePlugins()
-    }
-
-    // האזנה ל-custom event
-    window.addEventListener('plugin-updated', handlePluginUpdate)
-    // האזנה גם ל-navigation events (כשעוברים בין דפים)
-    window.addEventListener('focus', handlePluginUpdate)
-
-    return () => {
-      window.removeEventListener('plugin-updated', handlePluginUpdate)
-      window.removeEventListener('focus', handlePluginUpdate)
-    }
-  }, [status])
-
-  const fetchSubscriptionInfo = async () => {
-    try {
-      const response = await fetch('/api/subscriptions/check', {
-        cache: 'force-cache',
-        next: { revalidate: 120 } // Revalidate every 2 minutes
-      })
-      if (response.ok) {
-        const data = await response.json()
-        setSubscriptionInfo(data)
-      } else if (response.status === 401) {
-        // אם המשתמש לא מאומת, לא ננסה שוב
-        return
-      }
-    } catch (error) {
-      // לא נדפיס שגיאות בקונסול - זה נורמלי כשאין מנוי או בעיות אימות
-      // console.error('Error fetching subscription info:', error)
-    }
-  }
-
-  const fetchPermissions = async () => {
+  const fetchPermissions = useCallback(async () => {
     try {
       const response = await fetch('/api/users/permissions', {
-        cache: 'force-cache', // Cache permissions
-        next: { revalidate: 300 } // Revalidate every 5 minutes
+        cache: 'no-store', // Don't cache - always fetch fresh
       })
       if (response.ok) {
         const data = await response.json()
@@ -304,6 +234,75 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
       })
     } finally {
       setLoadingPermissions(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    // נחכה שה-session יטען לפני שנבצע fetch
+    if (status === 'authenticated') {
+      // הרצה מקבילית של כל הבקשות במקום סדרתית
+      Promise.all([
+        fetchPermissions(),
+        fetchUnreadCount(),
+        fetchSubscriptionInfo(),
+        fetchActivePlugins()
+      ]).catch(err => console.error('Error loading sidebar data:', err))
+    }
+    
+    // טעינת הגדרת הסתרת כרטיס Trial
+    if (typeof window !== 'undefined') {
+      const hidden = localStorage.getItem('hide-trial-card')
+      setHideTrialCard(hidden === 'true')
+    }
+  }, [status, currentShopId, fetchPermissions])
+
+  useEffect(() => {
+    // רענון כל 30 שניות - רק אם מחובר
+    if (status !== 'authenticated') return
+    
+    const interval = setInterval(() => {
+      fetchUnreadCount()
+      fetchSubscriptionInfo()
+      fetchActivePlugins() // עדכון תוספים כל 30 שניות
+    }, 30000)
+    return () => clearInterval(interval)
+  }, [status, currentShopId])
+
+  // האזנה ל-events של עדכון תוספים
+  useEffect(() => {
+    if (status !== 'authenticated') return
+
+    const handlePluginUpdate = () => {
+      fetchActivePlugins()
+    }
+
+    // האזנה ל-custom event
+    window.addEventListener('plugin-updated', handlePluginUpdate)
+    // האזנה גם ל-navigation events (כשעוברים בין דפים)
+    window.addEventListener('focus', handlePluginUpdate)
+
+    return () => {
+      window.removeEventListener('plugin-updated', handlePluginUpdate)
+      window.removeEventListener('focus', handlePluginUpdate)
+    }
+  }, [status])
+
+  const fetchSubscriptionInfo = async () => {
+    try {
+      const response = await fetch('/api/subscriptions/check', {
+        cache: 'force-cache',
+        next: { revalidate: 120 } // Revalidate every 2 minutes
+      })
+      if (response.ok) {
+        const data = await response.json()
+        setSubscriptionInfo(data)
+      } else if (response.status === 401) {
+        // אם המשתמש לא מאומת, לא ננסה שוב
+        return
+      }
+    } catch (error) {
+      // לא נדפיס שגיאות בקונסול - זה נורמלי כשאין מנוי או בעיות אימות
+      // console.error('Error fetching subscription info:', error)
     }
   }
 

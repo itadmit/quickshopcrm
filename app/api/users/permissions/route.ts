@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
           inventory: true,
           discounts: true,
           coupons: true,
-          collections: true,
+          categories: true,
           gift_cards: true,
           abandoned_carts: true,
           pages: true,

@@ -370,6 +370,9 @@ model Category {
   description String?
   parentId    String?
   image       String?
+  type        CollectionType    @default(MANUAL)
+  rules       Json?
+  isPublished Boolean           @default(true)
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   parent      Category?         @relation("CategoryParent", fields: [parentId], references: [id])
