@@ -111,6 +111,7 @@ export async function GET(req: NextRequest) {
           isHidden: true,
           images: true,
           inventoryQty: true,
+          lowStockAlert: true,
           availability: true,
           createdAt: true,
           updatedAt: true,
@@ -126,6 +127,7 @@ export async function GET(req: NextRequest) {
             select: {
               id: true,
               name: true,
+              sku: true,
               price: true,
               comparePrice: true,
               inventoryQty: true,

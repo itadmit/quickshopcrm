@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { initContactCategories } from "@/lib/contacts"
 
 // GET - קבלת אנשי קשר עם סינון לפי קטגוריה
 export async function GET(req: NextRequest) {
@@ -167,6 +168,9 @@ export async function POST(req: NextRequest) {
         { status: 404 }
       )
     }
+
+    // אתחול קטגוריות אם צריך
+    await initContactCategories(shopId)
 
     // בדיקה אם יש איש קשר קיים עם אותו אימייל
     const existingContact = await prisma.contact.findUnique({

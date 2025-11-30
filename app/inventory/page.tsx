@@ -27,6 +27,15 @@ interface InventoryItem {
   lowStockAlert: number | null
   status: string
   availability: string
+  isVariant?: boolean
+  productId?: string
+  variantId?: string
+  variants?: Array<{
+    id: string
+    name: string
+    inventoryQty: number
+    sku: string | null
+  }>
 }
 
 export default function InventoryPage() {
@@ -52,7 +61,44 @@ export default function InventoryPage() {
       const response = await fetch(`/api/products?shopId=${selectedShop.id}`)
       if (response.ok) {
         const data = await response.json()
-        setItems(data.products || [])
+        const products = data.products || []
+        
+        // המרת מוצרים ווריאציות לרשימת מלאי
+        const inventoryItems: InventoryItem[] = []
+        
+        products.forEach((product: any) => {
+          // אם יש וריאציות, נוסיף כל וריאציה בנפרד
+          if (product.variants && product.variants.length > 0) {
+            product.variants.forEach((variant: any) => {
+              inventoryItems.push({
+                id: `${product.id}-${variant.id}`,
+                productId: product.id,
+                variantId: variant.id,
+                name: variant.name || product.name,
+                sku: variant.sku || product.sku,
+                inventoryQty: variant.inventoryQty || 0,
+                lowStockAlert: product.lowStockAlert,
+                status: product.status,
+                availability: product.availability,
+                isVariant: true,
+              })
+            })
+          } else {
+            // אם אין וריאציות, נוסיף את המוצר עצמו
+            inventoryItems.push({
+              id: product.id,
+              name: product.name,
+              sku: product.sku,
+              inventoryQty: product.inventoryQty || 0,
+              lowStockAlert: product.lowStockAlert,
+              status: product.status,
+              availability: product.availability,
+              isVariant: false,
+            })
+          }
+        })
+        
+        setItems(inventoryItems)
       }
     } catch (error) {
       console.error("Error fetching inventory:", error)
@@ -66,22 +112,56 @@ export default function InventoryPage() {
     }
   }
 
-  const updateInventory = async (productId: string, newQty: number) => {
+  const updateInventory = async (item: InventoryItem, newQty: number) => {
     try {
-      const response = await fetch(`/api/products/${productId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          inventoryQty: newQty,
-        }),
-      })
-
-      if (response.ok) {
-        toast({
-          title: "הצלחה",
-          description: "המלאי עודכן בהצלחה",
+      // אם זה וריאציה, נעדכן את הווריאציה
+      if (item.isVariant && item.variantId && item.productId) {
+        const response = await fetch(`/api/products/${item.productId}/variants/${item.variantId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            inventoryQty: newQty,
+          }),
         })
-        fetchInventory()
+
+        if (response.ok) {
+          toast({
+            title: "הצלחה",
+            description: "המלאי עודכן בהצלחה",
+          })
+          fetchInventory()
+        } else {
+          const errorData = await response.json()
+          toast({
+            title: "שגיאה",
+            description: errorData.error || "אירעה שגיאה בעדכון המלאי",
+            variant: "destructive",
+          })
+        }
+      } else {
+        // אם זה מוצר רגיל, נעדכן את המוצר
+        const response = await fetch(`/api/products/${item.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            inventoryQty: newQty,
+          }),
+        })
+
+        if (response.ok) {
+          toast({
+            title: "הצלחה",
+            description: "המלאי עודכן בהצלחה",
+          })
+          fetchInventory()
+        } else {
+          const errorData = await response.json()
+          toast({
+            title: "שגיאה",
+            description: errorData.error || "אירעה שגיאה בעדכון המלאי",
+            variant: "destructive",
+          })
+        }
       }
     } catch (error) {
       console.error("Error updating inventory:", error)
@@ -281,7 +361,7 @@ export default function InventoryPage() {
                                 value={item.inventoryQty}
                                 onChange={(e) => {
                                   const newQty = parseInt(e.target.value) || 0
-                                  updateInventory(item.id, newQty)
+                                  updateInventory(item, newQty)
                                 }}
                                 className="w-24"
                               />
@@ -313,9 +393,12 @@ export default function InventoryPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() =>
-                                router.push(`/products/${item.id}/edit`)
-                              }
+                              onClick={() => {
+                                const productId = item.isVariant && item.productId ? item.productId : item.id
+                                if (productId) {
+                                  router.push(`/products/${productId}/edit`)
+                                }
+                              }}
                             >
                               <Edit className="w-4 h-4 ml-2" />
                               ערוך

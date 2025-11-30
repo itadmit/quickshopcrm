@@ -410,6 +410,10 @@ export default function OrderDetailPage() {
 
   // אם במצב הדפסה, להציג גרסה פשוטה
   if (isPrintMode) {
+    // בדיקה אם להציג מעמ לפי ההגדרות
+    const shopSettings = order.shop?.settings as any
+    const showTaxInCart = shopSettings?.showTaxInCart ?? false
+    
     const printStyles = `
       @media print {
         @page {
@@ -549,10 +553,17 @@ export default function OrderDetailPage() {
                   <td>
                     <div style={{ fontWeight: 'bold' }}>{item.name}</div>
                     {item.variant && (
-                      <div style={{ fontSize: '11px', color: '#666' }}>{item.variant.name}</div>
+                      <div style={{ fontSize: '11px', color: '#666', marginTop: '4px' }}>
+                        <strong>וריאציה:</strong> {item.variant.name}
+                      </div>
                     )}
                     {item.sku && (
-                      <div style={{ fontSize: '10px', color: '#999' }}>מקט: {item.sku}</div>
+                      <div style={{ fontSize: '10px', color: '#999', marginTop: '2px' }}>מקט: {item.sku}</div>
+                    )}
+                    {item.product && item.product.name && item.product.name !== item.name && (
+                      <div style={{ fontSize: '10px', color: '#999', marginTop: '2px' }}>
+                        מוצר: {item.product.name}
+                      </div>
                     )}
                   </td>
                   <td>{item.quantity}</td>
@@ -584,10 +595,12 @@ export default function OrderDetailPage() {
                 <span style={{ fontWeight: 'bold' }}>{order.couponCode}</span>
               </div>
             )}
-            <div className="print-summary-row">
-              <span>מע"מ:</span>
-              <span>₪{order.tax.toFixed(2)}</span>
-            </div>
+            {showTaxInCart && order.tax > 0 && (
+              <div className="print-summary-row">
+                <span>מע"מ:</span>
+                <span>₪{order.tax.toFixed(2)}</span>
+              </div>
+            )}
             <div className="print-summary-row print-total">
               <span>סה"כ:</span>
               <span>₪{order.total.toFixed(2)}</span>
@@ -616,28 +629,59 @@ export default function OrderDetailPage() {
 
           <div className="print-section">
             <div className="print-section-title">כתובת משלוח</div>
-            {order.shippingAddress && (
-              <>
-                {order.shippingAddress.street && (
-                  <div className="print-info-item">
-                    <div className="print-value">{order.shippingAddress.street}</div>
-                  </div>
-                )}
-                {order.shippingAddress.city && (
-                  <div className="print-info-item">
-                    <div className="print-value">
-                      {order.shippingAddress.city}
-                      {order.shippingAddress.zipCode && `, ${order.shippingAddress.zipCode}`}
+            {order.shippingAddress && (() => {
+              let address: any
+              try {
+                address = typeof order.shippingAddress === 'string' 
+                  ? JSON.parse(order.shippingAddress) 
+                  : order.shippingAddress
+              } catch (e) {
+                // אם יש שגיאה בפרסור, נשתמש בכתובת כמו שהיא
+                address = order.shippingAddress
+              }
+              return (
+                <>
+                  {(address.firstName || address.lastName) && (
+                    <div className="print-info-item">
+                      <div className="print-value">
+                        {address.firstName || ''} {address.lastName || ''}
+                      </div>
                     </div>
-                  </div>
-                )}
-                {order.shippingAddress.country && (
-                  <div className="print-info-item">
-                    <div className="print-value">{order.shippingAddress.country}</div>
-                  </div>
-                )}
-              </>
-            )}
+                  )}
+                  {(address.address || address.street) && (
+                    <div className="print-info-item">
+                      <div className="print-value">
+                        {address.address || address.street}
+                        {address.houseNumber ? ` ${address.houseNumber}` : ''}
+                      </div>
+                    </div>
+                  )}
+                  {(address.apartment || address.floor) && (
+                    <div className="print-info-item">
+                      <div className="print-value">
+                        {address.apartment ? `דירה ${address.apartment}` : ''}
+                        {address.apartment && address.floor ? ', ' : ''}
+                        {address.floor ? `קומה ${address.floor}` : ''}
+                      </div>
+                    </div>
+                  )}
+                  {address.city && (
+                    <div className="print-info-item">
+                      <div className="print-value">
+                        {address.city}
+                        {address.zipCode && `, ${address.zipCode}`}
+                        {address.zip && !address.zipCode && `, ${address.zip}`}
+                      </div>
+                    </div>
+                  )}
+                  {address.country && (
+                    <div className="print-info-item">
+                      <div className="print-value">{address.country}</div>
+                    </div>
+                  )}
+                </>
+              )
+            })()}
           </div>
         </div>
 
@@ -875,7 +919,7 @@ export default function OrderDetailPage() {
                   </>
                 ) : (
                   <div className="space-y-4">
-                    {order.items.map((item) => (
+                      {order.items.map((item) => (
                       <div
                         key={item.id}
                         className="flex items-center gap-4 p-4 border rounded-lg"
@@ -890,14 +934,22 @@ export default function OrderDetailPage() {
                         <div className="flex-1">
                           <h4 className="font-medium">{item.name}</h4>
                           {item.variant && (
-                            <p className="text-sm text-gray-500">{item.variant.name}</p>
+                            <p className="text-sm text-gray-500 mt-1">
+                              <span className="font-semibold">וריאציה:</span> {item.variant.name}
+                            </p>
                           )}
                           {item.sku && (
-                            <p className="text-xs text-gray-400">מקט: {item.sku}</p>
+                            <p className="text-xs text-gray-400 mt-1">מקט: {item.sku}</p>
+                          )}
+                          {item.product && item.product.name && item.product.name !== item.name && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              מוצר: {item.product.name}
+                            </p>
                           )}
                         </div>
                         <div className="text-left">
                           <p className="text-sm text-gray-500">כמות: {item.quantity}</p>
+                          <p className="text-xs text-gray-400 mt-1">₪{item.price.toFixed(2)} ליחידה</p>
                         </div>
                         <div className="font-semibold text-right">
                           ₪{item.total.toFixed(2)}
@@ -1023,12 +1075,16 @@ export default function OrderDetailPage() {
                           <Badge variant="secondary">{order.couponCode}</Badge>
                         </div>
                       )}
-                      {order.shop?.taxEnabled && order.tax > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">מע"מ</span>
-                          <span>₪{order.tax.toFixed(2)}</span>
-                        </div>
-                      )}
+                      {(() => {
+                        const shopSettings = order.shop?.settings as any
+                        const showTaxInCart = shopSettings?.showTaxInCart ?? false
+                        return showTaxInCart && order.shop?.taxEnabled && order.tax > 0 && (
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">מע"מ</span>
+                            <span>₪{order.tax.toFixed(2)}</span>
+                          </div>
+                        )
+                      })()}
                       <div className="flex justify-between text-lg font-bold pt-2 border-t">
                         <span>סה"כ</span>
                         <span>₪{order.total.toFixed(2)}</span>
@@ -1251,14 +1307,20 @@ export default function OrderDetailPage() {
                   order.shippingAddress && (
                     <div className="space-y-1">
                       {(() => {
-                        const address = typeof order.shippingAddress === 'string' 
-                          ? JSON.parse(order.shippingAddress) 
-                          : order.shippingAddress
+                        let address: any
+                        try {
+                          address = typeof order.shippingAddress === 'string' 
+                            ? JSON.parse(order.shippingAddress) 
+                            : order.shippingAddress
+                        } catch (e) {
+                          // אם יש שגיאה בפרסור, נשתמש בכתובת כמו שהיא
+                          address = order.shippingAddress
+                        }
                         return (
                           <>
-                            {address.firstName && address.lastName && (
+                            {(address.firstName || address.lastName) && (
                               <p className="font-medium">
-                                {address.firstName} {address.lastName}
+                                {address.firstName || ''} {address.lastName || ''}
                               </p>
                             )}
                             {(address.address || address.street) && (
@@ -1277,15 +1339,15 @@ export default function OrderDetailPage() {
                             {address.city && (
                               <p className="text-gray-700">
                                 {address.city}
-                                {address.zip ? ` ${address.zip}` : ''}
-                                {address.zipCode && !address.zip ? ` ${address.zipCode}` : ''}
+                                {address.zipCode ? `, ${address.zipCode}` : ''}
+                                {address.zip && !address.zipCode ? `, ${address.zip}` : ''}
                               </p>
                             )}
                             {address.country && (
                               <p className="text-gray-700">{address.country}</p>
                             )}
                             {/* תמיכה במבנה הישן */}
-                            {!address.firstName && !address.address && !address.street && address.street && (
+                            {!address.firstName && !address.lastName && !address.address && !address.street && address.street && (
                               <p>{address.street}</p>
                             )}
                             {!address.city && address.city && address.zipCode && (

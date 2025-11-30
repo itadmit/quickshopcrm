@@ -387,11 +387,18 @@ export default function StorefrontOrderPage() {
                       <div className="flex-1">
                         <Link href={`/shop/${slug}/products/${item.product.slug || item.product.id}`}>
                           <h3 className="font-semibold hover:text-blue-600 transition-colors">
-                            {item.product.name}
+                            {item.name || item.product.name}
                           </h3>
                         </Link>
                         {item.variant && (
-                          <p className="text-sm text-gray-600">{item.variant.name}</p>
+                          <p className="text-sm text-gray-600 mt-1">
+                            <span className="font-semibold">וריאציה:</span> {item.variant.name}
+                          </p>
+                        )}
+                        {item.product && item.product.name && item.name && item.product.name !== item.name && (
+                          <p className="text-xs text-gray-500 mt-1">
+                            מוצר: {item.product.name}
+                          </p>
                         )}
                         <p className="text-sm text-gray-600 mt-1">
                           כמות: {item.quantity}
@@ -445,14 +452,20 @@ export default function StorefrontOrderPage() {
                 <CardContent>
                   <div className="space-y-1">
                     {(() => {
-                      const address = typeof order.shippingAddress === 'string' 
-                        ? JSON.parse(order.shippingAddress) 
-                        : order.shippingAddress
+                      let address: any
+                      try {
+                        address = typeof order.shippingAddress === 'string' 
+                          ? JSON.parse(order.shippingAddress) 
+                          : order.shippingAddress
+                      } catch (e) {
+                        // אם יש שגיאה בפרסור, נשתמש בכתובת כמו שהיא
+                        address = order.shippingAddress
+                      }
                       return (
                         <>
-                          {address.firstName && address.lastName && (
+                          {(address.firstName || address.lastName) && (
                             <p className="font-medium">
-                              {address.firstName} {address.lastName}
+                              {address.firstName || ''} {address.lastName || ''}
                             </p>
                           )}
                           {(address.address || address.street) && (
@@ -471,7 +484,8 @@ export default function StorefrontOrderPage() {
                           {address.city && (
                             <p className="text-gray-700">
                               {address.city}
-                              {address.zip ? ` ${address.zip}` : ''}
+                              {address.zipCode ? `, ${address.zipCode}` : ''}
+                              {address.zip && !address.zipCode ? `, ${address.zip}` : ''}
                             </p>
                           )}
                           {address.country && (

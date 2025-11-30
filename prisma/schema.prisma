@@ -8,26 +8,26 @@ datasource db {
 }
 
 model Company {
-  id             String          @id @default(cuid())
-  name           String
-  plan           String          @default("free")
-  apiKey         String          @unique @default(cuid())
-  hmacSecret     String?
-  settings       Json?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  storageLimitMB Int?
-  auditLogs      AuditLog[]
-  calendarEvents CalendarEvent[]
-  emailTemplates EmailTemplate[]
-  files          File[]
-  integrations   Integration[]
-  invitations    Invitation[]
-  notifications  Notification[]
-  shops          Shop[]
-  subscription   Subscription?
-  users          User[]
-  plugins        Plugin[]          @relation("CompanyPlugins")
+  id                  String               @id @default(cuid())
+  name                String
+  plan                String               @default("free")
+  apiKey              String               @unique @default(cuid())
+  hmacSecret          String?
+  settings            Json?
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  storageLimitMB      Int?
+  auditLogs           AuditLog[]
+  calendarEvents      CalendarEvent[]
+  emailTemplates      EmailTemplate[]
+  files               File[]
+  integrations        Integration[]
+  invitations         Invitation[]
+  notifications       Notification[]
+  shops               Shop[]
+  subscription        Subscription?
+  users               User[]
+  plugins             Plugin[]             @relation("CompanyPlugins")
   pluginSubscriptions PluginSubscription[] @relation("CompanyPluginSubscriptions")
 
   @@map("companies")
@@ -212,10 +212,10 @@ model UserPermission {
 }
 
 model Shop {
-  id                       String          @id @default(cuid())
+  id                       String                  @id @default(cuid())
   companyId                String
   name                     String
-  slug                     String          @unique
+  slug                     String                  @unique
   description              String?
   logo                     String?
   favicon                  String?
@@ -224,18 +224,18 @@ model Shop {
   phone                    String?
   address                  String?
   workingHours             Json?
-  currency                 String          @default("ILS")
-  taxEnabled               Boolean         @default(true)
-  taxRate                  Float           @default(18)
-  pricesIncludeTax         Boolean         @default(true)
-  theme                    String          @default("default")
+  currency                 String                  @default("ILS")
+  taxEnabled               Boolean                 @default(true)
+  taxRate                  Float                   @default(18)
+  pricesIncludeTax         Boolean                 @default(true)
+  theme                    String                  @default("default")
   themeSettings            Json?
   domain                   String?
-  isPublished              Boolean         @default(false)
+  isPublished              Boolean                 @default(false)
   settings                 Json?
   customerDiscountSettings Json?
-  createdAt                DateTime        @default(now())
-  updatedAt                DateTime        @updatedAt
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
   automations              Automation[]
   blogs                    Blog[]
   Bundle                   Bundle[]
@@ -253,17 +253,19 @@ model Shop {
   Return                   Return[]
   Review                   Review[]
   events                   ShopEvent[]
-  company                  Company         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  company                  Company                 @relation(fields: [companyId], references: [id], onDelete: Cascade)
   StoreCredit              StoreCredit[]
   trackingPixels           TrackingPixel[]
   webhooks                 Webhook[]
   wishlistItems            WishlistItem[]
   customFieldDefinitions   CustomFieldDefinition[]
   productAddons            ProductAddon[]
-  plugins                  Plugin[]          @relation("ShopPlugins")
-  waitlist                 Waitlist[]       @relation("ShopWaitlist")
+  plugins                  Plugin[]                @relation("ShopPlugins")
+  waitlist                 Waitlist[]              @relation("ShopWaitlist")
   productPageTemplates     ProductPageTemplate[]
   popups                   Popup[]
+  contacts                 Contact[]
+  contactCategories        ContactCategory[]
 
   @@index([companyId])
   @@index([slug])
@@ -271,46 +273,46 @@ model Shop {
 }
 
 model Product {
-  id               String              @id @default(cuid())
-  shopId           String
-  name             String
-  slug             String
-  description      String?
-  sku              String?
-  price            Float
-  comparePrice     Float?
-  cost             Float?
-  taxEnabled       Boolean             @default(true)
-  inventoryEnabled Boolean             @default(true)
-  inventoryQty     Int                 @default(0)
-  lowStockAlert    Int?
-  weight           Float?
-  dimensions       Json?
-  status           ProductStatus       @default(DRAFT)
-  isHidden         Boolean             @default(false)
-  images           String[]
-  video            String?
-  minQuantity      Int?
-  maxQuantity      Int?
-  availability     ProductAvailability @default(IN_STOCK)
-  availableDate    DateTime?
-  seoTitle         String?
-  seoDescription   String?
-  customFields     Json?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
-  bundles          BundleProduct[]
-  orderItems       OrderItem[]
-  categories       ProductCategory[]
-  collections      ProductCollection[]
-  options          ProductOption[]
-  tags             ProductTag[]
-  variants         ProductVariant[]
-  shop             Shop                @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  reviews          Review[]
-  wishlistItems    WishlistItem[]
+  id                String              @id @default(cuid())
+  shopId            String
+  name              String
+  slug              String
+  description       String?
+  sku               String?
+  price             Float
+  comparePrice      Float?
+  cost              Float?
+  taxEnabled        Boolean             @default(true)
+  inventoryEnabled  Boolean             @default(true)
+  inventoryQty      Int                 @default(0)
+  lowStockAlert     Int?
+  weight            Float?
+  dimensions        Json?
+  status            ProductStatus       @default(DRAFT)
+  isHidden          Boolean             @default(false)
+  images            String[]
+  video             String?
+  minQuantity       Int?
+  maxQuantity       Int?
+  availability      ProductAvailability @default(IN_STOCK)
+  availableDate     DateTime?
+  seoTitle          String?
+  seoDescription    String?
+  customFields      Json?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  bundles           BundleProduct[]
+  orderItems        OrderItem[]
+  categories        ProductCategory[]
+  collections       ProductCollection[]
+  options           ProductOption[]
+  tags              ProductTag[]
+  variants          ProductVariant[]
+  shop              Shop                @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  reviews           Review[]
+  wishlistItems     WishlistItem[]
   customFieldValues CustomFieldValue[]
-  waitlist         Waitlist[]          @relation("ProductWaitlist")
+  waitlist          Waitlist[]          @relation("ProductWaitlist")
 
   @@index([shopId])
   @@index([slug])
@@ -468,6 +470,7 @@ model Customer {
   storeCredits  StoreCredit[]
   wishlistItems WishlistItem[]
   waitlist      Waitlist[]     @relation("CustomerWaitlist")
+  contacts      Contact[]
 
   @@index([shopId])
   @@index([email])
@@ -1076,18 +1079,18 @@ model Waitlist {
 }
 
 model ProductPageTemplate {
-  id          String   @id @default(cuid())
-  shopId      String
-  name        String
-  elements    Json
-  isActive    Boolean  @default(true)
-  isDefault   Boolean  @default(false)
-  productIds  String[]
-  categoryIds String[]
+  id            String   @id @default(cuid())
+  shopId        String
+  name          String
+  elements      Json
+  isActive      Boolean  @default(true)
+  isDefault     Boolean  @default(false)
+  productIds    String[]
+  categoryIds   String[]
   collectionIds String[]
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  shop          Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   @@index([shopId])
   @@index([shopId, isActive])
@@ -1096,26 +1099,26 @@ model ProductPageTemplate {
 }
 
 model Popup {
-  id                String   @id @default(cuid())
-  shopId            String
-  name              String
-  layout            String   @default("one-column")
-  borderRadius      Int      @default(0)
-  isActive          Boolean  @default(true)
-  content           Json
-  displayFrequency  String   @default("every-visit")
-  displayLocation   String   @default("all-pages")
-  specificPages     String[] @default([])
-  delay             Int      @default(0)
-  trigger           String   @default("on-load")
-  scrollPercentage  Int?
-  backgroundColor   String?  @default("#ffffff")
-  textColor         String?  @default("#000000")
-  overlayColor      String?  @default("#000000")
-  overlayOpacity    Float?   @default(0.5)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
-  shop              Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  id               String   @id @default(cuid())
+  shopId           String
+  name             String
+  layout           String   @default("one-column")
+  borderRadius     Int      @default(0)
+  isActive         Boolean  @default(true)
+  content          Json
+  displayFrequency String   @default("every-visit")
+  displayLocation  String   @default("all-pages")
+  specificPages    String[] @default([])
+  delay            Int      @default(0)
+  trigger          String   @default("on-load")
+  scrollPercentage Int?
+  backgroundColor  String?  @default("#ffffff")
+  textColor        String?  @default("#000000")
+  overlayColor     String?  @default("#000000")
+  overlayOpacity   Float?   @default(0.5)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  shop             Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
 
   @@index([shopId])
   @@index([shopId, isActive])
@@ -1178,23 +1181,23 @@ model AutomationLog {
 }
 
 model CustomFieldDefinition {
-  id             String           @id @default(cuid())
-  shopId         String
-  namespace      String           @default("custom")
-  key            String
-  label          String
-  type           CustomFieldType
-  description    String?
-  required       Boolean          @default(false)
-  validations    Json?
-  scope          CustomFieldScope @default(GLOBAL)
-  categoryIds    String[]
-  showInStorefront Boolean        @default(false)
-  position       Int              @default(0)
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
-  shop           Shop             @relation(fields: [shopId], references: [id], onDelete: Cascade)
-  values         CustomFieldValue[]
+  id               String             @id @default(cuid())
+  shopId           String
+  namespace        String             @default("custom")
+  key              String
+  label            String
+  type             CustomFieldType
+  description      String?
+  required         Boolean            @default(false)
+  validations      Json?
+  scope            CustomFieldScope   @default(GLOBAL)
+  categoryIds      String[]
+  showInStorefront Boolean            @default(false)
+  position         Int                @default(0)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  shop             Shop               @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  values           CustomFieldValue[]
 
   @@unique([shopId, namespace, key])
   @@index([shopId])
@@ -1203,14 +1206,14 @@ model CustomFieldDefinition {
 }
 
 model CustomFieldValue {
-  id         String              @id @default(cuid())
-  productId  String
+  id           String                @id @default(cuid())
+  productId    String
   definitionId String
-  value      String?
-  createdAt  DateTime            @default(now())
-  updatedAt  DateTime            @updatedAt
-  product    Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
-  definition CustomFieldDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
+  value        String?
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @updatedAt
+  product      Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  definition   CustomFieldDefinition @relation(fields: [definitionId], references: [id], onDelete: Cascade)
 
   @@unique([productId, definitionId])
   @@index([productId])
@@ -1253,61 +1256,61 @@ model ProductAddonValue {
 }
 
 model Plugin {
-  id              String          @id @default(cuid())
-  shopId          String?
-  companyId       String?
-  
+  id        String  @id @default(cuid())
+  shopId    String?
+  companyId String?
+
   // מידע בסיסי
-  name            String
-  slug            String          @unique
-  description     String?
-  icon            String?
-  version         String          @default("1.0.0")
-  author          String?
-  
+  name        String
+  slug        String  @unique
+  description String?
+  icon        String?
+  version     String  @default("1.0.0")
+  author      String?
+
   // סוג התוסף
-  type            PluginType      @default(CORE)
-  category        PluginCategory  @default(ANALYTICS)
-  
+  type     PluginType     @default(CORE)
+  category PluginCategory @default(ANALYTICS)
+
   // הגדרות הפעלה
-  isActive        Boolean         @default(false)
-  isInstalled     Boolean         @default(false)
-  isBuiltIn       Boolean         @default(false)
-  
+  isActive    Boolean @default(false)
+  isInstalled Boolean @default(false)
+  isBuiltIn   Boolean @default(false)
+
   // תמחור
-  isFree          Boolean         @default(true)
-  price           Float?
-  currency        String          @default("ILS")
-  
+  isFree   Boolean @default(true)
+  price    Float?
+  currency String  @default("ILS")
+
   // ניהול על ידי סופר אדמין
-  isEditable      Boolean         @default(true)
-  isDeletable     Boolean         @default(false)
-  
+  isEditable  Boolean @default(true)
+  isDeletable Boolean @default(false)
+
   // Metadata לניהול
-  adminNotes      String?
-  displayOrder    Int            @default(0)
-  
+  adminNotes   String?
+  displayOrder Int     @default(0)
+
   // הגדרות תוסף סקריפט
-  scriptUrl       String?
-  scriptContent   String?
-  injectLocation  ScriptLocation?
-  
+  scriptUrl      String?
+  scriptContent  String?
+  injectLocation ScriptLocation?
+
   // הגדרות תוסף ליבה
-  configSchema    Json?
-  config          Json?
-  
+  configSchema Json?
+  config       Json?
+
   // Metadata
-  metadata        Json?
-  requirements    Json?
-  
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
-  installedAt     DateTime?
-  
-  shop            Shop?           @relation("ShopPlugins", fields: [shopId], references: [id], onDelete: Cascade)
-  company         Company?        @relation("CompanyPlugins", fields: [companyId], references: [id], onDelete: Cascade)
-  subscriptions   PluginSubscription[] @relation("PluginSubscriptions")
-  
+  metadata     Json?
+  requirements Json?
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  installedAt DateTime?
+
+  shop          Shop?                @relation("ShopPlugins", fields: [shopId], references: [id], onDelete: Cascade)
+  company       Company?             @relation("CompanyPlugins", fields: [companyId], references: [id], onDelete: Cascade)
+  subscriptions PluginSubscription[] @relation("PluginSubscriptions")
+
   @@index([shopId])
   @@index([companyId])
   @@index([type])
@@ -1317,46 +1320,113 @@ model Plugin {
 }
 
 model PluginSubscription {
-  id                    String                      @id @default(cuid())
-  companyId             String
-  pluginId              String
-  
+  id        String @id @default(cuid())
+  companyId String
+  pluginId  String
+
   // סטטוס
-  status                PluginSubscriptionStatus      @default(PENDING)
-  isActive              Boolean                     @default(false)
-  
+  status   PluginSubscriptionStatus @default(PENDING)
+  isActive Boolean                  @default(false)
+
   // תאריכים
-  startDate             DateTime?
-  endDate               DateTime?
-  nextBillingDate       DateTime?
-  
+  startDate       DateTime?
+  endDate         DateTime?
+  nextBillingDate DateTime?
+
   // תשלום
-  paymentMethod         String?
-  paymentDetails        Json?
-  recurringPaymentUid   String?
-  cardToken             String?
-  
+  paymentMethod       String?
+  paymentDetails      Json?
+  recurringPaymentUid String?
+  cardToken           String?
+
   // מחיר
-  monthlyPrice          Float
-  lastPaymentDate       DateTime?
-  lastPaymentAmount     Float?
-  
+  monthlyPrice      Float
+  lastPaymentDate   DateTime?
+  lastPaymentAmount Float?
+
   // ביטול
-  cancelledAt           DateTime?
-  cancellationReason    String?
-  
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
-  
-  company               Company             @relation("CompanyPluginSubscriptions", fields: [companyId], references: [id], onDelete: Cascade)
-  plugin                Plugin              @relation("PluginSubscriptions", fields: [pluginId], references: [id], onDelete: Cascade)
-  
+  cancelledAt        DateTime?
+  cancellationReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company Company @relation("CompanyPluginSubscriptions", fields: [companyId], references: [id], onDelete: Cascade)
+  plugin  Plugin  @relation("PluginSubscriptions", fields: [pluginId], references: [id], onDelete: Cascade)
+
   @@unique([companyId, pluginId])
   @@index([companyId])
   @@index([pluginId])
   @@index([status])
   @@index([nextBillingDate])
   @@map("plugin_subscriptions")
+}
+
+model Contact {
+  id                          String                      @id @default(cuid())
+  shopId                      String
+  email                       String
+  firstName                   String?
+  lastName                    String?
+  phone                       String?
+  company                     String?
+  notes                       String?
+  tags                        String[]                    @default([])
+  emailMarketingConsent       Boolean                     @default(false)
+  emailMarketingConsentAt     DateTime?
+  emailMarketingConsentSource String?
+  customerId                  String?
+  createdAt                   DateTime                    @default(now())
+  updatedAt                   DateTime                    @updatedAt
+  shop                        Shop                        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  customer                    Customer?                   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  categoryAssignments         ContactCategoryAssignment[]
+
+  @@unique([shopId, email])
+  @@index([shopId])
+  @@index([email])
+  @@index([customerId])
+  @@map("contacts")
+}
+
+model ContactCategory {
+  id          String                      @id @default(cuid())
+  shopId      String
+  type        ContactCategoryType
+  name        String
+  description String?
+  color       String?
+  createdAt   DateTime                    @default(now())
+  updatedAt   DateTime                    @updatedAt
+  shop        Shop                        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  assignments ContactCategoryAssignment[]
+
+  @@unique([shopId, type])
+  @@index([shopId])
+  @@index([type])
+  @@map("contact_categories")
+}
+
+model ContactCategoryAssignment {
+  id         String          @id @default(cuid())
+  contactId  String
+  categoryId String
+  metadata   Json?
+  createdAt  DateTime        @default(now())
+  contact    Contact         @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  category   ContactCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@unique([contactId, categoryId])
+  @@index([contactId])
+  @@index([categoryId])
+  @@map("contact_category_assignments")
+}
+
+enum ContactCategoryType {
+  CUSTOMER
+  CLUB_MEMBER
+  NEWSLETTER
+  CONTACT_FORM
 }
 
 enum PluginType {
