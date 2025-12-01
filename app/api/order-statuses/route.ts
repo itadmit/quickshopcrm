@@ -32,10 +32,41 @@ export async function GET(req: NextRequest) {
     const shopId = user.company.shops[0].id
 
     // קבלת כל הסטטוסים של החנות
-    const statuses = await prisma.orderStatusDefinition.findMany({
+    let statuses = await prisma.orderStatusDefinition.findMany({
       where: { shopId },
       orderBy: { position: "asc" },
     })
+
+    // אם אין סטטוסים, יצירת סטטוסים ברירת מחדל
+    if (statuses.length === 0) {
+      const defaultStatuses = [
+        { key: "PENDING", label: "ממתין", labelEn: "Pending", color: "#F59E0B", icon: "Clock", position: 0, isSystem: true, isDefault: true },
+        { key: "CONFIRMED", label: "מאושר", labelEn: "Confirmed", color: "#3B82F6", icon: "CheckCircle", position: 1, isSystem: true, isDefault: false },
+        { key: "PAID", label: "שולם", labelEn: "Paid", color: "#10B981", icon: "CreditCard", position: 2, isSystem: true, isDefault: false },
+        { key: "PROCESSING", label: "מעובד", labelEn: "Processing", color: "#8B5CF6", icon: "Package", position: 3, isSystem: true, isDefault: false },
+        { key: "SHIPPED", label: "נשלח", labelEn: "Shipped", color: "#06B6D4", icon: "Truck", position: 4, isSystem: true, isDefault: false },
+        { key: "DELIVERED", label: "נמסר", labelEn: "Delivered", color: "#059669", icon: "CheckCircle2", position: 5, isSystem: true, isDefault: false },
+        { key: "CANCELLED", label: "בוטל", labelEn: "Cancelled", color: "#EF4444", icon: "XCircle", position: 6, isSystem: true, isDefault: false },
+        { key: "REFUNDED", label: "הוחזר", labelEn: "Refunded", color: "#6B7280", icon: "RotateCcw", position: 7, isSystem: true, isDefault: false },
+      ]
+
+      await Promise.all(
+        defaultStatuses.map((status) =>
+          prisma.orderStatusDefinition.create({
+            data: {
+              shopId,
+              ...status,
+            },
+          })
+        )
+      )
+
+      // טעינה מחדש של הסטטוסים
+      statuses = await prisma.orderStatusDefinition.findMany({
+        where: { shopId },
+        orderBy: { position: "asc" },
+      })
+    }
 
     return NextResponse.json(statuses)
   } catch (error) {

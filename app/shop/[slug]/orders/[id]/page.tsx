@@ -189,13 +189,14 @@ export default function StorefrontOrderPage() {
     const statusMap: Record<string, string> = {
       PENDING: "ממתין לתשלום",
       CONFIRMED: "מאושר",
-      PROCESSING: "מעבד",
+      PAID: "שולם",
+      PROCESSING: "מעובד",
       SHIPPED: "נשלח",
       DELIVERED: "נמסר",
       CANCELLED: "בוטל",
       REFUNDED: "הוחזר",
     }
-    return statusMap[status] || status
+    return statusMap[status.toUpperCase()] || status
   }
 
   // פונקציה לקביעת צבע סטטוס

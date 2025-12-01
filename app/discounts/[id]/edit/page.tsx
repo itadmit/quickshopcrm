@@ -398,14 +398,87 @@ export default function EditDiscountPage() {
     }
 
     // Validation לפי סוג ההנחה
-    if (formData.type !== "FREE_GIFT") {
-    if (!formData.value || parseFloat(formData.value) < 0) {
-      toast({
-        title: "שגיאה",
-        description: "ערך ההנחה חייב להיות מספר חיובי",
-        variant: "destructive",
-      })
-      return
+    // עבור BUY_X_GET_Y, VOLUME_DISCOUNT, FREE_GIFT - value לא חובה
+    if (formData.type !== "FREE_GIFT" && formData.type !== "BUY_X_GET_Y" && formData.type !== "VOLUME_DISCOUNT") {
+      if (!formData.value || parseFloat(formData.value) < 0) {
+        toast({
+          title: "שגיאה",
+          description: "ערך ההנחה חייב להיות מספר חיובי",
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
+    // Validation עבור BUY_X_GET_Y
+    if (formData.type === "BUY_X_GET_Y") {
+      if (!formData.buyQuantity || !formData.getQuantity) {
+        toast({
+          title: "שגיאה",
+          description: "יש למלא את כל השדות הנדרשים (קנה X וקבל Y)",
+          variant: "destructive",
+        })
+        return
+      }
+      // getDiscount הוא אופציונלי, אבל אם הוא מוזן, הוא צריך להיות בין 0 ל-100
+      if (formData.getDiscount && (parseFloat(formData.getDiscount) < 0 || parseFloat(formData.getDiscount) > 100)) {
+        toast({
+          title: "שגיאה",
+          description: "הנחה על Y חייבת להיות בין 0 ל-100 אחוז",
+          variant: "destructive",
+        })
+        return
+      }
+    }
+
+    // Validation עבור VOLUME_DISCOUNT
+    if (formData.type === "VOLUME_DISCOUNT") {
+      if (!formData.volumeRules || formData.volumeRules.length === 0) {
+        toast({
+          title: "שגיאה",
+          description: "יש להוסיף לפחות כלל אחד להנחת כמות",
+          variant: "destructive",
+        })
+        return
+      }
+      // בדיקה שכל הכללים תקינים
+      for (const rule of formData.volumeRules) {
+        if (!rule.quantity || rule.quantity < 1) {
+          toast({
+            title: "שגיאה",
+            description: "כמות מינימלית חייבת להיות לפחות 1",
+            variant: "destructive",
+          })
+          return
+        }
+        if (rule.discount < 0 || rule.discount > 100) {
+          toast({
+            title: "שגיאה",
+            description: "אחוז הנחה חייב להיות בין 0 ל-100",
+            variant: "destructive",
+          })
+          return
+        }
+      }
+    }
+
+    // Validation עבור NTH_ITEM_DISCOUNT
+    if (formData.type === "NTH_ITEM_DISCOUNT") {
+      if (!formData.nthItem || parseInt(formData.nthItem) < 1) {
+        toast({
+          title: "שגיאה",
+          description: "מספר המוצר חייב להיות לפחות 1",
+          variant: "destructive",
+        })
+        return
+      }
+      if (!formData.value || parseFloat(formData.value) < 0 || parseFloat(formData.value) > 100) {
+        toast({
+          title: "שגיאה",
+          description: "אחוז הנחה חייב להיות בין 0 ל-100",
+          variant: "destructive",
+        })
+        return
       }
     }
 
@@ -445,7 +518,9 @@ export default function EditDiscountPage() {
         title: formData.title.trim(),
         description: formData.description || undefined,
         type: formData.type,
-        value: formData.type !== "FREE_GIFT" ? parseFloat(formData.value) : 0,
+        value: (formData.type !== "FREE_GIFT" && formData.type !== "BUY_X_GET_Y" && formData.type !== "VOLUME_DISCOUNT") 
+          ? parseFloat(formData.value || "0") 
+          : 0,
         buyQuantity: formData.buyQuantity ? parseInt(formData.buyQuantity) : undefined,
         getQuantity: formData.getQuantity ? parseInt(formData.getQuantity) : undefined,
         getDiscount: formData.getDiscount ? parseFloat(formData.getDiscount) : undefined,

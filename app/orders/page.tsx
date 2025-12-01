@@ -269,6 +269,27 @@ export default function OrdersPage() {
     }
   }
 
+  const handlePrintMultipleOrders = async () => {
+    if (selectedOrders.length === 0) {
+      alert('אנא בחר לפחות הזמנה אחת להדפסה')
+      return
+    }
+
+    try {
+      // מציאת מספרי ההזמנות לפי ה-IDs הנבחרים
+      const orderNumbers = orders
+        .filter(order => selectedOrders.includes(order.id))
+        .map(order => order.orderNumber)
+        .join(',')
+
+      // פתיחת דף הדפסה מרובה בחלון חדש
+      window.open(`/orders/print-multiple?orders=${orderNumbers}`, '_blank')
+    } catch (error) {
+      console.error('Error printing multiple orders:', error)
+      alert('שגיאה בהדפסת ההזמנות')
+    }
+  }
+
   const handleMarkAsRead = (orderId: string) => {
     try {
       // עדכון state
@@ -371,9 +392,19 @@ export default function OrdersPage() {
         color: status.color,
       }
     }
-    // Fallback לסטטוסים ישנים שעדיין לא עודכנו
+    // Fallback לסטטוסים ישנים שעדיין לא עודכנו - תרגום לעברית
+    const statusTranslations: Record<string, string> = {
+      PENDING: "ממתין",
+      CONFIRMED: "מאושר",
+      PAID: "שולם",
+      PROCESSING: "מעובד",
+      SHIPPED: "נשלח",
+      DELIVERED: "נמסר",
+      CANCELLED: "בוטל",
+      REFUNDED: "הוחזר",
+    }
     return {
-      label: statusKey,
+      label: statusTranslations[statusKey.toUpperCase()] || statusKey,
       color: "#6B7280",
     }
   }
@@ -535,15 +566,25 @@ export default function OrdersPage() {
             </Button>
           </div>
           {selectedOrders.length > 0 && (
-            <Button
-              variant="destructive"
-              onClick={handleBulkDelete}
-              disabled={isDeleting}
-              className="w-full md:w-auto"
-            >
-              <Trash2 className="w-4 h-4 ml-2" />
-              מחק {selectedOrders.length} נבחרו
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="default"
+                onClick={handlePrintMultipleOrders}
+                className="w-full md:w-auto"
+              >
+                <Printer className="w-4 h-4 ml-2" />
+                הדפס {selectedOrders.length} נבחרו
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleBulkDelete}
+                disabled={isDeleting}
+                className="w-full md:w-auto"
+              >
+                <Trash2 className="w-4 h-4 ml-2" />
+                מחק {selectedOrders.length} נבחרו
+              </Button>
+            </div>
           )}
         </div>
 
@@ -896,24 +937,30 @@ export default function OrdersPage() {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            <Select value={newStatus} onValueChange={setNewStatus}>
-              <SelectTrigger>
-                <SelectValue placeholder="בחר סטטוס" />
-              </SelectTrigger>
-              <SelectContent>
-                {statuses.map((status) => (
-                  <SelectItem key={status.id} value={status.key}>
-                    <div className="flex items-center gap-2">
-                      <div
-                        className="w-3 h-3 rounded-full"
-                        style={{ backgroundColor: status.color }}
-                      />
-                      {status.label}
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {statuses.length === 0 ? (
+              <div className="text-center py-4 text-gray-500">
+                טוען סטטוסים...
+              </div>
+            ) : (
+              <Select value={newStatus} onValueChange={setNewStatus}>
+                <SelectTrigger>
+                  <SelectValue placeholder="בחר סטטוס" />
+                </SelectTrigger>
+                <SelectContent>
+                  {statuses.map((status) => (
+                    <SelectItem key={status.id} value={status.key}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="w-3 h-3 rounded-full"
+                          style={{ backgroundColor: status.color }}
+                        />
+                        {status.label}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
           <DialogFooter className="gap-3">
             <Button variant="outline" onClick={() => setIsStatusDialogOpen(false)}>

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { z } from "zod"
+import { createOrUpdateContact, initContactCategories } from "@/lib/contacts"
 import { sendEmail, getEmailTemplate } from "@/lib/email"
 
 interface ExtendedSession {
@@ -320,6 +321,30 @@ export async function POST(req: NextRequest) {
         items: true,
       },
     })
+
+    // יצירת/עדכון Contact עם קטגוריית CUSTOMER
+    try {
+      // אתחול קטגוריות אם צריך
+      await initContactCategories(shop.id)
+
+      const nameParts = data.customerName.split(" ")
+      await createOrUpdateContact({
+        shopId: shop.id,
+        email: data.customerEmail.toLowerCase(),
+        firstName: nameParts[0] || null,
+        lastName: nameParts.slice(1).join(" ") || null,
+        phone: data.customerPhone || null,
+        company: null,
+        notes: data.notes || null,
+        categoryTypes: ["CUSTOMER"], // כל הזמנה ידנית = לקוח
+        emailMarketingConsent: false,
+        emailMarketingConsentSource: "manual_order",
+        customerId: finalCustomerId || null,
+      })
+    } catch (contactError) {
+      // לא נכשל את ההזמנה אם יש בעיה ב-Contact
+      console.error("Error creating/updating contact:", contactError)
+    }
 
     // יצירת אירוע order.created
     await prisma.shopEvent.create({

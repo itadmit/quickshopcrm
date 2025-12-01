@@ -340,8 +340,19 @@ export default function OrderDetailPage() {
         color: statusDef.color,
       }
     }
+    // Fallback לסטטוסים ישנים שעדיין לא עודכנו - תרגום לעברית
+    const statusTranslations: Record<string, string> = {
+      PENDING: "ממתין",
+      CONFIRMED: "מאושר",
+      PAID: "שולם",
+      PROCESSING: "מעובד",
+      SHIPPED: "נשלח",
+      DELIVERED: "נמסר",
+      CANCELLED: "בוטל",
+      REFUNDED: "הוחזר",
+    }
     return {
-      label: statusKey,
+      label: statusTranslations[statusKey.toUpperCase()] || statusKey,
       color: "#6B7280",
     }
   }

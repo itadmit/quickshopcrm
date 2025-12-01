@@ -266,6 +266,7 @@ model Shop {
   popups                   Popup[]
   contacts                 Contact[]
   contactCategories        ContactCategory[]
+  orderStatusDefinitions   OrderStatusDefinition[]
 
   @@index([companyId])
   @@index([slug])
@@ -1421,6 +1422,29 @@ model ContactCategoryAssignment {
   @@index([contactId])
   @@index([categoryId])
   @@map("contact_category_assignments")
+}
+
+model OrderStatusDefinition {
+  id          String   @id @default(cuid())
+  shopId      String
+  key         String
+  label       String
+  labelEn     String?
+  color       String
+  icon        String?
+  description String?
+  position    Int      @default(0)
+  isSystem    Boolean  @default(false)
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  shop        Shop     @relation(fields: [shopId], references: [id], onDelete: Cascade)
+
+  @@unique([shopId, key])
+  @@index([shopId])
+  @@index([position])
+  @@map("order_status_definitions")
 }
 
 enum ContactCategoryType {
