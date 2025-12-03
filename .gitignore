@@ -11,13 +11,9 @@ package-lock.json
 /coverage
 # Ignore test files except in __tests__ directory
 *.test.ts
-!__tests__/*.test.ts
 *.test.tsx
-!__tests__/*.test.tsx
 *.spec.ts
-!__tests__/*.spec.ts
 *.spec.tsx
-!__tests__/*.spec.tsx
 
 # next.js
 /.next/
