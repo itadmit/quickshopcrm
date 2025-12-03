@@ -47,18 +47,9 @@ const nextConfig = {
     imageSizes: [16, 32, 48, 64, 96, 128, 256, 384], // גדלים קטנים
   },
   
-  // Headers for caching
+  // Headers for caching - פשוט יותר כדי למנוע בעיות עם micromatch
   async headers() {
     return [
-      {
-        source: '/:path*\\.(svg|jpg|jpeg|png|webp|gif|ico)',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'public, max-age=31536000, immutable',
-          },
-        ],
-      },
       {
         source: '/_next/static/:path*',
         headers: [
