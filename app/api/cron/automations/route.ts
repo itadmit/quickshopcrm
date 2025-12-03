@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 
+export const dynamic = 'force-dynamic'
+
 /**
  * Cron Job for running periodic automations
  * This endpoint should be called by a cron service (e.g., Vercel Cron, GitHub Actions, or external cron)

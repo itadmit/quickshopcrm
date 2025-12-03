@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getAllPlugins } from "@/lib/plugins/registry"
 
+export const dynamic = 'force-dynamic'
+
 // GET - קבלת כל התוספים (לסופר אדמין)
 export async function GET(req: NextRequest) {
   try {

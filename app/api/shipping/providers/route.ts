@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { getAllProviders } from "@/lib/shipping/registry"
 
+export const dynamic = 'force-dynamic'
+
 // GET - רשימת כל חברות המשלוחים הזמינות
 export async function GET(req: NextRequest) {
   try {

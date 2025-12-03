@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { getToken } from "next-auth/jwt"
 import { getPayPlusCredentials, getPayPlusIPNFull } from "@/lib/payplus"
 
+export const dynamic = 'force-dynamic'
+
 /**
  * GET - קבלת מידע מלא על תשלום דרך IPN FULL
  * שימושי לדיבוג ולקבלת מידע מלא על transaction

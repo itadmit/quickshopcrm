@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { loadActivePlugins } from "@/lib/plugins/loader"
 
+export const dynamic = 'force-dynamic'
+
 // GET - קבלת תוספים פעילים
 export async function GET(req: NextRequest) {
   try {

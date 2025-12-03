@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { getToken } from "next-auth/jwt"
 import { getSubscriptionInfo } from "@/lib/subscription-middleware"
 
+export const dynamic = 'force-dynamic'
+
 // GET - בדיקת סטטוס מנוי (לשימוש בדפים)
 export async function GET(req: NextRequest) {
   try {

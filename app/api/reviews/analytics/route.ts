@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { isReviewsPluginActive } from "@/lib/plugins/reviews-helper"
 
+export const dynamic = 'force-dynamic'
+
 // GET - אנליטיקה לביקורות
 export async function GET(req: NextRequest) {
   try {
