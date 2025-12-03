@@ -664,15 +664,46 @@ export default function BulkEditPage() {
     }
   }
 
-  const renderCell = (row: BulkEditRow, column: Column) => {
+  const renderCell = (row: BulkEditRow, column: Column, rowIndex?: number) => {
     const cellKey = `${row.id}-${column.key}`
     let value: any = ""
     
     switch (column.key) {
       case "product-id":
+        // הצגת מספר סידורי במקום ID טכני
+        // חישוב המספר לפי מיקום המוצר ברשימה המסוננת (רק מוצרים, לא וריאציות)
+        let displayNumber = 1
+        if (rowIndex !== undefined) {
+          // אם זה וריאציה, נמצא את המוצר שלה ונשתמש במספר שלו
+          if (row.isVariant) {
+            const parentProductIndex = filteredRows.findIndex(r => r.productId === row.productId && !r.isVariant)
+            if (parentProductIndex !== -1) {
+              // ספירת מוצרים ייחודיים לפני המוצר האב
+              const uniqueProductsBefore = new Set(
+                filteredRows.slice(0, parentProductIndex)
+                  .filter(r => !r.isVariant)
+                  .map(r => r.productId)
+              )
+              displayNumber = uniqueProductsBefore.size + 1
+            }
+          } else {
+            // אם זה מוצר, נספור מוצרים ייחודיים לפניו
+            const uniqueProductsBefore = new Set(
+              filteredRows.slice(0, rowIndex)
+                .filter(r => !r.isVariant)
+                .map(r => r.productId)
+            )
+            displayNumber = uniqueProductsBefore.size + 1
+          }
+        } else {
+          // fallback: חיפוש ברשימה המלאה
+          const allProductRows = rows.filter(r => !r.isVariant)
+          const productIndex = allProductRows.findIndex(r => r.productId === row.productId)
+          displayNumber = productIndex !== -1 ? productIndex + 1 : 1
+        }
         return (
-          <div className="text-sm text-gray-600 font-mono">
-            {row.productId.substring(0, 8)}...
+          <div className="text-sm text-gray-600 font-semibold">
+            #{displayNumber}
           </div>
         )
       case "product-title":
@@ -1112,10 +1143,10 @@ export default function BulkEditPage() {
                               {column.key === "product-title" && row.isVariant ? (
                                 <div className="flex items-center gap-3 w-full">
                                   <span className="text-gray-300 text-lg font-light flex-shrink-0">┘</span>
-                                  {renderCell(row, column)}
+                                  {renderCell(row, column, index)}
                                 </div>
                               ) : (
-                                renderCell(row, column)
+                                renderCell(row, column, index)
                               )}
                             </div>
                           </td>
