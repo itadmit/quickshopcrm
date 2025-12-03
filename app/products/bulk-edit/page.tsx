@@ -743,13 +743,20 @@ export default function BulkEditPage() {
 
       return (
         <Select
-          value={row.categoryId || ""}
+          value={row.categoryId || "none"}
           onValueChange={(categoryId) => {
-            const selectedCategory = categories.find(c => c.id === categoryId)
-            updateRow(row.id, column.key, selectedCategory?.name || "")
-            setRows(prevRows => prevRows.map(r => 
-              r.id === row.id ? { ...r, categoryId, category: selectedCategory?.name || "" } : r
-            ))
+            if (categoryId === "none") {
+              updateRow(row.id, column.key, "")
+              setRows(prevRows => prevRows.map(r => 
+                r.id === row.id ? { ...r, categoryId: null, category: "" } : r
+              ))
+            } else {
+              const selectedCategory = categories.find(c => c.id === categoryId)
+              updateRow(row.id, column.key, selectedCategory?.name || "")
+              setRows(prevRows => prevRows.map(r => 
+                r.id === row.id ? { ...r, categoryId, category: selectedCategory?.name || "" } : r
+              ))
+            }
             setHasUnsavedChanges(true)
           }}
         >
@@ -757,7 +764,7 @@ export default function BulkEditPage() {
             <SelectValue placeholder="בחר קטגוריה" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">ללא קטגוריה</SelectItem>
+            <SelectItem value="none">ללא קטגוריה</SelectItem>
             {categoryOptions.map(option => (
               <SelectItem key={option.value} value={option.value}>
                 {option.label}
