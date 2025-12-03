@@ -15,10 +15,15 @@ const nextConfig = {
     } : false,
   },
   
+  // Use standalone output to reduce build trace issues
+  output: 'standalone',
+  
   // Experimental features for better performance
   experimental: {
     optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
     // Lazy load מודולים גדולים
+    // Reduce build trace collection to avoid micromatch stack overflow
+    serverComponentsExternalPackages: ['@prisma/client', 'prisma'],
   },
   
   // Server Actions are enabled by default in Next.js 14
