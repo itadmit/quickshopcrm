@@ -21,13 +21,6 @@ const nextConfig = {
     // Lazy load מודולים גדולים
   },
   
-  // Exclude problematic patterns from build traces
-  outputFileTracingIgnores: [
-    '**/node_modules/@swc/**',
-    '**/node_modules/@esbuild/**',
-    '**/node_modules/webpack/**',
-  ],
-  
   // Server Actions are enabled by default in Next.js 14
   images: {
     remotePatterns: [
