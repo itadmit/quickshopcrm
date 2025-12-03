@@ -4,6 +4,9 @@ import { authOptions } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { updatePluginConfig } from "@/lib/plugins/loader"
 
+// סימון הראוט כדינמי כדי למנוע ניסיון רינדור סטטי
+export const dynamic = 'force-dynamic'
+
 // GET - קבלת הגדרות מועדון פרימיום
 export async function GET(req: NextRequest) {
   try {
