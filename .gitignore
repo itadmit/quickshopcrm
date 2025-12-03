@@ -1,28 +1,21 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
-/node_modules
-/.pnp
+node_modules
+.pnp
 .pnp.js
 yarn.lock
 package-lock.json
 
 # testing
-/coverage
-# Ignore test files except in __tests__ directory
+coverage
 *.test.ts
 *.test.tsx
 *.spec.ts
 *.spec.tsx
 
 # next.js
-/.next/
-/out/
 .next
 out
-
-# production
-/build
+build
 dist
 
 # misc
@@ -32,8 +25,8 @@ dist
 *.swp
 *.swo
 *~
-.vscode/
-.idea/
+.vscode
+.idea
 *.sublime-project
 *.sublime-workspace
 
@@ -46,11 +39,10 @@ lerna-debug.log*
 
 # local env files
 .env
-.env*.local
+.env.local
 .env.development.local
 .env.test.local
 .env.production.local
-.env.local
 
 # vercel
 .vercel
@@ -60,23 +52,20 @@ lerna-debug.log*
 next-env.d.ts
 
 # uploads
-/uploads/*
-/public/uploads/*
+uploads
+public/uploads
 
 # prisma
-/prisma/migrations
+prisma/migrations
 *.db
 *.db-journal
 
 # OS
 Thumbs.db
-.DS_Store
 .AppleDouble
 .LSOverride
 
 # IDE
-.vscode
-.idea
 *.iml
 *.ipr
 *.iws
@@ -85,8 +74,6 @@ Thumbs.db
 *.tmp
 *.temp
 .cache
-
-
 
 # Database backups
 *.sql
