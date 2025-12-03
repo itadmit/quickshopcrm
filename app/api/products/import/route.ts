@@ -44,16 +44,16 @@ export async function POST(req: NextRequest) {
 
     // קריאת הקובץ
     const text = await file.text()
-    const lines = text.split("\n").filter((line) => line.trim())
+    const lines = text.split("\n").filter((line: any) => line.trim())
 
     if (lines.length < 2) {
       return NextResponse.json({ error: "הקובץ ריק או לא תקין" }, { status: 400 })
     }
 
     // פענוח header
-    const headers = lines[0].split(",").map((h) => h.trim())
+    const headers = lines[0].split(",").map((h: any) => h.trim())
     const requiredHeaders = ["name", "price"]
-    const missingHeaders = requiredHeaders.filter((h) => !headers.includes(h))
+    const missingHeaders = requiredHeaders.filter((h: any) => !headers.includes(h))
 
     if (missingHeaders.length > 0) {
       return NextResponse.json(
@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     let errorCount = 0
 
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(",").map((v) => v.trim())
+      const values = lines[i].split(",").map((v: any) => v.trim())
       if (values.length !== headers.length) {
         errors.push(`שורה ${i + 1}: מספר עמודות לא תואם`)
         errorCount++
@@ -251,7 +251,7 @@ export async function POST(req: NextRequest) {
       success: true,
       imported: successCount,
       errors: errorCount,
-      products: products.map((p) => ({ id: p.id, name: p.name })),
+      products: products.map((p: any) => ({ id: p.id, name: p.name })),
       errorDetails: errors,
     })
   } catch (error: any) {

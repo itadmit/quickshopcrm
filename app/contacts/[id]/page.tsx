@@ -473,7 +473,7 @@ export default function ContactDetailPage() {
                     size="sm"
                     onClick={() => {
                       setSelectedCategories(
-                        contact.categoryAssignments.map((ca) => ca.category.type)
+                        contact.categoryAssignments.map((ca: any) => ca.category.type)
                       )
                       setCategoriesDialogOpen(true)
                     }}
@@ -485,7 +485,7 @@ export default function ContactDetailPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {contact.categoryAssignments.map((assignment) => {
+                  {contact.categoryAssignments.map((assignment: any) => {
                     const category = assignment.category
                     const config = CATEGORY_CONFIG[category.type] || CATEGORY_CONFIG.CUSTOMER
                     const Icon = config.icon
@@ -539,7 +539,7 @@ export default function ContactDetailPage() {
                     <div className="mt-6">
                       <Label className="text-sm font-medium mb-3 block">הזמנות אחרונות</Label>
                       <div className="space-y-2">
-                        {contact.customer.orders.map((order) => (
+                        {contact.customer.orders.map((order: any) => (
                           <div
                             key={order.id}
                             className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
@@ -691,7 +691,7 @@ export default function ContactDetailPage() {
                             setSelectedCategories([...selectedCategories, key])
                           } else {
                             setSelectedCategories(
-                              selectedCategories.filter((t) => t !== key)
+                              selectedCategories.filter((t: any) => t !== key)
                             )
                           }
                         }}

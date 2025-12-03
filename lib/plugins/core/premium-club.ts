@@ -33,7 +33,7 @@ export const PremiumClubPlugin: PluginHook = {
 
       if (!plugin?.config) return
 
-      const config = plugin.config as PremiumClubConfig
+      const config = plugin.config as any as PremiumClubConfig
 
       // בדיקה אם התוסף מופעל
       if (!config.enabled || !config.tiers || config.tiers.length === 0) return
@@ -48,7 +48,6 @@ export const PremiumClubPlugin: PluginHook = {
           lastName: true,
           totalSpent: true,
           orderCount: true,
-          premiumClubTier: true,
         },
       })
 
@@ -62,13 +61,14 @@ export const PremiumClubPlugin: PluginHook = {
       )
 
       // עדכון רמה אם השתנתה
-      if (newTier && newTier !== customer.premiumClubTier) {
-        const oldTier = customer.premiumClubTier
-        const tier = config.tiers.find((t) => t.slug === newTier)
+      const currentTier = (customer as any).tier
+      if (newTier && newTier !== currentTier) {
+        const oldTier = currentTier
+        const tier = config.tiers.find((t: any) => t.slug === newTier)
         
         await prisma.customer.update({
           where: { id: customer.id },
-          data: { premiumClubTier: newTier },
+          data: { premiumClubTier: newTier } as any,
         })
 
         // שליחת התראה אם מוגדר
@@ -77,7 +77,7 @@ export const PremiumClubPlugin: PluginHook = {
             const customerName = customer.firstName || customer.email.split('@')[0]
             const tierName = tier.name
             const oldTierName = oldTier 
-              ? config.tiers.find((t) => t.slug === oldTier)?.name || oldTier
+              ? config.tiers.find((t: any) => t.slug === oldTier)?.name || oldTier
               : 'רגיל'
             
             // בניית תוכן האימייל
@@ -237,12 +237,12 @@ export async function calculatePremiumClubDiscount(
 
     if (!plugin?.config) return 0
 
-    const config = plugin.config as PremiumClubConfig
+    const config = plugin.config as unknown as PremiumClubConfig
 
     // בדיקה אם התוסף מופעל
     if (!config.enabled || !config.tiers || config.tiers.length === 0) return 0
 
-    const tier = config.tiers.find((t) => t.slug === customerTier)
+    const tier = config.tiers.find((t: any) => t.slug === customerTier)
 
     if (!tier || !tier.discount) return 0
 

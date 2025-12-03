@@ -179,7 +179,7 @@ export async function PUT(
             },
           })
 
-          if (variant && variant.product.inventoryEnabled) {
+          if (variant && (variant.product as any).inventoryEnabled) {
             const oldQty = variant.inventoryQty
             const newQty = oldQty + quantityToReturn
 
@@ -221,7 +221,7 @@ export async function PUT(
             },
           })
 
-          if (product && product.inventoryEnabled) {
+          if (product && (product as any).inventoryEnabled) {
             const quantityToReturnProduct = Math.min(returnItem.quantity, orderItem.quantity)
             const oldQty = product.inventoryQty
             const newQty = oldQty + quantityToReturnProduct

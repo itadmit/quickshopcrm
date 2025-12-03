@@ -16,7 +16,6 @@ const updateProductSchema = z.object({
   inventoryEnabled: z.boolean().optional(),
   inventoryQty: z.number().int().optional(),
   lowStockAlert: z.union([z.number().int(), z.null()]).optional(),
-  trackInventory: z.boolean().optional(),
   sellWhenSoldOut: z.boolean().optional(),
   priceByWeight: z.boolean().optional(),
   showPricePer100ml: z.boolean().optional(),
@@ -43,6 +42,7 @@ const updateProductSchema = z.object({
   pageTemplateId: z.union([z.string(), z.null()]).optional(),
   defaultVariantId: z.union([z.string(), z.null()]).optional(),
   exclusiveToTier: z.array(z.string()).optional(),
+  isGiftCard: z.boolean().optional(),
 })
 
 // GET - קבלת פרטי מוצר
@@ -107,7 +107,7 @@ export async function GET(
       badges: customFields.badges || [],
       pageTemplateId: customFields.pageTemplateId || null,
       exclusiveToTier: customFields.exclusiveToTier || [],
-      trackInventory: customFields.trackInventory ?? true,
+      inventoryEnabled: (product as any).inventoryEnabled ?? true,
       sellWhenSoldOut: customFields.sellWhenSoldOut ?? false,
       priceByWeight: customFields.priceByWeight ?? false,
       showPricePer100ml: customFields.showPricePer100ml ?? false,
@@ -217,7 +217,6 @@ async function updateProduct(
     delete updateData.addonIds
     delete updateData.categories
     delete updateData.defaultVariantId
-    delete updateData.trackInventory
     delete updateData.sellWhenSoldOut
     delete updateData.priceByWeight
     delete updateData.showPricePer100ml
@@ -270,9 +269,6 @@ async function updateProduct(
     }
     
     // עדכון שדות נוספים שלא קיימים במודל Product
-    if (data.trackInventory !== undefined) {
-      currentCustomFields.trackInventory = data.trackInventory
-    }
     if (data.sellWhenSoldOut !== undefined) {
       currentCustomFields.sellWhenSoldOut = data.sellWhenSoldOut
     }

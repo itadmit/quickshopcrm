@@ -55,7 +55,6 @@ export default function NewProductPage() {
     lowStockAlert: "",
     availability: "IN_STOCK" as "IN_STOCK" | "OUT_OF_STOCK" | "PRE_ORDER" | "BACKORDER" | "DISCONTINUED",
     availableDate: "",
-    trackInventory: true,
     sellWhenSoldOut: false,
     priceByWeight: false,
     showPricePer100ml: false,
@@ -213,7 +212,6 @@ export default function NewProductPage() {
         inventoryEnabled: formData.inventoryEnabled,
         inventoryQty: inventoryQtyValue,
         availability: formData.availability,
-        trackInventory: formData.trackInventory,
         sellWhenSoldOut: formData.sellWhenSoldOut,
         priceByWeight: formData.priceByWeight,
         showPricePer100ml: formData.showPricePer100ml,
@@ -321,7 +319,7 @@ export default function NewProductPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                   name: option.name,
-                  type: option.type || "button",
+                  type: (option as any).type || "button",
                   values: formattedValues,
                   position: i,
                 }),
@@ -473,7 +471,7 @@ export default function NewProductPage() {
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold">מוצר חדש</h1>
-            <p className="text-sm md:text-base text-gray-600">צור מוצר חדש לחנות {selectedShop.name}</p>
+            <p className="text-sm md:text-base text-gray-600">צור מוצר חדש לחנות {selectedShop?.name || "לא נבחרה חנות"}</p>
           </div>
           <div className="flex gap-2">
             <Button 
@@ -545,7 +543,6 @@ export default function NewProductPage() {
                 lowStockAlert: formData.lowStockAlert,
                 availability: formData.availability,
                 availableDate: formData.availableDate,
-                trackInventory: formData.trackInventory,
                 sellWhenSoldOut: formData.sellWhenSoldOut,
                 priceByWeight: formData.priceByWeight,
                 showPricePer100ml: formData.showPricePer100ml,
@@ -639,7 +636,7 @@ export default function NewProductPage() {
                     />
                   )}
                   <div className="mt-4 flex flex-wrap gap-2">
-                    {formData.tags.map((tag) => (
+                    {formData.tags.map((tag: any) => (
                       <Badge key={tag} variant="secondary">
                         {tag}
                       </Badge>

@@ -636,7 +636,7 @@ export class FocusShippingProvider implements ShippingProvider {
         driverName: Array.isArray(driverName) ? driverName[0] : driverName,
         driverPhone: undefined,
         events,
-        canCancel: status === 'sent' || status === 'pending',
+        canCancel: (status as string) === 'sent' || (status as string) === 'pending',
       }
     } catch (error) {
       return { status: 'failed' }

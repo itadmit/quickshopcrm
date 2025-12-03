@@ -320,14 +320,12 @@ export async function POST(
     if (finalCustomerId) {
       const customer = await prisma.customer.findUnique({
         where: { id: finalCustomerId },
-        select: { dateOfBirth: true, premiumClubTier: true },
+        select: { tier: true },
       })
       
-      if (customer?.dateOfBirth && customer.premiumClubTier) {
-        const today = new Date()
-        const birthDate = new Date(customer.dateOfBirth)
-        const isBirthday = birthDate.getDate() === today.getDate() && 
-                          birthDate.getMonth() === today.getMonth()
+      if (customer?.tier && customer.tier !== "REGULAR") {
+        // TODO: dateOfBirth not available in Customer model - birthday check disabled
+        const isBirthday = false
         
         if (isBirthday) {
           const premiumClubPlugin = await prisma.plugin.findFirst({
@@ -364,10 +362,10 @@ export async function POST(
     if (finalCustomerId) {
       const customerForShipping = await prisma.customer.findUnique({
         where: { id: finalCustomerId },
-        select: { premiumClubTier: true },
+        select: { tier: true },
       })
       
-      if (customerForShipping?.premiumClubTier) {
+      if (customerForShipping?.tier && customerForShipping.tier !== "REGULAR") {
         const premiumClubPlugin = await prisma.plugin.findFirst({
           where: {
             slug: 'premium-club',
@@ -381,7 +379,7 @@ export async function POST(
         if (premiumClubPlugin?.config) {
           const config = premiumClubPlugin.config as any
           if (config.enabled && config.tiers) {
-            const tier = config.tiers.find((t: any) => t.slug === customerForShipping.premiumClubTier)
+            const tier = config.tiers.find((t: any) => t.slug === customerForShipping.tier)
             hasFreeShipping = tier?.benefits?.freeShipping || false
           }
         }
@@ -495,22 +493,8 @@ export async function POST(
       // אם רק saveDetails (בלי createAccount), לא יוצרים לקוח חדש - רק משתמשים בקיים אם יש
     }
 
-    // מציאת מקור תנועה לפי UTM Source
+    // TODO: TrafficSource model not implemented yet
     let trafficSourceId: string | null = null
-    if (data.utmSource) {
-      const trafficSource = await prisma.trafficSource.findUnique({
-        where: {
-          shopId_uniqueId: {
-            shopId: shop.id,
-            uniqueId: data.utmSource,
-          },
-        },
-        select: { id: true },
-      })
-      if (trafficSource) {
-        trafficSourceId = trafficSource.id
-      }
-    }
 
     // יצירת מספר הזמנה (מתחיל מ-1000 לכל חנות)
     const orderCount = await prisma.order.count({
@@ -538,7 +522,6 @@ export async function POST(
         couponCode: data.couponCode,
         notes: data.notes,
         customFields: data.customFields || {},
-        trafficSourceId: trafficSourceId, // שמירת מקור התנועה
         status: "PENDING",
         paymentStatus: "PENDING",
         fulfillmentStatus: "UNFULFILLED",

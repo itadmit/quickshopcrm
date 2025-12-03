@@ -63,7 +63,7 @@ export function NewDiscountSkeleton() {
             <div className="space-y-4">
               <div className="h-4 w-32 bg-gray-200 rounded"></div>
               <div className="space-y-3">
-                {[1, 2, 3, 4, 5].map((i) => (
+                {[1, 2, 3, 4, 5].map((i: any) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className="h-4 w-4 rounded-full bg-gray-200"></div>
                     <div className="h-4 w-32 bg-gray-200 rounded"></div>
@@ -82,7 +82,7 @@ export function NewDiscountSkeleton() {
             <div className="space-y-4">
               <div className="h-4 w-32 bg-gray-200 rounded"></div>
               <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
+                {[1, 2, 3].map((i: any) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className="h-4 w-4 rounded-full bg-gray-200"></div>
                     <div className="h-4 w-40 bg-gray-200 rounded"></div>
@@ -117,7 +117,7 @@ export function NewDiscountSkeleton() {
           <div className="bg-white rounded-lg shadow-sm p-6">
             <div className="h-6 w-20 bg-gray-200 rounded mb-6"></div>
             <div className="space-y-4">
-              {[1, 2, 3].map((i) => (
+              {[1, 2, 3].map((i: any) => (
                 <div key={i} className="flex items-center gap-3">
                   <div className="h-5 w-5 bg-gray-200 rounded"></div>
                   <div className="h-4 w-32 bg-gray-200 rounded"></div>

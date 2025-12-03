@@ -409,8 +409,8 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
           {(session as any)?.user?.role !== "INFLUENCER" && (
             <nav className="space-y-1 mb-2">
               {menuItems
-                .filter((item) => hasPermission(item.permission))
-                .map((item) => {
+                .filter((item: any) => hasPermission(item.permission))
+                .map((item: any) => {
                   const Icon = item.icon
                   const isActive = pathname === item.href
                   return (
@@ -445,8 +445,8 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
               <AccordionContent>
                 <nav className="space-y-1">
                   {influencerItems
-                    .filter((item) => hasPermission(item.permission))
-                    .map((item) => {
+                    .filter((item: any) => hasPermission(item.permission))
+                    .map((item: any) => {
                       const Icon = item.icon
                       const isActive = pathname === item.href
                       return (
@@ -477,8 +477,8 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
               <AccordionContent>
                 <nav className="space-y-1">
                   {salesItems
-                    .filter((item) => hasPermission(item.permission))
-                    .map((item) => {
+                    .filter((item: any) => hasPermission(item.permission))
+                    .map((item: any) => {
                       const Icon = item.icon
                       const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                       return (
@@ -509,8 +509,8 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
               <AccordionContent>
                 <nav className="space-y-1">
                   {marketingItems
-                    .filter((item) => hasPermission(item.permission))
-                    .map((item) => {
+                    .filter((item: any) => hasPermission(item.permission))
+                    .map((item: any) => {
                       const Icon = item.icon
                       const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                       return (
@@ -569,8 +569,8 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
               <AccordionContent>
                 <nav className="space-y-1">
                   {contentItems
-                    .filter((item) => hasPermission(item.permission))
-                    .map((item) => {
+                    .filter((item: any) => hasPermission(item.permission))
+                    .map((item: any) => {
                       const Icon = item.icon
                       const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                       return (
@@ -601,8 +601,8 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
               <AccordionContent>
                 <nav className="space-y-1">
                   {customerServiceItems
-                    .filter((item) => hasPermission(item.permission))
-                    .map((item) => {
+                    .filter((item: any) => hasPermission(item.permission))
+                    .map((item: any) => {
                       const Icon = item.icon
                       const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                       return (
@@ -633,8 +633,8 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
               <AccordionContent>
                 <nav className="space-y-1">
                   {productItems
-                    .filter((item) => hasPermission(item.permission))
-                    .map((item) => {
+                    .filter((item: any) => hasPermission(item.permission))
+                    .map((item: any) => {
                       const Icon = item.icon
                       const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                       return (
@@ -688,8 +688,8 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
               <AccordionContent>
                 <nav className="space-y-1">
                   {systemItems
-                    .filter((item) => hasPermission(item.permission))
-                    .map((item) => {
+                    .filter((item: any) => hasPermission(item.permission))
+                    .map((item: any) => {
                       const Icon = item.icon
                       const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
                       return (
@@ -720,8 +720,8 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
               <AccordionContent>
                 <nav className="space-y-1">
                   {settingsItems
-                    .filter((item) => hasPermission(item.permission))
-                    .map((item) => {
+                    .filter((item: any) => hasPermission(item.permission))
+                    .map((item: any) => {
                       const Icon = item.icon
                       // בדיקה מדויקת - אם pathname הוא בדיוק ה-href, או מתחיל ב-href + '/'
                       // אבל רק אם זה לא חלק מ-href אחר יותר ארוך
@@ -765,7 +765,7 @@ export function Sidebar({ hideLogo = false }: SidebarProps = {}) {
               <AccordionTrigger className="text-red-600">{t("sidebar.sections.superAdmin")}</AccordionTrigger>
               <AccordionContent>
                 <nav className="space-y-1">
-                  {superAdminItems.map((item) => {
+                  {superAdminItems.map((item: any) => {
                     const Icon = item.icon
                     const isActive = pathname === item.href
                     return (

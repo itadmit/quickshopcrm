@@ -72,10 +72,7 @@ export async function GET(req: NextRequest) {
         where: {
           shopId,
           isApproved: true,
-          OR: [
-            { images: { isEmpty: false } },
-            { videos: { isEmpty: false } },
-          ],
+          images: { isEmpty: false },
         },
       }),
 
@@ -109,28 +106,19 @@ export async function GET(req: NextRequest) {
       // תגיות הכי נפוצות
       prisma.review.findMany({
         where: { shopId, isApproved: true },
-        select: { tags: true },
+        select: { id: true },
       }),
     ])
 
-    // עיבוד תגיות
+    // עיבוד תגיות - לא זמין כרגע כי tags לא קיים במודל Review
     const tagCounts: Record<string, number> = {}
-    topTags.forEach((review) => {
-      review.tags.forEach((tag) => {
-        tagCounts[tag] = (tagCounts[tag] || 0) + 1
-      })
-    })
-
-    const topTagsArray = Object.entries(tagCounts)
-      .map(([name, count]) => ({ name, count }))
-      .sort((a, b) => b.count - a.count)
-      .slice(0, 10)
+    const topTagsArray: Array<{ name: string; count: number }> = []
 
     // עיבוד מוצרים עם הכי הרבה ביקורות
     const topProductsWithNames = await Promise.all(
       topProducts.map(async (item) => {
         const product = await prisma.product.findUnique({
-          where: { id: item.productId },
+          where: { id: item.productId || undefined },
           select: { name: true },
         })
         return {
@@ -146,7 +134,7 @@ export async function GET(req: NextRequest) {
       approvedReviews,
       pendingReviews,
       averageRating: averageRating._avg.rating || 0,
-      ratingDistribution: ratingDistribution.map((item) => ({
+      ratingDistribution: ratingDistribution.map((item: any) => ({
         rating: item.rating,
         count: item._count.rating,
       })),

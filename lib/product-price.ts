@@ -35,8 +35,8 @@ export function getProductPrice(product: Product): {
 
   if (hasVariants) {
     // יש וריאציות - נשתמש במחירי הוריאציות (גם אם המחיר של המוצר הוא 0)
-    const variantsWithPrice = product.variants.filter(
-      v => v.price !== null && v.price !== undefined && v.price >= 0
+    const variantsWithPrice = (product.variants || []).filter(
+      (v: any) => v.price !== null && v.price !== undefined && v.price >= 0
     )
 
     if (variantsWithPrice.length > 0) {

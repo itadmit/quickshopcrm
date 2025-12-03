@@ -37,7 +37,7 @@ export async function POST(
       )
     }
 
-    if (!order.shippingProvider || !order.shippingSentAt) {
+    if (!order.shippingMethod || !order.shippedAt) {
       return NextResponse.json(
         { error: "ההזמנה לא נשלחה לחברת משלוחים" },
         { status: 400 }
@@ -48,7 +48,7 @@ export async function POST(
     const integration = await prisma.integration.findFirst({
       where: {
         companyId: session.user.companyId,
-        type: `${order.shippingProvider.toUpperCase()}_SHIPPING` as any,
+        type: `${order.shippingMethod?.toUpperCase() || 'UNKNOWN'}_SHIPPING` as any,
         isActive: true,
       },
     })
@@ -61,7 +61,7 @@ export async function POST(
     }
 
     // טעינת provider
-    const provider = getShippingProvider(order.shippingProvider)
+    const provider = getShippingProvider(order.shippingMethod || '')
     if (!provider) {
       return NextResponse.json(
         { error: "חברת משלוחים לא נתמכת" },
@@ -70,7 +70,7 @@ export async function POST(
     }
 
     // ביטול משלוח
-    const shipmentId = (order.shippingData as any)?.shipmentId || order.shippingTrackingNumber
+    const shipmentId = (order.customFields as any)?.shippingData?.shipmentId || order.trackingNumber
     if (!shipmentId) {
       return NextResponse.json(
         { error: "מספר משלוח לא נמצא" },
@@ -103,12 +103,15 @@ export async function POST(
     await prisma.order.update({
       where: { id: params.orderId },
       data: {
-        shippingStatus: "cancelled",
-        shippingStatusUpdatedAt: new Date(),
-        shippingData: {
-          ...((order.shippingData as any) || {}),
-          cancelledAt: new Date(),
-          cancelReason: reason,
+        customFields: {
+          ...((order.customFields as any) || {}),
+          shippingStatus: "cancelled",
+          shippingStatusUpdatedAt: new Date(),
+          shippingData: {
+            ...((order.customFields as any)?.shippingData || {}),
+            cancelledAt: new Date(),
+            cancelReason: reason,
+          },
         },
       },
     })
@@ -120,7 +123,7 @@ export async function POST(
       {
         orderId: order.id,
         orderNumber: order.orderNumber,
-        provider: order.shippingProvider,
+        provider: order.shippingMethod,
         reason,
       },
       "order",

@@ -182,7 +182,7 @@ export default function CustomizePage() {
   const fetchProducts = async () => {
     if (!selectedShop?.slug) return
     try {
-      const response = await fetch(`/api/storefront/${selectedShop.slug}/products?limit=50`)
+      const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/products?limit=50`)
       if (response.ok) {
         const data = await response.json()
         setProducts(data.products || [])
@@ -197,7 +197,7 @@ export default function CustomizePage() {
   const fetchCategories = async () => {
     if (!selectedShop?.slug) return
     try {
-      const response = await fetch(`/api/storefront/${selectedShop.slug}/categories`)
+      const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/categories`)
       if (response.ok) {
         const data = await response.json()
         const categoriesList = Array.isArray(data) ? data : (data.categories || [])
@@ -211,7 +211,7 @@ export default function CustomizePage() {
   const fetchProductPageLayout = async () => {
     if (!selectedShop?.slug) return
     try {
-      const response = await fetch(`/api/storefront/${selectedShop.slug}/product-page-layout`)
+      const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/product-page-layout`)
       if (response.ok) {
         const data = await response.json()
         if (data.layout?.elements && data.layout.elements.length > 0) {
@@ -274,7 +274,7 @@ export default function CustomizePage() {
   // שמירת elements ב-localStorage לעדכון בזמן אמת (לא לשרת - רק כששומרים)
   useEffect(() => {
     if (selectedShop?.slug && elements.length > 0 && pageType === "product") {
-      const storageKey = `productPageLayout_${selectedShop.slug}`
+      const storageKey = `productPageLayout_${selectedShop?.slug || ""}`
       const timestamp = Date.now()
       const layoutData = {
         elements: elements.map(el => ({
@@ -321,7 +321,7 @@ export default function CustomizePage() {
     setSaving(true)
     try {
       // שמירה לשרת
-      const response = await fetch(`/api/storefront/${selectedShop.slug}/product-page-layout`, {
+      const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/product-page-layout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ elements }),
@@ -331,7 +331,7 @@ export default function CustomizePage() {
         setHasUnsavedChanges(false)
         
         // עדכון localStorage עם הערכים מה-DB
-        const storageKey = `productPageLayout_${selectedShop.slug}`
+        const storageKey = `productPageLayout_${selectedShop?.slug || ""}`
         const layoutData = {
           elements: elements.map(el => ({
             ...el,
@@ -380,16 +380,16 @@ export default function CustomizePage() {
     
     switch (pageType) {
       case "home":
-        return `${baseUrl}/shop/${selectedShop.slug}${queryPrefix}`
+        return `${baseUrl}/shop/${selectedShop?.slug || ""}${queryPrefix}`
       case "category":
         if (selectedCategory) {
-          return `${baseUrl}/shop/${selectedShop.slug}/categories/${selectedCategory}${queryPrefix}`
+          return `${baseUrl}/shop/${selectedShop?.slug || ""}/categories/${selectedCategory}${queryPrefix}`
         }
         return ""
       case "product":
         if (selectedProduct) {
           const product = products.find(p => p.id === selectedProduct)
-          return product ? `${baseUrl}/shop/${selectedShop.slug}/products/${product.slug}${queryPrefix}` : ""
+          return product ? `${baseUrl}/shop/${selectedShop?.slug || ""}/products/${product.slug}${queryPrefix}` : ""
         }
         return ""
       default:
@@ -443,7 +443,7 @@ export default function CustomizePage() {
 
   const toggleElementVisibility = (elementId: string) => {
     setElements((prev) =>
-      prev.map((el) => {
+      prev.map((el: any) => {
         if (el.id === elementId) {
           setHasUnsavedChanges(true)
           return { ...el, visible: !el.visible }
@@ -517,7 +517,7 @@ export default function CustomizePage() {
               <Palette className="w-5 h-5 text-emerald-600" />
               <span className="font-semibold text-gray-900">התאמה אישית</span>
               <Badge variant="outline" className="text-xs">
-                {selectedShop.name}
+                {selectedShop?.name || ""}
               </Badge>
             </div>
           </div>
@@ -597,7 +597,7 @@ export default function CustomizePage() {
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="text-xs">
-              {selectedShop.name}
+              {selectedShop?.name || ""}
             </Badge>
             {pageType === "product" && selectedProduct && (
               <>
@@ -621,7 +621,7 @@ export default function CustomizePage() {
                 <SelectValue placeholder="בחר קטגוריה" />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((cat) => (
+                {categories.map((cat: any) => (
                   <SelectItem key={cat.id} value={cat.id}>
                     {cat.name}
                   </SelectItem>
@@ -639,7 +639,7 @@ export default function CustomizePage() {
                 <SelectValue placeholder="בחר מוצר" />
               </SelectTrigger>
               <SelectContent>
-                {products.map((prod) => (
+                {products.map((prod: any) => (
                   <SelectItem key={prod.id} value={prod.id}>
                     {prod.name}
                   </SelectItem>
@@ -836,9 +836,9 @@ export default function CustomizePage() {
                       </div>
                     </SelectTrigger>
                     <SelectContent>
-                      {addableBlockTypes.map((type) => (
+                      {addableBlockTypes.map((type: any) => (
                         <SelectItem key={type} value={type}>
-                          {elementLabels[type]}
+                          {elementLabels[type as keyof typeof elementLabels]}
                         </SelectItem>
                       ))}
                     </SelectContent>

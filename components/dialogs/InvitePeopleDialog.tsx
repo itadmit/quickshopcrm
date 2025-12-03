@@ -57,7 +57,7 @@ export function InvitePeopleDialog({ triggerButton, open: controlledOpen, onOpen
   const [permissions, setPermissions] = useState<Record<string, boolean>>(() => {
     // ברירת מחדל - כל הפריטים הנדרשים מסומנים
     const defaultPerms: Record<string, boolean> = {}
-    sidebarPermissions.forEach((perm) => {
+    sidebarPermissions.forEach((perm: any) => {
       defaultPerms[perm.key] = perm.required || false
     })
     return defaultPerms
@@ -76,14 +76,14 @@ export function InvitePeopleDialog({ triggerButton, open: controlledOpen, onOpen
 
   // בדיקה האם כל הפריטים שאינם נדרשים מסומנים
   const allNonRequiredSelected = sidebarPermissions
-    .filter((perm) => !perm.required)
-    .every((perm) => permissions[perm.key])
+    .filter((perm: any) => !perm.required)
+    .every((perm: any) => permissions[perm.key])
 
   const handleSelectAll = () => {
     const allSelected = allNonRequiredSelected
     const newPermissions = { ...permissions }
     
-    sidebarPermissions.forEach((perm) => {
+    sidebarPermissions.forEach((perm: any) => {
       if (!perm.required) {
         newPermissions[perm.key] = !allSelected
       }
@@ -106,7 +106,7 @@ export function InvitePeopleDialog({ triggerButton, open: controlledOpen, onOpen
 
     // בדיקה שיש לפחות פריט אחד נבחר (חוץ מנדרשים) - רק אם זה לא משפיען/ית
     if (role !== "INFLUENCER") {
-      const hasAnyPermission = Object.values(permissions).some((allowed) => allowed)
+      const hasAnyPermission = Object.values(permissions).some((allowed: any) => allowed)
       if (!hasAnyPermission) {
         toast({
           title: "שגיאה",
@@ -154,7 +154,7 @@ export function InvitePeopleDialog({ triggerButton, open: controlledOpen, onOpen
         setRole("USER")
         // איפוס הרשאות לברירת מחדל
         const defaultPerms: Record<string, boolean> = {}
-        sidebarPermissions.forEach((perm) => {
+        sidebarPermissions.forEach((perm: any) => {
           defaultPerms[perm.key] = perm.required || false
         })
         setPermissions(defaultPerms)
@@ -226,7 +226,7 @@ export function InvitePeopleDialog({ triggerButton, open: controlledOpen, onOpen
                   setPermissions({})
                 } else {
                   const defaultPerms: Record<string, boolean> = {}
-                  sidebarPermissions.forEach((perm) => {
+                  sidebarPermissions.forEach((perm: any) => {
                     defaultPerms[perm.key] = perm.required || false
                   })
                   setPermissions(defaultPerms)
@@ -267,7 +267,7 @@ export function InvitePeopleDialog({ triggerButton, open: controlledOpen, onOpen
                       בחר הכל
                     </label>
                   </div>
-                  {sidebarPermissions.map((perm) => (
+                  {sidebarPermissions.map((perm: any) => (
                     <div
                       key={perm.key}
                       className="flex items-center gap-3"

@@ -68,9 +68,6 @@ export async function GET(
           updatedAt: true,
           shippingMethod: true,
           trackingNumber: true,
-          shippingTrackingNumber: true,
-          shippingProvider: true,
-          shippingStatus: true,
           items: {
             select: {
               id: true,

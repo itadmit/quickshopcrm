@@ -26,7 +26,7 @@ export default function NewGiftCardPage() {
     recipientName: "",
     senderName: "",
     message: "",
-    expiresAt: "",
+    endDate: "",
     sendEmail: true, // ברירת מחדל - לשלוח מייל
   })
 
@@ -70,7 +70,7 @@ export default function NewGiftCardPage() {
         recipientName: formData.recipientName || undefined,
         senderName: formData.senderName || undefined,
         message: formData.message || undefined,
-        expiresAt: formData.expiresAt ? new Date(formData.expiresAt).toISOString() : undefined,
+        expiresAt: formData.endDate ? new Date(formData.endDate).toISOString() : undefined,
         sendEmail: formData.sendEmail, // האם לשלוח מייל
       }
 
@@ -135,7 +135,7 @@ export default function NewGiftCardPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">כרטיס מתנה חדש</h1>
             <p className="text-gray-600 mt-1">
-              צור כרטיס מתנה לחנות: <span className="font-semibold">{selectedShop.name}</span>
+              צור כרטיס מתנה לחנות: <span className="font-semibold">{selectedShop?.name || "לא נבחרה חנות"}</span>
             </p>
           </div>
           <div className="flex gap-2">
@@ -198,8 +198,8 @@ export default function NewGiftCardPage() {
                   <Input
                     id="expiresAt"
                     type="date"
-                    value={formData.expiresAt}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, expiresAt: e.target.value }))}
+                    value={formData.endDate}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, endDate: e.target.value }))}
                   />
                 </div>
               </CardContent>

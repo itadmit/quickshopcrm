@@ -66,7 +66,7 @@ export async function PUT(
 
     // יצירת assignments חדשים
     await Promise.all(
-      categories.map((category) =>
+      categories.map((category: any) =>
         prisma.contactCategoryAssignment.create({
           data: {
             contactId: params.id,
@@ -104,6 +104,7 @@ export async function PUT(
     )
   }
 }
+
 
 
 

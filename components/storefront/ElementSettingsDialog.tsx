@@ -10,6 +10,8 @@ import { AlignRight, AlignCenter, AlignLeft, ChevronRight } from "lucide-react"
 import { ProductPageElementType } from "./ProductPageLayoutDesigner"
 
 export interface ElementStyleConfig {
+  fontFamily?: string
+  fontSize?: number
   fontSizeDesktop?: number
   fontSizeMobile?: number
   fontWeight?: number | string
@@ -221,7 +223,7 @@ export function ElementSettingsDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableFonts.map((font) => (
+                    {availableFonts.map((font: any) => (
                       <SelectItem key={font.value} value={font.value}>
                         {font.label}
                       </SelectItem>
@@ -257,7 +259,7 @@ export function ElementSettingsDialog({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {fontWeightOptions.map((option) => (
+                    {fontWeightOptions.map((option: any) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>

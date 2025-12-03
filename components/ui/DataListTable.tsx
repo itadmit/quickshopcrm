@@ -1,6 +1,6 @@
 "use client"
 
-import { ReactNode } from "react"
+import React, { ReactNode } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
@@ -65,7 +65,7 @@ export function DataListTable({
   className,
 }: DataListTableProps) {
   const filteredItems = searchValue
-    ? items.filter((item) =>
+    ? items.filter((item: any) =>
         item.title.toLowerCase().includes(searchValue.toLowerCase())
       )
     : items
@@ -103,9 +103,7 @@ export function DataListTable({
       <CardContent>
         {filteredItems.length === 0 ? (
           <div className="text-center py-8">
-            {emptyStateIcon && (
-              <emptyStateIcon className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-            )}
+            {emptyStateIcon && React.createElement(emptyStateIcon, { className: "w-12 h-12 mx-auto text-gray-400 mb-4" })}
             <p className="text-gray-500 mb-4">{emptyStateTitle}</p>
             {emptyStateDescription && (
               <p className="text-sm text-gray-400 mb-4">{emptyStateDescription}</p>
@@ -114,7 +112,7 @@ export function DataListTable({
           </div>
         ) : (
           <div className="space-y-4">
-            {filteredItems.map((item) => {
+            {filteredItems.map((item: any) => {
               if (renderItem) {
                 return renderItem(item)
               }
@@ -137,12 +135,12 @@ export function DataListTable({
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className="font-semibold text-gray-900">{item.title}</h3>
-                        {item.badges?.map((badge, idx) => (
+                        {item.badges?.map((badge: any, idx: number) => (
                           <Badge key={idx} variant={badge.variant || "secondary"}>
                             {badge.label}
                           </Badge>
                         ))}
-                        {item.isActive === false && !item.badges?.some(b => b.label === "לא פעיל") && (
+                        {item.isActive === false && !item.badges?.some((b: any) => b.label === "לא פעיל") && (
                           <Badge variant="secondary">לא פעיל</Badge>
                         )}
                       </div>

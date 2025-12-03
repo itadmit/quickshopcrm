@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     await prisma.order.update({
       where: { id: orderId },
       data: {
-        status: isSuccess ? "PAID" : "FAILED",
+        status: isSuccess ? "PAID" : "CANCELLED",
         transactionId: body.transaction_uid || body.transactionUid,
         paidAt: isSuccess ? new Date() : null,
       },
@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
                   },
                 },
               })
-            } else if (variant.product.lowStockAlert !== null && newQty <= variant.product.lowStockAlert) {
+            } else if ((variant.product as any).lowStockAlert !== null && newQty <= (variant.product as any).lowStockAlert) {
               await prisma.shopEvent.create({
                 data: {
                   shopId: variant.product.shopId,
@@ -160,7 +160,7 @@ export async function POST(req: NextRequest) {
                     productId: variant.productId,
                     variantId: variant.id,
                     currentQty: newQty,
-                    threshold: variant.product.lowStockAlert,
+                    threshold: (variant.product as any).lowStockAlert,
                     orderId: order.id,
                   },
                 },
@@ -169,7 +169,7 @@ export async function POST(req: NextRequest) {
           }
         } else if (item.productId) {
           const product = await prisma.product.findUnique({
-            where: { id: item.productId },
+            where: { id: item.productId || undefined },
           })
           
           if (product) {
@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
             const newQty = Math.max(0, oldQty - item.quantity)
             
             await prisma.product.update({
-              where: { id: item.productId },
+              where: { id: item.productId || undefined },
               data: {
                 inventoryQty: newQty,
               },
@@ -213,7 +213,7 @@ export async function POST(req: NextRequest) {
                   },
                 },
               })
-            } else if (product.lowStockAlert !== null && newQty <= product.lowStockAlert) {
+            } else if ((product as any).lowStockAlert !== null && newQty <= (product as any).lowStockAlert) {
               await prisma.shopEvent.create({
                 data: {
                   shopId: product.shopId,
@@ -223,7 +223,7 @@ export async function POST(req: NextRequest) {
                   payload: {
                     productId: product.id,
                     currentQty: newQty,
-                    threshold: product.lowStockAlert,
+                    threshold: (product as any).lowStockAlert,
                     orderId: order.id,
                   },
                 },

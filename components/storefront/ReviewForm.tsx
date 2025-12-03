@@ -255,7 +255,7 @@ export function ReviewForm({ productId, slug, shopId, customerId, onSuccess, onC
               דירוג <span className="text-red-500">*</span>
             </label>
             <div className="flex gap-1">
-              {[1, 2, 3, 4, 5].map((star) => (
+              {[1, 2, 3, 4, 5].map((star: any) => (
                 <button
                   key={star}
                   type="button"

@@ -116,11 +116,11 @@ export async function ProductData({ slug, productId, shop, session }: ProductDat
 
       if (!currentProduct) return []
 
-      const categoryIds = currentProduct.categories.map((pc) => pc.categoryId)
-      const tagNames = currentProduct.tags.map((t) => t.name)
+      const categoryIds = currentProduct.categories.map((pc: any) => pc.categoryId)
+      const tagNames = currentProduct.tags.map((t: any) => t.name)
 
       // מוצרים מאותה קטגוריה
-      let relatedProducts = []
+      let relatedProducts: any[] = []
       if (categoryIds.length > 0) {
         relatedProducts = await prisma.product.findMany({
           where: {
@@ -167,7 +167,7 @@ export async function ProductData({ slug, productId, shop, session }: ProductDat
             },
             id: {
               not: {
-                in: [currentProduct.id, ...relatedProducts.map((p) => p.id)],
+                in: [currentProduct.id, ...relatedProducts.map((p: any) => p.id)],
               },
             },
             tags: {
@@ -269,7 +269,7 @@ export async function ProductData({ slug, productId, shop, session }: ProductDat
       slug={slug}
       productId={productId}
       shop={shop}
-      product={product}
+      product={product as any}
       reviews={reviews}
       averageRating={averageRating}
       totalReviews={totalReviews}
@@ -277,7 +277,7 @@ export async function ProductData({ slug, productId, shop, session }: ProductDat
       galleryLayout={galleryLayout as any}
       productPageLayout={productPageLayout}
       theme={theme}
-      navigation={navigation}
+      navigation={navigation ?? undefined}
       isAdmin={isAdmin}
       autoOpenCart={autoOpenCart}
     />

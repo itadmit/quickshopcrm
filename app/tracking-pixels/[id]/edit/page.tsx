@@ -145,7 +145,7 @@ export default function EditTrackingPixelPage() {
     setFormData((prev) => ({
       ...prev,
       events: prev.events.includes(eventName)
-        ? prev.events.filter((e) => e !== eventName)
+        ? prev.events.filter((e: any) => e !== eventName)
         : [...prev.events, eventName],
     }))
   }
@@ -197,7 +197,7 @@ export default function EditTrackingPixelPage() {
                     <SelectValue placeholder="בחר פלטפורמה" />
                   </SelectTrigger>
                   <SelectContent>
-                    {PLATFORMS.map((platform) => (
+                    {PLATFORMS.map((platform: any) => (
                       <SelectItem key={platform.value} value={platform.value}>
                         {platform.label}
                       </SelectItem>
@@ -319,7 +319,7 @@ export default function EditTrackingPixelPage() {
                   בחר אירועים למעקב (אם לא נבחרו, כל האירועים יישלחו)
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2" dir="ltr">
-                  {ALL_EVENTS.map((event) => (
+                  {ALL_EVENTS.map((event: any) => (
                     <label
                       key={event}
                       className="flex items-center flex-row-reverse gap-2 p-2 border rounded cursor-pointer hover:bg-gray-50 text-left"

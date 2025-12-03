@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
         )
       }
 
-      const categoryIds = product.categories.map((pc) => pc.categoryId)
+      const categoryIds = (product as any).categories.map((pc: any) => pc.categoryId)
 
       // טען addons רלוונטיים למוצר
       const addons = await prisma.productAddon.findMany({

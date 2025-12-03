@@ -352,7 +352,7 @@ export default function BulkEditPage() {
         
         // המרת מוצרים לשורות עם וריאציות
         const newRows: BulkEditRow[] = []
-        products.forEach((product) => {
+        products.forEach((product: any) => {
           const productImage = product.images && product.images.length > 0 ? product.images[0] : null
           
           // הוספת שורה למוצר עצמו
@@ -371,7 +371,7 @@ export default function BulkEditPage() {
             onHandQty: product.inventoryQty,
             vendor: product.vendor,
             category: product.category,
-            categoryId: product.categories?.[0]?.categoryId || product.categories?.[0]?.category?.id || null,
+            categoryId: (product as any).categories?.[0]?.categoryId || (product as any).categories?.[0]?.category?.id || null,
             isHidden: (product as any).isHidden || false,
             isVariant: false,
             image: productImage,
@@ -381,7 +381,7 @@ export default function BulkEditPage() {
 
           // הוספת שורות לווריאציות
           if (product.variants && product.variants.length > 0) {
-            product.variants.forEach((variant) => {
+            product.variants.forEach((variant: any) => {
               const variantImage = variant.image || productImage
               const variantPrice = variant.price ?? product.price
               // אם אין מחיר לפני הנחה, נגדיר אותו כמחיר הבסיסי של הווריאציה
@@ -400,7 +400,7 @@ export default function BulkEditPage() {
                 onHandQty: variant.inventoryQty,
                 vendor: product.vendor,
                 category: product.category,
-                categoryId: product.categories?.[0]?.categoryId || product.categories?.[0]?.category?.id || null,
+                categoryId: (product as any).categories?.[0]?.categoryId || (product as any).categories?.[0]?.category?.id || null,
                 isHidden: (product as any).isHidden || false,
                 isVariant: true,
                 image: variantImage,
@@ -437,7 +437,7 @@ export default function BulkEditPage() {
 
   const updateRow = (rowId: string, columnKey: ColumnKey, value: any) => {
     setRows((prevRows) => {
-      const newRows = prevRows.map((row) => {
+      const newRows = prevRows.map((row: any) => {
         if (row.id === rowId) {
           const updated = { ...row }
           
@@ -488,7 +488,7 @@ export default function BulkEditPage() {
   // פונקציה לוולידציה ב-onBlur
   const validateComparePrice = (rowId: string) => {
     setRows((prevRows) => {
-      return prevRows.map((row) => {
+      return prevRows.map((row: any) => {
         if (row.id === rowId) {
           // וולידציה: המחיר לפני הנחה חייב להיות גדול מהמחיר הבסיסי
           if (row.price !== null && row.comparePrice !== null && row.comparePrice <= row.price) {
@@ -511,7 +511,7 @@ export default function BulkEditPage() {
     setSaving(true)
     try {
       // וולידציה לפני שמירה - תיקון אוטומטי של מחירים לפני הנחה
-      const validatedRows = rows.map((row) => {
+      const validatedRows = rows.map((row: any) => {
         if (row.price !== null && row.comparePrice !== null && row.comparePrice <= row.price) {
           return {
             ...row,
@@ -527,7 +527,7 @@ export default function BulkEditPage() {
       // איסוף כל השינויים (אחרי התיקון)
       const updates: any[] = []
       
-      validatedRows.forEach((row) => {
+      validatedRows.forEach((row: any) => {
         const changes: any = {}
         const original = row.originalData
         
@@ -800,7 +800,7 @@ export default function BulkEditPage() {
     )
   }
 
-  const visibleColumnsData = AVAILABLE_COLUMNS.filter((col) =>
+  const visibleColumnsData = AVAILABLE_COLUMNS.filter((col: any) =>
     visibleColumns.includes(col.key)
   )
 
@@ -875,7 +875,7 @@ export default function BulkEditPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="w-56">
-                {AVAILABLE_COLUMNS.map((column) => (
+                {AVAILABLE_COLUMNS.map((column: any) => (
                   <DropdownMenuCheckboxItem
                     key={column.key}
                     checked={visibleColumns.includes(column.key)}
@@ -883,7 +883,7 @@ export default function BulkEditPage() {
                       if (checked) {
                         setVisibleColumns([...visibleColumns, column.key])
                       } else {
-                        setVisibleColumns(visibleColumns.filter((key) => key !== column.key))
+                        setVisibleColumns(visibleColumns.filter((key: any) => key !== column.key))
                       }
                     }}
                     className="text-right"
@@ -1003,7 +1003,7 @@ export default function BulkEditPage() {
                     <span className="text-sm text-gray-600 self-center">העתק לכולם:</span>
                     {visibleColumnsData
                       .filter(col => col.editable && col.key !== "product-id" && col.key !== "product-title")
-                      .map((column) => (
+                      .map((column: any) => (
                         <Button
                           key={column.key}
                           variant="outline"
@@ -1030,7 +1030,7 @@ export default function BulkEditPage() {
                             checked={selectedRows.size === filteredRows.length && filteredRows.length > 0}
                             onCheckedChange={(checked) => {
                               if (checked) {
-                                setSelectedRows(new Set(filteredRows.map((r) => r.id)))
+                                setSelectedRows(new Set(filteredRows.map((r: any) => r.id)))
                               } else {
                                 setSelectedRows(new Set())
                               }
@@ -1040,7 +1040,7 @@ export default function BulkEditPage() {
                         <th className="text-right px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-l border-gray-200/50">
                           פעיל/מוסתר
                         </th>
-                        {visibleColumnsData.map((column) => (
+                        {visibleColumnsData.map((column: any) => (
                           <th
                             key={column.key}
                             className="text-right px-6 py-4 text-xs font-semibold text-gray-700 uppercase tracking-wider whitespace-nowrap border-l border-gray-200/50 first:border-l-0"
@@ -1092,7 +1092,7 @@ export default function BulkEditPage() {
                             )}
                           </Button>
                         </td>
-                        {visibleColumnsData.map((column) => (
+                        {visibleColumnsData.map((column: any) => (
                           <td
                             key={column.key}
                             className={`
@@ -1120,6 +1120,7 @@ export default function BulkEditPage() {
               </div>
             </CardContent>
           </Card>
+          </>
         )}
 
         {/* Floating Save Button */}

@@ -181,7 +181,7 @@ export default function CouponsPage() {
     return <Badge className="bg-green-100 text-green-800">פעיל</Badge>
   }
 
-  const filteredCoupons = coupons.filter((coupon) =>
+  const filteredCoupons = coupons.filter((coupon: any) =>
     coupon.code.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -292,7 +292,7 @@ export default function CouponsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {filteredCoupons.map((coupon) => (
+                    {filteredCoupons.map((coupon: any) => (
                       <tr key={coupon.id} className="hover:bg-gray-50">
                         <td className="p-4">
                           <div className="flex items-center gap-2">

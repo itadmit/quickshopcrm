@@ -258,7 +258,7 @@ export function DateRangePicker({
               { value: "year", label: "השנה" },
               { value: "last7days", label: "7 ימים אחרונים" },
               { value: "last30days", label: "30 ימים אחרונים" },
-            ].map((preset) => (
+            ].map((preset: any) => (
               <button
                 key={preset.value}
                 onClick={() => applyPreset(preset.value as PresetType)}
@@ -299,7 +299,7 @@ export function DateRangePicker({
 
             {/* Week Days */}
             <div className="grid grid-cols-7 gap-1 mb-2">
-              {weekDays.map((day) => (
+              {weekDays.map((day: any) => (
                 <div key={day} className="text-center text-xs font-medium text-muted-foreground w-8">
                   {day}
                 </div>

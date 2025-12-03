@@ -13,7 +13,6 @@ interface InventoryData {
   lowStockAlert: string
   availability: "IN_STOCK" | "OUT_OF_STOCK" | "PRE_ORDER" | "BACKORDER" | "DISCONTINUED"
   availableDate: string
-  trackInventory: boolean
   sellWhenSoldOut: boolean
   priceByWeight: boolean
   showPricePer100ml: boolean
@@ -78,7 +77,7 @@ export function InventoryCard({ data, onChange, hidden = false }: InventoryCardP
           <Label htmlFor="availability">זמינות</Label>
           <Select
             value={data.availability}
-            onValueChange={(value) => onChange({ availability: value })}
+            onValueChange={(value) => onChange({ availability: value as InventoryData['availability'] })}
           >
             <SelectTrigger>
               <SelectValue />

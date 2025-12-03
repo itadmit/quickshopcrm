@@ -76,7 +76,6 @@ export async function POST(req: NextRequest) {
       where: { id: data.reviewId },
       data: {
         isVerified: true,
-        verifiedOrderId: order.id,
       },
     })
 

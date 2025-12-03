@@ -179,7 +179,7 @@ export default function NewCollectionPage() {
 
     setLoadingNavigations(true)
     try {
-      const response = await fetch(`/api/navigation?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/navigation?shopId=${selectedShop?.id || ""}`)
       if (response.ok) {
         const data = await response.json()
         setNavigations(data)
@@ -403,7 +403,7 @@ export default function NewCollectionPage() {
 
     try {
       const payload: any = {
-        shopId: selectedShop.id,
+        shopId: selectedShop?.id || "",
         name: formData.name.trim(),
         slug: formData.slug || generateSlug(formData.name),
         description: formData.description || undefined,
@@ -491,7 +491,7 @@ export default function NewCollectionPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">קטגוריה חדשה</h1>
             <p className="text-gray-600 mt-1">
-              צור קטגוריה חדשה לחנות: <span className="font-semibold">{selectedShop.name}</span>
+              צור קטגוריה חדשה לחנות: <span className="font-semibold">{selectedShop?.name || "לא נבחרה חנות"}</span>
             </p>
           </div>
           <div className="flex gap-2">
@@ -705,7 +705,7 @@ export default function NewCollectionPage() {
 
                     {previewProducts.length > 0 && (
                       <div className="space-y-2 max-h-[400px] overflow-y-auto border rounded-lg p-3">
-                        {previewProducts.map((product) => (
+                        {previewProducts.map((product: any) => (
                           <div
                             key={product.id}
                             className="flex items-center gap-3 p-2 border rounded-lg bg-white"
@@ -781,7 +781,7 @@ export default function NewCollectionPage() {
 
                       {searchResults.length > 0 && (
                         <div className="max-h-[300px] overflow-y-auto space-y-2">
-                          {searchResults.map((product) => (
+                          {searchResults.map((product: any) => (
                             <div
                               key={product.id}
                               className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
@@ -825,7 +825,7 @@ export default function NewCollectionPage() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {selectedProducts.map((item) => (
+                      {selectedProducts.map((item: any) => (
                         <div
                           key={item.product.id}
                           className="flex items-center gap-3 p-3 border rounded-lg bg-white"
@@ -1050,7 +1050,7 @@ export default function NewCollectionPage() {
                     <SelectValue placeholder="בחר תפריט" />
                   </SelectTrigger>
                   <SelectContent>
-                    {navigations.map((nav) => {
+                    {navigations.map((nav: any) => {
                       const locationLabels: Record<string, string> = {
                         DESKTOP: "מחשב",
                         MOBILE: "מובייל",

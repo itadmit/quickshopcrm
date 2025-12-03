@@ -46,7 +46,7 @@ export async function POST(
     })
 
     // סינון פיקסלים לפי אירועים (אם מוגדר)
-    const relevantPixels = pixels.filter((pixel) => {
+    const relevantPixels = pixels.filter((pixel: any) => {
       // אם אין רשימת אירועים ספציפית, שולח לכל האירועים
       if (!pixel.events || pixel.events.length === 0) {
         return true
@@ -64,7 +64,7 @@ export async function POST(
     }
 
     // סינון רק פיקסלים עם access token (server-side tracking)
-    const serverSidePixels = relevantPixels.filter((pixel) => {
+    const serverSidePixels = relevantPixels.filter((pixel: any) => {
       // GTM לא דורש access token אבל גם לא תומך ב-server-side tracking
       if (pixel.platform === "GOOGLE_TAG_MANAGER") {
         return false

@@ -240,7 +240,7 @@ export async function POST(req: NextRequest) {
 
           // יצירת assignments
           await Promise.all(
-            categories.map((category) =>
+            categories.map((category: any) =>
               prisma.contactCategoryAssignment.create({
                 data: {
                   contactId: contact.id,
@@ -305,7 +305,7 @@ export async function POST(req: NextRequest) {
         })
 
         await Promise.all(
-          categories.map((category) =>
+          categories.map((category: any) =>
             prisma.contactCategoryAssignment.create({
               data: {
                 contactId: contact.id,

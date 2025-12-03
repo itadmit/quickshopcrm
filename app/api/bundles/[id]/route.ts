@@ -134,7 +134,7 @@ export async function PATCH(
 
       // יצירת מוצרים חדשים
       await prisma.bundleProduct.createMany({
-        data: data.products.map((p) => ({
+        data: data.products.map((p: any) => ({
           bundleId: params.id,
           productId: p.productId,
           quantity: p.quantity,

@@ -51,7 +51,7 @@ export function TagsCard({ tags, onAdd, onRemove }: TagsCardProps) {
           </Button>
         </div>
         <div className="flex flex-wrap gap-2">
-          {tags.map((tag) => (
+          {tags.map((tag: any) => (
             <Badge key={tag} variant="secondary" className="flex items-center gap-1">
               {tag}
               <button

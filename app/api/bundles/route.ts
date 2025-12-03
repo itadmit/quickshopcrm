@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
         image: data.image || null,
         isActive: data.isActive,
         products: {
-          create: data.products.map((p) => ({
+          create: data.products.map((p: any) => ({
             productId: p.productId,
             quantity: p.quantity,
             position: p.position,

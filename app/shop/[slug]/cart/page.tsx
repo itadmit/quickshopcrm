@@ -29,7 +29,7 @@ import { LoadingOverlay } from "@/components/storefront/LoadingOverlay"
 import { StorefrontHeader } from "@/components/storefront/StorefrontHeader"
 import { ProductCard } from "@/components/storefront/ProductCard"
 import { useShopTheme } from "@/hooks/useShopTheme"
-import { useNavigation } from "@/hooks/useNavigation"
+import { useNavigation, type Navigation } from "@/hooks/useNavigation"
 
 interface CartItem {
   productId: string
@@ -316,7 +316,7 @@ export default function CartPage() {
           <StorefrontHeader
             slug={slug}
             shop={shop}
-            navigation={navigation}
+            navigation={navigation ?? undefined}
             cartItemCount={0}
             onCartUpdate={() => {}}
             theme={theme?.theme}
@@ -363,7 +363,7 @@ export default function CartPage() {
         <StorefrontHeader
           slug={slug}
           shop={shop}
-          navigation={navigation}
+          navigation={navigation ?? undefined}
           cartItemCount={cart.items.reduce((sum, item) => sum + item.quantity, 0)}
           onCartUpdate={fetchCart}
           theme={theme?.theme}
@@ -519,7 +519,7 @@ export default function CartPage() {
               <div className="mt-12 pt-8 border-t border-gray-200">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">מוצרים מומלצים עבורך</h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
-                  {recommendedProducts.slice(0, 4).map((product) => {
+                  {recommendedProducts.slice(0, 4).map((product: any) => {
                     // חישוב המחיר הנכון - אם המחיר הבסיסי הוא 0, נראה מחיר מינימלי מהוריאציות
                     const displayPrice = product.price > 0 ? product.price : 0
                     const displayComparePrice = product.comparePrice && product.comparePrice > displayPrice ? product.comparePrice : null
@@ -684,7 +684,7 @@ export default function CartPage() {
                   onClick={() => {
                     setIsProcessingCheckout(true)
                     // InitiateCheckout event
-                    const items = cart.items.map((item) => ({
+                    const items = cart.items.map((item: any) => ({
                       id: item.productId,
                       name: item.product.name,
                       price: item.variant?.price || item.product.price,

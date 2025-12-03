@@ -641,7 +641,7 @@ export default function EditCollectionPage() {
 
                       {searchResults.length > 0 && (
                         <div className="max-h-[300px] overflow-y-auto space-y-2">
-                          {searchResults.map((product) => (
+                          {searchResults.map((product: any) => (
                             <div
                               key={product.id}
                               className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"

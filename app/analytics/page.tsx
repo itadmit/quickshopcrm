@@ -523,7 +523,7 @@ export default function AnalyticsPage() {
       return
     }
 
-    const report = REPORTS.find((r) => r.type === reportType)
+    const report = REPORTS.find((r: any) => r.type === reportType)
     if (!report) return
 
     // דוח מלאי וגיפט קארד לא צריכים תאריכים (אבל יכולים לקבל אותם)
@@ -564,7 +564,7 @@ export default function AnalyticsPage() {
     setReportLoading(true)
     try {
       const params = new URLSearchParams({
-        shopId: selectedShop.id,
+        shopId: selectedShop?.id || "",
         reportType,
         ...(needsDates && { startDate, endDate }),
         columns: visibleColumns.length > 0 ? visibleColumns.join(",") : "",
@@ -619,7 +619,7 @@ export default function AnalyticsPage() {
       return
     }
 
-    const report = REPORTS.find((r) => r.type === selectedReport)
+    const report = REPORTS.find((r: any) => r.type === selectedReport)
     if (!report) return
 
     const columns = visibleColumns.length > 0 ? visibleColumns : report.defaultColumns
@@ -632,13 +632,13 @@ export default function AnalyticsPage() {
       return
     }
 
-    const headers = columns.map((col) => {
-      const colDef = report.availableColumns.find((c) => c.key === col)
+    const headers = columns.map((col: any) => {
+      const colDef = report.availableColumns.find((c: any) => c.key === col)
       return colDef?.label || col
     })
 
-    const rows = reportData.map((row) =>
-      columns.map((col) => {
+    const rows = reportData.map((row: any) =>
+      columns.map((col: any) => {
         const value = row[col] ?? ""
         // טיפול בפסיקים וסימני מרכאות ב-CSV
         if (typeof value === "string" && (value.includes(",") || value.includes('"') || value.includes("\n"))) {
@@ -650,7 +650,7 @@ export default function AnalyticsPage() {
 
     const csvContent = [
       headers.join(","),
-      ...rows.map((row) => row.join(",")),
+      ...rows.map((row: any) => row.join(",")),
     ].join("\n")
 
     try {
@@ -684,7 +684,7 @@ export default function AnalyticsPage() {
 
   const handleReportClick = (reportType: ReportType) => {
     setSelectedReport(reportType)
-    const report = REPORTS.find((r) => r.type === reportType)
+    const report = REPORTS.find((r: any) => r.type === reportType)
     if (report) {
       setVisibleColumns(report.defaultColumns)
     }
@@ -719,7 +719,7 @@ export default function AnalyticsPage() {
     )
   }
 
-  const currentReport = selectedReport ? REPORTS.find((r) => r.type === selectedReport) : null
+  const currentReport = selectedReport ? REPORTS.find((r: any) => r.type === selectedReport) : null
 
   return (
     <AppLayout title="אנליטיקה ודוחות">
@@ -922,7 +922,7 @@ export default function AnalyticsPage() {
 
             {/* Reports Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {REPORTS.map((report) => {
+              {REPORTS.map((report: any) => {
                 const Icon = report.icon
                 return (
                   <button
@@ -964,7 +964,7 @@ export default function AnalyticsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="start" className="w-56 max-h-96 overflow-y-auto">
-                        {currentReport.availableColumns.map((column) => (
+                        {currentReport.availableColumns.map((column: any) => (
                           <DropdownMenuCheckboxItem
                             key={column.key}
                             checked={visibleColumns.includes(column.key)}
@@ -973,7 +973,7 @@ export default function AnalyticsPage() {
                                 setVisibleColumns([...visibleColumns, column.key])
                               } else {
                                 setVisibleColumns(
-                                  visibleColumns.filter((key) => key !== column.key)
+                                  visibleColumns.filter((key: any) => key !== column.key)
                                 )
                               }
                             }}
@@ -1023,7 +1023,7 @@ export default function AnalyticsPage() {
                     <table className="w-full">
                       <thead className="bg-gray-50">
                         <tr>
-                          {visibleColumns.map((col) => {
+                          {visibleColumns.map((col: any) => {
                             const colDef = currentReport.availableColumns.find(
                               (c) => c.key === col
                             )
@@ -1041,7 +1041,7 @@ export default function AnalyticsPage() {
                       <tbody className="divide-y">
                         {reportData.map((row, index) => (
                           <tr key={index} className="hover:bg-gray-50">
-                            {visibleColumns.map((col) => (
+                            {visibleColumns.map((col: any) => (
                               <td
                                 key={col}
                                 className="text-right px-4 py-3 text-sm text-gray-700"

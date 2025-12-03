@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
           select: { id: true },
         })
 
-        const shopIds = shops.map((shop) => shop.id)
+        const shopIds = shops.map((shop: any) => shop.id)
 
         // חישוב סך המכירות האמיתי מההזמנות של כל החנויות
         const orders = await prisma.order.aggregate({

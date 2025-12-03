@@ -23,7 +23,7 @@ export async function findCart(
       where: { 
         shopId, 
         customerId, 
-        expiresAt: { gt: new Date() } 
+        updatedAt: { gt: new Date() } 
       },
     })
     
@@ -34,7 +34,7 @@ export async function findCart(
         where: { 
           shopId, 
           sessionId, 
-          expiresAt: { gt: new Date() } 
+          updatedAt: { gt: new Date() } 
         },
       })
       
@@ -103,7 +103,7 @@ export async function findCart(
       where: { 
         shopId, 
         sessionId, 
-        expiresAt: { gt: new Date() } 
+        updatedAt: { gt: new Date() } 
       },
     })
     

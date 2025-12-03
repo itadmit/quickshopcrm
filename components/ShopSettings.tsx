@@ -477,7 +477,7 @@ export function ShopSettings() {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">הגדרות החנות</h2>
-          <p className="text-gray-500 mt-1">ערוך את הגדרות החנות: {selectedShop.name}</p>
+          <p className="text-gray-500 mt-1">ערוך את הגדרות החנות: {selectedShop?.name || ""}</p>
         </div>
         <Button
           onClick={handleSave}
@@ -669,7 +669,7 @@ export function ShopSettings() {
                     <SelectValue placeholder="בחר קטגוריה" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CATEGORIES.map((cat) => (
+                    {CATEGORIES.map((cat: any) => (
                       <SelectItem key={cat} value={cat} className="text-sm">
                         {cat}
                       </SelectItem>
@@ -961,7 +961,7 @@ export function ShopSettings() {
                     <SelectValue placeholder="בחר מטבע" />
                   </SelectTrigger>
                   <SelectContent>
-                    {CURRENCIES.map((curr) => (
+                    {CURRENCIES.map((curr: any) => (
                       <SelectItem key={curr.code} value={curr.code} className="text-sm">
                         {curr.name}
                       </SelectItem>
@@ -978,7 +978,7 @@ export function ShopSettings() {
                   בחר את שיטות התשלום שהחנות תתמוך בהן
                 </p>
                 <div className="space-y-2">
-                  {PAYMENT_METHODS.map((method) => (
+                  {PAYMENT_METHODS.map((method: any) => (
                     <div key={method.id} className="flex items-center space-x-2 space-x-reverse">
                       <Checkbox
                         id={`payment-${method.id}`}
@@ -988,7 +988,7 @@ export function ShopSettings() {
                           if (checked) {
                             updateShopData("paymentMethods", [...currentMethods, method.id])
                           } else {
-                            updateShopData("paymentMethods", currentMethods.filter((m) => m !== method.id))
+                            updateShopData("paymentMethods", currentMethods.filter((m: any) => m !== method.id))
                           }
                         }}
                       />

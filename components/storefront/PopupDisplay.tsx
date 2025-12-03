@@ -214,7 +214,7 @@ export function PopupDisplay({ slug, currentPath }: PopupDisplayProps) {
         </Button>
 
         <div className={`p-6 ${visiblePopup.layout === "two-column" ? "grid grid-cols-2 gap-4" : ""}`}>
-          {visiblePopup.content.map((element) => (
+          {visiblePopup.content.map((element: any) => (
             <div key={element.id}>
               {element.type === "text" && (
                 <p

@@ -20,7 +20,7 @@ export function CouponsSkeleton() {
             </div>
             {/* Table Rows */}
             <div className="divide-y divide-gray-200">
-              {[1, 2, 3, 4, 5].map((i) => (
+              {[1, 2, 3, 4, 5].map((i: any) => (
                 <div key={i} className="grid grid-cols-7 gap-4 px-4 py-4">
                   <div className="flex items-center gap-2">
                     <div className="h-6 w-24 bg-gray-100 rounded animate-pulse"></div>

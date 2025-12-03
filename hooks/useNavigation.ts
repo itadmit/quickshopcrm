@@ -37,7 +37,7 @@ export function useNavigation(
   location: "HEADER" | "FOOTER" | "MOBILE" = "HEADER",
   initialNavigation?: Navigation | null
 ) {
-  const { navigation: contextNav, loading: contextLoading } = useStorefrontData()
+  const { navigation: contextNav } = useStorefrontData()
   const [navigation, setNavigation] = useState<Navigation | null>(initialNavigation || contextNav || null)
   const [loading, setLoading] = useState(!initialNavigation && !contextNav)
 

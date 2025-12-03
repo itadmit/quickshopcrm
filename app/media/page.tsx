@@ -102,7 +102,7 @@ export default function MediaPage() {
           setFiles((prev) => [...prev, ...data.files])
         }
         setHasMore(data.pagination.page < data.pagination.totalPages)
-        setStorage(data.storage)
+        setStorage({ ...data.storage, limit: storage.limit })
       } else {
         toast({
           title: "שגיאה",
@@ -147,7 +147,7 @@ export default function MediaPage() {
     const filesArray = Array.from(selectedFiles)
 
     // יצירת previews
-    const previews = filesArray.map((file) => {
+    const previews = filesArray.map((file: any) => {
       const isImage = file.type.startsWith("image/")
       let preview = ""
       if (isImage) {
@@ -284,7 +284,7 @@ export default function MediaPage() {
           title: "הקובץ נמחק",
           description: "הקובץ נמחק בהצלחה",
         })
-        setFiles((prev) => prev.filter((f) => f.id !== fileToDelete.id))
+        setFiles((prev) => prev.filter((f: any) => f.id !== fileToDelete.id))
         setDeleteDialogOpen(false)
         setFileToDelete(null)
         // עדכון שטח אחסון
@@ -328,7 +328,7 @@ export default function MediaPage() {
     return "other"
   }
 
-  const filteredFiles = files.filter((file) => {
+  const filteredFiles = files.filter((file: any) => {
     if (!searchQuery) return true
     return file.name.toLowerCase().includes(searchQuery.toLowerCase())
   })
@@ -404,7 +404,7 @@ export default function MediaPage() {
             { id: "images" as MediaType, label: "תמונות", icon: ImageIcon },
             { id: "fonts" as MediaType, label: "פונטים", icon: Type },
             { id: "videos" as MediaType, label: "סרטונים", icon: Video },
-          ].map((tab) => {
+          ].map((tab: any) => {
             const Icon = tab.icon
             return (
               <button
@@ -510,7 +510,7 @@ export default function MediaPage() {
             ))}
 
             {/* קבצים קיימים */}
-            {filteredFiles.map((file) => {
+            {filteredFiles.map((file: any) => {
               const fileType = getFileType(file.mimeType)
               return (
                 <Card key={file.id} className="group hover:shadow-lg transition-shadow">

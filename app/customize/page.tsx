@@ -52,7 +52,7 @@ export default function CustomizePage() {
 
   return (
     <ThemeCustomizer
-      shopSlug={selectedShop.slug}
+      shopSlug={selectedShop?.slug || ""}
       pageType={pageType}
       pageId={pageId || undefined}
       onClose={handleClose}

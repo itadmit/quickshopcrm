@@ -321,7 +321,7 @@ export function ElementSettingsContent({
                     <SelectContent>
                       {customFields
                         .filter(f => f.value && (f.definition.type === "TEXT" || f.definition.type === "RICH_TEXT"))
-                        .map((field) => (
+                        .map((field: any) => (
                           <SelectItem key={field.definition.id} value={field.definition.id}>
                             {field.definition.label}
                           </SelectItem>
@@ -392,7 +392,7 @@ export function ElementSettingsContent({
                   <SelectContent>
                     {customFields
                       .filter(f => f.value && (f.definition.type === "TEXT" || f.definition.type === "RICH_TEXT"))
-                      .map((field) => (
+                      .map((field: any) => (
                         <SelectItem key={field.definition.id} value={field.definition.id}>
                           {field.definition.label}
                         </SelectItem>
@@ -526,7 +526,7 @@ export function ElementSettingsContent({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {fontWeightOptions.map((option) => (
+                {fontWeightOptions.map((option: any) => (
                   <SelectItem key={option.value} value={option.value}>
                     {option.label}
                   </SelectItem>

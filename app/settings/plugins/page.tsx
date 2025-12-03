@@ -96,7 +96,7 @@ export default function PluginsPage() {
     try {
       const params = new URLSearchParams()
       if (selectedShop?.id) {
-        params.append("shopId", selectedShop.id)
+        params.append("shopId", selectedShop?.id || "")
       }
       const response = await fetch(`/api/plugins?${params}`)
       if (response.ok) {
@@ -127,7 +127,7 @@ export default function PluginsPage() {
       setInstalling(plugin.slug)
       try {
         const params = new URLSearchParams()
-        if (selectedShop?.id) params.append("shopId", selectedShop.id)
+        if (selectedShop?.id) params.append("shopId", selectedShop?.id || "")
         const response = await fetch(`/api/plugins/${plugin.slug}/subscribe?${params}`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -223,7 +223,7 @@ export default function PluginsPage() {
     setActivating(plugin.slug)
     try {
       const params = new URLSearchParams()
-      if (selectedShop?.id) params.append("shopId", selectedShop.id)
+      if (selectedShop?.id) params.append("shopId", selectedShop?.id || "")
       const response = await fetch(`/api/plugins/${plugin.slug}/activate?${params}`, {
         method: "POST",
       })
@@ -260,7 +260,7 @@ export default function PluginsPage() {
     setDeactivating(plugin.slug)
     try {
       const params = new URLSearchParams()
-      if (selectedShop?.id) params.append("shopId", selectedShop.id)
+      if (selectedShop?.id) params.append("shopId", selectedShop?.id || "")
       const response = await fetch(`/api/plugins/${plugin.slug}/activate?${params}`, {
         method: "DELETE",
       })
@@ -300,7 +300,7 @@ export default function PluginsPage() {
 
     try {
       const params = new URLSearchParams()
-      if (selectedShop?.id) params.append("shopId", selectedShop.id)
+      if (selectedShop?.id) params.append("shopId", selectedShop?.id || "")
       const response = await fetch(`/api/plugins/${plugin.slug}?${params}`, {
         method: "DELETE",
       })
@@ -332,7 +332,7 @@ export default function PluginsPage() {
     }
   }
 
-  const filteredPlugins = plugins.filter((plugin) => {
+  const filteredPlugins = plugins.filter((plugin: any) => {
     const matchesSearch =
       plugin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       plugin.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -343,7 +343,7 @@ export default function PluginsPage() {
     return matchesSearch && matchesCategory
   })
 
-  const categories = Array.from(new Set(plugins.map((p) => p.category)))
+  const categories = Array.from(new Set(plugins.map((p: any) => p.category)))
 
   if (loading) {
     return (
@@ -356,7 +356,7 @@ export default function PluginsPage() {
             </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
+            {[1, 2, 3, 4, 5, 6].map((i: any) => (
               <Card key={i}>
                 <CardHeader>
                   <Skeleton className="h-6 w-3/4" />
@@ -406,7 +406,7 @@ export default function PluginsPage() {
                   <Filter className="w-4 h-4 ml-2" />
                   הכל
                 </Button>
-                {categories.map((category) => {
+                {categories.map((category: any) => {
                   const Icon = categoryIcons[category] || Plug
                   return (
                     <Button
@@ -440,7 +440,7 @@ export default function PluginsPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredPlugins.map((plugin) => {
+            {filteredPlugins.map((plugin: any) => {
               const CategoryIcon = categoryIcons[plugin.category] || Plug
               return (
                 <Card key={plugin.slug} className="flex flex-col">

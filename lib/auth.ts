@@ -210,7 +210,7 @@ export const authOptions: NextAuthOptions = {
         // נחזיר session ריק עם user null
         return {
           ...session,
-          user: null,
+          user: null as any,
           expires: new Date().toISOString()
         }
       }

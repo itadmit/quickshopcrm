@@ -375,7 +375,7 @@ export function useProductPage({
     if (!product) return
 
     const currentPrice = selectedVariant && product.variants
-      ? product.variants.find((v) => v.id === selectedVariant)?.price || product.price
+      ? product.variants.find((v: any) => v.id === selectedVariant)?.price || product.price
       : product.price
     
     // Track ViewContent רק פעם אחת למוצר - בדיקה לפי product ID
@@ -466,7 +466,7 @@ export function useProductPage({
     
     let availableQty = product.inventoryQty
     if (selectedVariant && product.variants) {
-      const variant = product.variants.find((v) => v.id === selectedVariant)
+      const variant = product.variants.find((v: any) => v.id === selectedVariant)
       if (variant) {
         availableQty = variant.inventoryQty
       }
@@ -502,7 +502,7 @@ export function useProductPage({
           if (product) {
             // מציאת שם הvariant
             const variantName = selectedVariant && product.variants
-              ? product.variants.find((v) => v.id === selectedVariant)?.name
+              ? product.variants.find((v: any) => v.id === selectedVariant)?.name
               : undefined
             
             trackRemoveFromWishlist(trackEvent, {
@@ -532,12 +532,12 @@ export function useProductPage({
           
           if (product) {
             const currentPrice = selectedVariant && product.variants
-              ? product.variants.find((v) => v.id === selectedVariant)?.price || product.price
+              ? product.variants.find((v: any) => v.id === selectedVariant)?.price || product.price
               : product.price
             
             // מציאת שם הvariant
             const variantName = selectedVariant && product.variants
-              ? product.variants.find((v) => v.id === selectedVariant)?.name
+              ? product.variants.find((v: any) => v.id === selectedVariant)?.name
               : undefined
             
             trackAddToWishlist(trackEvent, {
@@ -557,9 +557,9 @@ export function useProductPage({
     if (!product) return false
 
     // בדיקת מלאי לפני הוספה לעגלה - רק אם המוצר לא מאפשר מכירה בלי מלאי
-    if (!product.sellWhenSoldOut) {
+    if (!(product as any).inventoryEnabled) {
       if (selectedVariant && product.variants) {
-        const variant = product.variants.find((v) => v.id === selectedVariant)
+        const variant = product.variants.find((v: any) => v.id === selectedVariant)
         if (variant && variant.inventoryQty !== null && variant.inventoryQty < quantity) {
           toast({
             title: 'אין מספיק מלאי',
@@ -579,7 +579,7 @@ export function useProductPage({
     }
 
     const currentPrice = selectedVariant && product.variants
-      ? product.variants.find((v) => v.id === selectedVariant)?.price || product.price
+      ? product.variants.find((v: any) => v.id === selectedVariant)?.price || product.price
       : product.price
 
     const success = await addToCart({
@@ -607,7 +607,7 @@ export function useProductPage({
       
       // מציאת שם הvariant
       const variantName = selectedVariant && product.variants
-        ? product.variants.find((v) => v.id === selectedVariant)?.name
+        ? product.variants.find((v: any) => v.id === selectedVariant)?.name
         : undefined
       
       trackAddToCart(trackEvent, {

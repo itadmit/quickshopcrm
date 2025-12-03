@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma"
 import { z } from "zod"
 
 const updateOrderSchema = z.object({
-  status: z.string().optional(),
+  status: z.enum(["PENDING", "CONFIRMED", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"]).optional(),
   fulfillmentStatus: z.enum(["UNFULFILLED", "PARTIAL", "FULFILLED"]).optional(),
   shippingMethod: z.string().optional(),
   trackingNumber: z.string().optional(),
@@ -179,7 +179,7 @@ export async function PATCH(
                 select: {
                   id: true,
                   shopId: true,
-                  trackInventory: true,
+                  inventoryEnabled: true,
                   inventoryQty: true,
                 },
               },
@@ -205,13 +205,13 @@ export async function PATCH(
                   product: {
                     select: {
                       shopId: true,
-                      trackInventory: true,
+                      inventoryEnabled: true,
                     },
                   },
                 },
               })
 
-              if (variant && variant.product.trackInventory && variant.inventoryQty !== null) {
+              if (variant && (variant.product as any).inventoryEnabled && variant.inventoryQty !== null) {
                 const oldQty = variant.inventoryQty
                 const newQty = Math.max(0, oldQty - item.quantity)
 
@@ -241,12 +241,12 @@ export async function PATCH(
                 })
               }
             } else if (item.productId && item.product) {
-              if (item.product.trackInventory && item.product.inventoryQty !== null) {
+              if ((item.product as any).inventoryEnabled && item.product.inventoryQty !== null) {
                 const oldQty = item.product.inventoryQty
                 const newQty = Math.max(0, oldQty - item.quantity)
 
                 await prisma.product.update({
-                  where: { id: item.productId },
+                  where: { id: item.productId || undefined },
                   data: { inventoryQty: newQty },
                 })
 
@@ -282,13 +282,13 @@ export async function PATCH(
                   product: {
                     select: {
                       shopId: true,
-                      trackInventory: true,
+                      inventoryEnabled: true,
                     },
                   },
                 },
               })
 
-              if (variant && variant.product.trackInventory && variant.inventoryQty !== null) {
+              if (variant && (variant.product as any).inventoryEnabled && variant.inventoryQty !== null) {
                 const oldQty = variant.inventoryQty
                 const newQty = oldQty + item.quantity
 
@@ -318,12 +318,12 @@ export async function PATCH(
                 })
               }
             } else if (item.productId && item.product) {
-              if (item.product.trackInventory && item.product.inventoryQty !== null) {
+              if ((item.product as any).inventoryEnabled && item.product.inventoryQty !== null) {
                 const oldQty = item.product.inventoryQty
                 const newQty = oldQty + item.quantity
 
                 await prisma.product.update({
-                  where: { id: item.productId },
+                  where: { id: item.productId || undefined },
                   data: { inventoryQty: newQty },
                 })
 

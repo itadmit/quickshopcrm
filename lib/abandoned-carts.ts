@@ -15,9 +15,6 @@ export async function identifyAbandonedCarts() {
           lt: twentyFourHoursAgo,
         },
         abandonedAt: null,
-        expiresAt: {
-          gt: new Date(),
-        },
       },
       include: {
         shop: {

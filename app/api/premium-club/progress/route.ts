@@ -75,7 +75,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ enabled: false })
     }
 
-    const config = plugin.config as PremiumClubConfig
+    const config = plugin.config as unknown as PremiumClubConfig
 
     console.log('[Premium Progress API] Plugin config:', {
       enabled: config.enabled,
@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
         shopId: shopId
       },
       select: {
-        premiumClubTier: true,
+        tier: true,
         totalSpent: true,
         orderCount: true,
       },
@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
     const sortedTiers = [...config.tiers].sort((a, b) => a.priority - b.priority)
 
     // מציאת הרמה הנוכחית
-    const currentTier = sortedTiers.find(t => t.slug === customer.premiumClubTier)
+    const currentTier = sortedTiers.find(t => t.slug === customer.tier)
     const currentTierIndex = currentTier ? sortedTiers.findIndex(t => t.slug === currentTier.slug) : -1
 
     // מציאת הרמה הבאה

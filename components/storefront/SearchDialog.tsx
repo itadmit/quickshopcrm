@@ -48,7 +48,7 @@ export function SearchDialog({ slug, isOpen, onClose }: SearchDialogProps) {
     if (!searchTerm) return
 
     // שמירת חיפוש אחרון
-    const updated = [searchTerm, ...recentSearches.filter((s) => s !== searchTerm)].slice(0, 5)
+    const updated = [searchTerm, ...recentSearches.filter((s: any) => s !== searchTerm)].slice(0, 5)
     setRecentSearches(updated)
     localStorage.setItem(`recent_searches_${slug}`, JSON.stringify(updated))
 

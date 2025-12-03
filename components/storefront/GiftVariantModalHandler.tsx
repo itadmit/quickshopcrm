@@ -40,10 +40,10 @@ export function GiftVariantModalHandler({ customerId, onCartOpen }: GiftVariantM
       }
     }
 
-    window.addEventListener('openGiftVariantModal', handleOpenGiftVariantModal as EventListener)
+    window.addEventListener('openGiftVariantModal', handleOpenGiftVariantModal as unknown as EventListener)
 
     return () => {
-      window.removeEventListener('openGiftVariantModal', handleOpenGiftVariantModal as EventListener)
+      window.removeEventListener('openGiftVariantModal', handleOpenGiftVariantModal as unknown as EventListener)
     }
   }, [slug])
 

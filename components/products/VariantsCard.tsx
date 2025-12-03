@@ -278,7 +278,7 @@ export function VariantsCard({
                         className="flex-1"
                       />
                       <Select
-                        value={option.type}
+                        value={(option as any).type}
                         onValueChange={(value: any) => updateOption(optionIndex, 'type', value)}
                       >
                         <SelectTrigger className="w-32">
@@ -310,7 +310,7 @@ export function VariantsCard({
                           const displayValue = typeof value === 'string' ? value : (value?.label || value?.id || String(value))
                           
                           // Special rendering for colors
-                          if (option.type === "color" && value?.metadata?.color) {
+                          if ((option as any).type === "color" && value?.metadata?.color) {
                             return (
                               <div key={valueIndex} className="flex items-center gap-1 border rounded-lg p-1">
                                 <div
@@ -330,7 +330,7 @@ export function VariantsCard({
                           }
                           
                           // Special rendering for patterns
-                          if (option.type === "pattern" && value?.metadata?.pattern) {
+                          if ((option as any).type === "pattern" && value?.metadata?.pattern) {
                             return (
                               <div key={valueIndex} className="flex items-center gap-1 border rounded-lg p-1">
                                 <div
@@ -355,7 +355,7 @@ export function VariantsCard({
                           }
                           
                           // Special rendering for images
-                          if (option.type === "image" && value?.metadata?.image) {
+                          if ((option as any).type === "image" && value?.metadata?.image) {
                             return (
                               <div key={valueIndex} className="flex items-center gap-1 border rounded-lg p-1">
                                 <img
@@ -396,7 +396,7 @@ export function VariantsCard({
                       </div>
 
                       {/* Input for adding values - changes based on type */}
-                      {option.type === "button" && (
+                      {(option as any).type === "button" && (
                         <div className="flex gap-2">
                           <Input
                             placeholder="הוסף ערך"
@@ -449,7 +449,7 @@ export function VariantsCard({
                         </div>
                       )}
 
-                      {option.type === "color" && (
+                      {(option as any).type === "color" && (
                         <div className="space-y-2">
                           <div className="flex gap-2 items-center">
                             <input
@@ -543,7 +543,7 @@ export function VariantsCard({
                         </div>
                       )}
 
-                      {option.type === "pattern" && (
+                      {(option as any).type === "pattern" && (
                         <div className="space-y-2">
                           <div className="flex gap-2">
                             <Select

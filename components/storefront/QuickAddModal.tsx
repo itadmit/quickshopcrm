@@ -174,13 +174,13 @@ export function QuickAddModal({
     return Array.from(
       new Set(
         product.variants
-          .map((v) => {
+          .map((v: any) => {
             if (v.option1 === optionType) return v.option1Value
             if (v.option2 === optionType) return v.option2Value
             if (v.option3 === optionType) return v.option3Value
             return null
           })
-          .filter((val) => val !== null && val !== undefined) as string[]
+          .filter((val: any) => val !== null && val !== undefined) as string[]
       )
     )
   }
@@ -192,7 +192,7 @@ export function QuickAddModal({
 
     // ניסיון למצוא variant מתאים
     if (product.variants) {
-      const matchingVariant = product.variants.find((v) => {
+      const matchingVariant = product.variants.find((v: any) => {
         const variantOptions = getVariantOptions(v)
         return Object.entries(newOptions).every(
           ([key, val]) => variantOptions[key] === val
@@ -321,7 +321,7 @@ export function QuickAddModal({
 
             {/* לינק למוצר המלא */}
             <Link
-              href={`/shop/${slug}/products/${product.slug || product.id}`}
+              href={`/shop/${slug}/products/${(product as any).slug || product.id}`}
               className="block mt-3 text-center text-sm text-blue-600 hover:text-blue-800 hover:underline"
               onClick={onClose}
             >
@@ -364,11 +364,11 @@ export function QuickAddModal({
                      optionType}
                   </Label>
                   <div className="flex flex-wrap gap-2">
-                    {getOptionValues(optionType).map((value) => {
+                    {getOptionValues(optionType).map((value: any) => {
                       const isSelected = selectedOptions[optionType] === value
                       
                       // בדיקה האם האפשרות זמינה
-                      const isAvailable = product.variants?.some((v) => {
+                      const isAvailable = product.variants?.some((v: any) => {
                         const variantOptions = getVariantOptions(v)
                         const matchesCurrentSelections = Object.entries(selectedOptions)
                           .filter(([key]) => key !== optionType)
@@ -400,7 +400,6 @@ export function QuickAddModal({
                             style={{
                               backgroundColor: colorCode,
                               borderColor: isSelected ? undefined : undefined,
-                              ringColor: isSelected ? undefined : undefined,
                             }}
                             title={value}
                           />

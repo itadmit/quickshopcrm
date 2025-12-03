@@ -57,7 +57,7 @@ export default function NewBlogPostPage() {
 
     try {
       const payload: any = {
-        shopId: selectedShop.id,
+        shopId: selectedShop?.id || "",
         title: formData.title.trim(),
         slug: formData.slug || generateSlug(formData.title),
         excerpt: formData.excerpt || undefined,

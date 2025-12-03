@@ -31,6 +31,17 @@ export interface Product {
     name: string
     values: Array<{ id: string; label: string; metadata?: any }> | string[]
   }>
+  customFieldValues?: Array<{
+    id: string
+    definitionId: string
+    value: string | null
+    definition?: {
+      id: string
+      key: string
+      label: string
+      type: string
+    }
+  }>
 }
 
 export interface ProductAddon {

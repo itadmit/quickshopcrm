@@ -59,6 +59,7 @@ export default function EditCategoryPage() {
     type: "MANUAL" as "MANUAL" | "AUTOMATIC",
     isPublished: true,
   })
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false)
 
   // מוצרים
   const [selectedProducts, setSelectedProducts] = useState<CategoryProduct[]>([])
@@ -593,7 +594,7 @@ export default function EditCategoryPage() {
 
                       {searchResults.length > 0 && (
                         <div className="max-h-[300px] overflow-y-auto space-y-2">
-                          {searchResults.map((product) => (
+                          {searchResults.map((product: any) => (
                             <div
                               key={product.id}
                               className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
@@ -744,12 +745,41 @@ export default function EditCategoryPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {formData.image && (
+                  <div className="relative w-full h-48 border rounded-lg overflow-hidden">
+                    <img src={formData.image} alt="Category" className="w-full h-full object-cover" />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={() => setFormData((prev) => ({ ...prev, image: "" }))}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setMediaPickerOpen(true)}
+                >
+                  {formData.image ? "שנה תמונה" : "בחר תמונה"}
+                </Button>
                 <MediaPicker
-                  value={formData.image}
-                  onChange={(url) => setFormData((prev) => ({ ...prev, image: url || "" }))}
+                  open={mediaPickerOpen}
+                  onOpenChange={setMediaPickerOpen}
+                  onSelect={(files) => {
+                    if (files.length > 0) {
+                      setFormData((prev) => ({ ...prev, image: files[0] }))
+                    }
+                    setMediaPickerOpen(false)
+                  }}
+                  selectedFiles={formData.image ? [formData.image] : []}
                   entityType="categories"
                   entityId={categoryId}
                   shopId={selectedShop?.id}
+                  multiple={false}
                 />
               </CardContent>
             </Card>

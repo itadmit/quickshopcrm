@@ -255,7 +255,6 @@ export default async function CheckoutPage({
             firstName: true,
             lastName: true,
             phone: true,
-            preferredPaymentMethod: true,
           },
         })
         

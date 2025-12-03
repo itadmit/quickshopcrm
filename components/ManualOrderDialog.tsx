@@ -16,6 +16,7 @@ interface Product {
   name: string
   price: number
   images: string[]
+  inventoryQty?: number
   variants?: Array<{
     id: string
     name: string
@@ -409,10 +410,19 @@ export function ManualOrderDialog({ open, onOpenChange, onSuccess }: ManualOrder
     setProductSearch("")
     setOrderItems([])
     setOrderDetails({
-      shippingAddress: "",
+      address: "",
+      houseNumber: "",
+      apartment: "",
+      floor: "",
       city: "",
+      zip: "",
       paymentMethod: "cash",
+      deliveryMethod: "shipping",
+      couponCode: "",
+      discount: 0,
+      discountType: "fixed",
       notes: "",
+      orderNotes: "",
       status: "PENDING",
       paymentStatus: "PENDING",
     })
@@ -431,7 +441,7 @@ export function ManualOrderDialog({ open, onOpenChange, onSuccess }: ManualOrder
             { num: 1, label: "בחירת לקוח" },
             { num: 2, label: "בחירת מוצרים" },
             { num: 3, label: "פרטי הזמנה" },
-          ].map((s) => (
+          ].map((s: any) => (
             <div
               key={s.num}
               className={`flex items-center ${s.num < 3 ? "flex-1" : ""}`}
@@ -489,7 +499,7 @@ export function ManualOrderDialog({ open, onOpenChange, onSuccess }: ManualOrder
                     </div>
                   ) : customers.length > 0 ? (
                     <div className="mt-2 max-h-40 overflow-y-auto border rounded-md">
-                      {customers.map((customer) => (
+                      {customers.map((customer: any) => (
                         <div
                           key={customer.id}
                           className={`p-2 cursor-pointer hover:bg-gray-50 ${
@@ -590,7 +600,7 @@ export function ManualOrderDialog({ open, onOpenChange, onSuccess }: ManualOrder
               </div>
             ) : products.length > 0 ? (
               <div className="space-y-2 max-h-80 overflow-y-auto">
-                {products.map((product) => (
+                {products.map((product: any) => (
                   <div
                     key={product.id}
                     className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
@@ -639,13 +649,13 @@ export function ManualOrderDialog({ open, onOpenChange, onSuccess }: ManualOrder
                   </DialogHeader>
                   <div className="space-y-2 max-h-60 overflow-y-auto">
                     {products
-                      .find((p) => p.id === selectedProductForVariant)
-                      ?.variants?.map((variant) => (
+                      .find((p: any) => p.id === selectedProductForVariant)
+                      ?.variants?.map((variant: any) => (
                         <Card
                           key={variant.id}
                           className="cursor-pointer hover:bg-gray-50"
                           onClick={() => {
-                            const product = products.find((p) => p.id === selectedProductForVariant)
+                            const product = products.find((p: any) => p.id === selectedProductForVariant)
                             if (product) {
                               addProductToOrder(product, variant)
                               setSelectedProductForVariant(null)
@@ -655,7 +665,7 @@ export function ManualOrderDialog({ open, onOpenChange, onSuccess }: ManualOrder
                           <CardContent className="p-3">
                             <div className="font-medium">{variant.name}</div>
                             <div className="text-teal-600 font-bold">
-                              ₪{variant.price || products.find((p) => p.id === selectedProductForVariant)?.price || 0}
+                              ₪{variant.price || products.find((p: any) => p.id === selectedProductForVariant)?.price || 0}
                             </div>
                             {variant.inventoryQty !== null && (
                               <div className="text-xs text-gray-500">

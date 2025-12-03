@@ -12,7 +12,7 @@ export function CartSkeleton() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Cart Items */}
           <div className="lg:col-span-2 space-y-4">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3].map((i: any) => (
               <Card key={i} className="overflow-hidden">
                 <CardContent className="p-0">
                   <div className="flex flex-col sm:flex-row gap-4 p-4">

@@ -21,7 +21,7 @@ export function CustomersSkeleton() {
             </div>
             {/* Table Rows */}
             <div className="divide-y divide-gray-200">
-              {[1, 2, 3, 4, 5].map((i) => (
+              {[1, 2, 3, 4, 5].map((i: any) => (
                 <div key={i} className="grid grid-cols-8 gap-4 px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gray-100 rounded-full animate-pulse"></div>

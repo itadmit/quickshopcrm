@@ -66,9 +66,9 @@ export function searchCities(query: string): CityData[] {
   // חיפוש בנתונים
   const searchTerm = query.toLowerCase().trim()
   const results = citiesData
-    .filter((city) => city.name.includes(searchTerm))
+    .filter((city: any) => city.name.includes(searchTerm))
     .slice(0, 20) // מגבילים ל-20 תוצאות
-    .map((city) => ({
+    .map((city: any) => ({
       cityName: city.name,
       cityCode: city.code,
     }))
@@ -104,9 +104,9 @@ export function searchStreets(
   // חיפוש בנתונים
   const searchTerm = query.toLowerCase().trim()
   const results = cityStreets
-    .filter((street) => street.includes(searchTerm))
+    .filter((street: any) => street.includes(searchTerm))
     .slice(0, 20) // מגבילים ל-20 תוצאות
-    .map((street) => ({
+    .map((street: any) => ({
       streetName: street,
       cityName: cityName,
     }))

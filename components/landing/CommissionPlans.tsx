@@ -92,7 +92,7 @@ export function CommissionPlans() {
 
         {/* Plans Grid */}
         <div className="grid lg:grid-cols-3 gap-8 mb-20">
-          {plans.map((plan) => (
+          {plans.map((plan: any) => (
             <Card 
               key={plan.id}
               className={`relative overflow-hidden hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 ${
@@ -127,7 +127,7 @@ export function CommissionPlans() {
 
                 {/* Features */}
                 <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, idx) => (
+                  {plan.features.map((feature: any, idx: number) => (
                     <li key={idx} className="flex items-start gap-3">
                       <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0 mt-0.5" />
                       <span className="text-sm text-gray-700">{feature}</span>

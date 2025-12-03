@@ -234,7 +234,7 @@ export default function InfluencerDashboard() {
               </p>
             ) : (
               <div className="space-y-4">
-                {stats.coupons.map((coupon) => {
+                {stats.coupons.map((coupon: any) => {
                   const link = generateCouponLink(coupon)
                   const isCopied = copiedCode === coupon.code
 
@@ -333,7 +333,7 @@ export default function InfluencerDashboard() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {stats.topProducts.map((product) => (
+                {stats.topProducts.map((product: any) => (
                   <div
                     key={product.id}
                     className="flex items-center gap-4 p-3 border rounded-lg"
@@ -401,7 +401,7 @@ export default function InfluencerDashboard() {
                     </tr>
                   </thead>
                   <tbody>
-                    {stats.orders.slice(0, 10).map((order) => (
+                    {stats.orders.slice(0, 10).map((order: any) => (
                       <tr key={order.id} className="border-b hover:bg-gray-50">
                         <td className="py-3 px-4 text-sm">
                           {order.orderNumber}

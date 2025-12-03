@@ -394,7 +394,7 @@ export default function ShippingSettingsPage() {
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {zones.map((zone) => {
+              {zones.map((zone: any) => {
                 const zoneCountries = countries.filter(c => zone.countries.includes(c.code))
                 const hasRates = zone.rates.length > 0
                 
@@ -451,7 +451,7 @@ export default function ShippingSettingsPage() {
                     )}
                     
                     <div className="space-y-3">
-                      {zone.rates.map((rate) => (
+                      {zone.rates.map((rate: any) => (
                         <div key={rate.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div className="flex-1">
                             <div className="flex items-center gap-2">
@@ -555,7 +555,7 @@ export default function ShippingSettingsPage() {
                     className="mb-3"
                   />
                   <div className="border border-gray-200 rounded-lg max-h-64 overflow-y-auto p-2">
-                    {filteredCountries.map((country) => (
+                    {filteredCountries.map((country: any) => (
                       <label
                         key={country.code}
                         className="flex items-center gap-3 p-2 hover:bg-gray-50 rounded cursor-pointer"
@@ -574,7 +574,7 @@ export default function ShippingSettingsPage() {
                   </div>
                   {zoneForm.countries.length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-2">
-                      {zoneForm.countries.map((code) => {
+                      {zoneForm.countries.map((code: any) => {
                         const country = countries.find(c => c.code === code)
                         return country ? (
                           <Badge key={code} variant="outline" className="flex items-center gap-1">

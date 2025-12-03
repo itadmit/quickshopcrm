@@ -32,7 +32,7 @@ export default function NewStoreCreditPage() {
   const [formData, setFormData] = useState({
     customerId: "",
     amount: "",
-    expiresAt: "",
+    endDate: "",
     notes: "",
   })
 
@@ -92,10 +92,10 @@ export default function NewStoreCreditPage() {
 
     try {
       const payload: any = {
-        shopId: selectedShop.id,
+        shopId: selectedShop?.id || "",
         customerId: formData.customerId,
         amount: parseFloat(formData.amount),
-        expiresAt: formData.expiresAt || undefined,
+        endDate: formData.endDate || undefined,
         notes: formData.notes || undefined,
       }
 
@@ -212,7 +212,7 @@ export default function NewStoreCreditPage() {
                       <SelectValue placeholder="בחר לקוח" />
                     </SelectTrigger>
                     <SelectContent>
-                      {customers.map((customer) => (
+                      {customers.map((customer: any) => (
                         <SelectItem key={customer.id} value={customer.id}>
                           {customer.firstName} {customer.lastName} ({customer.email})
                         </SelectItem>
@@ -242,8 +242,8 @@ export default function NewStoreCreditPage() {
                   <Input
                     id="expiresAt"
                     type="date"
-                    value={formData.expiresAt}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, expiresAt: e.target.value }))}
+                    value={formData.endDate}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, endDate: e.target.value }))}
                   />
                   <p className="text-sm text-gray-500">
                     השאר ריק אם אין תאריך תפוגה

@@ -400,7 +400,7 @@ export function ProductCard({
               {/* Size Buttons on Image */}
               {showSizeButtons && sizeButtonPosition === 'on-image' && displayedSizes.length > 0 && (
                 <div className="absolute top-3 left-3 flex flex-col gap-1.5" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                  {displayedSizes.map((size) => (
+                  {displayedSizes.map((size: any) => (
                     <button
                       key={size.value}
                       className={`relative bg-white/95 backdrop-blur-sm hover:bg-white text-gray-900 text-xs font-medium px-2.5 py-1.5 rounded-md shadow-md transition-all hover:scale-105 border border-gray-200 overflow-hidden ${!size.hasStock ? 'opacity-60' : ''}`}
@@ -522,7 +522,7 @@ export function ProductCard({
               {/* Size Buttons Below Image */}
               {showSizeButtons && sizeButtonPosition === 'below-image' && displayedSizes.length > 0 && (
                 <div className="flex flex-wrap gap-1.5 mb-2" onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
-                  {displayedSizes.map((size) => (
+                  {displayedSizes.map((size: any) => (
                     <button
                       key={size.value}
                       className="bg-white hover:bg-gray-50 text-gray-900 text-xs font-medium px-2.5 py-1 rounded border border-gray-300 hover:border-gray-400 transition-all"

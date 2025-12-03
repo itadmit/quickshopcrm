@@ -51,7 +51,7 @@ export async function GET(req: NextRequest) {
       ]
 
       await Promise.all(
-        defaultStatuses.map((status) =>
+        defaultStatuses.map((status: any) =>
           prisma.orderStatusDefinition.create({
             data: {
               shopId,

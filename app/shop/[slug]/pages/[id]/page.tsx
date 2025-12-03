@@ -282,7 +282,7 @@ export default function StaticPage() {
             {/* Products Display - Grid or List */}
             {page.displayType === "LIST" ? (
               <div className="space-y-3">
-                {page.products.map((product) => (
+                {page.products.map((product: any) => (
                   <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow">
                     <div className="flex flex-row gap-2 sm:gap-4">
                       <Link
@@ -355,7 +355,7 @@ export default function StaticPage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                {page.products.map((product) => (
+                {page.products.map((product: any) => (
                   <Card key={product.id} className="overflow-hidden hover:shadow-lg transition-shadow group">
                     <Link
                       href={`/shop/${slug}/products/${product.slug || product.id}`}

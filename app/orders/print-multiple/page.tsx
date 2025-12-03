@@ -283,7 +283,7 @@ export default function PrintMultipleOrdersPage() {
               </tr>
             </thead>
             <tbody>
-              {order.items.map((item) => (
+              {order.items.map((item: any) => (
                 <tr key={item.id}>
                   <td>
                     <div style={{ fontWeight: 'bold' }}>{item.name || item.product?.name}</div>

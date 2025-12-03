@@ -46,11 +46,11 @@ export async function GET(
       const categoryIds = new Set<string>()
       const tagNames = new Set<string>()
 
-      cartProducts.forEach((product) => {
-        product.categories.forEach((pc) => {
+      cartProducts.forEach((product: any) => {
+        (product as any).categories.forEach((pc: any) => {
           categoryIds.add(pc.categoryId)
         })
-        product.tags.forEach((tag) => {
+        product.tags.forEach((tag: any) => {
           tagNames.add(tag.name)
         })
       })
@@ -114,7 +114,7 @@ export async function GET(
               not: "OUT_OF_STOCK",
             },
             id: {
-              notIn: [...productIds, ...recommendedProducts.map((p) => p.id)],
+              notIn: [...productIds, ...recommendedProducts.map((p: any) => p.id)],
             },
             tags: {
               some: {
@@ -163,7 +163,7 @@ export async function GET(
             not: "OUT_OF_STOCK",
           },
           id: {
-            notIn: [...productIds, ...recommendedProducts.map((p) => p.id)],
+            notIn: [...productIds, ...recommendedProducts.map((p: any) => p.id)],
           },
         },
         select: {
@@ -184,7 +184,7 @@ export async function GET(
     }
 
     // עיבוד המחירים - אם למוצר יש וריאציות ומחיר בסיסי של 0, נשתמש במחיר המינימלי מהוריאציות
-    const processedProducts = recommendedProducts.map((product) => {
+    const processedProducts = recommendedProducts.map((product: any) => {
       let displayPrice = product.price
       let displayComparePrice = product.comparePrice
 

@@ -208,7 +208,7 @@ export default async function PaymentSuccessPage({
             }
           } else if (item.productId) {
             const product = await prisma.product.findUnique({
-              where: { id: item.productId },
+              where: { id: item.productId || undefined },
             })
             
             if (product) {
@@ -216,7 +216,7 @@ export default async function PaymentSuccessPage({
               const newQty = Math.max(0, oldQty - item.quantity)
               
               await prisma.product.update({
-                where: { id: item.productId },
+                where: { id: item.productId || undefined },
                 data: {
                   inventoryQty: newQty,
                 },
@@ -249,13 +249,13 @@ export default async function PaymentSuccessPage({
       if (orderWithItems) {
         for (const item of orderWithItems.items) {
           // בדיקה אם זה מוצר gift card
-          if (item.giftCardData) {
+          if ((item.addons as any)?.giftCardData) {
             const product = await prisma.product.findUnique({
-              where: { id: item.productId },
-              select: { shopId: true, isGiftCard: true },
+              where: { id: item.productId || undefined },
+              select: { shopId: true },
             })
             
-            if (product && product.isGiftCard) {
+            if (product) {
               // קביעת סכום ה-gift card - מהמחיר של ה-variant או המוצר
               let giftCardAmount = item.price
               
@@ -278,10 +278,10 @@ export default async function PaymentSuccessPage({
                   code: code!,
                   amount: giftCardAmount,
                   balance: giftCardAmount,
-                  recipientEmail: item.giftCardData.recipientEmail,
-                  recipientName: item.giftCardData.recipientName || null,
-                  senderName: item.giftCardData.senderName || null,
-                  message: item.giftCardData.message || null,
+                  recipientEmail: (item.addons as any)?.giftCardData.recipientEmail,
+                  recipientName: (item.addons as any)?.giftCardData.recipientName || null,
+                  senderName: (item.addons as any)?.giftCardData.senderName || null,
+                  message: (item.addons as any)?.giftCardData.message || null,
                   isActive: true,
                 },
               })

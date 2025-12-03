@@ -45,7 +45,7 @@ const manualOrderSchema = z.object({
   discount: z.number().min(0).default(0),
   orderNotes: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
-  status: z.string(),
+  status: z.enum(["PENDING", "CONFIRMED", "PAID", "PROCESSING", "SHIPPED", "DELIVERED", "CANCELLED", "REFUNDED"]),
 })
 
 export async function POST(req: NextRequest) {
@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
               select: {
                 id: true,
                 name: true,
-                trackInventory: true,
+                inventoryEnabled: true,
               },
             },
           },
@@ -154,7 +154,7 @@ export async function POST(req: NextRequest) {
         }
 
         // בדיקת מלאי אם tracking מופעל
-        if (variant.product.trackInventory && variant.inventoryQty !== null) {
+        if ((variant.product as any).inventoryEnabled && variant.inventoryQty !== null) {
           if (variant.inventoryQty < item.quantity) {
             return NextResponse.json(
               {
@@ -207,11 +207,11 @@ export async function POST(req: NextRequest) {
       } else {
         // מוצר ללא variants
         const product = await prisma.product.findUnique({
-          where: { id: item.productId },
+          where: { id: item.productId || undefined },
           select: {
             id: true,
             name: true,
-            trackInventory: true,
+            inventoryEnabled: true,
             inventoryQty: true,
           },
         })
@@ -224,7 +224,7 @@ export async function POST(req: NextRequest) {
         }
 
         // בדיקת מלאי אם tracking מופעל
-        if (product.trackInventory && product.inventoryQty !== null) {
+        if ((product as any).inventoryEnabled && product.inventoryQty !== null) {
           if (product.inventoryQty < item.quantity) {
             return NextResponse.json(
               {
@@ -238,7 +238,7 @@ export async function POST(req: NextRequest) {
 
           // הורדת מלאי
           await prisma.product.update({
-            where: { id: item.productId },
+            where: { id: item.productId || undefined },
             data: {
               inventoryQty: {
                 decrement: item.quantity,

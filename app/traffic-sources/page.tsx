@@ -81,7 +81,7 @@ export default function TrafficSourcesPage() {
     }
     setLoading(true)
     try {
-      const response = await fetch(`/api/traffic-sources?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/traffic-sources?shopId=${selectedShop?.id || ""}`)
       if (response.ok) {
         const data = await response.json()
         setTrafficSources(data.trafficSources || [])
@@ -155,7 +155,7 @@ export default function TrafficSourcesPage() {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shopId: selectedShop.id,
+          shopId: selectedShop?.id || "",
           ...formData,
         }),
       })
@@ -246,7 +246,7 @@ export default function TrafficSourcesPage() {
     if (!selectedShop) return ""
     const baseUrl = selectedShop.domain
       ? `https://${selectedShop.domain}`
-      : `https://${selectedShop.slug}.quickshop.co.il`
+      : `https://${selectedShop?.slug || ""}.quickshop.co.il`
     
     const params = new URLSearchParams()
     params.append("utm_source", formData.uniqueId)
@@ -300,7 +300,7 @@ export default function TrafficSourcesPage() {
           <Card>
             <CardContent className="pt-6">
               <div className="space-y-4">
-                {[1, 2, 3].map((i) => (
+                {[1, 2, 3].map((i: any) => (
                   <div key={i} className="flex items-center gap-4">
                     <div className="w-10 h-10 bg-gray-200 rounded animate-pulse" />
                     <div className="flex-1 space-y-2">
@@ -377,7 +377,7 @@ export default function TrafficSourcesPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {trafficSources.map((source) => (
+                    {trafficSources.map((source: any) => (
                       <tr key={source.id} className="hover:bg-gray-50">
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-2">

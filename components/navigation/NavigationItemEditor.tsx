@@ -154,7 +154,7 @@ export function NavigationItemEditor({
               {/* תוצאות חיפוש */}
               {item.type === "PAGE" && pageSearchResults[item.id] && pageSearchResults[item.id].length > 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {pageSearchResults[item.id].map((page) => (
+                  {pageSearchResults[item.id].map((page: any) => (
                     <button
                       key={page.id}
                       type="button"
@@ -170,7 +170,7 @@ export function NavigationItemEditor({
               
               {item.type === "CATEGORY" && categorySearchResults[item.id] && categorySearchResults[item.id].length > 0 && (
                 <div className="absolute z-10 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                  {categorySearchResults[item.id].map((category) => (
+                  {categorySearchResults[item.id].map((category: any) => (
                     <button
                       key={category.id}
                       type="button"
@@ -319,15 +319,10 @@ export function NavigationItemEditor({
               categorySearchQueries={categorySearchQueries}
               categorySearchResults={categorySearchResults}
               loadingCategories={loadingCategories}
-              collectionSearchQueries={collectionSearchQueries}
-              collectionSearchResults={collectionSearchResults}
-              loadingCollections={loadingCollections}
               onPageSearch={onPageSearch}
               onCategorySearch={onCategorySearch}
-              onCollectionSearch={onCollectionSearch}
               onSelectPage={onSelectPage}
               onSelectCategory={onSelectCategory}
-              onSelectCollection={onSelectCollection}
               expandedItems={expandedItems}
               onToggleExpand={onToggleExpand}
               level={level + 1}

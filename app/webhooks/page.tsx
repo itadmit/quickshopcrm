@@ -86,7 +86,7 @@ export default function WebhooksPage() {
     }
   }
 
-  const filteredWebhooks = webhooks.filter((webhook) =>
+  const filteredWebhooks = webhooks.filter((webhook: any) =>
     webhook.url.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -155,7 +155,7 @@ export default function WebhooksPage() {
           </Card>
         ) : (
           <div className="space-y-4">
-            {filteredWebhooks.map((webhook) => (
+            {filteredWebhooks.map((webhook: any) => (
               <Card key={webhook.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between">
@@ -180,7 +180,7 @@ export default function WebhooksPage() {
                         <div>
                           <p className="text-sm font-medium mb-1">אירועים:</p>
                           <div className="flex flex-wrap gap-2">
-                            {webhook.events.map((event) => (
+                            {webhook.events.map((event: any) => (
                               <Badge key={event} variant="secondary">
                                 {event}
                               </Badge>

@@ -449,7 +449,7 @@ export default function OrdersPage() {
 
   // Convert orders to mobile list format
   const convertToMobileList = (): MobileListItem[] => {
-    return orders.map((order) => {
+    return orders.map((order: any) => {
       const statusInfo = getStatusInfo(order.status)
       const isRead = isOrderRead(order.id)
       const metadata = [
@@ -481,8 +481,6 @@ export default function OrdersPage() {
           label: "הדפס",
           icon: <Printer className="w-4 h-4" />,
           onClick: () => handlePrintOrder(order.orderNumber),
-        },
-        {
         },
         {
           label: isRead ? "סמן כלא נקרא" : "סמן כנקרא",
@@ -520,7 +518,6 @@ export default function OrdersPage() {
         label: "מחק",
         icon: <Trash2 className="w-4 h-4" />,
         onClick: () => handleDeleteOrder(order.orderNumber),
-        variant: "destructive",
       })
 
       return {
@@ -614,7 +611,7 @@ export default function OrdersPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">כל הסטטוסים</SelectItem>
-                    {statuses.map((status) => (
+                    {statuses.map((status: any) => (
                       <SelectItem key={status.id} value={status.key}>
                         {status.label}
                       </SelectItem>
@@ -635,11 +632,13 @@ export default function OrdersPage() {
             isSearching={loading}
             filters={[
               {
+                id: "status",
+                type: "select",
                 label: "סטטוס",
                 value: statusFilter,
                 options: [
                   { value: "all", label: "הכל" },
-                  ...statuses.map((status) => ({
+                  ...statuses.map((status: any) => ({
                     value: status.key,
                     label: status.label,
                   })),
@@ -665,7 +664,7 @@ export default function OrdersPage() {
 
               <div className="h-6 w-px bg-gray-300 mx-1" />
               
-              {statuses.map((status) => (
+              {statuses.map((status: any) => (
                 <Badge
                   key={status.id}
                   variant="outline"
@@ -731,7 +730,7 @@ export default function OrdersPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {orders.map((order) => {
+                      {orders.map((order: any) => {
                         const isRead = isOrderRead(order.id)
                         return (
                         <tr key={order.id} className={`hover:bg-gray-200 transition-colors ${isRead ? 'bg-gray-50/50 border-r-4 border-r-gray-300' : 'bg-gray-100 border-r-4 border-r-blue-500'}`}>
@@ -884,16 +883,14 @@ export default function OrdersPage() {
                 items={convertToMobileList()}
                 onItemClick={(item) => router.push(`/orders/${item.orderNumber}`)}
                 selectedItems={new Set(selectedOrders)}
-                onSelectionChange={setSelectedOrders}
+                onSelectionChange={(selectedIds) => setSelectedOrders(Array.from(selectedIds))}
                 showCheckbox={true}
                 settingsType="orders"
-                emptyState={
-                  <div className="text-center py-12">
-                    <ShoppingBag className="w-16 h-16 mx-auto text-gray-400 mb-4" />
-                    <h3 className="text-lg font-semibold mb-2">אין הזמנות</h3>
-                    <p className="text-gray-600">עדיין לא התקבלו הזמנות בחנות שלך</p>
-                  </div>
-                }
+                emptyState={{
+                  icon: <ShoppingBag className="w-16 h-16 text-gray-400" />,
+                  title: "אין הזמנות",
+                  description: "עדיין לא התקבלו הזמנות בחנות שלך",
+                }}
               />
               
               {/* Mobile Pagination */}
@@ -947,7 +944,7 @@ export default function OrdersPage() {
                   <SelectValue placeholder="בחר סטטוס" />
                 </SelectTrigger>
                 <SelectContent>
-                  {statuses.map((status) => (
+                  {statuses.map((status: any) => (
                     <SelectItem key={status.id} value={status.key}>
                       <div className="flex items-center gap-2">
                         <div

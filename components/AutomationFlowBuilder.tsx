@@ -394,7 +394,7 @@ export default function AutomationFlowBuilder({
     let yPos = startYPos
     
     actions.forEach((action, index) => {
-      const actionTypeInfo = actionTypes.find((at) => at.value === action.type)
+      const actionTypeInfo = actionTypes.find((at: any) => at.value === action.type)
       
       // טיפול מיוחד ב-delay node
       let label = actionTypeInfo?.label || action.type
@@ -438,7 +438,7 @@ export default function AutomationFlowBuilder({
 
     // Trigger node
     if (trigger) {
-      const eventLabel = eventTypes.find((e) => e.value === trigger.type)?.label || trigger.type
+      const eventLabel = eventTypes.find((e: any) => e.value === trigger.type)?.label || trigger.type
       nodes.push({
         id: "trigger",
         type: "trigger",
@@ -453,7 +453,7 @@ export default function AutomationFlowBuilder({
 
     // Actions before conditions (main flow)
     actions.forEach((action, index) => {
-      const actionTypeInfo = actionTypes.find((at) => at.value === action.type)
+      const actionTypeInfo = actionTypes.find((at: any) => at.value === action.type)
       
       // טיפול מיוחד ב-delay node
       let label = actionTypeInfo?.label || action.type
@@ -489,7 +489,7 @@ export default function AutomationFlowBuilder({
 
     // Condition nodes with branches
     conditions.forEach((condition, index) => {
-      const conditionLabel = `${condition.field} ${operators.find((op) => op.value === condition.operator)?.label || condition.operator} ${condition.value}`
+      const conditionLabel = `${condition.field} ${operators.find((op: any) => op.value === condition.operator)?.label || condition.operator} ${condition.value}`
       nodes.push({
         id: `condition-${index}`,
         type: "condition",
@@ -949,7 +949,7 @@ export default function AutomationFlowBuilder({
               <div className="bg-gray-50 p-3 rounded-md border border-gray-200">
                 <p className="text-xs text-gray-600 mb-2">לחץ על משתנה כדי להעתיק אותו:</p>
                 <div className="grid grid-cols-2 gap-2">
-                  {dynamicVariables.map((item) => (
+                  {dynamicVariables.map((item: any) => (
                     <button
                       key={item.variable}
                       type="button"
@@ -1015,7 +1015,7 @@ export default function AutomationFlowBuilder({
                 onChange={(e) =>
                   setActionConfig({
                     ...actionConfig,
-                    tags: e.target.value.split(",").map((t) => t.trim()),
+                    tags: e.target.value.split(",").map((t: any) => t.trim()),
                   })
                 }
                 placeholder="VIP, Premium, וכו'"
@@ -1298,7 +1298,7 @@ export default function AutomationFlowBuilder({
               <SelectValue placeholder="בחר אירוע" />
             </SelectTrigger>
             <SelectContent>
-              {eventTypes.map((event) => (
+              {eventTypes.map((event: any) => (
                 <SelectItem key={event.value} value={event.value}>
                   {event.label}
                 </SelectItem>
@@ -1407,7 +1407,7 @@ export default function AutomationFlowBuilder({
                       <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 bg-gray-50">
                         {category}
                       </div>
-                      {fields.map((field) => (
+                      {fields.map((field: any) => (
                         <SelectItem key={field.value} value={field.value}>
                           {field.label}
                         </SelectItem>
@@ -1427,7 +1427,7 @@ export default function AutomationFlowBuilder({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {operators.map((op) => (
+                  {operators.map((op: any) => (
                     <SelectItem key={op.value} value={op.value}>
                       {op.label}
                     </SelectItem>
@@ -1446,7 +1446,7 @@ export default function AutomationFlowBuilder({
                     <SelectValue placeholder="בחר ערך" />
                   </SelectTrigger>
                   <SelectContent>
-                    {getFieldValueOptions(conditionField)?.map((option) => (
+                    {getFieldValueOptions(conditionField)?.map((option: any) => (
                       <SelectItem key={option.value} value={option.value}>
                         {option.label}
                       </SelectItem>
@@ -1520,7 +1520,7 @@ export default function AutomationFlowBuilder({
                 <SelectTrigger className="mt-1">
                   <SelectValue placeholder="בחר סוג פעולה">
                     {(() => {
-                      const selected = actionTypes.find((at) => at.value === actionType)
+                      const selected = actionTypes.find((at: any) => at.value === actionType)
                       if (!selected) return null
                       const Icon = selected.icon
                       return (
@@ -1533,7 +1533,7 @@ export default function AutomationFlowBuilder({
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {actionTypes.map((at) => {
+                  {actionTypes.map((at: any) => {
                     const Icon = at.icon
                     return (
                       <SelectItem key={at.value} value={at.value}>

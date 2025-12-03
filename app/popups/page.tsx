@@ -161,7 +161,7 @@ export default function PopupsPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">פופאפים</h1>
             <p className="text-gray-600 mt-1">
-              ניהול פופאפים לחנות: <span className="font-semibold">{selectedShop.name}</span>
+              ניהול פופאפים לחנות: <span className="font-semibold">{selectedShop?.name || "לא נבחרה חנות"}</span>
             </p>
           </div>
           <Button
@@ -194,7 +194,7 @@ export default function PopupsPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {popups.map((popup) => (
+            {popups.map((popup: any) => (
               <Card key={popup.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">

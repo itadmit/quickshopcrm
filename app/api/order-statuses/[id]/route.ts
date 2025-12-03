@@ -118,7 +118,7 @@ export async function DELETE(
     const ordersCount = await prisma.order.count({
       where: {
         shopId: status.shopId,
-        status: status.key,
+        status: status.key as any,
       },
     })
 

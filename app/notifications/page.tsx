@@ -398,7 +398,7 @@ export default function NotificationsPage() {
           </Card>
         ) : (
           <div className="space-y-2">
-            {notifications.map((notification) => {
+            {notifications.map((notification: any) => {
               const Icon = getNotificationIcon(notification.type)
               const colorClass = getNotificationColor(notification.type)
               const details = formatNotificationDetails(notification)

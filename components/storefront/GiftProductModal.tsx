@@ -63,6 +63,11 @@ interface Product {
   images: string[]
   description?: string | null
   variants?: ProductVariant[]
+  options?: Array<{
+    id: string
+    name: string
+    values: Array<{ id: string; label: string; metadata?: any }> | string[]
+  }>
   inventoryQty?: number
   availability?: string
 }
@@ -177,13 +182,13 @@ export function GiftProductModal({
     return Array.from(
       new Set(
         product.variants
-          .map((v) => {
+          .map((v: any) => {
             if (v.option1 === optionType) return v.option1Value
             if (v.option2 === optionType) return v.option2Value
             if (v.option3 === optionType) return v.option3Value
             return null
           })
-          .filter((val) => val !== null && val !== undefined) as string[]
+          .filter((val: any) => val !== null && val !== undefined) as string[]
       )
     )
   }, [product.options, product.variants])
@@ -195,7 +200,7 @@ export function GiftProductModal({
 
     // ניסיון למצוא variant מתאים
     if (product.variants) {
-      const matchingVariant = product.variants.find((v) => {
+      const matchingVariant = product.variants.find((v: any) => {
         const variantOptions = getVariantOptions(v)
         return Object.entries(newOptions).every(
           ([key, val]) => variantOptions[key] === val
@@ -366,7 +371,7 @@ export function GiftProductModal({
                        optionType}
                     </Label>
                     <div className="flex flex-wrap items-center justify-center gap-2">
-                      {getOptionValues(optionType).map((value) => {
+                      {getOptionValues(optionType).map((value: any) => {
                         const isSelected = selectedOptions[optionType] === value
                         
                         // בדיקה האם האפשרות זמינה
@@ -387,7 +392,7 @@ export function GiftProductModal({
                             })
                           }
                           
-                          return product.variants.some((v) => {
+                          return product.variants.some((v: any) => {
                             const variantOptions = getVariantOptions(v)
                             
                             // בדיקה שהבחירות הקודמות תואמות (מלבד האפשרות הנוכחית)
@@ -425,7 +430,6 @@ export function GiftProductModal({
                               style={{
                                 backgroundColor: colorCode,
                                 borderColor: isSelected ? "#9333ea" : undefined,
-                                ringColor: isSelected ? "#9333ea" : undefined,
                               }}
                               title={value}
                             />

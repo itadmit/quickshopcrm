@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
     }
 
     // קבלת כל הקודים
-    const couponCodes = coupons.map((c) => c.code)
+    const couponCodes = coupons.map((c: any) => c.code)
 
     // קבלת הזמנות שבוצעו עם הקופונים של המשפיען
     const orders = await prisma.order.findMany({
@@ -95,8 +95,8 @@ export async function GET(req: NextRequest) {
     // קבלת מוצרים פופולריים
     const productSales: Record<string, { product: any; count: number; revenue: number }> = {}
     
-    orders.forEach((order) => {
-      order.items.forEach((item) => {
+    orders.forEach((order: any) => {
+      order.items.forEach((item: any) => {
         if (item.product) {
           const key = item.product.id
           if (!productSales[key]) {
@@ -115,7 +115,7 @@ export async function GET(req: NextRequest) {
     const topProducts = Object.values(productSales)
       .sort((a, b) => b.count - a.count)
       .slice(0, 5)
-      .map((item) => ({
+      .map((item: any) => ({
         id: item.product.id,
         name: item.product.name,
         image: item.product.images[0] || null,
@@ -133,7 +133,7 @@ export async function GET(req: NextRequest) {
       monthlyData[key] = { revenue: 0, orders: 0 }
     }
 
-    orders.forEach((order) => {
+    orders.forEach((order: any) => {
       const date = new Date(order.createdAt)
       const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`
       if (monthlyData[key]) {
@@ -149,7 +149,7 @@ export async function GET(req: NextRequest) {
     }))
 
     return NextResponse.json({
-      coupons: coupons.map((c) => ({
+      coupons: coupons.map((c: any) => ({
         id: c.id,
         code: c.code,
         type: c.type,
@@ -165,7 +165,7 @@ export async function GET(req: NextRequest) {
       totalRevenue,
       totalDiscount,
       averageOrderValue,
-      orders: orders.map((o) => ({
+      orders: orders.map((o: any) => ({
         id: o.id,
         orderNumber: o.orderNumber,
         total: o.total,
@@ -175,7 +175,7 @@ export async function GET(req: NextRequest) {
         createdAt: o.createdAt,
         customerName: o.customerName,
         shop: o.shop,
-        items: o.items.map((item) => ({
+        items: o.items.map((item: any) => ({
           name: item.name,
           quantity: item.quantity,
           price: item.price,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { shippingRegistry } from "@/lib/shipping/registry"
+import { getShippingProvider } from "@/lib/shipping/registry"
 
 export const dynamic = 'force-dynamic'
 
@@ -32,15 +32,7 @@ export async function GET(
           { domain: params.slug }
         ]
       },
-      include: {
-        shippingProviders: {
-          where: { 
-            isActive: true,
-            isDefault: true 
-          },
-          take: 1,
-        },
-      },
+      include: {},
     })
 
     if (!shop) {
@@ -57,8 +49,8 @@ export async function GET(
         orderNumber: orderNumber,
         ...(phone && {
           OR: [
-            { phone: { contains: phone.replace(/[^0-9]/g, '') } },
-            { shippingAddress: { path: ['phone'], string_contains: phone.replace(/[^0-9]/g, '') } }
+            { customerPhone: { contains: phone.replace(/[^0-9]/g, '') } },
+            { customFields: { path: ['shippingAddress', 'phone'], string_contains: phone.replace(/[^0-9]/g, '') } }
           ]
         })
       },
@@ -66,10 +58,9 @@ export async function GET(
         id: true,
         orderNumber: true,
         status: true,
-        shippingTrackingNumber: true,
-        shippingProvider: true,
-        shippingStatus: true,
-        metadata: true,
+        trackingNumber: true,
+        shippingMethod: true,
+        customFields: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -83,7 +74,7 @@ export async function GET(
     }
 
     // אם אין tracking number - החזר סטטוס בסיסי
-    if (!order.shippingTrackingNumber || !order.shippingProvider) {
+    if (!order.trackingNumber || !order.shippingMethod) {
       return NextResponse.json({
         orderNumber: order.orderNumber,
         status: mapOrderStatusToTrackingStatus(order.status),
@@ -99,54 +90,54 @@ export async function GET(
       })
     }
 
-    // קבל את ספק המשלוחים
-    const shippingProvider = shop.shippingProviders[0]
+    // TODO: shippingMethods not implemented in Shop model
+    const shippingMethod = null
     
-    if (!shippingProvider) {
+    if (!shippingMethod) {
       // אין ספק משלוחים מוגדר - החזר מידע בסיסי
       return NextResponse.json({
         orderNumber: order.orderNumber,
-        trackingNumber: order.shippingTrackingNumber,
-        status: order.shippingStatus || mapOrderStatusToTrackingStatus(order.status),
+        trackingNumber: order.trackingNumber,
+        status: (order.customFields as any)?.shippingStatus || mapOrderStatusToTrackingStatus(order.status),
         statusText: getStatusText(order.status),
         lastUpdate: order.updatedAt,
-        providerName: order.shippingProvider || 'לא ידוע',
+        providerName: order.shippingMethod || 'לא ידוע',
       })
     }
 
     // קבל את הספק מה-registry
-    const provider = shippingRegistry.getProvider(shippingProvider.provider)
+    const provider = getShippingProvider(order.shippingMethod || '')
     
     if (!provider) {
       // הספק לא רשום - החזר מידע בסיסי
       return NextResponse.json({
         orderNumber: order.orderNumber,
-        trackingNumber: order.shippingTrackingNumber,
-        status: order.shippingStatus || mapOrderStatusToTrackingStatus(order.status),
+        trackingNumber: order.trackingNumber,
+        status: (order.customFields as any)?.shippingStatus || mapOrderStatusToTrackingStatus(order.status),
         statusText: getStatusText(order.status),
         lastUpdate: order.updatedAt,
-        providerName: shippingProvider.displayName || order.shippingProvider,
+        providerName: order.shippingMethod || 'לא ידוע',
       })
     }
 
     try {
       // שלוף את ההגדרות של הספק
-      const config = shippingProvider.config as any || {}
+      const config = {} // TODO: get from integration
 
       // קבל מעקב מהספק
       const trackingStatus = await provider.getTrackingStatus(
-        order.shippingTrackingNumber,
+        order.trackingNumber,
         config
       )
 
       // עדכן את הסטטוס בבסיס הנתונים (אם השתנה)
-      if (trackingStatus.status !== order.shippingStatus) {
+      if (trackingStatus.status !== (order.customFields as any)?.shippingStatus) {
         await prisma.order.update({
           where: { id: order.id },
           data: {
-            shippingStatus: trackingStatus.status,
-            metadata: {
-              ...(order.metadata as any || {}),
+            customFields: {
+              ...((order.customFields as any) || {}),
+              shippingStatus: trackingStatus.status,
               lastTrackingUpdate: new Date().toISOString(),
               lastTrackingStatus: trackingStatus,
             },
@@ -156,7 +147,7 @@ export async function GET(
 
       return NextResponse.json({
         orderNumber: order.orderNumber,
-        trackingNumber: trackingStatus.trackingNumber || order.shippingTrackingNumber,
+        trackingNumber: trackingStatus.trackingNumber || order.trackingNumber,
         status: trackingStatus.status,
         statusText: getTrackingStatusText(trackingStatus.status),
         lastUpdate: trackingStatus.lastUpdate,
@@ -174,11 +165,11 @@ export async function GET(
       // אם יש שגיאה בספק - החזר מידע בסיסי
       return NextResponse.json({
         orderNumber: order.orderNumber,
-        trackingNumber: order.shippingTrackingNumber,
-        status: order.shippingStatus || mapOrderStatusToTrackingStatus(order.status),
+        trackingNumber: order.trackingNumber,
+        status: (order.customFields as any)?.shippingStatus || mapOrderStatusToTrackingStatus(order.status),
         statusText: getStatusText(order.status),
         lastUpdate: order.updatedAt,
-        providerName: shippingProvider.displayName || order.shippingProvider,
+        providerName: order.shippingMethod || 'לא ידוע',
         error: 'לא ניתן לקבל עדכון מחברת המשלוחים כרגע',
       })
     }
@@ -240,6 +231,7 @@ function getTrackingStatusText(status: string): string {
 
   return statusTexts[status] || 'סטטוס לא ידוע'
 }
+
 
 
 

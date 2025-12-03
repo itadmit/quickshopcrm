@@ -37,7 +37,7 @@ interface AbandonedCart {
   total: number
   abandonedAt: string
   recoveredAt: string | null
-  expiresAt: string
+  endDate: string
 }
 
 export default function AbandonedCartsPage() {
@@ -60,7 +60,7 @@ export default function AbandonedCartsPage() {
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/abandoned-carts?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/abandoned-carts?shopId=${selectedShop?.id || ""}`)
       if (response.ok) {
         const data = await response.json()
         setCarts(data)
@@ -111,7 +111,7 @@ export default function AbandonedCartsPage() {
     return items.reduce((sum: number, item: any) => sum + (item.price * item.quantity || 0), 0)
   }
 
-  const filteredCarts = carts.filter((cart) => {
+  const filteredCarts = carts.filter((cart: any) => {
     if (!search) return true
     const email = cart.customer?.email || ""
     const name = `${cart.customer?.firstName || ""} ${cart.customer?.lastName || ""}`.trim()
@@ -123,7 +123,7 @@ export default function AbandonedCartsPage() {
 
   // Convert carts to mobile list format
   const convertToMobileList = (): MobileListItem[] => {
-    return filteredCarts.map((cart) => {
+    return filteredCarts.map((cart: any) => {
       const customerName = cart.customer
         ? `${cart.customer.firstName || ""} ${cart.customer.lastName || ""}`.trim() || "לקוח אורח"
         : "לקוח אורח"
@@ -161,7 +161,7 @@ export default function AbandonedCartsPage() {
         actions.push({
           label: "צפה בפרופיל",
           icon: <Eye className="w-4 h-4" />,
-          onClick: () => router.push(`/customers/${cart.customer!.id}`),
+          onClick: async () => { router.push(`/customers/${cart.customer!.id}`) },
         })
       }
 
@@ -261,7 +261,7 @@ export default function AbandonedCartsPage() {
             </CardHeader>
             <CardContent>
               <div className="text-3xl font-bold">
-                {carts.filter((c) => c.recoveredAt).length}
+                {carts.filter((c: any) => c.recoveredAt).length}
               </div>
             </CardContent>
           </Card>
@@ -289,6 +289,7 @@ export default function AbandonedCartsPage() {
             onSearchChange={setSearch}
             searchPlaceholder="חפש עגלה נטושה..."
             isSearching={loading}
+            filters={[]}
           />
         </div>
 
@@ -333,7 +334,7 @@ export default function AbandonedCartsPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {filteredCarts.map((cart) => {
+                      {filteredCarts.map((cart: any) => {
                         const customerName = cart.customer
                           ? `${cart.customer.firstName || ""} ${cart.customer.lastName || ""}`.trim() || "לקוח אורח"
                           : "לקוח אורח"

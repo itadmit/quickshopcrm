@@ -24,7 +24,7 @@ export function ProductsSkeleton() {
                 </div>
                 {/* Table Rows */}
                 <div className="divide-y divide-gray-200">
-                  {[1, 2, 3, 4, 5].map((i) => (
+                  {[1, 2, 3, 4, 5].map((i: any) => (
                     <div key={i} className="grid grid-cols-8 gap-4 px-6 py-4">
                       <div className="w-12 h-12 bg-gray-100 rounded animate-pulse"></div>
                       <div className="space-y-2">
@@ -51,7 +51,7 @@ export function ProductsSkeleton() {
 
       {/* Mobile View - Hidden on Desktop */}
       <div className="md:hidden space-y-3">
-        {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
+        {[1, 2, 3, 4, 5, 6, 7, 8].map((i: any) => (
           <Card key={i} className="overflow-hidden">
             <CardContent className="p-4">
               <div className="flex gap-3">

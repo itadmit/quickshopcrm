@@ -84,7 +84,7 @@ export default function WaitlistPage() {
     
     setLoading(true)
     try {
-      const response = await fetch(`/api/waitlist?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/waitlist?shopId=${selectedShop?.id || ""}`)
       if (response.ok) {
         const data = await response.json()
         setWaitlist(data)
@@ -119,7 +119,7 @@ export default function WaitlistPage() {
       })
 
       if (response.ok) {
-        setWaitlist(waitlist.filter((item) => item.id !== id))
+        setWaitlist(waitlist.filter((item: any) => item.id !== id))
         toast({
           title: "הצלחה",
           description: "הרשומה נמחקה בהצלחה",
@@ -172,7 +172,7 @@ export default function WaitlistPage() {
     return parts.length > 0 ? parts.join(", ") : variant.name
   }
 
-  const filteredWaitlist = waitlist.filter((item) => {
+  const filteredWaitlist = waitlist.filter((item: any) => {
     const searchLower = searchTerm.toLowerCase()
     return (
       item.email.toLowerCase().includes(searchLower) ||
@@ -201,12 +201,12 @@ export default function WaitlistPage() {
                 <select
                   value={selectedShop?.id || ""}
                   onChange={(e) => {
-                    const shop = shops.find((s) => s.id === e.target.value)
+                    const shop = shops.find((s: any) => s.id === e.target.value)
                     setSelectedShop(shop)
                   }}
                   className="flex-1 max-w-xs rounded-md border border-gray-300 px-3 py-2 text-sm"
                 >
-                  {shops.map((shop) => (
+                  {shops.map((shop: any) => (
                     <option key={shop.id} value={shop.id}>
                       {shop.name}
                     </option>
@@ -251,7 +251,7 @@ export default function WaitlistPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                {filteredWaitlist.map((item) => (
+                {filteredWaitlist.map((item: any) => (
                   <div
                     key={item.id}
                     className="flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
@@ -337,6 +337,7 @@ export default function WaitlistPage() {
     </AppLayout>
   )
 }
+
 
 
 

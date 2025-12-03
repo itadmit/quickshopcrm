@@ -102,7 +102,7 @@ export default function CollectionsPage() {
     }
   }
 
-  const filteredCollections = collections.filter((collection) =>
+  const filteredCollections = collections.filter((collection: any) =>
     collection.name.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -201,7 +201,7 @@ export default function CollectionsPage() {
                           checked={selectedCollections.size === filteredCollections.length && filteredCollections.length > 0}
                           onCheckedChange={(checked) => {
                             if (checked) {
-                              setSelectedCollections(new Set(filteredCollections.map((c) => c.id)))
+                              setSelectedCollections(new Set(filteredCollections.map((c: any) => c.id)))
                             } else {
                               setSelectedCollections(new Set())
                             }
@@ -218,7 +218,7 @@ export default function CollectionsPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredCollections.map((collection) => (
+                    {filteredCollections.map((collection: any) => (
                       <tr 
                         key={collection.id} 
                         className="hover:bg-gray-50 transition-colors cursor-pointer"

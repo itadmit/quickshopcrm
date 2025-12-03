@@ -220,7 +220,7 @@ export default function SearchPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 >
                   <option value="">כל הקטגוריות</option>
-                  {categories.map((cat) => (
+                  {categories.map((cat: any) => (
                     <option key={cat.id} value={cat.slug}>
                       {cat.name}
                     </option>
@@ -324,7 +324,7 @@ export default function SearchPage() {
               </p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {products.map((product) => (
+              {products.map((product: any) => (
                 <Link
                   key={product.id}
                   href={`/shop/${slug}/products/${product.slug || product.id}`}
@@ -349,7 +349,7 @@ export default function SearchPage() {
                           isSoldOut={product.availability === "OUT_OF_STOCK"}
                           comparePrice={(() => {
                             const priceInfo = getProductPrice(product)
-                            return priceInfo.comparePrice
+                            return priceInfo.comparePrice ?? undefined
                           })()}
                           price={(() => {
                             const priceInfo = getProductPrice(product)

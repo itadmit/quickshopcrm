@@ -39,7 +39,7 @@ export function BlockPicker({ blocks, onSelect, pageType }: BlockPickerProps) {
   const [open, setOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
-  const filteredBlocks = blocks.filter((block) =>
+  const filteredBlocks = blocks.filter((block: any) =>
     block.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     block.description?.toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -72,7 +72,6 @@ export function BlockPicker({ blocks, onSelect, pageType }: BlockPickerProps) {
       <DropdownMenuContent
         align="end"
         className="w-80 p-0 max-h-[600px] overflow-hidden flex flex-col"
-        dir="rtl"
       >
         {/* Search */}
         <div className="p-3 border-b border-gray-200 sticky top-0 bg-white z-10">
@@ -95,13 +94,13 @@ export function BlockPicker({ blocks, onSelect, pageType }: BlockPickerProps) {
               <p className="text-sm">לא נמצאו בלוקים</p>
             </div>
           ) : (
-            sortedCategories.map((category) => (
+            sortedCategories.map((category: any) => (
               <div key={category} className="mb-4 last:mb-0">
                 <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
                   {categories[category as keyof typeof categories]?.label || category}
                 </div>
                 <div className="space-y-1">
-                  {groupedBlocks[category].map((block) => {
+                  {groupedBlocks[category].map((block: any) => {
                     const Icon = block.icon
                     return (
                       <button

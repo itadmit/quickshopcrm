@@ -34,7 +34,7 @@ export default function EditStoreCreditPage() {
   const [formData, setFormData] = useState({
     customerId: "",
     amount: "",
-    expiresAt: "",
+    endDate: "",
     notes: "",
   })
 
@@ -63,7 +63,7 @@ export default function EditStoreCreditPage() {
         setFormData({
           customerId: credit.customerId || "",
           amount: credit.amount?.toString() || "",
-          expiresAt: expiresAtFormatted,
+          endDate: expiresAtFormatted,
           notes: credit.notes || "",
         })
       } else {
@@ -142,7 +142,7 @@ export default function EditStoreCreditPage() {
         shopId: shopToUseForSave.id,
         customerId: formData.customerId,
         amount: parseFloat(formData.amount),
-        expiresAt: formData.expiresAt || undefined,
+        endDate: formData.endDate || undefined,
         notes: formData.notes || undefined,
       }
 
@@ -259,7 +259,7 @@ export default function EditStoreCreditPage() {
                       <SelectValue placeholder="בחר לקוח" />
                     </SelectTrigger>
                     <SelectContent>
-                      {customers.map((customer) => (
+                      {customers.map((customer: any) => (
                         <SelectItem key={customer.id} value={customer.id}>
                           {customer.firstName} {customer.lastName} ({customer.email})
                         </SelectItem>
@@ -289,8 +289,8 @@ export default function EditStoreCreditPage() {
                   <Input
                     id="expiresAt"
                     type="date"
-                    value={formData.expiresAt}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, expiresAt: e.target.value }))}
+                    value={formData.endDate}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, endDate: e.target.value }))}
                   />
                   <p className="text-sm text-gray-500">
                     השאר ריק אם אין תאריך תפוגה

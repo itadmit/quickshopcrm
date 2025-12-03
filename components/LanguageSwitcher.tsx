@@ -26,7 +26,7 @@ export function LanguageSwitcher() {
     // קריאת שפה מ-cookies
     const cookie = document.cookie
       .split("; ")
-      .find((row) => row.startsWith("locale="))
+      .find((row: any) => row.startsWith("locale="))
     const locale = cookie?.split("=")[1] || "he"
     setCurrentLocale(locale)
   }, [])
@@ -39,7 +39,7 @@ export function LanguageSwitcher() {
     router.refresh()
   }
 
-  const currentLanguage = languages.find((lang) => lang.code === currentLocale) || languages[0]
+  const currentLanguage = languages.find((lang: any) => lang.code === currentLocale) || languages[0]
 
   return (
     <DropdownMenu>
@@ -51,7 +51,7 @@ export function LanguageSwitcher() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        {languages.map((lang) => (
+        {languages.map((lang: any) => (
           <DropdownMenuItem
             key={lang.code}
             onClick={() => changeLanguage(lang.code)}

@@ -42,9 +42,9 @@ export function BundleSelector({
   }
 
   // חישוב מחירים לכל bundle
-  const bundleOptions = bundles.map((bundle) => {
+  const bundleOptions = bundles.map((bundle: any) => {
     // חישוב המחיר המקורי (סכום כל המוצרים)
-    const originalPrice = bundle.products.reduce((sum, item) => {
+    const originalPrice = bundle.products.reduce((sum: number, item: { product: { price: number }; quantity: number }) => {
       return sum + (item.product.price * item.quantity)
     }, 0)
 
@@ -57,7 +57,7 @@ export function BundleSelector({
       : 0
 
     // חישוב כמות כוללת של יחידות (לא מספר מוצרים שונים)
-    const totalQuantity = bundle.products.reduce((sum, item) => sum + item.quantity, 0)
+    const totalQuantity = bundle.products.reduce((sum: number, item: { quantity: number }) => sum + item.quantity, 0)
     const uniqueProductsCount = bundle.products.length
 
     return {

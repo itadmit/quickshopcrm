@@ -103,7 +103,7 @@ export async function createPayPalOrder(
               },
             },
           },
-          items: items.map((item) => ({
+          items: items.map((item: any) => ({
             name: item.name,
             quantity: item.quantity.toString(),
             unit_amount: {

@@ -289,7 +289,7 @@ export function GlobalSearch({ isMobile = false, autoFocus = false, onSelect }: 
     try {
       const params = new URLSearchParams({ q: searchQuery })
       if (selectedShop?.id) {
-        params.append("shopId", selectedShop.id)
+        params.append("shopId", selectedShop?.id || "")
       }
 
       console.log('Searching for:', searchQuery, 'with shopId:', selectedShop?.id)

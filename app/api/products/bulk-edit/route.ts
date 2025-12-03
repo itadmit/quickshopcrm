@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
     })
 
     // המרת הנתונים לפורמט המתאים
-    const formattedProducts = products.map((product) => ({
+    const formattedProducts = products.map((product: any) => ({
       id: product.id,
       name: product.name,
       sku: product.sku,
@@ -97,8 +97,8 @@ export async function GET(req: NextRequest) {
       availability: product.availability,
       isHidden: product.isHidden || false,
       vendor: null, // TODO: להוסיף שדה vendor למוצר אם נדרש
-      category: product.categories[0]?.category?.name || null,
-      categories: product.categories.map(pc => ({
+      category: (product as any).categories[0]?.category?.name || null,
+      categories: (product as any).categories.map((pc: any) => ({
         categoryId: pc.category.id,
         category: pc.category,
       })), // שמירת הקטגוריות המלאות להשוואה

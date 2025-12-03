@@ -74,11 +74,10 @@ export async function GET(
           totalSpent: true,
           orderCount: true,
           tier: true,
-          premiumClubTier: true,
         },
       })
       customer = customerData
-      customerTier = customerData?.premiumClubTier || null
+      customerTier = customerData?.tier || null
       
       // בדיקת early access
       if (customerTier) {
@@ -176,7 +175,7 @@ export async function GET(
         }
       } else if (discount.target === "SPECIFIC_CATEGORIES") {
         if (discount.applicableCategories && Array.isArray(discount.applicableCategories) && discount.applicableCategories.length > 0) {
-          const productCategoryIds = product.categories.map(c => c.categoryId)
+          const productCategoryIds = (product as any).categories.map((c: any) => c.categoryId)
           productMatch = discount.applicableCategories.some(catId => productCategoryIds.includes(catId))
         }
       } else if (discount.target === "SPECIFIC_COLLECTIONS") {
@@ -192,7 +191,7 @@ export async function GET(
         }
       } else if (discount.target === "EXCLUDE_CATEGORIES") {
         if (discount.excludedCategories && Array.isArray(discount.excludedCategories) && discount.excludedCategories.length > 0) {
-          const productCategoryIds = product.categories.map(c => c.categoryId)
+          const productCategoryIds = (product as any).categories.map((c: any) => c.categoryId)
           productMatch = !discount.excludedCategories.some(catId => productCategoryIds.includes(catId))
         } else {
           productMatch = true

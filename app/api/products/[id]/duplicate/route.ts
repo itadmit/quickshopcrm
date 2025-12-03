@@ -74,7 +74,7 @@ export async function POST(
     // העתקת קטגוריות
     if (originalProduct.categories.length > 0) {
       await prisma.productCategory.createMany({
-        data: originalProduct.categories.map((pc) => ({
+        data: originalProduct.categories.map((pc: any) => ({
           productId: duplicatedProduct.id,
           categoryId: pc.categoryId,
         })),
@@ -84,7 +84,7 @@ export async function POST(
     // העתקת תגיות
     if (originalProduct.tags.length > 0) {
       await prisma.productTag.createMany({
-        data: originalProduct.tags.map((tag) => ({
+        data: originalProduct.tags.map((tag: any) => ({
           productId: duplicatedProduct.id,
           name: tag.name,
         })),
@@ -98,7 +98,7 @@ export async function POST(
           data: {
             productId: duplicatedProduct.id,
             name: option.name,
-            type: option.type || "button",
+            type: (option as any).type || "button",
             values: option.values as any, // הערכים נשמרים ב-JSON
             position: option.position,
           },

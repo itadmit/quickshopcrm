@@ -99,7 +99,7 @@ export default function GiftCardsPage() {
           title: "הצלחה",
           description: "כרטיס המתנה נמחק בהצלחה",
         })
-        setGiftCards(giftCards.filter((card) => card.id !== giftCardToDelete.id))
+        setGiftCards(giftCards.filter((card: any) => card.id !== giftCardToDelete.id))
         setDeleteDialogOpen(false)
         setGiftCardToDelete(null)
       } else {
@@ -227,7 +227,7 @@ export default function GiftCardsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {filteredGiftCards.map((card) => (
+                    {filteredGiftCards.map((card: any) => (
                       <tr key={card.id} className="hover:bg-gray-50">
                         <td className="p-4">
                           <div className="flex items-center gap-2">

@@ -105,13 +105,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const data = createDiscountSchema.parse(body)
 
-      type: data.type,
-      isAutomatic: data.isAutomatic,
-      giftProductId: data.giftProductId,
-      giftCondition: data.giftCondition,
-      giftConditionAmount: data.giftConditionAmount,
-    })
-
     // בדיקה שהחנות שייכת למשתמש
     const shop = await prisma.shop.findFirst({
       where: {
@@ -162,15 +155,6 @@ export async function POST(req: NextRequest) {
         giftConditionAmount: data.giftConditionAmount,
         giftVariantId: data.giftVariantId,
       },
-    })
-
-      id: discount.id,
-      type: discount.type,
-      isAutomatic: discount.isAutomatic,
-      isActive: discount.isActive,
-      giftProductId: discount.giftProductId,
-      giftCondition: discount.giftCondition,
-      giftConditionAmount: discount.giftConditionAmount,
     })
 
     await prisma.shopEvent.create({

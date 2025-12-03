@@ -48,7 +48,7 @@ export async function GET(
         where: { productId },
         select: { categoryId: true },
       })
-      const categoryIds = productCategories.map((c) => c.categoryId)
+      const categoryIds = productCategories.map((c: any) => c.categoryId)
 
       where.OR = [
         { displayType: "global" },

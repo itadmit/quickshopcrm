@@ -614,7 +614,7 @@ export default function NewPopupPage() {
                         <p className="text-center text-gray-400">אין תוכן להצגה</p>
                       ) : (
                         <div className={`space-y-4 ${formData.layout === "two-column" ? "grid grid-cols-2 gap-4" : ""}`}>
-                          {formData.content.map((element) => (
+                          {formData.content.map((element: any) => (
                             <div key={element.id}>
                               {element.type === "text" && (
                                 <p

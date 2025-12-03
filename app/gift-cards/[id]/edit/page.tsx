@@ -30,7 +30,7 @@ export default function EditGiftCardPage() {
     recipientName: "",
     senderName: "",
     message: "",
-    expiresAt: "",
+    endDate: "",
     isActive: true,
   })
 
@@ -60,7 +60,7 @@ export default function EditGiftCardPage() {
           recipientName: card.recipientName || "",
           senderName: card.senderName || "",
           message: card.message || "",
-          expiresAt: expiresAtFormatted,
+          endDate: expiresAtFormatted,
           isActive: card.isActive ?? true,
         })
       } else {
@@ -123,7 +123,7 @@ export default function EditGiftCardPage() {
         recipientName: formData.recipientName || undefined,
         senderName: formData.senderName || undefined,
         message: formData.message || undefined,
-        expiresAt: formData.expiresAt ? new Date(formData.expiresAt).toISOString() : undefined,
+        expiresAt: formData.endDate ? new Date(formData.endDate).toISOString() : undefined,
         isActive: formData.isActive,
       }
 
@@ -196,7 +196,7 @@ export default function EditGiftCardPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">עריכת כרטיס מתנה</h1>
             <p className="text-gray-600 mt-1">
-              ערוך כרטיס מתנה לחנות: <span className="font-semibold">{selectedShop.name}</span>
+              ערוך כרטיס מתנה לחנות: <span className="font-semibold">{selectedShop?.name || "לא נבחרה חנות"}</span>
             </p>
           </div>
           <div className="flex gap-2">
@@ -263,8 +263,8 @@ export default function EditGiftCardPage() {
                   <Input
                     id="expiresAt"
                     type="date"
-                    value={formData.expiresAt}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, expiresAt: e.target.value }))}
+                    value={formData.endDate}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, endDate: e.target.value }))}
                   />
                 </div>
               </CardContent>

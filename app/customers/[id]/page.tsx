@@ -187,7 +187,7 @@ export default function CustomerDetailPage() {
   }
 
   const handleRemoveTag = (tagToRemove: string) => {
-    setTags(tags.filter((tag) => tag !== tagToRemove))
+    setTags(tags.filter((tag: any) => tag !== tagToRemove))
   }
 
   const getTierBadge = (tier: string) => {
@@ -422,7 +422,7 @@ export default function CustomerDetailPage() {
                       </Button>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      {tags.map((tag) => (
+                      {tags.map((tag: any) => (
                         <Badge key={tag} variant="outline" className="flex items-center gap-1">
                           {tag}
                           <button
@@ -438,7 +438,7 @@ export default function CustomerDetailPage() {
                 ) : (
                   <div className="flex flex-wrap gap-2">
                     {customer.tags.length > 0 ? (
-                      customer.tags.map((tag) => (
+                      customer.tags.map((tag: any) => (
                         <Badge key={tag} variant="outline">
                           {tag}
                         </Badge>
@@ -488,7 +488,7 @@ export default function CustomerDetailPage() {
                   <p className="text-sm text-gray-500">אין הזמנות</p>
                 ) : (
                   <div className="space-y-3">
-                    {customer.orders.map((order) => (
+                    {customer.orders.map((order: any) => (
                       <div
                         key={order.id}
                         className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"

@@ -128,7 +128,7 @@ export default function OrderStatusesPage() {
     // Save new positions to server
     try {
       await Promise.all(
-        updatedItems.map((item) =>
+        updatedItems.map((item: any) =>
           fetch(`/api/order-statuses/${item.id}`, {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
@@ -276,7 +276,7 @@ export default function OrderStatusesPage() {
   }
 
   const getIconComponent = (iconName: string) => {
-    const iconOption = ICON_OPTIONS.find((opt) => opt.value === iconName)
+    const iconOption = ICON_OPTIONS.find((opt: any) => opt.value === iconName)
     return iconOption ? iconOption.icon : Package
   }
 
@@ -417,7 +417,7 @@ export default function OrderStatusesPage() {
                       setKey(e.target.value.toUpperCase().replace(/\s+/g, "_"))
                     }
                     placeholder="MY_CUSTOM_STATUS"
-                    disabled={editingStatus?.isSystem}
+                    disabled={(editingStatus as any)?.isSystem}
                   />
                 </div>
               )}
@@ -467,7 +467,7 @@ export default function OrderStatusesPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {ICON_OPTIONS.map((opt) => (
+                    {ICON_OPTIONS.map((opt: any) => (
                       <SelectItem key={opt.value} value={opt.value}>
                         <div className="flex items-center gap-2">
                           <opt.icon className="h-4 w-4" />
@@ -518,6 +518,7 @@ export default function OrderStatusesPage() {
     </AppLayout>
   )
 }
+
 
 
 

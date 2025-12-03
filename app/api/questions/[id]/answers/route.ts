@@ -15,7 +15,9 @@ export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  try {
+  // TODO: ProductQuestion model not implemented yet
+  return NextResponse.json({ error: "Feature not implemented" }, { status: 501 })
+  /* try {
     const question = await prisma.productQuestion.findUnique({
       where: { id: params.id },
       select: { shopId: true, shop: { select: { companyId: true } } },
@@ -74,7 +76,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
-  try {
+  // TODO: ProductQuestion model not implemented yet
+  return NextResponse.json({ error: "Feature not implemented" }, { status: 501 })
+  /* try {
     const session = await getServerSession(authOptions)
     const body = await req.json()
     const data = createAnswerSchema.parse(body)
@@ -172,5 +176,6 @@ export async function POST(
       { status: 500 }
     )
   }
+} */
 }
 

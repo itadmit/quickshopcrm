@@ -59,8 +59,6 @@ export async function GET(
           title: true,
           comment: true,
           images: true,
-          videos: true,
-          tags: true,
           isVerified: true,
           helpfulCount: true,
           createdAt: true,
@@ -119,7 +117,7 @@ export async function POST(
 ) {
   try {
     const body = await req.json()
-    const { rating, title, comment, images, videos, tags, customerId } = body
+    const { rating, title, comment, images, video, tags, customerId } = body
 
     if (!rating || rating < 1 || rating > 5) {
       return NextResponse.json(
@@ -173,7 +171,7 @@ export async function POST(
     const maxVideos = config.maxVideos || 1
 
     // בדיקת מגבלות
-    if (videos && videos.length > 0 && (!allowVideos || videos.length > maxVideos)) {
+    if (video && (!allowVideos)) {
       return NextResponse.json(
         { error: `Maximum ${maxVideos} video${maxVideos > 1 ? 's' : ''} allowed` },
         { status: 400 }
@@ -229,11 +227,8 @@ export async function POST(
         title: title || null,
         comment: comment || null,
         images: allowImages ? (images || []) : [],
-        videos: allowVideos ? (videos || []) : [],
-        tags: tags || [],
         isApproved: !requireApproval, // אם לא דורש אישור, מאשרים אוטומטית
         isVerified,
-        verifiedOrderId,
       },
     })
 

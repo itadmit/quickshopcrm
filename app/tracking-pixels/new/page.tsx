@@ -78,7 +78,7 @@ export default function NewTrackingPixelPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shopId: selectedShop.id,
+          shopId: selectedShop?.id || "",
           ...formData,
           accessToken: formData.accessToken || null,
         }),
@@ -114,7 +114,7 @@ export default function NewTrackingPixelPage() {
     setFormData((prev) => ({
       ...prev,
       events: prev.events.includes(eventName)
-        ? prev.events.filter((e) => e !== eventName)
+        ? prev.events.filter((e: any) => e !== eventName)
         : [...prev.events, eventName],
     }))
   }
@@ -165,7 +165,7 @@ export default function NewTrackingPixelPage() {
                     <SelectValue placeholder="בחר פלטפורמה" />
                   </SelectTrigger>
                   <SelectContent>
-                    {PLATFORMS.map((platform) => (
+                    {PLATFORMS.map((platform: any) => (
                       <SelectItem key={platform.value} value={platform.value}>
                         {platform.label}
                       </SelectItem>
@@ -284,7 +284,7 @@ export default function NewTrackingPixelPage() {
                   בחר אירועים למעקב (כל האירועים מסומנים כברירת מחדל)
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2" dir="ltr">
-                  {ALL_EVENTS.map((event) => (
+                  {ALL_EVENTS.map((event: any) => (
                     <label
                       key={event}
                       className="flex items-center flex-row-reverse gap-2 p-2 border rounded cursor-pointer hover:bg-gray-50 text-left"

@@ -67,6 +67,7 @@ export default function NewCategoryPage() {
     { field: "title", condition: "contains", value: "" }
   ])
   const [matchType, setMatchType] = useState<"all" | "any">("all")
+  const [mediaPickerOpen, setMediaPickerOpen] = useState(false)
   
   // מעקב אם המשתמש ערך את ה-slug ידנית
   const [slugManuallyEdited, setSlugManuallyEdited] = useState(false)
@@ -285,7 +286,7 @@ export default function NewCategoryPage() {
 
     try {
       const payload: any = {
-        shopId: selectedShop.id,
+        shopId: selectedShop?.id || "",
         name: formData.name.trim(),
         slug: formData.slug || generateSlug(formData.name),
         description: formData.description || undefined,
@@ -368,7 +369,7 @@ export default function NewCategoryPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">קטגוריה חדשה</h1>
             <p className="text-gray-600 mt-1">
-              צור קטגוריה חדשה לחנות: <span className="font-semibold">{selectedShop.name}</span>
+              צור קטגוריה חדשה לחנות: <span className="font-semibold">{selectedShop?.name || "לא נבחרה חנות"}</span>
             </p>
           </div>
           <div className="flex gap-2">
@@ -580,7 +581,7 @@ export default function NewCategoryPage() {
 
                     {previewProducts.length > 0 && (
                       <div className="space-y-2 max-h-[400px] overflow-y-auto border rounded-lg p-3">
-                        {previewProducts.map((product) => (
+                        {previewProducts.map((product: any) => (
                           <div
                             key={product.id}
                             className="flex items-center gap-3 p-2 border rounded-lg bg-white"
@@ -656,7 +657,7 @@ export default function NewCategoryPage() {
 
                       {searchResults.length > 0 && (
                         <div className="max-h-[300px] overflow-y-auto space-y-2">
-                          {searchResults.map((product) => (
+                          {searchResults.map((product: any) => (
                             <div
                               key={product.id}
                               className="flex items-center gap-3 p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
@@ -802,12 +803,41 @@ export default function NewCategoryPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                {formData.image && (
+                  <div className="relative w-full h-48 border rounded-lg overflow-hidden">
+                    <img src={formData.image} alt="Category" className="w-full h-full object-cover" />
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      size="sm"
+                      className="absolute top-2 right-2"
+                      onClick={() => setFormData((prev) => ({ ...prev, image: "" }))}
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setMediaPickerOpen(true)}
+                >
+                  {formData.image ? "שנה תמונה" : "בחר תמונה"}
+                </Button>
                 <MediaPicker
-                  value={formData.image}
-                  onChange={(url) => setFormData((prev) => ({ ...prev, image: url || "" }))}
+                  open={mediaPickerOpen}
+                  onOpenChange={setMediaPickerOpen}
+                  onSelect={(files) => {
+                    if (files.length > 0) {
+                      setFormData((prev) => ({ ...prev, image: files[0] }))
+                    }
+                    setMediaPickerOpen(false)
+                  }}
+                  selectedFiles={formData.image ? [formData.image] : []}
                   entityType="categories"
                   entityId="new"
-                  shopId={selectedShop?.id}
+                  shopId={selectedShop?.id || undefined}
+                  multiple={false}
                 />
               </CardContent>
             </Card>

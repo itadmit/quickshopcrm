@@ -149,7 +149,7 @@ export function TrackingPixelProvider({
 
   const sendClientSideEvents = (eventName: string, data: any = {}, onlyWithoutToken: boolean = false) => {
     // שליחה לכל הפיקסלים הפעילים ישירות מהדפדפן
-    pixels.forEach((pixel) => {
+    pixels.forEach((pixel: any) => {
       if (!pixel.isActive) return
 
       // אם onlyWithoutToken = true, נשלח רק לפיקסלים בלי access token

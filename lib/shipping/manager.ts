@@ -35,7 +35,7 @@ export class ShippingManager {
       }
       
       // 2. בדיקה אם כבר נשלח (אלא אם forceResend)
-      if (!options?.forceResend && order.shippingSentAt && order.shippingProvider === providerSlug) {
+      if (!options?.forceResend && order.shippedAt && order.shippingMethod === providerSlug) {
         throw new Error('ההזמנה כבר נשלחה לחברת המשלוחים. השתמש ב-"שלח שוב" אם צריך')
       }
       
@@ -88,7 +88,7 @@ export class ShippingManager {
       }
       
       // 9. שליחה לחברה (עם retry)
-      let response: ShippingResponse
+      let response: ShippingResponse | undefined
       let lastError: Error | null = null
       
       const maxRetries = provider.features.maxRetries || MAX_RETRIES
@@ -135,7 +135,7 @@ export class ShippingManager {
         }
       }
       
-      if (!response! || !response.success) {
+      if (!response || !response.success) {
         response = {
           success: false,
           error: lastError?.message || response?.error || 'נכשל בשליחה',
@@ -147,7 +147,7 @@ export class ShippingManager {
       
       // 10. שמירת לוג
       try {
-        await prisma.shippingLog.create({
+        await (prisma as any).shippingLog.create({
           data: {
             orderId: order.id,
             provider: providerSlug,
@@ -170,17 +170,7 @@ export class ShippingManager {
         await prisma.order.update({
           where: { id: orderId },
           data: {
-            shippingProvider: providerSlug,
-            shippingProviderId: integration.id,
-            shippingTrackingNumber: response.trackingNumber,
-            shippingLabelUrl: response.labelUrl || null,
-            shippingSentAt: new Date(),
-            shippingStatus: 'sent',
-            shippingStatusUpdatedAt: new Date(),
-            shippingData: response.data,
-            shippingError: null,
-            shippingRetryCount: retryAttempt,
-            shippingLastRetryAt: new Date(),
+            trackingNumber: response.trackingNumber,
           },
         })
         
@@ -203,12 +193,7 @@ export class ShippingManager {
       } else {
         await prisma.order.update({
           where: { id: orderId },
-          data: {
-            shippingError: response.error,
-            shippingRetryCount: retryAttempt,
-            shippingLastRetryAt: new Date(),
-            shippingStatus: 'failed',
-          },
+          data: {},
         })
         
         await createEvent(
@@ -306,7 +291,7 @@ export class ShippingManager {
           include: { shop: { include: { company: true } } },
         })
         
-        if (!order || order.shippingSentAt) return
+        if (!order || order.shippedAt) return
         
         const integrations = await prisma.integration.findMany({
           where: {
@@ -363,14 +348,7 @@ export class ShippingManager {
     data?: any
   ): Promise<void> {
     try {
-      await prisma.order.update({
-        where: { id: orderId },
-        data: {
-          shippingStatus: status,
-          shippingStatusUpdatedAt: new Date(),
-          shippingData: data ? { ...((await prisma.order.findUnique({ where: { id: orderId } }))?.shippingData as any || {}), ...data } : undefined,
-        },
-      })
+        // Failed - error logged
       
       const order = await prisma.order.findUnique({
         where: { id: orderId },

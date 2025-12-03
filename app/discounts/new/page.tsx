@@ -811,7 +811,7 @@ export default function NewDiscountPage() {
                             <div className="p-4 text-center text-sm text-gray-500">מחפש...</div>
                           ) : giftProductSearchResults.length > 0 ? (
                             <div className="p-2 space-y-1">
-                              {giftProductSearchResults.map((product) => (
+                              {giftProductSearchResults.map((product: any) => (
                                 <div
                                   key={product.id}
                                   onClick={() => {
@@ -906,7 +906,7 @@ export default function NewDiscountPage() {
                             <SelectValue placeholder="בחר וריאציה (אופציונלי)" />
                           </SelectTrigger>
                           <SelectContent>
-                            {giftProductVariants.map((variant) => (
+                            {giftProductVariants.map((variant: any) => (
                               <SelectItem key={variant.id} value={variant.id}>
                                 {variant.name} {variant.price ? `(${variant.price}₪)` : ""}
                               </SelectItem>
@@ -993,7 +993,7 @@ export default function NewDiscountPage() {
                               <div className="p-2 space-y-1">
                                 {requiredProductSearchResults
                                   .filter(p => p.id !== formData.giftProductId)
-                                  .map((product) => (
+                                  .map((product: any) => (
                                     <div
                                       key={product.id}
                                       onClick={() => {
@@ -1141,7 +1141,7 @@ export default function NewDiscountPage() {
                       {filteredProducts.length === 0 ? (
                         <p className="text-sm text-gray-500 text-center py-4">לא נמצאו מוצרים</p>
                       ) : (
-                        filteredProducts.map((product) => (
+                        filteredProducts.map((product: any) => (
                           <div key={product.id} className="flex items-center gap-2">
                             <Checkbox
                               id={`product-${product.id}`}
@@ -1200,7 +1200,7 @@ export default function NewDiscountPage() {
                       {filteredCategories.length === 0 ? (
                         <p className="text-sm text-gray-500 text-center py-4">לא נמצאו קטגוריות</p>
                       ) : (
-                        filteredCategories.map((category) => (
+                        filteredCategories.map((category: any) => (
                           <div key={category.id} className="flex items-center gap-2">
                             <Checkbox
                               id={`category-${category.id}`}
@@ -1292,7 +1292,7 @@ export default function NewDiscountPage() {
                       {filteredCustomers.length === 0 ? (
                         <p className="text-sm text-gray-500 text-center py-4">לא נמצאו לקוחות</p>
                       ) : (
-                        filteredCustomers.map((customer) => {
+                        filteredCustomers.map((customer: any) => {
                           const name = `${customer.firstName || ""} ${customer.lastName || ""}`.trim() || customer.email
                           return (
                             <div key={customer.id} className="flex items-center gap-2">

@@ -191,7 +191,7 @@ const DEFAULT_THEME: ShopTheme = {
 }
 
 export function useShopTheme(slug: string) {
-  const { shop: contextShop, loading: contextLoading } = useStorefrontData()
+  const { shop: contextShop } = useStorefrontData()
   const [theme, setTheme] = useState<ShopTheme>(DEFAULT_THEME)
   const [loading, setLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)

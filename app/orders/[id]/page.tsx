@@ -559,7 +559,7 @@ export default function OrderDetailPage() {
               </tr>
             </thead>
             <tbody>
-              {order.items.map((item) => (
+              {order.items.map((item: any) => (
                 <tr key={item.id}>
                   <td>
                     <div style={{ fontWeight: 'bold' }}>{item.name}</div>
@@ -846,7 +846,7 @@ export default function OrderDetailPage() {
                 {editingSection === 'items' ? (
                   <>
                     <div className="space-y-4">
-                      {items.map((item) => (
+                      {items.map((item: any) => (
                         <div
                           key={item.id}
                           className="flex items-center gap-4 p-4 border rounded-lg"
@@ -930,7 +930,7 @@ export default function OrderDetailPage() {
                   </>
                 ) : (
                   <div className="space-y-4">
-                      {order.items.map((item) => (
+                      {order.items.map((item: any) => (
                       <div
                         key={item.id}
                         className="flex items-center gap-4 p-4 border rounded-lg"
@@ -1396,7 +1396,7 @@ export default function OrderDetailPage() {
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          {statuses.map((s) => (
+                          {statuses.map((s: any) => (
                             <SelectItem key={s.id} value={s.key}>
                               <div className="flex items-center gap-2">
                                 <div

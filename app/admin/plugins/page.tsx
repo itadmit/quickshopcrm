@@ -236,7 +236,7 @@ export default function AdminPluginsPage() {
     }
   }
 
-  const filteredPlugins = plugins.filter((plugin) =>
+  const filteredPlugins = plugins.filter((plugin: any) =>
     plugin.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     plugin.slug.toLowerCase().includes(searchQuery.toLowerCase())
   )
@@ -247,7 +247,7 @@ export default function AdminPluginsPage() {
         <div className="space-y-6">
           <Skeleton className="h-10 w-64" />
           <div className="grid gap-4">
-            {[1, 2, 3].map((i) => (
+            {[1, 2, 3].map((i: any) => (
               <Card key={i}>
                 <CardHeader>
                   <Skeleton className="h-6 w-3/4" />
@@ -309,7 +309,7 @@ export default function AdminPluginsPage() {
               </CardContent>
             </Card>
           ) : (
-            filteredPlugins.map((plugin) => (
+            filteredPlugins.map((plugin: any) => (
               <Card key={plugin.id}>
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between">

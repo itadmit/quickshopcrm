@@ -17,7 +17,6 @@ const createProductSchema = z.object({
   inventoryEnabled: z.boolean().default(true),
   inventoryQty: z.number().int().default(0),
   lowStockAlert: z.number().int().optional(),
-  trackInventory: z.boolean().default(true),
   sellWhenSoldOut: z.boolean().default(false),
   priceByWeight: z.boolean().default(false),
   showPricePer100ml: z.boolean().default(false),
@@ -26,6 +25,7 @@ const createProductSchema = z.object({
   weight: z.union([z.number(), z.null()]).optional(),
   dimensions: z.any().optional(),
   status: z.enum(["DRAFT", "PUBLISHED", "ARCHIVED"]).default("PUBLISHED"),
+  isHidden: z.boolean().default(false),
   scheduledPublishDate: z.union([z.string().datetime(), z.null(), z.literal("")]).optional(),
   notifyOnPublish: z.boolean().default(false),
   images: z.array(z.string()).default([]),
@@ -42,6 +42,7 @@ const createProductSchema = z.object({
   addonIds: z.array(z.string()).optional(),
   defaultVariantId: z.union([z.string(), z.null()]).optional(),
   exclusiveToTier: z.array(z.string()).optional(),
+  tags: z.array(z.string()).optional(),
 })
 
 // GET - קבלת כל המוצרים
@@ -266,9 +267,6 @@ export async function POST(req: NextRequest) {
       customFieldsData.exclusiveToTier = exclusiveToTier
     }
     // שמירת שדות שלא קיימים במודל Product
-    if (data.trackInventory !== undefined) {
-      customFieldsData.trackInventory = data.trackInventory
-    }
     if (data.sellWhenSoldOut !== undefined) {
       customFieldsData.sellWhenSoldOut = data.sellWhenSoldOut
     }

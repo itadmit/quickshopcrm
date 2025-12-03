@@ -156,7 +156,7 @@ export default function ContactsPage() {
       
       // אם יש חנות נבחרת, הוסף אותה לפרמטרים
       if (selectedShop) {
-        params.append("shopId", selectedShop.id)
+        params.append("shopId", selectedShop?.id || "")
       }
 
       if (activeTab !== "all") {
@@ -201,7 +201,7 @@ export default function ContactsPage() {
   }
 
   const getCategoryBadges = (contact: Contact) => {
-    return contact.categoryAssignments.map((assignment) => {
+    return contact.categoryAssignments.map((assignment: any) => {
       const category = assignment.category
       const config = CATEGORY_CONFIG[category.type as ContactCategoryType] || CATEGORY_CONFIG.all
       return (
@@ -708,7 +708,7 @@ export default function ContactsPage() {
                       </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
-                      {contacts.map((contact) => (
+                      {contacts.map((contact: any) => (
                         <tr key={contact.id} className="hover:bg-gray-50">
                           <td className="px-4 py-4">
                             <Checkbox

@@ -90,7 +90,6 @@ export default function EditProductPage() {
     lowStockAlert: "",
     availability: "IN_STOCK" as "IN_STOCK" | "OUT_OF_STOCK" | "PRE_ORDER" | "BACKORDER" | "DISCONTINUED",
     availableDate: "",
-    trackInventory: true,
     sellWhenSoldOut: false,
     priceByWeight: false,
     showPricePer100ml: false,
@@ -186,7 +185,6 @@ export default function EditProductPage() {
           lowStockAlert: data.lowStockAlert?.toString() || "",
           availability: data.availability || "IN_STOCK",
           availableDate: availableDateFormatted,
-          trackInventory: data.trackInventory ?? true,
           sellWhenSoldOut: data.sellWhenSoldOut ?? false,
           priceByWeight: data.priceByWeight ?? false,
           showPricePer100ml: data.showPricePer100ml ?? false,
@@ -372,7 +370,6 @@ export default function EditProductPage() {
         lowStockAlert: formData.lowStockAlert ? parseInt(formData.lowStockAlert) : null,
         availability: formData.availability,
         availableDate: formData.availableDate || null,
-        trackInventory: formData.trackInventory,
         sellWhenSoldOut: formData.sellWhenSoldOut,
         priceByWeight: formData.priceByWeight,
         showPricePer100ml: formData.showPricePer100ml,
@@ -461,7 +458,7 @@ export default function EditProductPage() {
 
                 const optionPayload = {
                   name: option.name,
-                  type: option.type || "button",
+                  type: (option as any).type || "button",
                   values: formattedValues,
                   position: i,
                 }
@@ -729,7 +726,6 @@ export default function EditProductPage() {
                 lowStockAlert: formData.lowStockAlert,
                 availability: formData.availability,
                 availableDate: formData.availableDate,
-                trackInventory: formData.trackInventory,
                 sellWhenSoldOut: formData.sellWhenSoldOut,
                 priceByWeight: formData.priceByWeight,
                 showPricePer100ml: formData.showPricePer100ml,
@@ -867,7 +863,7 @@ export default function EditProductPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">ללא תבנית (ברירת מחדל)</SelectItem>
-                      {templates.map((template) => (
+                      {templates.map((template: any) => (
                         <SelectItem key={template.id} value={template.id}>
                           {template.name}
                         </SelectItem>

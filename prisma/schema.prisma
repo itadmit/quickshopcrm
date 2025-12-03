@@ -1535,6 +1535,7 @@ enum IntegrationType {
   GOOGLE_CALENDAR
   PAYPLUS
   PAYPAL
+  FOCUS_SHIPPING
 }
 
 enum SubscriptionPlan {

@@ -542,7 +542,7 @@ export default function CustomersPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {customers.map((customer) => (
+                    {customers.map((customer: any) => (
                       <tr key={customer.id} className="hover:bg-gray-50">
                         <td className="px-4 py-4">
                           <Checkbox

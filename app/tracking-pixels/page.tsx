@@ -68,7 +68,7 @@ export default function TrackingPixelsPage() {
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/tracking-pixels?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/tracking-pixels?shopId=${selectedShop?.id || ""}`)
       if (response.ok) {
         const data = await response.json()
         setPixels(data)
@@ -188,7 +188,7 @@ export default function TrackingPixelsPage() {
           </Card>
         ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {pixels.map((pixel) => {
+            {pixels.map((pixel: any) => {
               const Icon = platformIcons[pixel.platform] || Tag
               return (
                 <Card key={pixel.id}>

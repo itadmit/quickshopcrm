@@ -24,7 +24,7 @@ interface StoreCredit {
     lastName: string | null
   }
   balance: number
-  expiresAt: string | null
+  endDate: string | null
   notes: string | null
   createdAt: string
 }
@@ -66,7 +66,7 @@ export default function StoreCreditsPage() {
     }
   }
 
-  const filteredCredits = credits.filter((credit) => {
+  const filteredCredits = credits.filter((credit: any) => {
     if (!search) return true
     const email = credit.customer?.email || ""
     const name = `${credit.customer?.firstName || ""} ${credit.customer?.lastName || ""}`.trim()
@@ -176,7 +176,7 @@ export default function StoreCreditsPage() {
           </Card>
         ) : (
           <div className="space-y-4">
-            {filteredCredits.map((credit) => (
+            {filteredCredits.map((credit: any) => (
               <Card key={credit.id}>
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between">

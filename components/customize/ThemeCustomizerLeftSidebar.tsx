@@ -490,7 +490,7 @@ export function ThemeCustomizerLeftSidebar({
     const newSection: ThemeSection = {
       id: `section-${Date.now()}`,
       type: "section",
-      name: availableSections.find((s) => s.id === sectionType)?.name || sectionType,
+      name: availableSections.find((s: any) => s.id === sectionType)?.name || sectionType,
       visible: true,
       position: sections.length,
       blocks: [],
@@ -500,11 +500,11 @@ export function ThemeCustomizerLeftSidebar({
 
   const handleAddBlock = (sectionId: string, blockType: string) => {
     const availableBlocks = getAvailableBlocks(pageType)
-    const blockTemplate = availableBlocks.find((b) => b.type === blockType)
+    const blockTemplate = availableBlocks.find((b: any) => b.type === blockType)
     
     if (!blockTemplate) return
     
-    const updatedSections = sections.map((section) => {
+    const updatedSections = sections.map((section: any) => {
       if (section.id === sectionId) {
         const newBlock: ThemeBlock = {
           id: `${blockType}-${Date.now()}`,
@@ -525,12 +525,12 @@ export function ThemeCustomizerLeftSidebar({
   }
 
   const handleToggleVisibility = (sectionId: string, blockId?: string) => {
-    const updatedSections = sections.map((section) => {
+    const updatedSections = sections.map((section: any) => {
       if (section.id === sectionId) {
         if (blockId) {
           return {
             ...section,
-            blocks: section.blocks?.map((block) =>
+            blocks: section.blocks?.map((block: any) =>
               block.id === blockId
                 ? { ...block, visible: !block.visible }
                 : block
@@ -561,7 +561,7 @@ export function ThemeCustomizerLeftSidebar({
     const overId = over.id as string
 
     // אם זה section
-    if (sections.find((s) => s.id === activeId)) {
+    if (sections.find((s: any) => s.id === activeId)) {
       const oldIndex = sections.findIndex((s) => s.id === activeId)
       const newIndex = sections.findIndex((s) => s.id === overId)
 
@@ -586,14 +586,14 @@ export function ThemeCustomizerLeftSidebar({
 
         if (activeSectionId === overSectionId) {
           // אותו section - רק להזיז את ה-block
-          const updatedSections = sections.map((section) => {
+          const updatedSections = sections.map((section: any) => {
             if (section.id === activeSectionId) {
               const blocks = section.blocks || []
-              const oldIndex = blocks.findIndex((b) => b.id === activeBlockId)
-              const newIndex = blocks.findIndex((b) => b.id === overBlockId)
+              const oldIndex = blocks.findIndex((b: any) => b.id === activeBlockId)
+              const newIndex = blocks.findIndex((b: any) => b.id === overBlockId)
 
               if (oldIndex !== -1 && newIndex !== -1 && oldIndex !== newIndex) {
-                const newBlocks = arrayMove(blocks, oldIndex, newIndex).map((block, index) => ({
+                const newBlocks = arrayMove(blocks, oldIndex, newIndex).map((block: any, index: number) => ({
                   ...block,
                   position: index,
                 }))
@@ -671,19 +671,19 @@ export function ThemeCustomizerLeftSidebar({
         >
           <SortableContext
             items={sections
-              .filter((section) =>
+              .filter((section: any) =>
                 searchQuery === "" ||
                 section.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
-              .map((s) => s.id)}
+              .map((s: any) => s.id)}
             strategy={verticalListSortingStrategy}
           >
             {sections
-              .filter((section) =>
+              .filter((section: any) =>
                 searchQuery === "" ||
                 section.name.toLowerCase().includes(searchQuery.toLowerCase())
               )
-              .map((section) => {
+              .map((section: any) => {
                 const isExpanded = expandedSections.has(section.id)
                 const isSelected = selectedSectionId === section.id
 
@@ -704,12 +704,12 @@ export function ThemeCustomizerLeftSidebar({
                 {isExpanded && section.blocks && section.blocks.length > 0 && (
                   <div className="mr-8">
                     <SortableContext
-                      items={section.blocks.map((b) => `block-${section.id}-${b.id}`)}
+                      items={section.blocks.map((b: any) => `block-${section.id}-${b.id}`)}
                       strategy={verticalListSortingStrategy}
                     >
                       {section.blocks
-                        .sort((a, b) => a.position - b.position)
-                        .map((block) => {
+                        .sort((a: any, b: any) => a.position - b.position)
+                        .map((block: any) => {
                           const isBlockSelected = selectedBlockId === block.id
 
                           return (
@@ -754,15 +754,15 @@ export function ThemeCustomizerLeftSidebar({
           <DragOverlay>
             {activeId ? (
               <div className="bg-white border border-gray-200 rounded shadow-lg p-2">
-                {sections.find((s) => s.id === activeId)?.name ||
+                {sections.find((s: any) => s.id === activeId)?.name ||
                   sections
                     .flatMap((s) =>
-                      (s.blocks || []).map((b) => ({
+                      (s.blocks || []).map((b: any) => ({
                         ...b,
                         sectionId: s.id,
                       }))
                     )
-                    .find((b) => `block-${b.sectionId}-${b.id}` === activeId)?.name}
+                    .find((b: any) => `block-${b.sectionId}-${b.id}` === activeId)?.name}
               </div>
             ) : null}
           </DragOverlay>
@@ -781,7 +781,7 @@ export function ThemeCustomizerLeftSidebar({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
-              {availableSections.map((section) => (
+              {availableSections.map((section: any) => (
                 <DropdownMenuItem
                   key={section.id}
                   onClick={() => handleAddSection(section.id)}

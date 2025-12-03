@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
 
     // בדיקה שהפריטים להחזרה תואמים להזמנה
     for (const returnItem of data.items) {
-      const orderItem = order.items.find((item) => item.id === returnItem.orderItemId)
+      const orderItem = order.items.find((item: any) => item.id === returnItem.orderItemId)
       
       if (!orderItem) {
         return NextResponse.json(
@@ -162,7 +162,7 @@ export async function POST(req: NextRequest) {
       // בדיקה אם הפריט הזה כבר נמצא בהחזרה ממתינה
       for (const pendingRet of pendingReturns) {
         const pendingRetItems = pendingRet.items as Array<{ orderItemId: string; quantity: number }>
-        const pendingRetItem = pendingRetItems.find((item) => item.orderItemId === returnItem.orderItemId)
+        const pendingRetItem = pendingRetItems.find((item: any) => item.orderItemId === returnItem.orderItemId)
         if (pendingRetItem) {
           return NextResponse.json(
             { error: `לפריט זה כבר יש בקשת החזרה ממתינה. לא ניתן ליצור החזרה נוספת לאותו פריט` },
@@ -184,7 +184,7 @@ export async function POST(req: NextRequest) {
       let totalReturnedQty = 0
       for (const ret of approvedReturns) {
         const retItems = ret.items as Array<{ orderItemId: string; quantity: number }>
-        const retItem = retItems.find((item) => item.orderItemId === returnItem.orderItemId)
+        const retItem = retItems.find((item: any) => item.orderItemId === returnItem.orderItemId)
         if (retItem) {
           totalReturnedQty += retItem.quantity
         }

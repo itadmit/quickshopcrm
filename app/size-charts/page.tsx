@@ -51,7 +51,7 @@ export default function SizeChartsPage() {
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/size-charts?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/size-charts?shopId=${selectedShop?.id || ""}`)
       if (response.ok) {
         const data = await response.json()
         setSizeCharts(data)
@@ -123,7 +123,7 @@ export default function SizeChartsPage() {
     }
   }
 
-  const dataListItems: DataListItem[] = sizeCharts.map((chart) => {
+  const dataListItems: DataListItem[] = sizeCharts.map((chart: any) => {
     const Icon = getDisplayTypeIcon(chart.displayType)
     const subtitle = (
       <>

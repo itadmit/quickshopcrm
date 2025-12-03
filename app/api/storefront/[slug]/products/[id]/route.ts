@@ -29,9 +29,9 @@ export async function GET(
     if (customerId) {
       const customer = await prisma.customer.findUnique({
         where: { id: customerId },
-        select: { premiumClubTier: true },
+        select: { tier: true },
       })
-      customerTier = customer?.premiumClubTier || null
+      customerTier = customer?.tier || null
     }
 
     // נסה למצוא את המוצר לפי ID או slug
@@ -124,8 +124,8 @@ export async function GET(
     }
 
     // בדיקת גישה למוצר בלעדי
-    if (product.exclusiveToTier && product.exclusiveToTier.length > 0) {
-      if (!customerTier || !product.exclusiveToTier.includes(customerTier)) {
+    if ((product.customFields as any)?.exclusiveToTier && (product.customFields as any)?.exclusiveToTier.length > 0) {
+      if (!customerTier || !(product.customFields as any)?.exclusiveToTier.includes(customerTier)) {
         return NextResponse.json(
           { error: "מוצר זה זמין רק לחברי מועדון פרימיום ברמה מתאימה" },
           { status: 403 }

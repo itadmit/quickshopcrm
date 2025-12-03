@@ -393,12 +393,12 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
           )}
           {sectionProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {sectionProducts.map((product) => (
+              {sectionProducts.map((product: any) => (
                 <ProductCard
                   key={product.id}
                   product={{
                     ...product,
-                    variants: product.variants?.filter(v => v.price !== null).map(v => ({
+                    variants: product.variants?.filter((v: { price: number | null }) => v.price !== null).map((v: { price: number | null }) => ({
                       ...v,
                       price: v.price!
                     }))
@@ -409,7 +409,7 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {[1, 2, 3, 4].map((i) => {
+              {[1, 2, 3, 4].map((i: any) => {
                 const Icon = placeholderIcons[i - 1]
                 return (
                   <Card key={i} className="h-full overflow-hidden group cursor-default opacity-75 hover:opacity-90 transition-opacity">
@@ -486,7 +486,7 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-              {[1, 2, 3, 4, 5, 6].map((i) => {
+              {[1, 2, 3, 4, 5, 6].map((i: any) => {
                 const Icon = categoryIcons[i - 1]
                 return (
                   <Card key={i} className="overflow-hidden group cursor-default hover:shadow-lg transition-shadow">
@@ -610,12 +610,12 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
           )}
           {sectionProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {sectionProducts.map((product) => (
+              {sectionProducts.map((product: any) => (
                 <ProductCard
                   key={product.id}
                   product={{
                     ...product,
-                    variants: product.variants?.filter(v => v.price !== null).map(v => ({
+                    variants: product.variants?.filter((v: { price: number | null }) => v.price !== null).map((v: { price: number | null }) => ({
                       ...v,
                       price: v.price!
                     }))
@@ -626,7 +626,7 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => {
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((i: any) => {
                 const Icon = placeholderIcons[(i - 1) % placeholderIcons.length]
                 return (
                   <Card key={i} className="h-full overflow-hidden group cursor-default opacity-75 hover:opacity-90 transition-opacity">
@@ -729,7 +729,7 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
 
   // פונקציות render לבלוקים החדשים
   const renderSlideshowSection = (section: HomePageSection) => {
-    const config = section.config || {}
+    const config = (section.config || {}) as any
     return (
       <section key={section.id} className="relative w-full overflow-hidden">
         <div className="relative w-full h-[600px] bg-gray-100">
@@ -745,7 +745,7 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
   }
 
   const renderImageSlideSection = (section: HomePageSection) => {
-    const config = section.config || {}
+    const config = (section.config || {}) as any
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
     const bgImage = isMobile 
       ? (config.backgroundImageMobile || config.backgroundImage || "")
@@ -823,7 +823,7 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
   }
 
   const renderVideoSection = (section: HomePageSection) => {
-    const config = section.config || {}
+    const config = (section.config || {}) as any
     return (
       <section key={section.id} className="relative w-full py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -852,11 +852,11 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
   }
 
   const renderScrollingPromotionSection = (section: HomePageSection) => {
-    const config = section.config || {}
+    const config = (section.config || {}) as any
     return (
       <section key={section.id} className="relative w-full overflow-hidden bg-gray-100 py-4">
         <div className="flex animate-scroll whitespace-nowrap">
-          {[1, 2, 3, 4, 5].map((i) => (
+          {[1, 2, 3, 4, 5].map((i: any) => (
             <div key={i} className="inline-block px-8 text-gray-700 font-medium">
               Scrolling Promotion Item {i}
             </div>
@@ -867,7 +867,7 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
   }
 
   const renderCustomContentSection = (section: HomePageSection) => {
-    const config = section.config || {}
+    const config = (section.config || {}) as any
     return (
       <section 
         key={section.id} 
@@ -904,7 +904,7 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
   }
 
   const renderTextBlockSection = (section: HomePageSection) => {
-    const config = section.config || {}
+    const config = (section.config || {}) as any
     return (
       <section key={section.id} className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -956,7 +956,7 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
   }
 
   const renderImageSection = (section: HomePageSection) => {
-    const config = section.config || {}
+    const config = (section.config || {}) as any
     return (
       <section key={section.id} className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -987,7 +987,7 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
   }
 
   const renderBrandsListSection = (section: HomePageSection) => {
-    const config = section.config || {}
+    const config = (section.config || {}) as any
     return (
       <section key={section.id} className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -1008,7 +1008,7 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
             config.imagesPerRow === 6 && "grid-cols-6",
             !config.imagesPerRow && "grid-cols-4"
           )}>
-            {[1, 2, 3, 4, 5, 6].map((i) => (
+            {[1, 2, 3, 4, 5, 6].map((i: any) => (
               <div key={i} className="bg-gray-100 rounded-lg aspect-square flex items-center justify-center">
                 <p className="text-gray-400 text-sm">Brand {i}</p>
               </div>
@@ -1144,7 +1144,7 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
       <StorefrontHeader
         slug={slug}
         shop={shop}
-        navigation={navigation}
+        navigation={navigation ?? undefined}
         cartItemCount={cartItemCount}
         onCartUpdate={() => {}}
         theme={theme}
@@ -1177,7 +1177,7 @@ export function ShopPageClient({ shop, products: initialProducts, slug, theme, n
         </>
       ) : (
         <>
-          {getSortedSections().map((section) => renderSection(section))}
+          {getSortedSections().map((section: any) => renderSection(section))}
         </>
       )}
 

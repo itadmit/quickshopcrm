@@ -482,7 +482,7 @@ export default function EditCouponPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">עריכת קופון</h1>
             <p className="text-gray-600 mt-1">
-              ערוך קופון לחנות: <span className="font-semibold">{selectedShop.name}</span>
+              ערוך קופון לחנות: <span className="font-semibold">{selectedShop?.name || ""}</span>
             </p>
           </div>
           <div className="flex gap-2">
@@ -858,7 +858,7 @@ export default function EditCouponPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="none">ללא משפיען</SelectItem>
-                      {influencers.map((influencer) => (
+                      {influencers.map((influencer: any) => (
                         <SelectItem key={influencer.id} value={influencer.id}>
                           {influencer.name} ({influencer.email})
                         </SelectItem>
@@ -998,7 +998,7 @@ export default function EditCouponPage() {
                     <div className="p-4 text-center text-sm text-gray-500">מחפש...</div>
                   ) : giftProductSearchResults.length > 0 ? (
                     <div className="p-2 space-y-1">
-                      {giftProductSearchResults.map((product) => (
+                      {giftProductSearchResults.map((product: any) => (
                         <div
                           key={product.id}
                           onClick={() => {
@@ -1088,7 +1088,7 @@ export default function EditCouponPage() {
                     <SelectValue placeholder="בחר וריאציה (אופציונלי)" />
                   </SelectTrigger>
                   <SelectContent>
-                    {giftProductVariants.map((variant) => (
+                    {giftProductVariants.map((variant: any) => (
                       <SelectItem key={variant.id} value={variant.id}>
                         {variant.name} {variant.price ? `(${variant.price}₪)` : ""}
                       </SelectItem>
@@ -1163,7 +1163,7 @@ export default function EditCouponPage() {
                           <div className="p-2 space-y-1">
                             {requiredProductSearchResults
                               .filter(p => p.id !== formData.giftProductId)
-                              .map((product) => (
+                              .map((product: any) => (
                                 <div
                                   key={product.id}
                                   onClick={() => {

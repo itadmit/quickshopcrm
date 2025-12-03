@@ -52,6 +52,7 @@ interface Shop {
 }
 
 interface Customer {
+  tier?: string | null
   id: string
   email: string
   firstName: string | null
@@ -1118,7 +1119,7 @@ export default function StorefrontAccountPage() {
                       <div className="flex-1">
                         <p className="font-semibold text-lg">יש לך מתנה חודשית!</p>
                         <p className="text-sm text-gray-600">
-                          כחבר מועדון פרימיום ברמה {premiumProgress?.currentTier?.name || customer.premiumClubTier}, אתה זכאי למתנה חודשית
+                          כחבר מועדון פרימיום ברמה {premiumProgress?.currentTier?.name || customer.tier}, אתה זכאי למתנה חודשית
                         </p>
                       </div>
                     </div>
@@ -1153,8 +1154,8 @@ export default function StorefrontAccountPage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {orders.map((order) => {
-                        const hasTracking = order.shippingTrackingNumber || order.trackingNumber
+                      {orders.map((order: any) => {
+                        const hasTracking = order.trackingNumber || order.trackingNumber
                         const trackingStatus = trackingStatuses[order.id]
                         const isLoadingTracking = loadingTracking[order.id]
                         
@@ -1192,7 +1193,7 @@ export default function StorefrontAccountPage() {
                                     <div className="flex items-center gap-1">
                                       <Truck className="w-4 h-4" />
                                       <span className="text-xs">
-                                        {order.shippingTrackingNumber || order.trackingNumber}
+                                        {order.trackingNumber || order.trackingNumber}
                                       </span>
                                     </div>
                                   )}
@@ -1612,7 +1613,7 @@ export default function StorefrontAccountPage() {
                     setAddressForm((prev) => ({ ...prev, city: option.value }))
                     setSelectedCityForStreets(option.value)
                   }}
-                  options={citySearch.cities.map((city) => ({
+                  options={citySearch.cities.map((city: any) => ({
                     value: city.cityName,
                     label: city.cityName,
                   }))}
@@ -1642,7 +1643,7 @@ export default function StorefrontAccountPage() {
                 onSelect={(option) => {
                   setAddressForm((prev) => ({ ...prev, address: option.value }))
                 }}
-                options={streetSearch.streets.map((street) => ({
+                options={streetSearch.streets.map((street: any) => ({
                   value: street.streetName,
                   label: street.streetName,
                 }))}
@@ -1744,7 +1745,7 @@ export default function StorefrontAccountPage() {
                 <div className="space-y-2 max-h-60 overflow-y-auto">
                   {orders
                     .filter(o => o.paymentStatus === "PAID")
-                    .map((order) => {
+                    .map((order: any) => {
                       // בדיקה אם יש החזרות מאושרות/הושלמות להזמנה הזו
                       const approvedReturns = returns.filter(
                         (r: any) => r.orderId === order.id && 

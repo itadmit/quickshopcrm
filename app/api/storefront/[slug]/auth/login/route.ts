@@ -92,8 +92,7 @@ export async function POST(
         firstName: customer.firstName,
         lastName: customer.lastName,
         phone: customer.phone,
-        preferredPaymentMethod: customer.preferredPaymentMethod,
-        premiumClubTier: customer.premiumClubTier,
+        tier: customer.tier,
       },
     })
 
@@ -104,8 +103,7 @@ export async function POST(
       firstName: customer.firstName,
       lastName: customer.lastName,
       phone: customer.phone,
-      preferredPaymentMethod: customer.preferredPaymentMethod,
-      premiumClubTier: customer.premiumClubTier,
+      tier: customer.tier,
     })
     
     response.cookies.set(`storefront_customer_${params.slug}`, customerData, {

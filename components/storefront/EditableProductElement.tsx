@@ -83,16 +83,16 @@ export function EditableProductElement({
 
     const element = document.querySelector(`[data-element-id="${elementId}"]`)
     if (element) {
-      element.addEventListener('click', handleClick)
-      element.addEventListener('mouseenter', handleMouseEnter)
-      element.addEventListener('mouseleave', handleMouseLeave)
+      element.addEventListener('click', handleClick as EventListener)
+      element.addEventListener('mouseenter', handleMouseEnter as EventListener)
+      element.addEventListener('mouseleave', handleMouseLeave as EventListener)
     }
 
     return () => {
       if (element) {
-        element.removeEventListener('click', handleClick)
-        element.removeEventListener('mouseenter', handleMouseEnter)
-        element.removeEventListener('mouseleave', handleMouseLeave)
+        element.removeEventListener('click', handleClick as EventListener)
+        element.removeEventListener('mouseenter', handleMouseEnter as EventListener)
+        element.removeEventListener('mouseleave', handleMouseLeave as EventListener)
       }
     }
   }, [isEditing, elementId, onOpenSettings])

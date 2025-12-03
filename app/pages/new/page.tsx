@@ -118,18 +118,18 @@ export default function NewPagePage() {
     setFormData((prev) => {
       const isSelected = prev.selectedProducts.includes(productId)
       const newSelectedProducts = isSelected
-        ? prev.selectedProducts.filter((id) => id !== productId)
+        ? prev.selectedProducts.filter((id: any) => id !== productId)
         : [...prev.selectedProducts, productId]
       
       // עדכון רשימת המוצרים הנבחרים
       if (isSelected) {
-        setSelectedProductsData((prev) => prev.filter((p) => p.id !== productId))
+        setSelectedProductsData((prev) => prev.filter((p: any) => p.id !== productId))
       } else {
-        const product = products.find((p) => p.id === productId)
+        const product = products.find((p: any) => p.id === productId)
         if (product) {
           setSelectedProductsData((prev) => {
             // בדיקה שהמוצר לא כבר קיים
-            if (prev.find((p) => p.id === productId)) {
+            if (prev.find((p: any) => p.id === productId)) {
               return prev
             }
             return [...prev, product]
@@ -146,8 +146,8 @@ export default function NewPagePage() {
 
   const getSelectedProductsData = () => {
     // משלב את המוצרים מהחיפוש עם המוצרים שכבר נבחרו
-    const fromSearch = products.filter((p) => formData.selectedProducts.includes(p.id))
-    const fromSelected = selectedProductsData.filter((p) => formData.selectedProducts.includes(p.id))
+    const fromSearch = products.filter((p: any) => formData.selectedProducts.includes(p.id))
+    const fromSelected = selectedProductsData.filter((p: any) => formData.selectedProducts.includes(p.id))
     const combined = [...fromSearch, ...fromSelected]
     // הסרת כפילויות
     return combined.filter((p, index, self) => index === self.findIndex((t) => t.id === p.id))
@@ -160,12 +160,12 @@ export default function NewPagePage() {
     // אם יש חיפוש, נציג את תוצאות החיפוש + מוצרים נבחרים שלא בתוצאות
     if (productSearch.trim()) {
       const searchProducts = products
-      const otherSelected = selectedProductsData.filter((p) => selectedIds.has(p.id) && !products.find((sp) => sp.id === p.id))
+      const otherSelected = selectedProductsData.filter((p: any) => selectedIds.has(p.id) && !products.find((sp: any) => sp.id === p.id))
       return [...searchProducts, ...otherSelected]
     }
     
     // אם אין חיפוש, נציג רק את המוצרים הנבחרים
-    return selectedProductsData.filter((p) => selectedIds.has(p.id))
+    return selectedProductsData.filter((p: any) => selectedIds.has(p.id))
   }
 
   const handleSubmit = async () => {
@@ -283,7 +283,7 @@ export default function NewPagePage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">דף חדש</h1>
             <p className="text-gray-600 mt-1">
-              צור דף חדש לחנות: <span className="font-semibold">{selectedShop.name}</span>
+              צור דף חדש לחנות: <span className="font-semibold">{selectedShop?.name || "לא נבחרה חנות"}</span>
             </p>
           </div>
           <div className="flex gap-2">
@@ -422,7 +422,7 @@ export default function NewPagePage() {
 
                     {getDisplayedProducts().length > 0 && (
                       <div className="border rounded-lg p-3 max-h-60 overflow-y-auto space-y-2">
-                        {getDisplayedProducts().map((product) => {
+                        {getDisplayedProducts().map((product: any) => {
                           const isSelected = formData.selectedProducts.includes(product.id)
                           return (
                             <div
@@ -465,7 +465,7 @@ export default function NewPagePage() {
                       <div className="space-y-2">
                         <Label>מוצרים נבחרים ({formData.selectedProducts.length})</Label>
                         <div className="flex flex-wrap gap-2">
-                          {getSelectedProductsData().map((product) => (
+                          {getSelectedProductsData().map((product: any) => (
                             <div
                               key={product.id}
                               className="flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2"
@@ -532,7 +532,7 @@ export default function NewPagePage() {
                     setMediaPickerOpen(false)
                   }}
                   selectedFiles={formData.featuredImage ? [formData.featuredImage] : []}
-                  shopId={selectedShop.id}
+                  shopId={selectedShop?.id || undefined}
                   entityType="pages"
                   entityId="new"
                   multiple={false}
@@ -560,7 +560,7 @@ export default function NewPagePage() {
                         <div className="px-2 py-1.5 text-sm text-gray-500">טוען קופונים...</div>
                       ) : coupons.length > 0 ? (
                         <>
-                          {coupons.map((coupon) => (
+                          {coupons.map((coupon: any) => (
                             <SelectItem key={coupon.id} value={coupon.code}>
                               {coupon.code}
                             </SelectItem>

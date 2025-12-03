@@ -33,7 +33,9 @@ export async function GET(
       return NextResponse.json({ error: "Reviews plugin is not active" }, { status: 403 })
     }
 
-    const questions = await prisma.productQuestion.findMany({
+    // TODO: ProductQuestion model not implemented yet
+    return NextResponse.json({ error: "Feature not implemented" }, { status: 501 })
+    /* const questions = await prisma.productQuestion.findMany({
       where: {
         productId: params.id,
         isApproved: true, // רק שאלות מאושרות בסטורפרונט
@@ -73,7 +75,7 @@ export async function GET(
       },
     })
 
-    return NextResponse.json(questions)
+    return NextResponse.json(questions) */
   } catch (error) {
     console.error("Error fetching questions:", error)
     return NextResponse.json(
@@ -111,7 +113,9 @@ export async function POST(
       return NextResponse.json({ error: "Reviews plugin is not active" }, { status: 403 })
     }
 
-    // יצירת השאלה
+    // TODO: ProductQuestion model not implemented yet
+    return NextResponse.json({ error: "Feature not implemented" }, { status: 501 })
+    /* // יצירת השאלה
     const question = await prisma.productQuestion.create({
       data: {
         productId: params.id,
@@ -130,7 +134,7 @@ export async function POST(
       },
     })
 
-    return NextResponse.json(question, { status: 201 })
+    return NextResponse.json(question, { status: 201 }) */
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

@@ -483,7 +483,7 @@ export default function AppearancePage() {
     if (!selectedShop?.id) return
     
     try {
-      const response = await fetch(`/api/pages?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/pages?shopId=${selectedShop?.id || ""}`)
       if (response.ok) {
         const data = await response.json()
         setPages(data)
@@ -497,7 +497,7 @@ export default function AppearancePage() {
     if (!selectedShop?.id) return
     
     try {
-      const response = await fetch(`/api/shops/${selectedShop.id}`)
+      const response = await fetch(`/api/shops/${selectedShop?.id || ""}`)
       if (response.ok) {
         const shop = await response.json()
         
@@ -680,7 +680,7 @@ export default function AppearancePage() {
         cleanedMessages = ['']
       }
       
-      const response = await fetch(`/api/shops/${selectedShop.id}`, {
+      const response = await fetch(`/api/shops/${selectedShop?.id || ""}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -902,7 +902,7 @@ export default function AppearancePage() {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">בחירת פונט</h3>
               <p className="text-sm text-gray-600 mb-4">הפונט ישפיע על הפרונט של החנות בלבד</p>
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
-                {FONTS.map((font) => (
+                {FONTS.map((font: any) => (
                   <div
                     key={font.id}
                     className={cn(
@@ -1440,7 +1440,7 @@ export default function AppearancePage() {
                             formData.append("entityId", selectedShop?.id || "new")
                             formData.append("fileType", "logo")
                             if (selectedShop?.id) {
-                              formData.append("shopId", selectedShop.id)
+                              formData.append("shopId", selectedShop?.id || "")
                             }
 
                             const response = await fetch("/api/files/upload", {
@@ -1543,7 +1543,7 @@ export default function AppearancePage() {
                             formData.append("entityId", selectedShop?.id || "new")
                             formData.append("fileType", "favicon")
                             if (selectedShop?.id) {
-                              formData.append("shopId", selectedShop.id)
+                              formData.append("shopId", selectedShop?.id || "")
                             }
 
                             const response = await fetch("/api/files/upload", {
@@ -3261,10 +3261,10 @@ export default function AppearancePage() {
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm sticky top-6">
             <div className="p-4 border-b border-gray-200">
               <h2 className="text-lg font-semibold text-gray-900">מראה ועיצוב</h2>
-              <p className="text-sm text-gray-500 mt-1">{selectedShop.name}</p>
+              <p className="text-sm text-gray-500 mt-1">{selectedShop?.name || ""}</p>
             </div>
             <nav className="p-2">
-              {tabs.map((tab) => {
+              {tabs.map((tab: any) => {
                 const Icon = tab.icon
                 const isActive = activeTab === tab.key
                 return (
@@ -3778,7 +3778,7 @@ export default function AppearancePage() {
                         </div>
                         <div className="flex gap-2 mt-2">
                           <span className="text-xs text-gray-500">צבעים מומלצים:</span>
-                          {["#f8f9fa", "#ffffff", "#f3f4f6", "#e5e7eb"].map((color) => (
+                          {["#f8f9fa", "#ffffff", "#f3f4f6", "#e5e7eb"].map((color: any) => (
                             <button
                               key={color}
                               onClick={() => updateSettings("productRelatedBgColor", color)}
@@ -3813,7 +3813,7 @@ export default function AppearancePage() {
                         </div>
                         <div className="flex gap-2 mt-2">
                           <span className="text-xs text-gray-500">צבעים מומלצים:</span>
-                          {["#f1f3f4", "#ffffff", "#f8f9fa", "#e5e7eb"].map((color) => (
+                          {["#f1f3f4", "#ffffff", "#f8f9fa", "#e5e7eb"].map((color: any) => (
                             <button
                               key={color}
                               onClick={() => updateSettings("productCompleteLookBgColor", color)}
@@ -4801,8 +4801,8 @@ export default function AppearancePage() {
                                     const formData = new FormData()
                                     formData.append("file", file)
                                     formData.append("entityType", "shops")
-                                    formData.append("entityId", selectedShop.id)
-                                    formData.append("shopId", selectedShop.id)
+                                    formData.append("entityId", selectedShop?.id || "")
+                                    formData.append("shopId", selectedShop?.id || "")
                                     formData.append("fileType", "gift-card-background")
                                     
                                     try {

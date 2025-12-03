@@ -114,7 +114,7 @@ export async function sendOrderConfirmationEmail(orderId: string) {
 
       <div style="margin-top: 30px; padding: 20px; background-color: #f3f4f6; border-radius: 8px; text-align: center;">
         <p style="margin-bottom: 15px;">רוצה לעקוב אחר המשלוח שלך?</p>
-        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/shop/${order.shop.slug}/track-order?order=${order.orderNumber}&phone=${encodeURIComponent(order.phone || '')}" 
+        <a href="${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/shop/${order.shop.slug}/track-order?order=${order.orderNumber}&phone=${encodeURIComponent((order as any).phone || (order as any).customer?.phone || '')}" 
            style="display: inline-block; padding: 12px 30px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 6px; font-weight: bold;">
           🚚 עקוב אחר ההזמנה
         </a>

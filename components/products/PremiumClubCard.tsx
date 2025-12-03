@@ -56,7 +56,7 @@ export function PremiumClubCard({
     if (checked) {
       onExclusiveToTierChange([...exclusiveToTier, tierSlug])
     } else {
-      onExclusiveToTierChange(exclusiveToTier.filter((t) => t !== tierSlug))
+      onExclusiveToTierChange(exclusiveToTier.filter((t: any) => t !== tierSlug))
     }
   }
 
@@ -79,7 +79,7 @@ export function PremiumClubCard({
             בחר את הרמות שיש להן גישה למוצר זה. אם לא תבחר כלום, המוצר זמין לכולם.
           </p>
           <div className="space-y-2 mt-3">
-            {availableTiers.map((tier) => (
+            {availableTiers.map((tier: any) => (
               <div key={tier.slug} className="flex items-center gap-2">
                 <Checkbox
                   id={`tier-${tier.slug}`}

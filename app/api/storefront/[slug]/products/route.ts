@@ -55,9 +55,9 @@ export async function GET(
     if (customerId) {
       const customer = await prisma.customer.findUnique({
         where: { id: customerId },
-        select: { premiumClubTier: true },
+        select: { tier: true },
       })
-      customerTier = customer?.premiumClubTier || null
+      customerTier = customer?.tier || null
       
       // בדיקת early access
       if (customerTier) {

@@ -87,7 +87,7 @@ export async function GET(
 
     // המרה לאובייקט
     const permissionMap: Record<string, boolean> = {}
-    permissions.forEach((perm) => {
+    permissions.forEach((perm: any) => {
       permissionMap[perm.permission] = perm.allowed
     })
 

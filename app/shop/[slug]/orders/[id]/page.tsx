@@ -66,6 +66,8 @@ interface Order {
   items: OrderItem[]
   shippingAddress: any // JSON field
   billingAddress: any | null // JSON field
+  paymentMethod: string | null
+  transactionId: string | null
 }
 
 interface TrackingStatus {
@@ -106,7 +108,7 @@ export default function StorefrontOrderPage() {
   }, [slug, orderId])
 
   useEffect(() => {
-    if (order && (order.shippingTrackingNumber || order.trackingNumber)) {
+    if (order && (order.trackingNumber || order.trackingNumber)) {
       fetchTrackingStatus()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -376,7 +378,7 @@ export default function StorefrontOrderPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {order.items.map((item) => (
+                  {order.items.map((item: any) => (
                     <div key={item.id} className="flex gap-4 pb-4 border-b last:border-0">
                       {item.product.images && item.product.images.length > 0 && (
                         <img
@@ -501,7 +503,7 @@ export default function StorefrontOrderPage() {
             )}
 
             {/* Tracking */}
-            {(order.trackingNumber || order.shippingTrackingNumber) && (
+            {(order.trackingNumber || order.trackingNumber) && (
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
@@ -531,7 +533,7 @@ export default function StorefrontOrderPage() {
                     <div>
                       <span className="font-medium text-gray-700">מספר מעקב:</span>
                       <span className="mr-2 text-gray-700 font-mono">
-                        {order.shippingTrackingNumber || order.trackingNumber}
+                        {order.trackingNumber || order.trackingNumber}
                       </span>
                     </div>
                     {trackingStatus && (

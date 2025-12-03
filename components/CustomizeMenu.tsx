@@ -112,7 +112,7 @@ export function CustomizeMenu() {
   const fetchProducts = async () => {
     if (!selectedShop?.slug) return
     try {
-      const response = await fetch(`/api/storefront/${selectedShop.slug}/products?limit=50`)
+      const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/products?limit=50`)
       if (response.ok) {
         const data = await response.json()
         setProducts(data.products || [])
@@ -125,7 +125,7 @@ export function CustomizeMenu() {
   const fetchCategories = async () => {
     if (!selectedShop?.slug) return
     try {
-      const response = await fetch(`/api/storefront/${selectedShop.slug}/categories`)
+      const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/categories`)
       if (response.ok) {
         const data = await response.json()
         const categoriesList = Array.isArray(data) ? data : (data.categories || [])
@@ -139,7 +139,7 @@ export function CustomizeMenu() {
   const fetchGalleryLayout = async () => {
     if (!selectedShop?.slug) return
     try {
-      const response = await fetch(`/api/storefront/${selectedShop.slug}/product-gallery-layout`)
+      const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/product-gallery-layout`)
       if (response.ok) {
         const data = await response.json()
         if (data.layout) {
@@ -154,7 +154,7 @@ export function CustomizeMenu() {
   const fetchCategoryLayout = async () => {
     if (!selectedShop?.slug) return
     try {
-      const response = await fetch(`/api/storefront/${selectedShop.slug}/category-layout`)
+      const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/category-layout`)
       if (response.ok) {
         const data = await response.json()
         if (data.layout) {
@@ -169,7 +169,7 @@ export function CustomizeMenu() {
   const fetchProductPageLayout = async () => {
     if (!selectedShop?.slug) return
     try {
-      const response = await fetch(`/api/storefront/${selectedShop.slug}/product-page-layout`)
+      const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/product-page-layout`)
       if (response.ok) {
         const data = await response.json()
         if (data.layout?.elements && data.layout.elements.length > 0) {
@@ -192,7 +192,7 @@ export function CustomizeMenu() {
   const saveGalleryLayout = async (layout: "standard" | "right-side" | "left-side" | "masonry" | "fixed") => {
     if (!selectedShop?.slug) return
     try {
-      await fetch(`/api/storefront/${selectedShop.slug}/product-gallery-layout`, {
+      await fetch(`/api/storefront/${selectedShop?.slug || ""}/product-gallery-layout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ layout }),
@@ -219,7 +219,7 @@ export function CustomizeMenu() {
   const saveCategoryLayout = async (layout: "grid" | "list" | "compact-grid" | "large-grid") => {
     if (!selectedShop?.slug) return
     try {
-      await fetch(`/api/storefront/${selectedShop.slug}/category-layout`, {
+      await fetch(`/api/storefront/${selectedShop?.slug || ""}/category-layout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ layout }),
@@ -291,18 +291,18 @@ export function CustomizeMenu() {
 
   const toggleElementVisibility = (elementId: string) => {
     setElements((prev) =>
-      prev.map((el) => (el.id === elementId ? { ...el, visible: !el.visible } : el))
+      prev.map((el: any) => (el.id === elementId ? { ...el, visible: !el.visible } : el))
     )
     setHasUnsavedChanges(true)
   }
 
   const removeElement = (elementId: string) => {
-    setElements((prev) => prev.filter((el) => el.id !== elementId))
+    setElements((prev) => prev.filter((el: any) => el.id !== elementId))
     setHasUnsavedChanges(true)
   }
 
   const updateElementStyle = (elementId: string, styleConfig: ElementStyleConfig) => {
-    const updatedElements = elements.map((el) =>
+    const updatedElements = elements.map((el: any) =>
       el.id === elementId
         ? { ...el, config: { ...el.config, style: styleConfig } }
         : el
@@ -313,7 +313,7 @@ export function CustomizeMenu() {
     
     // שמירה ב-localStorage לעדכון בזמן אמת
     if (selectedShop?.slug) {
-      const storageKey = `productPageLayout_${selectedShop.slug}`
+      const storageKey = `productPageLayout_${selectedShop?.slug || ""}`
       localStorage.setItem(storageKey, JSON.stringify({ elements: updatedElements, timestamp: Date.now() }))
     }
   }
@@ -341,7 +341,7 @@ export function CustomizeMenu() {
         await saveGalleryLayout(pendingGalleryLayout)
       }
       // שמירת אלמנטי העמוד
-      await fetch(`/api/storefront/${selectedShop.slug}/product-page-layout`, {
+      await fetch(`/api/storefront/${selectedShop?.slug || ""}/product-page-layout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ elements }),
@@ -351,7 +351,7 @@ export function CustomizeMenu() {
       // רענון האייפרם כדי להציג את השינויים השמורים
       // שליחת event לעדכון האייפרם ב-customize/page.tsx
       window.dispatchEvent(new CustomEvent('productPageLayoutSaved', {
-        detail: { shopSlug: selectedShop.slug }
+        detail: { shopSlug: selectedShop?.slug || "" }
       }))
       
       // גם רענון ישיר של האייפרם אם הוא קיים בדף
@@ -385,7 +385,7 @@ export function CustomizeMenu() {
   const handleHomePageClick = () => {
     // פתיחת דף הבית בחלון חדש לעריכה
     if (selectedShop?.slug) {
-      window.open(`/shop/${selectedShop.slug}`, '_blank')
+      window.open(`/shop/${selectedShop?.slug || ""}`, '_blank')
     }
     setIsOpen(false) // סגירת ה-accordion
   }
@@ -395,7 +395,7 @@ export function CustomizeMenu() {
     setIsOpen(false) // סגירת ה-accordion
   }
 
-  const selectedElement = settingsElementId ? elements.find((el) => el.id === settingsElementId) : null
+  const selectedElement = settingsElementId ? elements.find((el: any) => el.id === settingsElementId) : null
   const currentLayout = pendingGalleryLayout || galleryLayout
 
   return (
@@ -519,7 +519,7 @@ export function CustomizeMenu() {
                       {elements && elements.length > 0 ? (
                         elements
                           .sort((a, b) => a.position - b.position)
-                          .map((element) => {
+                          .map((element: any) => {
                           const isExpanded = expandedElements.has(element.id)
                           const canMoveUp = elements.findIndex((el) => el.id === element.id) > 0
                           const canMoveDown = elements.findIndex((el) => el.id === element.id) < elements.length - 1
@@ -545,7 +545,7 @@ export function CustomizeMenu() {
                                   )}
                                   {getElementIcon(element.type)}
                                   <span className={cn(!element.visible && "text-gray-500")}>
-                                    {elementLabels[element.type]}
+                                    {elementLabels[element.type as keyof typeof elementLabels]}
                                   </span>
                                   {!element.visible && (
                                     <EyeOff className="w-3 h-3 text-gray-400" />
@@ -638,7 +638,7 @@ export function CustomizeMenu() {
                                 <div className="pr-4 pb-2 border-r-2 border-gray-200 mt-2">
                                   <ElementSettingsContent
                                     elementType={selectedElement.type}
-                                    elementName={elementLabels[selectedElement.type]}
+                                    elementName={elementLabels[selectedElement.type as keyof typeof elementLabels]}
                                     currentConfig={selectedElement.config?.style}
                                     onSave={(styleConfig) => {
                                       updateElementStyle(element.id, styleConfig)
@@ -721,9 +721,9 @@ export function CustomizeMenu() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {addableElementTypes.map((type) => (
+                  {addableElementTypes.map((type: any) => (
                     <SelectItem key={type} value={type}>
-                      {elementLabels[type]}
+                          {elementLabels[type as keyof typeof elementLabels]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -821,7 +821,7 @@ export function CustomizeMenu() {
               onClick={() => {
                 if (editingElementId) {
                   setElements((prev) =>
-                    prev.map((el) =>
+                    prev.map((el: any) =>
                       el.id === editingElementId
                         ? { ...el, config: newElementConfig }
                         : el

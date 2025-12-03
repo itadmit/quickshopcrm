@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
     ]
 
     await Promise.all(
-      defaultNavigations.map((nav) =>
+      defaultNavigations.map((nav: any) =>
         prisma.navigation.create({
           data: {
             shopId: shop.id,

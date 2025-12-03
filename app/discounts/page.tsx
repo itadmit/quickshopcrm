@@ -206,7 +206,7 @@ export default function DiscountsPage() {
     return labels[type] || type
   }
 
-  const filteredDiscounts = discounts.filter((discount) => {
+  const filteredDiscounts = discounts.filter((discount: any) => {
     const matchesSearch = discount.title.toLowerCase().includes(search.toLowerCase())
     const matchesType = typeFilter === "all" || discount.type === typeFilter
     const matchesStatus =
@@ -374,7 +374,7 @@ export default function DiscountsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {filteredDiscounts.map((discount) => (
+                    {filteredDiscounts.map((discount: any) => (
                       <tr key={discount.id} className="hover:bg-gray-50">
                         <td className="px-4 py-4">
                           <Checkbox

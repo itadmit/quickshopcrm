@@ -104,7 +104,7 @@ export function BadgesCard({ badges, onChange }: BadgesCardProps) {
                     key={position}
                     className={`absolute ${positionStyles[position as keyof typeof positionStyles]} z-10 flex flex-col gap-1`}
                   >
-                    {badgesInPosition.map((badge) => (
+                    {badgesInPosition.map((badge: any) => (
                       <div
                         key={badge.id}
                         className="px-3 py-1 rounded-md text-white text-sm font-semibold shadow-lg"
@@ -124,7 +124,7 @@ export function BadgesCard({ badges, onChange }: BadgesCardProps) {
         {/* רשימת מדבקות */}
         {badges.length > 0 && (
           <div className="space-y-2">
-            {badges.map((badge) => (
+            {badges.map((badge: any) => (
               <div
                 key={badge.id}
                 className="flex items-center gap-3 p-3 border rounded-lg bg-white"
@@ -188,7 +188,7 @@ export function BadgesCard({ badges, onChange }: BadgesCardProps) {
               </div>
               <div className="flex gap-2 flex-wrap mt-2">
                 <Label className="text-xs text-gray-600 w-full">צבעים מוכנים:</Label>
-                {PRESET_COLORS.map((color) => (
+                {PRESET_COLORS.map((color: any) => (
                   <button
                     key={color.value}
                     type="button"

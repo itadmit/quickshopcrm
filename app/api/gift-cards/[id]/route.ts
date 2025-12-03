@@ -11,7 +11,7 @@ const updateGiftCardSchema = z.object({
   recipientName: z.string().optional(),
   senderName: z.string().optional(),
   message: z.string().optional(),
-  expiresAt: z.union([z.string().datetime(), z.literal("")]).optional(),
+  endDate: z.union([z.string().datetime(), z.literal("")]).optional(),
   isActive: z.boolean().optional(),
 })
 

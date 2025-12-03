@@ -36,7 +36,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 
 export interface HomePageSection {
   id: string
-  type: "hero" | "new-arrivals" | "categories" | "hero-cta" | "featured-products" | "about"
+  type: "hero" | "new-arrivals" | "categories" | "hero-cta" | "featured-products" | "about" | "slideshow" | "image-slide" | "video" | "scrolling-promotion" | "custom-content" | "text-block" | "image" | "brands-list"
   visible: boolean
   position: number
   config: {
@@ -48,12 +48,32 @@ export interface HomePageSection {
     backgroundImage?: string
     backgroundImageMobile?: string
     video?: string // סרטון רקע
+    videoLink?: string
     addOverlay?: boolean // האם להוסיף החשכה
     overlayColor?: string // צבע ההחשכה
     textColor?: string // צבע הפונטים
     icon?: string
     products?: string[] // product IDs
     categories?: string[] // category IDs או "all"
+    containerType?: string
+    heading?: string
+    subheading?: string
+    contentPosition?: string
+    contentAlignment?: string
+    textSize?: string
+    buttonLabel?: string
+    buttonLink?: string
+    image?: string
+    imageLink?: string
+    showControls?: boolean
+    autoplay?: boolean
+    loop?: boolean
+    muted?: boolean
+    headingSize?: string
+    textAlignment?: string
+    text?: string
+    buttonStyle?: string
+    containerWidth?: string
   }
 }
 
@@ -146,6 +166,14 @@ export const defaultSections: HomePageSection[] = [
 
 export const sectionLabels: Record<HomePageSection["type"], string> = {
   "hero": "הירו ראשון",
+  "slideshow": "מצגת",
+  "image-slide": "שקופית תמונה",
+  "video": "וידאו",
+  "scrolling-promotion": "קידום גלילה",
+  "custom-content": "תוכן מותאם",
+  "text-block": "בלוק טקסט",
+  "image": "תמונה",
+  "brands-list": "רשימת מותגים",
   "new-arrivals": "חדש באתר",
   "categories": "קטגוריות",
   "hero-cta": "הירו שני - מסר מותג",
@@ -155,6 +183,14 @@ export const sectionLabels: Record<HomePageSection["type"], string> = {
 
 const sectionIcons: Record<HomePageSection["type"], any> = {
   "hero": ImageIcon,
+  "slideshow": ImageIcon,
+  "image-slide": ImageIcon,
+  "video": Video,
+  "scrolling-promotion": Bell,
+  "custom-content": Type,
+  "text-block": Type,
+  "image": ImageIcon,
+  "brands-list": Tag,
   "new-arrivals": Sparkles,
   "categories": Grid3x3,
   "hero-cta": Star,

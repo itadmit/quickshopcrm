@@ -136,7 +136,6 @@ export default function StorefrontRegisterPage() {
           phone,
           firstName: firstName || undefined,
           lastName: lastName || undefined,
-          dateOfBirth: dateOfBirth || undefined,
         }),
       })
 

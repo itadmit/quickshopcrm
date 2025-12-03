@@ -529,7 +529,7 @@ export async function runAutomationsForEvent(
     })
     
     // סינון אוטומציות שהטריגר שלהן תואם לאירוע
-    const matchingAutomations = automations.filter((automation) => {
+    const matchingAutomations = automations.filter((automation: any) => {
       const trigger = automation.trigger as unknown as AutomationTrigger
       return trigger?.type === eventType
     })
@@ -722,7 +722,7 @@ export async function runAutomationsForEvent(
         await prisma.automationLog.create({
           data: {
             automationId: automation.id,
-            status: actionResults.every((r) => r.success) ? "success" : "failed",
+            status: actionResults.every((r: any) => r.success) ? "success" : "failed",
             eventType,
             eventPayload,
             actionResults,

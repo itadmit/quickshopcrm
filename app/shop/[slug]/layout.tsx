@@ -59,24 +59,25 @@ export default async function ShopLayout({
   const customerIdCookie = cookieStore.get(`customer_${slug}`)
   const customerId = customerIdCookie?.value || null
 
-  const [shop, navigation, isAdmin, cart] = await Promise.all([
-    prisma.shop.findUnique({
-      where: { slug },
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        logo: true,
-        description: true,
-        theme: true,
-        themeSettings: true,
-        settings: true,
-        taxEnabled: true,
-        taxRate: true,
-        pricesIncludeTax: true,
-      },
-    }),
+  const shop = await prisma.shop.findUnique({
+    where: { slug },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      logo: true,
+      description: true,
+      theme: true,
+      themeSettings: true,
+      settings: true,
+      taxEnabled: true,
+      taxRate: true,
+      pricesIncludeTax: true,
+      companyId: true,
+    },
+  })
 
+  const [navigation, isAdmin, cart] = await Promise.all([
     prisma.navigation.findFirst({
       where: {
         shop: { slug },
@@ -101,38 +102,16 @@ export default async function ShopLayout({
       
       const cartData = await prisma.cart.findUnique({
         where: { id: customerId },
-        include: {
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  slug: true,
-                  images: true,
-                  price: true,
-                },
-              },
-              variant: {
-                select: {
-                  id: true,
-                  name: true,
-                  price: true,
-                },
-              },
-            },
-          },
-          coupon: true,
-        },
+        // items is a Json field, so we don't include it like a relation
       })
 
       if (!cartData || !shop) return null
 
       return calculateCart(
-        cartData.items,
-        shop,
-        cartData.coupon,
-        null
+        shop.id,
+        cartData.items as any,
+        cartData.couponCode,
+        customerId
       )
     })(),
   ])
@@ -142,9 +121,14 @@ export default async function ShopLayout({
       <StorefrontDataProvider 
         slug={slug}
         initialShop={shop}
-        initialNavigation={navigation}
+        initialNavigation={navigation as any}
         initialIsAdmin={isAdmin}
-        initialCart={cart}
+        initialCart={cart ? {
+          ...cart,
+          id: customerId || 'guest',
+          coupon: (cart as any).couponStatus || (cart.couponDiscount ? { discount: cart.couponDiscount } : null),
+          giftCardDiscount: 0,
+        } as any : null}
         initialCustomerId={customerId}
       >
         <ScriptInjectorWrapper shopId={shop?.id} companyId={shop?.companyId} />

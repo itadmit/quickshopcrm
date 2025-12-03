@@ -252,7 +252,7 @@ export async function getShopNavigation(
       id: navigation.id,
       name: navigation.name,
       location: navigation.location,
-      items: transformedItems,
+      items: transformedItems as any,
     }
   } catch (error) {
     console.error("Error fetching navigation:", error)

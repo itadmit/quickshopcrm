@@ -74,7 +74,7 @@ export default function NavigationPage() {
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/navigation?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/navigation?shopId=${selectedShop?.id || ""}`)
       if (response.ok) {
         const data = await response.json()
         const navs = (data || []).map((nav: any) => {
@@ -132,7 +132,7 @@ export default function NavigationPage() {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shopId: selectedShop.id,
+          shopId: selectedShop?.id || "",
           name: selectedNavigation.name,
           location: selectedNavigation.location,
           items: selectedNavigation.items,
@@ -178,7 +178,7 @@ export default function NavigationPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          shopId: selectedShop.id,
+          shopId: selectedShop?.id || "",
           name: newNavigationName,
           location: newNavigationLocation,
           items: [],
@@ -215,7 +215,7 @@ export default function NavigationPage() {
   }
 
   const handleDeleteNavigation = async (id: string) => {
-    const navToDelete = navigations.find((nav) => nav.id === id)
+    const navToDelete = navigations.find((nav: any) => nav.id === id)
     
     // בדיקה אם התפריט מוגן
     if (navToDelete && (navToDelete.location === "DESKTOP" || navToDelete.location === "MOBILE")) {
@@ -285,8 +285,8 @@ export default function NavigationPage() {
     // הסרת פריט וגם כל הילדים שלו
     const removeItemRecursive = (items: NavigationItem[]): NavigationItem[] => {
       return items
-        .filter((item) => item.id !== id)
-        .map((item) => ({
+        .filter((item: any) => item.id !== id)
+        .map((item: any) => ({
           ...item,
           children: item.children ? removeItemRecursive(item.children) : undefined,
         }))
@@ -302,7 +302,7 @@ export default function NavigationPage() {
     if (!selectedNavigation) return
 
     const addChildRecursive = (items: NavigationItem[]): NavigationItem[] => {
-      return items.map((item) => {
+      return items.map((item: any) => {
         if (item.id === parentId) {
           const newChild: NavigationItem = {
             id: `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
@@ -332,7 +332,7 @@ export default function NavigationPage() {
 
   // פונקציה רקורסיבית לעדכון פריט בתפריט (כולל ילדים)
   const updateItemRecursive = (items: NavigationItem[], id: string, updates: Partial<NavigationItem>): NavigationItem[] => {
-    return items.map((item) => {
+    return items.map((item: any) => {
       if (item.id === id) {
         return { ...item, ...updates }
       }
@@ -424,7 +424,7 @@ export default function NavigationPage() {
 
     // טעינה מחדש של התפריטים מהשרת כדי לקבל את הגרסה העדכנית
     try {
-      const response = await fetch(`/api/navigation?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/navigation?shopId=${selectedShop?.id || ""}`)
       if (response.ok) {
         const data = await response.json()
         const desktopNav = data.find((nav: any) => nav.location === "DESKTOP")
@@ -472,7 +472,7 @@ export default function NavigationPage() {
     if (selectedNavigation.items.length > 0) return false // אם יש כבר פריטים, לא להציע
     
     // חיפוש תפריט מחשב שמור (לא רק מהרשימה הנוכחית)
-    const desktopNav = navigations.find((nav) => nav.location === "DESKTOP")
+    const desktopNav = navigations.find((nav: any) => nav.location === "DESKTOP")
     return desktopNav && desktopNav.items.length > 0
   }
 
@@ -549,7 +549,7 @@ export default function NavigationPage() {
         setLoadingPages(prev => ({ ...prev, [itemId]: true }))
 
         try {
-          const response = await fetch(`/api/pages?shopId=${selectedShop.id}`)
+          const response = await fetch(`/api/pages?shopId=${selectedShop?.id || ""}`)
           if (response.ok) {
             const pages = await response.json()
             const searchTerm = query.replace("/pages/", "").toLowerCase()
@@ -594,7 +594,7 @@ export default function NavigationPage() {
         setLoadingCategories(prev => ({ ...prev, [itemId]: true }))
 
         try {
-          const response = await fetch(`/api/categories?shopId=${selectedShop.id}&search=${encodeURIComponent(query)}`)
+          const response = await fetch(`/api/categories?shopId=${selectedShop?.id || ""}&search=${encodeURIComponent(query)}`)
           if (response.ok) {
             const categories = await response.json()
             setCategorySearchResults(prev => ({ ...prev, [itemId]: categories.slice(0, 5) }))
@@ -727,7 +727,7 @@ export default function NavigationPage() {
                     const orderA = order[a.location] || 999
                     const orderB = order[b.location] || 999
                     return orderA - orderB
-                  }).map((nav) => {
+                  }).map((nav: any) => {
                     const locationOption = LOCATION_OPTIONS.find(opt => opt.value === nav.location) || LOCATION_OPTIONS[0]
                     const Icon = locationOption.icon
                     const isSelected = selectedNavigation?.id === nav.id
@@ -848,11 +848,11 @@ export default function NavigationPage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {selectedNavigation && selectedNavigation.items.map((item) => (
+                      {selectedNavigation && selectedNavigation.items.map((item: any) => (
                         <NavigationItemEditor
                         key={item.id}
                           item={item}
-                          shopId={selectedShop.id}
+                          shopId={selectedShop?.id || ""}
                           location={selectedNavigation.location}
                           onUpdate={updateItem}
                           onRemove={removeItem}
@@ -931,7 +931,7 @@ export default function NavigationPage() {
             <div className="space-y-2">
               <Label>מיקום התפריט</Label>
               <div className="grid grid-cols-2 gap-2">
-                {LOCATION_OPTIONS.map((option) => {
+                {LOCATION_OPTIONS.map((option: any) => {
                   const Icon = option.icon
                   return (
                     <button

@@ -89,7 +89,7 @@ export function CategoryPageDesigner({
       case "grid":
         return (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {mockProducts.map((product) => (
+            {mockProducts.map((product: any) => (
               <div key={product.id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                 <div className="aspect-square overflow-hidden bg-gray-100">
                   <img
@@ -122,7 +122,7 @@ export function CategoryPageDesigner({
       case "list":
         return (
           <div className="space-y-4">
-            {mockProducts.map((product) => (
+            {mockProducts.map((product: any) => (
               <div key={product.id} className="flex gap-4 p-4 border rounded-lg hover:shadow-md transition-shadow">
                 <div className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-lg bg-gray-100">
                   <img
@@ -155,7 +155,7 @@ export function CategoryPageDesigner({
       case "compact-grid":
         return (
           <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-            {mockProducts.map((product) => (
+            {mockProducts.map((product: any) => (
               <div key={product.id} className="border rounded-lg overflow-hidden hover:shadow-md transition-shadow">
                 <div className="aspect-square overflow-hidden bg-gray-100">
                   <img
@@ -185,7 +185,7 @@ export function CategoryPageDesigner({
       case "large-grid":
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {mockProducts.map((product) => (
+            {mockProducts.map((product: any) => (
               <div key={product.id} className="border rounded-lg overflow-hidden hover:shadow-lg transition-shadow">
                 <div className="aspect-square overflow-hidden bg-gray-100">
                   <img

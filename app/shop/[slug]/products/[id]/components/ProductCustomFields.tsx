@@ -26,7 +26,7 @@ export function ProductCustomFields({ customFieldValues }: ProductCustomFieldsPr
     <div className="space-y-4">
       <h3 className="text-lg font-semibold text-gray-900">פרטים נוספים</h3>
       <div className="space-y-3">
-        {customFieldValues.map((field) => {
+        {customFieldValues.map((field: any) => {
           if (!field.value) return null
           
           return (

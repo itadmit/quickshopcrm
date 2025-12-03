@@ -55,19 +55,19 @@ async function deleteAllCustomers() {
     console.log(`✓ נמחקו ${deletedReviews.count} ביקורות`)
 
     // 3. מחיקת תגובות לביקורות
-    const deletedReviewReplies = await prisma.reviewReply.deleteMany({
+    const deletedReviewReplies = await (prisma as any).reviewReply?.deleteMany({
       where: { customerId: { not: null } }
     })
-    console.log(`✓ נמחקו ${deletedReviewReplies.count} תגובות לביקורות`)
+    console.log(`✓ נמחקו ${deletedReviewReplies?.count || 0} תגובות לביקורות`)
 
     // 4. מחיקת שאלות על מוצרים
-    const deletedQuestions = await prisma.productQuestion.deleteMany({
+    const deletedQuestions = await (prisma as any).productQuestion?.deleteMany({
       where: { customerId: { not: null } }
     })
-    console.log(`✓ נמחקו ${deletedQuestions.count} שאלות`)
+    console.log(`✓ נמחקו ${deletedQuestions?.count || 0} שאלות`)
 
     // 5. מחיקת תשובות לשאלות
-    const deletedAnswers = await prisma.productAnswer.deleteMany({
+    const deletedAnswers = await (prisma as any).productAnswer?.deleteMany({
       where: { customerId: { not: null } }
     })
     console.log(`✓ נמחקו ${deletedAnswers.count} תשובות`)
@@ -138,6 +138,7 @@ deleteAllCustomers()
     console.error('❌ הסקריפט נכשל:', error)
     process.exit(1)
   })
+
 
 
 

@@ -7,6 +7,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+// @ts-ignore
 import { glob } from 'glob';
 
 const filesToFix = [
@@ -141,5 +142,6 @@ console.log('Starting to fix shop selection issues...\n');
 filesToFix.forEach(fixFile);
 
 console.log('\n✅ Done!');
+
 
 

@@ -395,7 +395,7 @@ export default function EditBundlePage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto">
                   {products
                     .filter(p => !selectedProducts.find(sp => sp.productId === p.id))
-                    .map((product) => (
+                    .map((product: any) => (
                       <Button
                         key={product.id}
                         type="button"

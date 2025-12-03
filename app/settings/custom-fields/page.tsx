@@ -321,7 +321,7 @@ export default function CustomFieldsPage() {
             <Card>
               <CardContent className="pt-6">
                 <div className="space-y-4">
-                  {[1, 2, 3].map((i) => (
+                  {[1, 2, 3].map((i: any) => (
                     <div key={i} className="flex items-center gap-4">
                       <div className="w-10 h-10 bg-gray-200 rounded animate-pulse" />
                       <div className="flex-1 space-y-2">
@@ -535,7 +535,7 @@ export default function CustomFieldsPage() {
                 <div className="space-y-2">
                   <Label>בחר קטגוריות *</Label>
                   <div className="border rounded-lg p-3 max-h-48 overflow-y-auto">
-                    {categories.map((category) => (
+                    {categories.map((category: any) => (
                       <label
                         key={category.id}
                         className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer"

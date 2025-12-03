@@ -140,7 +140,7 @@ export default function ProductPage() {
       galleryLayout={galleryLayout as any}
       productPageLayout={productPageLayout}
       theme={theme}
-      navigation={navigation}
+      navigation={navigation ?? undefined}
       isAdmin={isAdmin}
       autoOpenCart={autoOpenCart}
     />

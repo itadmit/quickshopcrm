@@ -32,7 +32,7 @@ export async function POST(
       )
     }
 
-    if (!order.shippingProvider) {
+    if (!order.shippingMethod) {
       return NextResponse.json(
         { error: "לא נבחרה חברת משלוחים" },
         { status: 400 }
@@ -42,7 +42,7 @@ export async function POST(
     // שליחה מחדש עם forceResend
     const response = await ShippingManager.sendOrder(
       params.orderId,
-      order.shippingProvider,
+      order.shippingMethod,
       {
         forceResend: true,
         userId: session.user.id,

@@ -171,7 +171,7 @@ export async function GET(
         total: 0,
         couponCode: cart.couponCode,
         couponStatus,
-        expiresAt: cart.expiresAt,
+        endDate: cart.expiresAt,
       })
     }
 
@@ -199,7 +199,7 @@ export async function GET(
       total: calculation.total,
       couponCode: cart.couponCode,
       couponStatus: calculation.couponStatus,
-      expiresAt: cart.expiresAt,
+      endDate: cart.expiresAt,
     })
   } catch (error) {
     console.error("Error fetching cart:", error)
@@ -366,7 +366,8 @@ export async function POST(
     }
 
     // בדיקת מלאי - רק אם המוצר לא מאפשר מכירה בלי מלאי
-    if (!product.sellWhenSoldOut) {
+    const sellWhenSoldOut = (product.customFields as any)?.sellWhenSoldOut ?? false
+    if (!sellWhenSoldOut) {
       if (data.variantId) {
         const variant = await prisma.productVariant.findUnique({
           where: { id: data.variantId },
@@ -612,7 +613,7 @@ export async function POST(
         total: updatedCalculation.total,
         couponCode: cart.couponCode,
         couponStatus: updatedCalculation.couponStatus,
-        expiresAt: cart.expiresAt,
+        endDate: cart.expiresAt,
         giftsRequiringVariantSelection: updatedCalculation.giftsRequiringVariantSelection,
       })
     }
@@ -631,7 +632,7 @@ export async function POST(
       total: calculation.total,
       couponCode: cart.couponCode,
       couponStatus: calculation.couponStatus,
-      expiresAt: cart.expiresAt,
+      endDate: cart.expiresAt,
       giftsRequiringVariantSelection: calculation.giftsRequiringVariantSelection,
     })
   } catch (error) {
@@ -1022,7 +1023,7 @@ export async function PUT(
         total: updatedCalculation.total,
         couponCode: cart.couponCode,
         couponStatus: updatedCalculation.couponStatus,
-        expiresAt: cart.expiresAt,
+        endDate: cart.expiresAt,
       })
     }
 
@@ -1040,7 +1041,7 @@ export async function PUT(
       total: calculation.total,
       couponCode: cart.couponCode,
       couponStatus: calculation.couponStatus,
-      expiresAt: cart.expiresAt,
+      endDate: cart.expiresAt,
     })
   } catch (error) {
     console.error("Error updating cart:", error)
@@ -1130,7 +1131,7 @@ export async function DELETE(
       }))
     })
 
-    const items = cartItems.filter((item) => {
+    const items = cartItems.filter((item: any) => {
       // מונע מחיקת מוצרי מתנה
       if (item.isGift) {
         return true // נשאיר את מוצר המתנה בעגלה
@@ -1291,7 +1292,7 @@ export async function DELETE(
         total: 0,
         couponCode: updatedCart.couponCode,
         couponStatus,
-        expiresAt: updatedCart.expiresAt,
+        endDate: updatedCart.expiresAt,
       })
     }
 
@@ -1319,7 +1320,7 @@ export async function DELETE(
       total: calculation.total,
       couponCode: updatedCart.couponCode,
       couponStatus: calculation.couponStatus,
-      expiresAt: updatedCart.expiresAt,
+      endDate: updatedCart.expiresAt,
     })
   } catch (error) {
     console.error("Error removing from cart:", error)

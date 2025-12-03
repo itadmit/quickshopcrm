@@ -22,7 +22,7 @@ interface Invitation {
     name: string
   }
   permissions: Record<string, boolean>
-  expiresAt: string
+  endDate: string
   status: string
 }
 

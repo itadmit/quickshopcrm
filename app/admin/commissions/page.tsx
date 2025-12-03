@@ -204,7 +204,7 @@ export default function CommissionsPage() {
               </CardContent>
             </Card>
           ) : (
-            companies.map((company) => (
+            companies.map((company: any) => (
               <Card key={company.companyId} className="hover:shadow-md transition-shadow">
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">

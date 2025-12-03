@@ -67,7 +67,7 @@ export function ThemeCustomizerRightSidebar({
 
   useEffect(() => {
     if (selectedSectionId) {
-      const section = sections.find((s) => s.id === selectedSectionId)
+      const section = sections.find((s: any) => s.id === selectedSectionId)
       setSelectedSection(section || null)
     } else {
       setSelectedSection(null)
@@ -76,8 +76,8 @@ export function ThemeCustomizerRightSidebar({
 
   useEffect(() => {
     if (selectedBlockId && selectedSectionId) {
-      const section = sections.find((s) => s.id === selectedSectionId)
-      const block = section?.blocks?.find((b) => b.id === selectedBlockId)
+      const section = sections.find((s: any) => s.id === selectedSectionId)
+      const block = section?.blocks?.find((b: any) => b.id === selectedBlockId)
       setSelectedBlock(block || null)
     } else {
       setSelectedBlock(null)
@@ -87,11 +87,11 @@ export function ThemeCustomizerRightSidebar({
   const updateBlockConfig = (configUpdates: any) => {
     if (!selectedBlockId || !selectedSectionId) return
     
-    const updatedSections = sections.map((section) => {
+    const updatedSections = sections.map((section: any) => {
       if (section.id === selectedSectionId) {
         return {
           ...section,
-          blocks: section.blocks?.map((block) =>
+          blocks: section.blocks?.map((block: any) =>
             block.id === selectedBlockId
               ? { ...block, config: { ...block.config, ...configUpdates } }
               : block
@@ -107,7 +107,7 @@ export function ThemeCustomizerRightSidebar({
     if (selectedBlockId && selectedSectionId) {
       updateBlockConfig(config)
     } else if (selectedSectionId) {
-      const updatedSections = sections.map((section) =>
+      const updatedSections = sections.map((section: any) =>
         section.id === selectedSectionId
           ? { ...section, config: { ...section.config, ...config } }
           : section
@@ -118,11 +118,11 @@ export function ThemeCustomizerRightSidebar({
 
   const handleDelete = () => {
     if (selectedBlockId && selectedSectionId) {
-      const updatedSections = sections.map((section) => {
+      const updatedSections = sections.map((section: any) => {
         if (section.id === selectedSectionId) {
           return {
             ...section,
-            blocks: section.blocks?.filter((block) => block.id !== selectedBlockId),
+            blocks: section.blocks?.filter((block: any) => block.id !== selectedBlockId),
           }
         }
         return section
@@ -130,7 +130,7 @@ export function ThemeCustomizerRightSidebar({
       onSectionsChange(updatedSections)
       onBack()
     } else if (selectedSectionId) {
-      const updatedSections = sections.filter((section) => section.id !== selectedSectionId)
+      const updatedSections = sections.filter((section: any) => section.id !== selectedSectionId)
       onSectionsChange(updatedSections)
       onBack()
     }
@@ -138,11 +138,11 @@ export function ThemeCustomizerRightSidebar({
 
   const handleToggleVisibility = () => {
     if (selectedBlockId && selectedSectionId) {
-      const updatedSections = sections.map((section) => {
+      const updatedSections = sections.map((section: any) => {
         if (section.id === selectedSectionId) {
           return {
             ...section,
-            blocks: section.blocks?.map((block) =>
+            blocks: section.blocks?.map((block: any) =>
               block.id === selectedBlockId
                 ? { ...block, visible: !block.visible }
                 : block
@@ -153,7 +153,7 @@ export function ThemeCustomizerRightSidebar({
       })
       onSectionsChange(updatedSections)
     } else if (selectedSectionId) {
-      const updatedSections = sections.map((section) =>
+      const updatedSections = sections.map((section: any) =>
         section.id === selectedSectionId
           ? { ...section, visible: !section.visible }
           : section
@@ -628,7 +628,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Pagination position</Label>
               <div className="flex gap-2 mt-2">
-                {["left", "bottom", "right"].map((pos) => (
+                {["left", "bottom", "right"].map((pos: any) => (
                   <Button
                     key={pos}
                     variant={config?.paginationPosition === pos ? "default" : "outline"}
@@ -644,7 +644,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Controls color</Label>
               <div className="flex gap-2 mt-2">
-                {["dark", "light"].map((color) => (
+                {["dark", "light"].map((color: any) => (
                   <Button
                     key={color}
                     variant={config?.controlsColor === color ? "default" : "outline"}
@@ -802,7 +802,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Content alignment</Label>
               <div className="flex gap-2 mt-2">
-                {["left", "center", "right"].map((align) => (
+                {["left", "center", "right"].map((align: any) => (
                   <Button
                     key={align}
                     variant={config?.contentAlignment === align ? "default" : "outline"}
@@ -818,7 +818,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Text size</Label>
               <div className="flex gap-2 mt-2">
-                {["medium", "large"].map((size) => (
+                {["medium", "large"].map((size: any) => (
                   <Button
                     key={size}
                     variant={config?.textSize === size ? "default" : "outline"}
@@ -834,7 +834,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Text color</Label>
               <div className="flex gap-2 mt-2">
-                {["dark", "light"].map((color) => (
+                {["dark", "light"].map((color: any) => (
                   <Button
                     key={color}
                     variant={config?.textColor === color ? "default" : "outline"}
@@ -972,7 +972,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Video type</Label>
               <div className="flex gap-2 mt-2">
-                {["shopify-hosted", "external"].map((type) => (
+                {["shopify-hosted", "external"].map((type: any) => (
                   <Button
                     key={type}
                     variant={config?.videoType === type ? "default" : "outline"}
@@ -1080,7 +1080,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Text size</Label>
               <div className="flex gap-2 mt-2">
-                {["medium", "large"].map((size) => (
+                {["medium", "large"].map((size: any) => (
                   <Button
                     key={size}
                     variant={config?.textSize === size ? "default" : "outline"}
@@ -1096,7 +1096,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Text color</Label>
               <div className="flex gap-2 mt-2">
-                {["light", "dark", "inherit"].map((color) => (
+                {["light", "dark", "inherit"].map((color: any) => (
                   <Button
                     key={color}
                     variant={config?.textColor === color ? "default" : "outline"}
@@ -1112,7 +1112,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Play button style</Label>
               <div className="flex gap-2 mt-2">
-                {["outline", "solid"].map((style) => (
+                {["outline", "solid"].map((style: any) => (
                   <Button
                     key={style}
                     variant={config?.playButtonStyle === style ? "default" : "outline"}
@@ -1128,7 +1128,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Play button size</Label>
               <div className="flex gap-2 mt-2">
-                {["medium", "large"].map((size) => (
+                {["medium", "large"].map((size: any) => (
                   <Button
                     key={size}
                     variant={config?.playButtonSize === size ? "default" : "outline"}
@@ -1233,7 +1233,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Direction</Label>
               <div className="flex gap-2 mt-2">
-                {["left", "right"].map((dir) => (
+                {["left", "right"].map((dir: any) => (
                   <Button
                     key={dir}
                     variant={config?.direction === dir ? "default" : "outline"}
@@ -1340,7 +1340,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Heading size</Label>
               <div className="flex gap-2 mt-2">
-                {["medium", "large"].map((size) => (
+                {["medium", "large"].map((size: any) => (
                   <Button
                     key={size}
                     variant={config?.headingSize === size ? "default" : "outline"}
@@ -1373,7 +1373,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Text alignment</Label>
               <div className="flex gap-2 mt-2">
-                {["left", "center"].map((align) => (
+                {["left", "center"].map((align: any) => (
                   <Button
                     key={align}
                     variant={config?.textAlignment === align ? "default" : "outline"}
@@ -1623,7 +1623,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Vertical alignment</Label>
               <div className="flex gap-2 mt-2">
-                {["top", "middle", "bottom"].map((align) => (
+                {["top", "middle", "bottom"].map((align: any) => (
                   <Button
                     key={align}
                     variant={config?.verticalAlignment === align ? "default" : "outline"}
@@ -1639,7 +1639,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Horizontal alignment</Label>
               <div className="flex gap-2 mt-2">
-                {["left", "center", "right"].map((align) => (
+                {["left", "center", "right"].map((align: any) => (
                   <Button
                     key={align}
                     variant={config?.horizontalAlignment === align ? "default" : "outline"}
@@ -1655,7 +1655,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Text size</Label>
               <div className="flex gap-2 mt-2">
-                {["small", "medium", "large"].map((size) => (
+                {["small", "medium", "large"].map((size: any) => (
                   <Button
                     key={size}
                     variant={config?.textSize === size ? "default" : "outline"}
@@ -1671,7 +1671,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Text color</Label>
               <div className="flex gap-2 mt-2">
-                {["light", "dark", "inherit"].map((color) => (
+                {["light", "dark", "inherit"].map((color: any) => (
                   <Button
                     key={color}
                     variant={config?.textColor === color ? "default" : "outline"}
@@ -1810,7 +1810,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Vertical alignment</Label>
               <div className="flex gap-2 mt-2">
-                {["top", "middle", "bottom"].map((align) => (
+                {["top", "middle", "bottom"].map((align: any) => (
                   <Button
                     key={align}
                     variant={config?.verticalAlignment === align ? "default" : "outline"}
@@ -1848,7 +1848,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Heading size</Label>
               <div className="flex gap-2 mt-2">
-                {["medium", "large"].map((size) => (
+                {["medium", "large"].map((size: any) => (
                   <Button
                     key={size}
                     variant={config?.headingSize === size ? "default" : "outline"}
@@ -1872,7 +1872,7 @@ export function ThemeCustomizerRightSidebar({
             <div>
               <Label>Text alignment</Label>
               <div className="flex gap-2 mt-2">
-                {["left", "center"].map((align) => (
+                {["left", "center"].map((align: any) => (
                   <Button
                     key={align}
                     variant={config?.textAlignment === align ? "default" : "outline"}
@@ -2069,11 +2069,11 @@ export function ThemeCustomizerRightSidebar({
               <Input
                 value={selectedBlock.name || ""}
                 onChange={(e) => {
-                  const updatedSections = sections.map((section) => {
+                  const updatedSections = sections.map((section: any) => {
                     if (section.id === selectedSectionId) {
                       return {
                         ...section,
-                        blocks: section.blocks?.map((block) =>
+                        blocks: section.blocks?.map((block: any) =>
                           block.id === selectedBlockId
                             ? { ...block, name: e.target.value }
                             : block
@@ -2225,7 +2225,7 @@ export function ThemeCustomizerRightSidebar({
               <Input
                 value={selectedSection.name}
                 onChange={(e) => {
-                  const updatedSections = sections.map((section) =>
+                  const updatedSections = sections.map((section: any) =>
                     section.id === selectedSectionId
                       ? { ...section, name: e.target.value }
                       : section
@@ -2287,7 +2287,7 @@ export function ThemeCustomizerRightSidebar({
             setMediaPickerType(null)
           }}
           selectedFiles={[]}
-          shopId={selectedShop.id}
+          shopId={selectedShop?.id || ""}
           entityType="home-page"
           entityId={selectedBlock.id}
           multiple={false}

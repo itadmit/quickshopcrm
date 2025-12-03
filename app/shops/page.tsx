@@ -89,7 +89,7 @@ export default function ShopsPage() {
     router.push("/dashboard")
   }
 
-  const filteredShops = shops.filter((shop) =>
+  const filteredShops = shops.filter((shop: any) =>
     shop.name.toLowerCase().includes(search.toLowerCase()) ||
     shop.slug.toLowerCase().includes(search.toLowerCase()) ||
     (shop.description && shop.description.toLowerCase().includes(search.toLowerCase()))
@@ -160,7 +160,7 @@ export default function ShopsPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredShops.map((shop) => (
+            {filteredShops.map((shop: any) => (
               <Card
                 key={shop.id}
                 className="hover:shadow-lg transition-shadow cursor-pointer"

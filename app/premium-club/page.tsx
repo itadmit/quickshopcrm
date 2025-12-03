@@ -130,7 +130,7 @@ export default function PremiumClubPage() {
 
     try {
       setLoading(true)
-      const response = await fetch(`/api/plugins/premium-club/config?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/plugins/premium-club/config?shopId=${selectedShop?.id || ""}`)
       if (response.ok) {
         const data = await response.json()
         if (data.config) {
@@ -154,7 +154,7 @@ export default function PremiumClubPage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ config, shopId: selectedShop.id }),
+        body: JSON.stringify({ config, shopId: selectedShop?.id || "" }),
       })
 
       if (response.ok) {
@@ -208,7 +208,7 @@ export default function PremiumClubPage() {
 
     setConfig({
       ...config,
-      tiers: config.tiers.filter((t) => t.slug !== slug),
+      tiers: config.tiers.filter((t: any) => t.slug !== slug),
     })
   }
 
@@ -234,7 +234,7 @@ export default function PremiumClubPage() {
     }
 
     // בדיקה אם slug כבר קיים (אם לא עורכים)
-    if (!editingTier && config.tiers.some((t) => t.slug === tierForm.slug)) {
+    if (!editingTier && config.tiers.some((t: any) => t.slug === tierForm.slug)) {
       toast({
         title: "שגיאה",
         description: "זיהוי זה כבר קיים",
@@ -254,7 +254,7 @@ export default function PremiumClubPage() {
     }
 
     const updatedTiers = editingTier
-      ? config.tiers.map((t) => (t.slug === editingTier.slug ? tierForm : t))
+      ? config.tiers.map((t: any) => (t.slug === editingTier.slug ? tierForm : t))
       : [...config.tiers, tierForm]
 
     // מיון לפי priority
@@ -358,7 +358,7 @@ export default function PremiumClubPage() {
                 <TableBody>
                   {config.tiers
                     .sort((a, b) => a.priority - b.priority)
-                    .map((tier) => (
+                    .map((tier: any) => (
                       <TableRow key={tier.slug}>
                         <TableCell>
                           <div
@@ -614,7 +614,7 @@ export default function PremiumClubPage() {
                 <p className="text-sm text-gray-500">מתנה חודשית לרמות גבוהות</p>
               </div>
               <Switch
-                checked={config.benefits.monthlyGift || false}
+                checked={(config.benefits as any)?.monthlyGift || false}
                 onCheckedChange={(checked) =>
                   setConfig({
                     ...config,
@@ -667,6 +667,8 @@ export default function PremiumClubPage() {
                             birthdayDiscount: {
                               ...config.benefits.birthdayDiscount,
                               type: value as 'PERCENTAGE' | 'FIXED',
+                              enabled: config.benefits.birthdayDiscount?.enabled ?? true,
+                              value: config.benefits.birthdayDiscount?.value ?? 0,
                             },
                           },
                         })
@@ -696,6 +698,8 @@ export default function PremiumClubPage() {
                             birthdayDiscount: {
                               ...config.benefits.birthdayDiscount,
                               value: parseFloat(e.target.value) || 0,
+                              enabled: config.benefits.birthdayDiscount?.enabled ?? true,
+                              type: config.benefits.birthdayDiscount?.type || 'PERCENTAGE',
                             },
                           },
                         })
@@ -1001,40 +1005,42 @@ export default function PremiumClubPage() {
                       <p className="text-xs text-gray-500">מתנה חודשית לרמה זו</p>
                     </div>
                     <Switch
-                      checked={tierForm.benefits.monthlyGift?.enabled || false}
+                      checked={(tierForm.benefits as any)?.monthlyGift?.enabled || false}
                       onCheckedChange={(checked) =>
                         setTierForm({
                           ...tierForm,
                           benefits: {
                             ...tierForm.benefits,
-                            monthlyGift: {
-                              ...(tierForm.benefits.monthlyGift || {}),
-                              enabled: checked,
-                              type: tierForm.benefits.monthlyGift?.type || 'DISCOUNT_CODE',
-                              value: tierForm.benefits.monthlyGift?.value || 10,
-                              discountType: tierForm.benefits.monthlyGift?.discountType || 'PERCENTAGE',
-                            },
-                          },
+                            ...((tierForm.benefits as any).monthlyGift ? {
+                              monthlyGift: {
+                                ...((tierForm.benefits as any)?.monthlyGift || {}),
+                                enabled: checked,
+                                type: (tierForm.benefits as any)?.monthlyGift?.type || 'DISCOUNT_CODE',
+                                value: (tierForm.benefits as any)?.monthlyGift?.value || 10,
+                                discountType: (tierForm.benefits as any)?.monthlyGift?.discountType || 'PERCENTAGE',
+                              },
+                            } : {}),
+                          } as any,
                         })
                       }
                     />
                   </div>
-                  {tierForm.benefits.monthlyGift?.enabled && (
+                  {(tierForm.benefits as any)?.monthlyGift?.enabled && (
                     <div className="grid grid-cols-2 gap-4 pl-4 border-r-2 border-gray-200">
                       <div>
                         <Label>סוג מתנה</Label>
                         <Select
-                          value={tierForm.benefits.monthlyGift.type || 'DISCOUNT_CODE'}
+                          value={(tierForm.benefits as any)?.monthlyGift.type || 'DISCOUNT_CODE'}
                           onValueChange={(value) =>
                             setTierForm({
                               ...tierForm,
                               benefits: {
                                 ...tierForm.benefits,
                                 monthlyGift: {
-                                  ...tierForm.benefits.monthlyGift,
+                                  ...(tierForm.benefits as any)?.monthlyGift,
                                   type: value as 'DISCOUNT_CODE' | 'FREE_PRODUCT' | 'STORE_CREDIT',
                                 },
-                              },
+                              } as any,
                             })
                           }
                         >
@@ -1048,22 +1054,22 @@ export default function PremiumClubPage() {
                           </SelectContent>
                         </Select>
                       </div>
-                      {tierForm.benefits.monthlyGift.type === 'DISCOUNT_CODE' && (
+                      {(tierForm.benefits as any)?.monthlyGift.type === 'DISCOUNT_CODE' && (
                         <>
                           <div>
                             <Label>סוג הנחה</Label>
                             <Select
-                              value={tierForm.benefits.monthlyGift.discountType || 'PERCENTAGE'}
+                              value={(tierForm.benefits as any)?.monthlyGift.discountType || 'PERCENTAGE'}
                               onValueChange={(value) =>
                                 setTierForm({
                                   ...tierForm,
                                   benefits: {
                                     ...tierForm.benefits,
                                     monthlyGift: {
-                                      ...tierForm.benefits.monthlyGift,
+                                      ...(tierForm.benefits as any)?.monthlyGift,
                                       discountType: value as 'PERCENTAGE' | 'FIXED',
                                     },
-                                  },
+                                  } as any,
                                 })
                               }
                             >
@@ -1078,45 +1084,45 @@ export default function PremiumClubPage() {
                           </div>
                           <div>
                             <Label>
-                              {tierForm.benefits.monthlyGift.discountType === 'PERCENTAGE' ? 'אחוז הנחה' : 'סכום הנחה'}
+                              {(tierForm.benefits as any)?.monthlyGift.discountType === 'PERCENTAGE' ? 'אחוז הנחה' : 'סכום הנחה'}
                             </Label>
                             <Input
                               type="number"
-                              value={tierForm.benefits.monthlyGift.value || 10}
+                              value={(tierForm.benefits as any)?.monthlyGift.value || 10}
                               onChange={(e) =>
                                 setTierForm({
                                   ...tierForm,
                                   benefits: {
                                     ...tierForm.benefits,
                                     monthlyGift: {
-                                      ...tierForm.benefits.monthlyGift,
+                                      ...(tierForm.benefits as any)?.monthlyGift,
                                       value: parseFloat(e.target.value) || 0,
                                     },
-                                  },
+                                  } as any,
                                 })
                               }
                               min="0"
-                              max={tierForm.benefits.monthlyGift.discountType === 'PERCENTAGE' ? '100' : undefined}
+                              max={(tierForm.benefits as any)?.monthlyGift.discountType === 'PERCENTAGE' ? '100' : undefined}
                             />
                           </div>
                         </>
                       )}
-                      {tierForm.benefits.monthlyGift.type === 'STORE_CREDIT' && (
+                      {(tierForm.benefits as any)?.monthlyGift.type === 'STORE_CREDIT' && (
                         <div>
                           <Label>סכום קרדיט (₪)</Label>
                           <Input
                             type="number"
-                            value={tierForm.benefits.monthlyGift.value || 50}
+                            value={(tierForm.benefits as any)?.monthlyGift.value || 50}
                             onChange={(e) =>
                               setTierForm({
                                 ...tierForm,
                                 benefits: {
                                   ...tierForm.benefits,
                                   monthlyGift: {
-                                    ...tierForm.benefits.monthlyGift,
+                                    ...(tierForm.benefits as any)?.monthlyGift,
                                     value: parseFloat(e.target.value) || 0,
                                   },
-                                },
+                                } as any,
                               })
                             }
                             min="0"

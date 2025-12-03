@@ -58,7 +58,7 @@ export default function InventoryPage() {
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/products?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/products?shopId=${selectedShop?.id || ""}`)
       if (response.ok) {
         const data = await response.json()
         const products = data.products || []
@@ -77,7 +77,7 @@ export default function InventoryPage() {
                 name: variant.name || product.name,
                 sku: variant.sku || product.sku,
                 inventoryQty: variant.inventoryQty || 0,
-                lowStockAlert: product.lowStockAlert,
+                lowStockAlert: (product as any).lowStockAlert,
                 status: product.status,
                 availability: product.availability,
                 isVariant: true,
@@ -90,7 +90,7 @@ export default function InventoryPage() {
               name: product.name,
               sku: product.sku,
               inventoryQty: product.inventoryQty || 0,
-              lowStockAlert: product.lowStockAlert,
+              lowStockAlert: (product as any).lowStockAlert,
               status: product.status,
               availability: product.availability,
               isVariant: false,
@@ -173,7 +173,7 @@ export default function InventoryPage() {
     }
   }
 
-  const filteredItems = items.filter((item) => {
+  const filteredItems = items.filter((item: any) => {
     const matchesSearch =
       item.name.toLowerCase().includes(search.toLowerCase()) ||
       item.sku?.toLowerCase().includes(search.toLowerCase())
@@ -196,7 +196,7 @@ export default function InventoryPage() {
       item.lowStockAlert !== null && item.inventoryQty <= item.lowStockAlert
   ).length
 
-  const outOfStockCount = items.filter((item) => item.inventoryQty === 0).length
+  const outOfStockCount = items.filter((item: any) => item.inventoryQty === 0).length
 
   if (!selectedShop) {
     return (
@@ -329,7 +329,7 @@ export default function InventoryPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {filteredItems.map((item) => {
+                    {filteredItems.map((item: any) => {
                       const isLowStock =
                         item.lowStockAlert !== null &&
                         item.inventoryQty <= item.lowStockAlert

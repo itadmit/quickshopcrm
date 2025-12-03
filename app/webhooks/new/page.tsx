@@ -44,7 +44,7 @@ export default function NewWebhookPage() {
     setFormData((prev) => ({
       ...prev,
       events: prev.events.includes(event)
-        ? prev.events.filter((e) => e !== event)
+        ? prev.events.filter((e: any) => e !== event)
         : [...prev.events, event],
     }))
   }
@@ -207,7 +207,7 @@ export default function NewWebhookPage() {
                 <div className="space-y-2">
                   <Label>אירועים *</Label>
                   <div className="grid grid-cols-2 gap-2 p-4 border rounded-lg">
-                    {AVAILABLE_EVENTS.map((event) => (
+                    {AVAILABLE_EVENTS.map((event: any) => (
                       <div
                         key={event}
                         className="flex items-center space-x-2 space-x-reverse"
@@ -228,7 +228,7 @@ export default function NewWebhookPage() {
                   </div>
                   {formData.events.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-2">
-                      {formData.events.map((event) => (
+                      {formData.events.map((event: any) => (
                         <Badge
                           key={event}
                           variant="secondary"

@@ -284,8 +284,8 @@ export function MegaMenu({ item, slug, onClose }: MegaMenuProps) {
                             src={hoveredChild.image}
                             alt={hoveredChild.label}
                             className="absolute inset-0 w-full h-full object-cover transition-opacity duration-600"
-                            style={{ transitionTimingFunction: 'cubic-bezier(0.25,0.1,0.25,1)' }}
                             style={{
+                              transitionTimingFunction: 'cubic-bezier(0.25,0.1,0.25,1)',
                               opacity: 1,
                               willChange: 'opacity'
                             }}

@@ -123,7 +123,7 @@ export default function CategoriesPage() {
     }
   }
 
-  const filteredCategories = categories.filter((category) =>
+  const filteredCategories = categories.filter((category: any) =>
     category.name.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -222,7 +222,7 @@ export default function CategoriesPage() {
                           checked={selectedCategories.size === filteredCategories.length && filteredCategories.length > 0}
                           onCheckedChange={(checked) => {
                             if (checked) {
-                              setSelectedCategories(new Set(filteredCategories.map((c) => c.id)))
+                              setSelectedCategories(new Set(filteredCategories.map((c: any) => c.id)))
                             } else {
                               setSelectedCategories(new Set())
                             }
@@ -239,7 +239,7 @@ export default function CategoriesPage() {
                     </tr>
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredCategories.map((category) => (
+                    {filteredCategories.map((category: any) => (
                       <tr 
                         key={category.id} 
                         className="hover:bg-gray-50 transition-colors cursor-pointer"

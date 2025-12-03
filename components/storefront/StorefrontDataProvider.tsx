@@ -119,7 +119,7 @@ export function StorefrontDataProvider({
   const { data: cart = initialCart, refetch: refetchCart } = useQuery<CartData>({
     queryKey: ['storefrontCart', slug, customerId],
     queryFn: async () => {
-      if (!customerId) return { items: [], subtotal: 0, total: 0, tax: 0, shipping: 0, coupon: null, automaticDiscount: 0, customerDiscount: 0, giftCardDiscount: 0 } as CartData
+      if (!customerId) return { id: '', items: [], subtotal: 0, total: 0, tax: 0, shipping: 0, coupon: null, automaticDiscount: 0, customerDiscount: 0, giftCardDiscount: 0 } as CartData
       const res = await fetch(`/api/storefront/${slug}/cart?customerId=${customerId}`)
       if (!res.ok) throw new Error('Failed to fetch cart')
       return res.json()

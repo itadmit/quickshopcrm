@@ -131,7 +131,7 @@ export async function createRecurringPayment(
         recurring_range: params.recurringRange,
         number_of_charges: params.numberOfCharges,
         start_date: params.startDate,
-        items: params.items.map((item) => ({
+        items: params.items.map((item: any) => ({
           product_uid: item.productUid,
           quantity: item.quantity,
           price: item.price,
@@ -203,7 +203,7 @@ export async function chargeRecurringPayment(
           card_token: params.cardToken,
           charge_date: params.chargeDate,
           valid: true,
-          items: params.items.map((item) => ({
+          items: params.items.map((item: any) => ({
             product_uid: item.productUid,
             quantity: item.quantity,
             price: item.price,
@@ -815,7 +815,7 @@ export async function updateRecurringPayment(
           number_of_charges: params.numberOfCharges,
           start_date: params.startDate,
           end_date: params.endDate,
-          items: params.items.map((item) => ({
+          items: params.items.map((item: any) => ({
             product_uid: item.productUid,
             quantity: item.quantity,
             price: item.price,

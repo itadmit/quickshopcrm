@@ -150,7 +150,7 @@ export default function ReviewsPage() {
   const renderStars = (rating: number) => {
     return (
       <div className="flex gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
+        {[1, 2, 3, 4, 5].map((star: any) => (
           <Star
             key={star}
             className={`w-4 h-4 ${
@@ -162,7 +162,7 @@ export default function ReviewsPage() {
     )
   }
 
-  const filteredReviews = reviews.filter((review) =>
+  const filteredReviews = reviews.filter((review: any) =>
     review.product.name.toLowerCase().includes(search.toLowerCase()) ||
     review.comment?.toLowerCase().includes(search.toLowerCase())
   )
@@ -255,7 +255,7 @@ export default function ReviewsPage() {
           </Card>
         ) : (
           <div className="space-y-4">
-            {filteredReviews.map((review) => (
+            {filteredReviews.map((review: any) => (
               <Card key={review.id}>
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-4">

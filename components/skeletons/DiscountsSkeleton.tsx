@@ -21,7 +21,7 @@ export function DiscountsSkeleton() {
             </div>
             {/* Table Rows */}
             <div className="divide-y divide-gray-200">
-              {[1, 2, 3, 4, 5].map((i) => (
+              {[1, 2, 3, 4, 5].map((i: any) => (
                 <div key={i} className="grid grid-cols-8 gap-4 px-4 py-4">
                   <div className="h-4 w-4 bg-gray-200 rounded animate-pulse"></div>
                   <div className="h-4 w-32 bg-gray-200 rounded animate-pulse"></div>

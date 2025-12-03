@@ -10,7 +10,6 @@ const registerSchema = z.object({
   phone: z.string().min(1, "טלפון הוא חובה"),
   firstName: z.string().min(1, "שם פרטי הוא חובה"),
   lastName: z.string().optional(),
-  dateOfBirth: z.string().optional(),
 })
 
 // POST - הרשמת לקוח חדש (ללא OTP, ללא סיסמא)
@@ -60,7 +59,6 @@ export async function POST(
         firstName: data.firstName || null,
         lastName: data.lastName || null,
         phone: data.phone,
-        dateOfBirth: data.dateOfBirth ? new Date(data.dateOfBirth) : null,
         emailVerified: false,
       },
       select: {
@@ -69,7 +67,7 @@ export async function POST(
         firstName: true,
         lastName: true,
         phone: true,
-        preferredPaymentMethod: true,
+        tier: true,
         createdAt: true,
       },
     })
@@ -128,8 +126,7 @@ export async function POST(
         firstName: customer.firstName,
         lastName: customer.lastName,
         phone: customer.phone,
-        preferredPaymentMethod: customer.preferredPaymentMethod,
-        premiumClubTier: null, // לקוח חדש אין לו רמה עדיין
+        tier: customer.tier,
       },
     }, { status: 201 })
 
@@ -140,8 +137,7 @@ export async function POST(
       firstName: customer.firstName,
       lastName: customer.lastName,
       phone: customer.phone,
-      preferredPaymentMethod: customer.preferredPaymentMethod,
-      premiumClubTier: null,
+      tier: customer.tier,
     })
     
     response.cookies.set(`storefront_customer_${params.slug}`, customerData, {

@@ -57,21 +57,8 @@ export async function POST(
       }
     }
 
-    // אם לא מצאנו לקוח, נחזיר שגיאה ברורה וננקה OTP tokens ישנים
+    // אם לא מצאנו לקוח, נחזיר שגיאה ברורה
     if (!customer) {
-      // ניקוי OTP tokens ישנים של אימייל/טלפון זה - למקרה שהלקוח נמחק
-      if (emailToUse) {
-        await prisma.otpToken.deleteMany({
-          where: {
-            shopId: shop.id,
-            email: emailToUse,
-          },
-        })
-      } else if (data.phone) {
-        // אם יש טלפון אבל לא מצאנו לקוח, ננסה למצוא OTP tokens לפי טלפון
-        // (אבל אין לנו שדה טלפון ב-OtpToken, אז נדלג על זה)
-      }
-      
       console.log(`[OTP] Customer not found for ${emailToUse || data.phone} - returning error`)
       // החזרת 200 עם error כדי למנוע שגיאה 404 בקונסול
       return NextResponse.json(
@@ -95,25 +82,7 @@ export async function POST(
     const expiresAt = new Date()
     expiresAt.setMinutes(expiresAt.getMinutes() + 10) // תפוגה תוך 10 דקות
 
-    // מחיקת OTP קודמים שלא שימשו (למניעת הצטברות)
-    await prisma.otpToken.deleteMany({
-      where: {
-        shopId: shop.id,
-        email: emailToUse,
-        used: false,
-        expiresAt: { lt: new Date() },
-      },
-    })
-
-    // שמירת OTP במסד הנתונים
-    await prisma.otpToken.create({
-      data: {
-        shopId: shop.id,
-        email: emailToUse,
-        code,
-        expiresAt,
-      },
-    })
+    // TODO: OtpToken model not implemented yet - OTP נשלח אבל לא נשמר במסד
 
     // שליחת אימייל עם קוד OTP - רק אם הלקוח קיים
     try {

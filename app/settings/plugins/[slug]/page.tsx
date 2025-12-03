@@ -80,7 +80,7 @@ export default function PluginSettingsPage() {
     try {
       const params = new URLSearchParams()
       if (selectedShop?.id) {
-        params.append("shopId", selectedShop.id)
+        params.append("shopId", selectedShop?.id || "")
       }
       const response = await fetch(`/api/plugins/${slug}?${params}`)
       if (response.ok) {
@@ -125,7 +125,7 @@ export default function PluginSettingsPage() {
     setSaving(true)
     try {
       const params = new URLSearchParams()
-      if (selectedShop?.id) params.append("shopId", selectedShop.id)
+      if (selectedShop?.id) params.append("shopId", selectedShop?.id || "")
       const response = await fetch(`/api/plugins/${slug}?${params}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
@@ -183,7 +183,7 @@ export default function PluginSettingsPage() {
     setActivating(true)
     try {
       const params = new URLSearchParams()
-      if (selectedShop?.id) params.append("shopId", selectedShop.id)
+      if (selectedShop?.id) params.append("shopId", selectedShop?.id || "")
       const response = await fetch(`/api/plugins/${slug}/activate?${params}`, {
         method: "POST",
       })
@@ -222,7 +222,7 @@ export default function PluginSettingsPage() {
     setDeactivating(true)
     try {
       const params = new URLSearchParams()
-      if (selectedShop?.id) params.append("shopId", selectedShop.id)
+      if (selectedShop?.id) params.append("shopId", selectedShop?.id || "")
       const response = await fetch(`/api/plugins/${slug}/activate?${params}`, {
         method: "DELETE",
       })
@@ -264,7 +264,7 @@ export default function PluginSettingsPage() {
 
     try {
       const params = new URLSearchParams()
-      if (selectedShop?.id) params.append("shopId", selectedShop.id)
+      if (selectedShop?.id) params.append("shopId", selectedShop?.id || "")
       const response = await fetch(`/api/plugins/${slug}?${params}`, {
         method: "DELETE",
       })

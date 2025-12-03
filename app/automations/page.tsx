@@ -181,7 +181,7 @@ export default function AutomationsPage() {
     return labels[type] || type
   }
 
-  const filteredAutomations = automations.filter((automation) =>
+  const filteredAutomations = automations.filter((automation: any) =>
     automation.name.toLowerCase().includes(search.toLowerCase()) ||
     automation.description?.toLowerCase().includes(search.toLowerCase())
   )
@@ -258,7 +258,7 @@ export default function AutomationsPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-4">
-            {filteredAutomations.map((automation) => (
+            {filteredAutomations.map((automation: any) => (
               <Card key={automation.id} className="hover:shadow-md transition-shadow">
                 <CardHeader>
                   <div className="flex items-start justify-between">

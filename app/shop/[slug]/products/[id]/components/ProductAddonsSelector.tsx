@@ -113,7 +113,7 @@ export function ProductAddonsSelector({
 
   return (
     <div className="space-y-6">
-      {addons.map((addon) => {
+      {addons.map((addon: any) => {
         const isSelected = selectedAddons.some(a => a.addonId === addon.id)
         
         return (
@@ -136,7 +136,7 @@ export function ProductAddonsSelector({
                 onValueChange={(value) => handleSingleChoice(addon, value)}
               >
                 <div className="space-y-2">
-                  {addon.values.map((value) => (
+                  {addon.values.map((value: any) => (
                     <div key={value.id} className="flex items-center gap-2">
                       <RadioGroupItem value={value.id} id={`${addon.id}-${value.id}`} />
                       <Label
@@ -159,7 +159,7 @@ export function ProductAddonsSelector({
             {/* MULTIPLE_CHOICE - Checkboxes */}
             {addon.type === "MULTIPLE_CHOICE" && (
               <div className="space-y-2">
-                {addon.values.map((value) => {
+                {addon.values.map((value: any) => {
                   const checked = selectedAddons.some(
                     a => a.addonId === addon.id && a.valueId === value.id
                   )

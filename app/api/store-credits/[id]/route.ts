@@ -7,7 +7,7 @@ import { z } from "zod"
 const updateStoreCreditSchema = z.object({
   customerId: z.string().optional(),
   amount: z.number().min(0).optional(),
-  expiresAt: z.string().datetime().optional(),
+  endDate: z.string().datetime().optional(),
   notes: z.string().optional(),
 })
 
@@ -80,7 +80,7 @@ export async function PUT(
       data: {
         ...(data.customerId && { customerId: data.customerId }),
         ...(data.amount !== undefined && { amount: data.amount }),
-        ...(data.expiresAt !== undefined && { expiresAt: data.expiresAt ? new Date(data.expiresAt) : null }),
+        ...(data.endDate !== undefined && { expiresAt: data.endDate ? new Date(data.endDate) : null }),
         ...(data.notes !== undefined && { notes: data.notes }),
       },
     })

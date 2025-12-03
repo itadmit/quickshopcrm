@@ -71,7 +71,7 @@ export function ProductAddonsCard({
       const allAddons: ProductAddon[] = await response.json()
 
       // סינון addons רלוונטיים
-      const relevant = allAddons.filter((addon) => {
+      const relevant = allAddons.filter((addon: any) => {
         // Global - תמיד רלוונטי
         if (addon.scope === "GLOBAL") {
           return true
@@ -84,7 +84,7 @@ export function ProductAddonsCard({
 
         // Category scope - רלוונטי אם אחת מהקטגוריות נמצאת ברשימה
         if (addon.scope === "CATEGORY" && categoryIds.length > 0) {
-          return addon.categoryIds.some((catId) => categoryIds.includes(catId))
+          return addon.categoryIds.some((catId: string) => categoryIds.includes(catId))
         }
 
         return false
@@ -94,7 +94,7 @@ export function ProductAddonsCard({
 
       // אם זה עריכה, הכל כבר בחור (כי ה-addons מסוננים לפי הרלוונטיות)
       if (productId) {
-        setSelectedAddonIds(relevant.map((a) => a.id))
+        setSelectedAddonIds(relevant.map((a: any) => a.id))
       }
     } catch (error) {
       console.error("Error loading addons:", error)
@@ -106,7 +106,7 @@ export function ProductAddonsCard({
   const handleToggleAddon = (addonId: string, checked: boolean) => {
     const newSelectedIds = checked
       ? [...selectedAddonIds, addonId]
-      : selectedAddonIds.filter((id) => id !== addonId)
+      : selectedAddonIds.filter((id: any) => id !== addonId)
 
     setSelectedAddonIds(newSelectedIds)
     onChange?.(newSelectedIds)
@@ -180,7 +180,7 @@ export function ProductAddonsCard({
           </p>
 
           <div className="space-y-3">
-            {availableAddons.map((addon) => (
+            {availableAddons.map((addon: any) => (
               <div
                 key={addon.id}
                 className="flex items-start gap-3 p-3 border rounded-lg hover:bg-gray-50"
@@ -219,7 +219,7 @@ export function ProductAddonsCard({
                   </div>
                   {addon.values.length > 0 && (
                     <div className="flex gap-1 mt-2 flex-wrap">
-                      {addon.values.slice(0, 3).map((value) => (
+                      {addon.values.slice(0, 3).map((value: any) => (
                         <Badge key={value.id} variant="outline" className="text-xs">
                           {value.label} (+₪{value.price})
                         </Badge>

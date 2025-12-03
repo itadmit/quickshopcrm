@@ -91,7 +91,7 @@ export function ThemeCustomizer({
     // המרת כל HomePageSection ל-block בתוך Template section
     const templateBlocks: ThemeBlock[] = homeSections
       .sort((a, b) => (a.position || 0) - (b.position || 0))
-      .map((section) => ({
+      .map((section: any) => ({
         id: section.id,
         type: section.type || "custom",
         name: section.type || "Custom Section",
@@ -130,12 +130,12 @@ export function ThemeCustomizer({
 
   // המרת ThemeSection חזרה ל-HomePageSection
   const convertThemeSectionsToHomePageSections = (themeSections: ThemeSection[]): any[] => {
-    const templateSection = themeSections.find((s) => s.id === "template")
+    const templateSection = themeSections.find((s: any) => s.id === "template")
     if (!templateSection || !templateSection.blocks) {
       return []
     }
 
-    return templateSection.blocks.map((block) => ({
+    return templateSection.blocks.map((block: any) => ({
       id: block.id,
       type: block.type,
       visible: block.visible,
@@ -148,7 +148,7 @@ export function ThemeCustomizer({
   const convertProductPageElementsToThemeSections = (elements: any[]): ThemeSection[] => {
     const templateBlocks: ThemeBlock[] = elements
       .sort((a, b) => (a.position || 0) - (b.position || 0))
-      .map((element) => ({
+      .map((element: any) => ({
         id: element.id,
         type: element.type,
         name: element.type || "Element",
@@ -187,12 +187,12 @@ export function ThemeCustomizer({
 
   // המרת ThemeSection חזרה ל-ProductPageElements
   const convertThemeSectionsToProductPageElements = (themeSections: ThemeSection[]): any[] => {
-    const templateSection = themeSections.find((s) => s.id === "template")
+    const templateSection = themeSections.find((s: any) => s.id === "template")
     if (!templateSection || !templateSection.blocks) {
       return []
     }
 
-    return templateSection.blocks.map((block) => ({
+    return templateSection.blocks.map((block: any) => ({
       id: block.id,
       type: block.type,
       visible: block.visible,

@@ -65,9 +65,9 @@ export function ThemeCustomizerPreview({
         // עדכון תוכן לפי סוג דף
         if (pageType === "home") {
           // המרת sections ל-homePageSections
-          const templateSection = sections.find((s) => s.id === "template")
+          const templateSection = sections.find((s: any) => s.id === "template")
           if (templateSection?.blocks) {
-            const homeSections = templateSection.blocks.map((block) => ({
+            const homeSections = templateSection.blocks.map((block: any) => ({
               id: block.id,
               type: block.type,
               visible: block.visible,
@@ -81,9 +81,9 @@ export function ThemeCustomizerPreview({
           }
         } else if (pageType === "product") {
           // המרת sections ל-productPageElements
-          const templateSection = sections.find((s) => s.id === "template")
+          const templateSection = sections.find((s: any) => s.id === "template")
           if (templateSection?.blocks) {
-            const elements = templateSection.blocks.map((block) => ({
+            const elements = templateSection.blocks.map((block: any) => ({
               id: block.id,
               type: block.type,
               visible: block.visible,
@@ -156,7 +156,7 @@ export function ThemeCustomizerPreview({
         
         {/* Overlay for editing mode */}
         <div className="absolute inset-0 pointer-events-none">
-          {sections.map((section) => (
+          {sections.map((section: any) => (
             <div
               key={section.id}
               className={cn(

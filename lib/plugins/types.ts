@@ -21,6 +21,13 @@ export interface PluginMetadata {
   documentation?: string
   changelog?: string[]
   supportUrl?: string
+  menuItem?: {
+    icon?: string
+    labelKey?: string
+    href?: string
+    permission?: string
+    section?: string
+  }
 }
 
 export interface PluginRequirements {

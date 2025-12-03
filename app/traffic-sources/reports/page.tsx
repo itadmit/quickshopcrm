@@ -79,7 +79,7 @@ export default function TrafficSourcesReportsPage() {
     setLoading(true)
     try {
       const params = new URLSearchParams()
-      params.append("shopId", selectedShop.id)
+      params.append("shopId", selectedShop?.id || "")
       params.append("startDate", startDate)
       params.append("endDate", endDate)
 
@@ -335,7 +335,7 @@ export default function TrafficSourcesReportsPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y">
-                        {report.trafficSourcesReport.map((source) => (
+                        {report.trafficSourcesReport.map((source: any) => (
                           <tr key={source.id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 font-medium">
                               {source.name}
@@ -440,6 +440,7 @@ export default function TrafficSourcesReportsPage() {
     </AppLayout>
   )
 }
+
 
 
 

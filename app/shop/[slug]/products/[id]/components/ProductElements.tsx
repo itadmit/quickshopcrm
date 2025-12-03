@@ -206,7 +206,7 @@ export function ProductElements({
   const renderStars = (rating: number) => {
     return (
       <div className="flex items-center gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
+        {[1, 2, 3, 4, 5].map((star: any) => (
           <Star
             key={star}
             className={`w-4 h-4 ${
@@ -223,17 +223,17 @@ export function ProductElements({
   // פונקציה לבדיקת אם המוצר לא במלאי
   const checkIfOutOfStock = () => {
     // אם המוצר מאפשר מכירה בלי מלאי, תמיד זמין
-    if (product.sellWhenSoldOut) {
+    if ((product as any).inventoryEnabled) {
       return false
     }
 
     // בדיקה אם המוצר עצמו לא במלאי
     const isProductOutOfStock = product.availability === "OUT_OF_STOCK" || 
-      (product.inventoryEnabled && product.inventoryQty !== null && product.inventoryQty <= 0)
+      ((product as any).inventoryEnabled && product.inventoryQty !== null && product.inventoryQty <= 0)
 
     // אם יש variant שנבחר, נבדוק את המלאי שלו
     if (selectedVariant && product.variants) {
-      const variant = product.variants.find((v) => v.id === selectedVariant)
+      const variant = product.variants.find((v: any) => v.id === selectedVariant)
       if (variant) {
         // אם יש variant, נבדוק את המלאי שלו
         const isVariantOutOfStock = variant.inventoryQty !== null && 
@@ -425,11 +425,11 @@ export function ProductElements({
         }
         
         // הצגת מחיר ל-100 מ״ל (אם הוגדר)
-        const pricePer100ml = product.showPricePer100ml && product.pricePer100ml ? product.pricePer100ml : null
+        const pricePer100ml = (product as any).showPricePer100ml && (product as any).pricePer100ml ? (product as any).pricePer100ml : null
         
         // חישוב המחיר הבסיסי (ללא addons) לפי ה-variant שנבחר
         const basePrice = selectedVariant && product.variants
-          ? product.variants.find((v) => v.id === selectedVariant)?.price || product.price
+          ? product.variants.find((v: any) => v.id === selectedVariant)?.price || product.price
           : product.price
         
         // חישוב addonsTotal (ההפרש בין currentPrice ל-basePrice)
@@ -469,7 +469,7 @@ export function ProductElements({
               {applicableDiscounts.length > 0 && (
                 <div className="flex flex-col gap-2 pt-1">
                   <div className="flex items-center gap-3 flex-wrap">
-                    {applicableDiscounts.map((discount) => {
+                    {applicableDiscounts.map((discount: any) => {
                       return (
                         <Badge 
                           key={discount.id}
@@ -524,9 +524,9 @@ export function ProductElements({
       case "product-variants":
         return product.options && product.options.length > 0 ? (
           <div key={element.id} className="space-y-4" style={elementStyle}>
-            {product.options.map((option) => {
+            {product.options.map((option: any) => {
               const isOptionSelected = selectedOptionValues[option.id] !== undefined
-              const isColorOption = option.type === "color" || option.name === "Color" || option.name === "צבע"
+              const isColorOption = (option as any).type === "color" || option.name === "Color" || option.name === "צבע"
               
               return (
                 <div key={option.id}>
@@ -542,7 +542,7 @@ export function ProductElements({
                       // בדיקת זמינות - האם יש variant זמין עם הערך הזה + הבחירות הקודמות
                       const hasStock = (() => {
                         // אם המוצר מאפשר מכירה בלי מלאי, הכל זמין (כל עוד יש variant תואם)
-                        if (product.sellWhenSoldOut) {
+                        if ((product as any).inventoryEnabled) {
                           // נבדוק רק אם יש variant תואם, לא את המלאי
                           if (!product.variants || product.variants.length === 0) {
                             return true
@@ -612,7 +612,7 @@ export function ProductElements({
                             
                             if (!matchesValueCheck) return false
                             // אם המוצר מאפשר מכירה בלי מלאי, לא נבדוק מלאי
-                            const hasStockCheck = product.sellWhenSoldOut 
+                            const hasStockCheck = (product as any).inventoryEnabled 
                               ? true 
                               : (v.inventoryQty === null || v.inventoryQty === undefined || v.inventoryQty > 0)
                             return hasStockCheck
@@ -648,7 +648,7 @@ export function ProductElements({
                           const optionsCountMatch = Object.keys(variantOptions).length === Object.keys(fullSelection).length
                           
                           // בדיקת מלאי - רק אם המוצר לא מאפשר מכירה בלי מלאי
-                          const hasStockCheck = product.sellWhenSoldOut 
+                          const hasStockCheck = (product as any).inventoryEnabled 
                             ? true 
                             : (v.inventoryQty === null || v.inventoryQty === undefined || v.inventoryQty > 0)
                           
@@ -671,7 +671,7 @@ export function ProductElements({
                       }
                       
                       // בדיקה אם זה דפוס
-                      const isPattern = option.type === "pattern" || (typeof value === 'object' && value.metadata?.pattern)
+                      const isPattern = (option as any).type === "pattern" || (typeof value === 'object' && value.metadata?.pattern)
                       const patternStyle = typeof value === 'object' && value.metadata?.pattern ? value.metadata.pattern : undefined
                       const patternBackgroundSize = typeof value === 'object' && value.metadata?.backgroundSize ? value.metadata.backgroundSize : '12px 12px'
                       const patternBackgroundPosition = typeof value === 'object' && value.metadata?.backgroundPosition ? value.metadata.backgroundPosition : '0 0'
@@ -835,7 +835,7 @@ export function ProductElements({
       case "product-quantity":
         let availableQty = product.inventoryQty
         if (selectedVariant && product.variants) {
-          const variant = product.variants.find((v) => v.id === selectedVariant)
+          const variant = product.variants.find((v: any) => v.id === selectedVariant)
           if (variant) {
             availableQty = variant.inventoryQty
           }
@@ -893,7 +893,7 @@ export function ProductElements({
       case "product-buttons":
         // בדיקה אם המוצר או הווריאציה לא זמינים
         const isProductOutOfStock = product.availability === "OUT_OF_STOCK" || 
-          (product.inventoryEnabled && product.inventoryQty !== null && product.inventoryQty <= 0)
+          ((product as any).inventoryEnabled && product.inventoryQty !== null && product.inventoryQty <= 0)
         
         let isVariantOutOfStock = false
         let matchedVariantId: string | null = null
@@ -1009,7 +1009,7 @@ export function ProductElements({
         // אם יש variant שנבחר, נבדוק רק את המלאי שלו
         // אם אין variant, נבדוק את המלאי הכללי של המוצר
         // אבל אם המוצר מאפשר מכירה בלי מלאי, לא נציג waitlist
-        const isOutOfStock = product.sellWhenSoldOut 
+        const isOutOfStockLocal = (product as any).inventoryEnabled 
           ? false // אם מאפשר מכירה בלי מלאי, תמיד זמין להוספה לעגלה
           : (hasMatchedVariant 
               ? isVariantOutOfStock 
@@ -1017,7 +1017,7 @@ export function ProductElements({
         
         return (
           <div key={element.id} className="space-y-3">
-            {isOutOfStock ? (
+            {isOutOfStockLocal ? (
               // אם לא זמין, הצג את רשימת ההמתנה במקום הכפתורים
               <WaitlistForm
                 shopId={shopId}
@@ -1156,7 +1156,7 @@ export function ProductElements({
         const customTextContent = element.config?.content || ""
         return customTextContent ? (
           <div key={element.id} className="mb-6" style={elementStyle}>
-            {element.config.title && (
+            {element.config?.title && (
               <h3 className="text-lg font-semibold text-gray-900 mb-2" style={elementStyle}>{element.config.title}</h3>
             )}
             <div 
@@ -1174,7 +1174,7 @@ export function ProductElements({
             <details className="group">
               <summary className="cursor-pointer list-none">
                 <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
-                  <span className="font-semibold text-gray-900" style={elementStyle}>{element.config.title || "פרטים נוספים"}</span>
+                  <span className="font-semibold text-gray-900" style={elementStyle}>{element.config?.title || "פרטים נוספים"}</span>
                   <ChevronRight className="w-5 h-5 text-gray-500 group-open:rotate-90 transition-transform" />
                 </div>
               </summary>

@@ -161,7 +161,7 @@ export function QuickActions() {
       {/* קיצורים מהירים */}
       <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-2 py-1 bg-gray-50">
         {/* במסכי laptop קטנים - רק הפעולה הראשונה */}
-        {displayActions.slice(0, 1).map((action) => {
+        {displayActions.slice(0, 1).map((action: any) => {
           const Icon = action.icon
           return (
             <Button
@@ -179,7 +179,7 @@ export function QuickActions() {
         })}
         
         {/* במסכים גדולים - הצג את כל הפעולות */}
-        {displayActions.slice(1).map((action) => {
+        {displayActions.slice(1).map((action: any) => {
           const Icon = action.icon
           return (
             <Button
@@ -214,14 +214,14 @@ export function QuickActions() {
                 <ChevronDown className="w-3 h-3" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[200px]" dir="rtl">
+            <DropdownMenuContent align="end" className="min-w-[200px]">
               <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 border-b border-gray-200">
                 {t("header.quickActions.moreActions")}
               </div>
               {/* הצג את כל הפעולות שלא מוצגות כבר */}
               {AVAILABLE_ACTIONS
                 .filter(action => !displayActions.slice(0, 1).some(da => da.id === action.id))
-                .map((action) => {
+                .map((action: any) => {
                   const Icon = action.icon
                   return (
                     <DropdownMenuItem

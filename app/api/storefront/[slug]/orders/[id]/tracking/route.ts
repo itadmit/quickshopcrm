@@ -81,7 +81,7 @@ export async function GET(
 
     // בדיקה שההזמנה נשלחה לחברת משלוחים
     // המערכת מחפשת את חברת המשלוחים הפעילה מההזמנה (לא קשיח ל-Focus)
-    if (!order.shippingProvider || !order.shippingTrackingNumber) {
+    if (!order.shippingMethod || !order.trackingNumber) {
       return NextResponse.json(
         { error: "ההזמנה לא נשלחה לחברת משלוחים" },
         { status: 400 }
@@ -90,7 +90,7 @@ export async function GET(
 
     // טעינת אינטגרציה לפי חברת המשלוחים מההזמנה
     // הפורמט: {PROVIDER_SLUG}_SHIPPING (לדוגמה: FOCUS_SHIPPING, DHL_SHIPPING)
-    const integrationType = `${order.shippingProvider.toUpperCase()}_SHIPPING` as any
+    const integrationType = `${order.shippingMethod?.toUpperCase() || 'UNKNOWN'}_SHIPPING` as any
     const integration = await prisma.integration.findFirst({
       where: {
         companyId: shop.companyId,
@@ -102,8 +102,8 @@ export async function GET(
     if (!integration) {
       return NextResponse.json(
         { 
-          error: `אינטגרציה לא נמצאה לחברת המשלוחים ${order.shippingProvider}`,
-          provider: order.shippingProvider 
+          error: `אינטגרציה לא נמצאה לחברת המשלוחים ${order.shippingMethod}`,
+          provider: order.shippingMethod 
         },
         { status: 404 }
       )
@@ -111,15 +111,15 @@ export async function GET(
 
     // טעינת provider מהרישום הגנרי (registry)
     // זה עובד עם כל חברת משלוחים שנרשמה ב-registry (focus, dhl, וכו')
-    const providerSlug = order.shippingProvider.toLowerCase()
+    const providerSlug = order.shippingMethod?.toLowerCase() || ''
     const provider = getShippingProvider(providerSlug)
     if (!provider) {
       // קבלת רשימת providers נתמכים לדיבוג
       const supportedProviders = getAllProviders().map(p => p.slug)
       return NextResponse.json(
         { 
-          error: `חברת משלוחים ${order.shippingProvider} לא נתמכת במערכת`,
-          provider: order.shippingProvider,
+          error: `חברת משלוחים ${order.shippingMethod} לא נתמכת במערכת`,
+          provider: order.shippingMethod,
           supportedProviders
         },
         { status: 400 }
@@ -127,7 +127,7 @@ export async function GET(
     }
 
     // קבלת סטטוס
-    const shipmentId = (order.shippingData as any)?.shipmentId || order.shippingTrackingNumber
+    const shipmentId = (order.customFields as any)?.shippingData?.shipmentId || order.trackingNumber
     if (!shipmentId) {
       return NextResponse.json(
         { error: "מספר משלוח לא נמצא" },
@@ -146,9 +146,12 @@ export async function GET(
       await prisma.order.update({
         where: { id: params.id },
         data: {
-          shippingStatus: status.status,
-          shippingStatusUpdatedAt: status.lastUpdate || new Date(),
-          shippingTrackingNumber: status.trackingNumber || order.shippingTrackingNumber,
+          trackingNumber: status.trackingNumber || order.trackingNumber,
+          customFields: {
+            ...((order.customFields as any) || {}),
+            shippingStatus: status.status,
+            shippingStatusUpdatedAt: status.lastUpdate || new Date(),
+          },
         },
       })
     } catch (updateError) {

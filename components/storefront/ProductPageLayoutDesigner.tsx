@@ -99,7 +99,7 @@ export function ProductPageLayoutDesigner({
   useEffect(() => {
     if (open && initialElementId) {
       // מציאת אלמנט הגלריה אם זה מה שביקשו
-      const galleryElement = elements.find((el) => el.type === "product-gallery" || el.id === initialElementId)
+      const galleryElement = elements.find((el: any) => el.type === "product-gallery" || el.id === initialElementId)
       if (galleryElement) {
         // פתיחה ישירה של הגדרות הגלריה
         setTimeout(() => {
@@ -145,17 +145,17 @@ export function ProductPageLayoutDesigner({
 
   const toggleVisibility = (elementId: string) => {
     setElements((prev) =>
-      prev.map((el) => (el.id === elementId ? { ...el, visible: !el.visible } : el))
+      prev.map((el: any) => (el.id === elementId ? { ...el, visible: !el.visible } : el))
     )
   }
 
   const removeElement = (elementId: string) => {
-    setElements((prev) => prev.filter((el) => el.id !== elementId))
+    setElements((prev) => prev.filter((el: any) => el.id !== elementId))
   }
 
   const updateElementStyle = (elementId: string, styleConfig: ElementStyleConfig) => {
     setElements((prev) =>
-      prev.map((el) =>
+      prev.map((el: any) =>
         el.id === elementId
           ? { ...el, config: { ...el.config, style: styleConfig } }
           : el
@@ -211,7 +211,7 @@ export function ProductPageLayoutDesigner({
     }
   }
 
-  const selectedElement = settingsElementId ? elements.find((el) => el.id === settingsElementId) : null
+  const selectedElement = settingsElementId ? elements.find((el: any) => el.id === settingsElementId) : null
 
   return (
     <>
@@ -260,10 +260,10 @@ export function ProductPageLayoutDesigner({
               <SheetBody>
             <div className="space-y-2 mt-6">
               {elements
-                .filter((element) => element.type !== "product-gallery") // הסרת גלריה מהרשימה
+                .filter((element: any) => element.type !== "product-gallery") // הסרת גלריה מהרשימה
                 .map((element, index) => {
                   // חישוב מחדש של האינדקס אחרי הסרת הגלריה
-                  const filteredElements = elements.filter((el) => el.type !== "product-gallery")
+                  const filteredElements = elements.filter((el: any) => el.type !== "product-gallery")
                   const actualIndex = filteredElements.findIndex((el) => el.id === element.id)
                   return (
                 <div
@@ -452,9 +452,9 @@ export function ProductPageLayoutDesigner({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {addableElementTypes.map((type) => (
+                  {addableElementTypes.map((type: any) => (
                     <SelectItem key={type} value={type}>
-                      {elementLabels[type]}
+                      {elementLabels[type as keyof typeof elementLabels]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -553,7 +553,7 @@ export function ProductPageLayoutDesigner({
                 if (editingElementId) {
                   // עדכון אלמנט קיים
                   setElements((prev) =>
-                    prev.map((el) =>
+                    prev.map((el: any) =>
                       el.id === editingElementId
                         ? { ...el, config: newElementConfig }
                         : el

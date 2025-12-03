@@ -9,7 +9,7 @@ export function ReportsSkeleton() {
 
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {[1, 2, 3, 4].map((i) => (
+        {[1, 2, 3, 4].map((i: any) => (
           <div key={i} className="bg-white rounded-lg shadow-sm p-6">
             <div className="flex items-center justify-between">
               <div className="space-y-2 flex-1">
@@ -25,12 +25,12 @@ export function ReportsSkeleton() {
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {[1, 2].map((i) => (
+        {[1, 2].map((i: any) => (
           <div key={i} className="bg-white rounded-lg shadow-sm">
             <div className="p-6">
               <div className="h-6 w-32 bg-gray-200 rounded mb-4"></div>
               <div className="space-y-4">
-                {[1, 2, 3, 4].map((j) => (
+                {[1, 2, 3, 4].map((j: any) => (
                   <div key={j} className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="h-3 w-24 bg-gray-200 rounded"></div>
@@ -50,7 +50,7 @@ export function ReportsSkeleton() {
         <div className="p-6">
           <div className="h-6 w-48 bg-gray-200 rounded mb-6"></div>
           <div className="space-y-4">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
+            {[1, 2, 3, 4, 5, 6].map((i: any) => (
               <div key={i} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div className="h-3 w-16 bg-gray-200 rounded"></div>

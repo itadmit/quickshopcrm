@@ -312,7 +312,7 @@ async function addGiftItemsToCart(
         where: { id: giftProduct.id },
         select: { inventoryQty: true },
       })
-      if (productWithInventory?.inventoryQty !== null && productWithInventory.inventoryQty < 0) {
+      if (productWithInventory && productWithInventory.inventoryQty !== null && productWithInventory.inventoryQty < 0) {
         continue
       }
     }
@@ -933,7 +933,6 @@ export async function calculateCart(
           totalSpent: true,
           orderCount: true,
           tier: true,
-          premiumClubTier: true,
         },
       }),
       prisma.shop.findUnique({
@@ -963,10 +962,10 @@ export async function calculateCart(
       premiumClubConfig = premiumClubPlugin?.config
       
       // בדיקת early access
-      if (premiumClubConfig && customerData?.premiumClubTier) {
+      if (premiumClubConfig && (customerData as any)?.premiumClubTier) {
         const config = premiumClubConfig as any
         if (config.enabled && config.benefits?.earlyAccessToSales) {
-          const tier = config.tiers?.find((t: any) => t.slug === customerData.premiumClubTier)
+          const tier = config.tiers?.find((t: any) => t.slug === customerData?.tier)
           hasEarlyAccess = tier?.benefits?.earlyAccess || false
         }
       }
@@ -1053,8 +1052,8 @@ export async function calculateCart(
     // הנחת מועדון פרימיום (אם מופעל ויש רמה)
     if (!item.isGift && customerId && customer && premiumClubConfig) {
       const config = premiumClubConfig as any
-      if (config.enabled && config.tiers && customer.premiumClubTier) {
-        const tier = config.tiers.find((t: any) => t.slug === customer.premiumClubTier)
+      if (config.enabled && config.tiers && customer.tier) {
+        const tier = config.tiers.find((t: any) => t.slug === customer.tier)
         if (tier?.discount) {
           if (tier.discount.type === 'PERCENTAGE') {
             premiumClubDiscount = (basePrice * tier.discount.value) / 100
@@ -1185,15 +1184,15 @@ export async function calculateCart(
     // חישוב כמות bundles (מספר פעמים שה-bundle נוסף)
     // נבדוק כמה פעמים ה-bundle נוסף לפי היחס בין הכמויות
     // אם bundle מכיל מוצר A x2 ומוצר B x1, ואנחנו רואים A x4 ו-B x2, אז bundleQuantity = 2
-    const bundleProductQuantities = bundle.products.map(bp => bp.quantity)
-    const cartItemQuantities = bundleItems.map(item => item.quantity)
+    const bundleProductQuantities = bundle.products.map((bp: any) => bp.quantity)
+    const cartItemQuantities = bundleItems.map((item: any) => item.quantity)
     
     // נחשב את היחס - כמה פעמים ה-bundle נוסף
     let bundleQuantity = 1
     if (bundleProductQuantities.length > 0 && cartItemQuantities.length > 0) {
       // נבדוק את היחס בין הכמויות
       const ratios = bundleItems.map((item, idx) => {
-        const bundleProduct = bundle.products.find(bp => bp.productId === item.productId)
+        const bundleProduct = bundle.products.find((bp: any) => bp.productId === item.productId)
         if (!bundleProduct) return 0
         return item.quantity / bundleProduct.quantity
       })
@@ -1352,7 +1351,7 @@ export async function calculateCart(
     } else {
       // מחשבים קופון על הסכום אחרי ההנחה האוטומטית
       const subtotalAfterAutomaticDiscount = Math.max(0, subtotal - automaticDiscount) // לא פחות מ-0
-      couponResult = await calculateCouponDiscount(
+      const couponDiscountResult = await calculateCouponDiscount(
         shopId,
         couponCode,
         enrichedItems,
@@ -1360,6 +1359,11 @@ export async function calculateCart(
         customerId,
         subtotal // הסכום המקורי לבדיקת minOrder
       )
+      couponResult = {
+        discount: couponDiscountResult.discount,
+        customerDiscountFromCoupon: couponDiscountResult.customerDiscountFromCoupon || 0,
+        status: couponDiscountResult.status || { isValid: true }
+      }
     }
   }
 

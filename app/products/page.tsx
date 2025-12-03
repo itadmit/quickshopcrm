@@ -457,7 +457,7 @@ export default function ProductsPage() {
     try {
       const formData = new FormData()
       formData.append("file", selectedFile)
-      formData.append("shopId", selectedShop.id)
+      formData.append("shopId", selectedShop?.id || "")
 
       const response = await fetch("/api/products/import", {
         method: "POST",
@@ -509,7 +509,7 @@ export default function ProductsPage() {
 
   // Convert products to mobile list format
   const convertToMobileList = (): MobileListItem[] => {
-    return products.map((product) => {
+    return products.map((product: any) => {
       // Get first category name
       const categoryName = (product as any).categories && (product as any).categories.length > 0 
         ? (product as any).categories[0].category?.name 
@@ -521,7 +521,7 @@ export default function ProductsPage() {
       // Calculate total inventory (product + all variants)
       let totalInventory = product.inventoryQty || 0;
       if (product.variants && product.variants.length > 0) {
-        totalInventory = product.variants.reduce((sum, variant: any) => {
+        totalInventory = product.variants.reduce((sum: number, variant: { inventoryQty?: number | null }) => {
           return sum + (variant.inventoryQty || 0);
         }, 0);
       }
@@ -769,7 +769,7 @@ export default function ProductsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">כל הקטגוריות</SelectItem>
-                  {categories.map((category) => (
+                  {categories.map((category: any) => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
                     </SelectItem>
@@ -892,7 +892,7 @@ export default function ProductsPage() {
                         checked={selectedProducts.size === products.length && products.length > 0}
                         onCheckedChange={(checked) => {
                           if (checked) {
-                            setSelectedProducts(new Set(products.map((p) => p.id)))
+                            setSelectedProducts(new Set(products.map((p: any) => p.id)))
                           } else {
                             setSelectedProducts(new Set())
                           }
@@ -909,7 +909,7 @@ export default function ProductsPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {products.map((product) => (
+                  {products.map((product: any) => (
                     <tr 
                       key={product.id} 
                       className={`hover:bg-gray-50 ${selectedProducts.has(product.id) ? "bg-blue-50" : ""}`}
@@ -1115,7 +1115,7 @@ export default function ProductsPage() {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-          {products.map((product) => (
+          {products.map((product: any) => (
             <Card
               key={product.id}
               className="hover:shadow-lg transition-shadow cursor-pointer"
@@ -1319,7 +1319,7 @@ export default function ProductsPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="max-h-48 overflow-y-auto space-y-1">
-                        {importResult.products.map((product) => (
+                        {importResult.products.map((product: any) => (
                           <div key={product.id} className="text-sm p-2 bg-green-50 rounded">
                             {product.name}
                           </div>

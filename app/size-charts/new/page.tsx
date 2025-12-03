@@ -69,7 +69,7 @@ export default function NewSizeChartPage() {
   const fetchCategories = async () => {
     if (!selectedShop) return
     try {
-      const response = await fetch(`/api/categories?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/categories?shopId=${selectedShop?.id || ""}`)
       if (response.ok) {
         const data = await response.json()
         setCategories(data || [])
@@ -84,7 +84,7 @@ export default function NewSizeChartPage() {
     setLoadingProducts(true)
     try {
       const response = await fetch(
-        `/api/products?shopId=${selectedShop.id}&search=${encodeURIComponent(searchTerm)}&limit=20`
+        `/api/products?shopId=${selectedShop?.id || ""}&search=${encodeURIComponent(searchTerm)}&limit=20`
       )
       if (response.ok) {
         const data = await response.json()
@@ -138,7 +138,7 @@ export default function NewSizeChartPage() {
 
     try {
       const payload: any = {
-        shopId: selectedShop.id,
+        shopId: selectedShop?.id || "",
         name: formData.name,
         content: formData.useImage ? null : (formData.content?.trim() || null),
         imageUrl: formData.useImage ? (formData.imageUrl || null) : null,
@@ -185,7 +185,7 @@ export default function NewSizeChartPage() {
     setFormData((prev) => ({
       ...prev,
       categoryIds: prev.categoryIds.includes(categoryId)
-        ? prev.categoryIds.filter((id) => id !== categoryId)
+        ? prev.categoryIds.filter((id: any) => id !== categoryId)
         : [...prev.categoryIds, categoryId],
     }))
   }
@@ -194,7 +194,7 @@ export default function NewSizeChartPage() {
     setFormData((prev) => ({
       ...prev,
       productIds: prev.productIds.includes(productId)
-        ? prev.productIds.filter((id) => id !== productId)
+        ? prev.productIds.filter((id: any) => id !== productId)
         : [...prev.productIds, productId],
     }))
   }
@@ -202,7 +202,7 @@ export default function NewSizeChartPage() {
   const removeProduct = (productId: string) => {
     setFormData((prev) => ({
       ...prev,
-      productIds: prev.productIds.filter((id) => id !== productId),
+      productIds: prev.productIds.filter((id: any) => id !== productId),
     }))
   }
 
@@ -233,7 +233,7 @@ export default function NewSizeChartPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900">טבלת מידות חדשה</h1>
             <p className="text-gray-600 mt-1">
-              צור טבלת מידות חדשה לחנות: <span className="font-semibold">{selectedShop.name}</span>
+              צור טבלת מידות חדשה לחנות: <span className="font-semibold">{selectedShop?.name || ""}</span>
             </p>
           </div>
           <div className="flex gap-2">
@@ -355,7 +355,7 @@ export default function NewSizeChartPage() {
                         setMediaPickerOpen(false)
                       }}
                       selectedFiles={formData.imageUrl ? [formData.imageUrl] : []}
-                      shopId={selectedShop.id}
+                      shopId={selectedShop?.id || ""}
                       entityType="size-charts"
                       entityId="new"
                       multiple={false}
@@ -413,7 +413,7 @@ export default function NewSizeChartPage() {
                       {categories.length === 0 ? (
                         <p className="text-sm text-gray-500">אין קטגוריות זמינות</p>
                       ) : (
-                        categories.map((category) => (
+                        categories.map((category: any) => (
                           <label
                             key={category.id}
                             className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded"
@@ -447,7 +447,7 @@ export default function NewSizeChartPage() {
                     )}
                     {productSearchResults.length > 0 && (
                       <div className="border rounded-lg p-2 max-h-48 overflow-y-auto space-y-1">
-                        {productSearchResults.map((product) => (
+                        {productSearchResults.map((product: any) => (
                           <button
                             key={product.id}
                             type="button"
@@ -466,8 +466,8 @@ export default function NewSizeChartPage() {
                         <Label>מוצרים נבחרים:</Label>
                         <div className="flex flex-wrap gap-2">
                           {formData.productIds.map((productId) => {
-                            const product = products.find((p) => p.id === productId) ||
-                              productSearchResults.find((p) => p.id === productId)
+                            const product = products.find((p: any) => p.id === productId) ||
+                              productSearchResults.find((p: any) => p.id === productId)
                             return product ? (
                               <Badge
                                 key={productId}

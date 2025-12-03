@@ -54,7 +54,7 @@ export function CollectionsSkeleton() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {[1, 2, 3, 4, 5].map((i) => (
+                {[1, 2, 3, 4, 5].map((i: any) => (
                   <tr key={i}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <Skeleton className="h-4 w-4 mx-auto" />

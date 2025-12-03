@@ -341,7 +341,7 @@ export function NotificationsDrawer({ open, onOpenChange }: NotificationsDrawerP
               </div>
             ) : (
               <div className={cn(isMobile ? "space-y-2" : "space-y-3")}>
-                {notifications.map((notification) => {
+                {notifications.map((notification: any) => {
                   const Icon = getNotificationIcon(notification.type)
                   const colorClass = getNotificationColor(notification.type)
                   const details = formatNotificationDetails(notification)

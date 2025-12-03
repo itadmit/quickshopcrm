@@ -56,7 +56,7 @@ export function MobileFilters({
   const [isFilterOpen, setIsFilterOpen] = useState(false)
   const [tempFilters, setTempFilters] = useState<Record<string, string>>({})
 
-  const activeFiltersCount = filters.filter((f) => {
+  const activeFiltersCount = filters.filter((f: any) => {
     if (f.type === "select") {
       return f.value !== "all" && f.value !== ""
     }
@@ -66,7 +66,7 @@ export function MobileFilters({
   const handleOpenFilters = () => {
     // Store current values in temp state
     const current: Record<string, string> = {}
-    filters.forEach((f) => {
+    filters.forEach((f: any) => {
       current[f.id] = f.value
     })
     setTempFilters(current)
@@ -75,7 +75,7 @@ export function MobileFilters({
 
   const handleApplyFilters = () => {
     // Apply temp filters to actual filters
-    filters.forEach((f) => {
+    filters.forEach((f: any) => {
       if (tempFilters[f.id] !== undefined) {
         f.onChange(tempFilters[f.id])
       }
@@ -85,7 +85,7 @@ export function MobileFilters({
 
   const handleResetFilters = () => {
     const reset: Record<string, string> = {}
-    filters.forEach((f) => {
+    filters.forEach((f: any) => {
       reset[f.id] = "all"
       f.onChange("all")
     })
@@ -168,7 +168,7 @@ export function MobileFilters({
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {filters.map((filter) => (
+              {filters.map((filter: any) => (
                 <div key={filter.id} className="space-y-2">
                   <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                     {filter.icon}
@@ -185,7 +185,7 @@ export function MobileFilters({
                         <SelectValue placeholder={filter.placeholder} />
                       </SelectTrigger>
                       <SelectContent>
-                        {filter.options.map((option) => (
+                        {filter.options.map((option: any) => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
                           </SelectItem>

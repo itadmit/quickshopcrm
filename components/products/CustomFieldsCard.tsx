@@ -120,7 +120,7 @@ export function CustomFieldsCard({
         const definitions: CustomFieldDefinition[] = await response.json()
         
         // Filter by scope and categories
-        const applicable = definitions.filter((def) => {
+        const applicable = definitions.filter((def: any) => {
           if (def.scope === "GLOBAL") return true
           if (def.scope === "CATEGORY" && categoryIds.length > 0) {
             // Check if any of the product's categories match
@@ -130,7 +130,7 @@ export function CustomFieldsCard({
         })
         
         // Map to CustomFieldData format
-        const mappedFields: CustomFieldData[] = applicable.map((def) => ({
+        const mappedFields: CustomFieldData[] = applicable.map((def: any) => ({
           definition: def,
           value: values[def.id] || null,
           valueId: null,
@@ -140,7 +140,7 @@ export function CustomFieldsCard({
         
         // Initialize values
         const initialValues: Record<string, any> = {}
-        mappedFields.forEach((field) => {
+        mappedFields.forEach((field: any) => {
           initialValues[field.definition.id] = field.value || ""
         })
         setFieldValues(initialValues)
@@ -337,7 +337,7 @@ export function CustomFieldsCard({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {fields.map((field) => {
+        {fields.map((field: any) => {
           const Icon = FIELD_TYPE_ICONS[field.definition.type]
           return (
             <div key={field.definition.id} className="space-y-2">

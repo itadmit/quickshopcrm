@@ -243,7 +243,7 @@ async function getSalesReport(
     take: limit,
   })
 
-  return orders.map((order) => {
+  return orders.map((order: any) => {
     const row: any = {}
     if (!columns.length || columns.includes("date"))
       row.date = order.createdAt.toISOString().split("T")[0]
@@ -299,7 +299,7 @@ async function getOrdersReport(
     take: limit,
   })
 
-  return orders.map((order) => {
+  return orders.map((order: any) => {
     const row: any = {}
     if (!columns.length || columns.includes("date"))
       row.date = order.createdAt.toISOString().split("T")[0]
@@ -355,7 +355,7 @@ async function getCustomersReport(
     take: limit,
   })
 
-  return customers.map((customer) => {
+  return customers.map((customer: any) => {
     const row: any = {}
     if (!columns.length || columns.includes("date"))
       row.date = customer.createdAt.toISOString().split("T")[0]
@@ -412,13 +412,13 @@ async function getProductsReport(
     take: limit,
   })
 
-  return products.map((product) => {
+  return products.map((product: any) => {
     const totalSold = product.orderItems.reduce(
-      (sum, item) => sum + item.quantity,
+      (sum: any, item: any) => sum + item.quantity,
       0
     )
     const totalRevenue = product.orderItems.reduce(
-      (sum, item) => sum + item.total,
+      (sum: any, item: any) => sum + item.total,
       0
     )
 
@@ -441,7 +441,7 @@ async function getProductsReport(
       row.availability = product.availability
     if (!columns.length || columns.includes("category"))
       row.category =
-        product.categories[0]?.category?.name || ""
+        (product as any).categories[0]?.category?.name || ""
     if (!columns.length || columns.includes("totalSold"))
       row.totalSold = totalSold
     if (!columns.length || columns.includes("totalRevenue"))
@@ -469,7 +469,7 @@ async function getInventoryReport(shopId: string, columns: string[], limit: numb
   })
 
   const rows: any[] = []
-  products.forEach((product) => {
+  products.forEach((product: any) => {
     const row: any = {}
     if (!columns.length || columns.includes("name"))
       row.name = product.name
@@ -478,14 +478,14 @@ async function getInventoryReport(shopId: string, columns: string[], limit: numb
     if (!columns.length || columns.includes("inventoryQty"))
       row.inventoryQty = product.inventoryQty
     if (!columns.length || columns.includes("lowStockAlert"))
-      row.lowStockAlert = product.lowStockAlert || ""
+      row.lowStockAlert = (product as any).lowStockAlert || ""
     if (!columns.length || columns.includes("status"))
       row.status = product.status
     if (!columns.length || columns.includes("availability"))
       row.availability = product.availability
     if (!columns.length || columns.includes("category"))
       row.category =
-        product.categories[0]?.category?.name || ""
+        (product as any).categories[0]?.category?.name || ""
     if (!columns.length || columns.includes("price"))
       row.price = product.price
     if (!columns.length || columns.includes("cost"))
@@ -493,7 +493,7 @@ async function getInventoryReport(shopId: string, columns: string[], limit: numb
     rows.push(row)
 
     // הוספת וריאציות
-    product.variants.forEach((variant) => {
+    product.variants.forEach((variant: any) => {
       const variantRow: any = {}
       if (!columns.length || columns.includes("name"))
         variantRow.name = `${product.name} - ${variant.name}`
@@ -577,7 +577,7 @@ async function getCouponsReport(
     take: limit,
   })
 
-  return coupons.map((coupon) => {
+  return coupons.map((coupon: any) => {
     const row: any = {}
     if (!columns.length || columns.includes("code"))
       row.code = coupon.code
@@ -622,7 +622,7 @@ async function getDiscountsReport(
     take: limit,
   })
 
-  return discounts.map((discount) => {
+  return discounts.map((discount: any) => {
     const row: any = {}
     if (!columns.length || columns.includes("title"))
       row.title = discount.title
@@ -673,7 +673,7 @@ async function getReviewsReport(
     take: limit,
   })
 
-  return reviews.map((review) => {
+  return reviews.map((review: any) => {
     const row: any = {}
     if (!columns.length || columns.includes("date"))
       row.date = review.createdAt.toISOString().split("T")[0]
@@ -733,7 +733,7 @@ async function getMarketingReport(
 
   const rows: any[] = []
 
-  coupons.forEach((coupon) => {
+  coupons.forEach((coupon: any) => {
     const row: any = {}
     if (!columns.length || columns.includes("type"))
       row.type = "קופון"
@@ -748,7 +748,7 @@ async function getMarketingReport(
     rows.push(row)
   })
 
-  discounts.forEach((discount) => {
+  discounts.forEach((discount: any) => {
     const row: any = {}
     if (!columns.length || columns.includes("type"))
       row.type = "הנחה"
@@ -763,7 +763,7 @@ async function getMarketingReport(
     rows.push(row)
   })
 
-  abandonedCarts.forEach((cart) => {
+  abandonedCarts.forEach((cart: any) => {
     const row: any = {}
     if (!columns.length || columns.includes("type"))
       row.type = "עגלה נטושה"
@@ -807,7 +807,7 @@ async function getPaymentsReport(
     take: limit,
   })
 
-  return orders.map((order) => {
+  return orders.map((order: any) => {
     const row: any = {}
     if (!columns.length || columns.includes("date"))
       row.date = order.paidAt
@@ -856,7 +856,7 @@ async function getShippingReport(
     take: limit,
   })
 
-  return orders.map((order) => {
+  return orders.map((order: any) => {
     const shippingAddress = order.shippingAddress as any
     const row: any = {}
     if (!columns.length || columns.includes("orderNumber"))
@@ -909,9 +909,9 @@ async function getVIPCustomersReport(
     take: limit,
   })
 
-  return customers.map((customer) => {
+  return customers.map((customer: any) => {
     const periodSpent = customer.orders.reduce(
-      (sum, order) => sum + order.total,
+      (sum: number, order: { total: number }) => sum + order.total,
       0
     )
     const row: any = {}
@@ -966,18 +966,18 @@ async function getTopProductsReport(
   })
 
   const productsWithStats = products
-    .map((product) => {
+    .map((product: any) => {
       const totalSold = product.orderItems.reduce(
-        (sum, item) => sum + item.quantity,
+        (sum: number, item: { quantity: number }) => sum + item.quantity,
         0
       )
       const totalRevenue = product.orderItems.reduce(
-        (sum, item) => sum + item.total,
+        (sum: number, item: { total: number }) => sum + item.total,
         0
       )
       return { product, totalSold, totalRevenue }
     })
-    .filter((p) => p.totalSold > 0)
+    .filter((p: any) => p.totalSold > 0)
     .sort((a, b) => b.totalSold - a.totalSold)
 
   return productsWithStats.map(({ product, totalSold, totalRevenue }) => {
@@ -990,7 +990,7 @@ async function getTopProductsReport(
       row.price = product.price
     if (!columns.length || columns.includes("category"))
       row.category =
-        product.categories[0]?.category?.name || ""
+        (product as any).categories[0]?.category?.name || ""
     if (!columns.length || columns.includes("totalSold"))
       row.totalSold = totalSold
     if (!columns.length || columns.includes("totalRevenue"))
@@ -1022,10 +1022,10 @@ async function getAbandonedCartsReport(
     take: limit,
   })
 
-  return carts.map((cart) => {
+  return carts.map((cart: any) => {
     const items = cart.items as any[]
     const total = items.reduce(
-      (sum, item) => sum + (item.price || 0) * (item.quantity || 0),
+      (sum: any, item) => sum + (item.price || 0) * (item.quantity || 0),
       0
     )
     const row: any = {}
@@ -1077,7 +1077,7 @@ async function getInfluencersReport(
   })
 
   // קבלת הזמנות עם קופונים של משפיענים
-  const couponCodes = coupons.map((c) => c.code)
+  const couponCodes = coupons.map((c: any) => c.code)
   const orders = await prisma.order.findMany({
     where: {
       shopId,
@@ -1091,7 +1091,7 @@ async function getInfluencersReport(
 
   // יצירת מפה של קופון -> משפיען
   const couponToInfluencer = new Map<string, typeof coupons[0]>()
-  coupons.forEach((coupon) => {
+  coupons.forEach((coupon: any) => {
     couponToInfluencer.set(coupon.code, coupon)
   })
 
@@ -1107,7 +1107,7 @@ async function getInfluencersReport(
   >()
 
   // אתחול סטטיסטיקות לכל קופון
-  coupons.forEach((coupon) => {
+  coupons.forEach((coupon: any) => {
     couponStats.set(coupon.code, {
       coupon,
       totalOrders: 0,
@@ -1117,7 +1117,7 @@ async function getInfluencersReport(
   })
 
   // חישוב סטטיסטיקות מההזמנות
-  orders.forEach((order) => {
+  orders.forEach((order: any) => {
     const couponCode = order.couponCode || ""
     const stats = couponStats.get(couponCode)
     if (stats) {
@@ -1130,7 +1130,7 @@ async function getInfluencersReport(
   // יצירת שורות הדוח
   const rows: any[] = []
 
-  couponStats.forEach((stats) => {
+  couponStats.forEach((stats: any) => {
     const coupon = stats.coupon
     if (!coupon.influencer) return
 

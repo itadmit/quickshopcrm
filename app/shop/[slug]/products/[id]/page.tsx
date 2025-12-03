@@ -81,7 +81,7 @@ export default async function ProductPage({ params }: { params: { slug: string; 
   }
 
   // Get product category IDs
-  const productCategoryIds = product.categories?.map((pc: any) => pc.category?.id).filter(Boolean) || []
+  const productCategoryIds = (product as any).categories?.map((pc: any) => pc.category?.id).filter(Boolean) || []
 
   // טעינת תבנית עמוד מוצר - עדיפות: תבנית ספציפית למוצר > ברירת מחדל
   let productPageTemplate: { elements: any } | null = null
@@ -267,7 +267,7 @@ export default async function ProductPage({ params }: { params: { slug: string; 
       galleryLayout={galleryLayout}
       productPageLayout={productPageLayout}
       theme={themeSettings}
-      navigation={navigation}
+      navigation={navigation ?? undefined}
       isAdmin={isAdmin}
       autoOpenCart={autoOpenCart}
       productAddons={productAddons as any}

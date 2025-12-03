@@ -27,14 +27,14 @@ export async function GET(
       where: { id: customerId },
       select: {
         id: true,
-        premiumClubTier: true,
+        tier: true,
         email: true,
         firstName: true,
         lastName: true,
       },
     })
 
-    if (!customer || !customer.premiumClubTier) {
+    if (!customer || customer.tier === "REGULAR") {
       return NextResponse.json(
         { error: "Customer not found or not a premium club member" },
         { status: 404 }
@@ -67,7 +67,7 @@ export async function GET(
     }
 
     // מציאת הרמה של הלקוח
-    const tier = config.tiers?.find((t: any) => t.slug === customer.premiumClubTier)
+    const tier = config.tiers?.find((t: any) => t.slug === customer.tier)
     if (!tier?.benefits?.monthlyGift) {
       return NextResponse.json(
         { available: false, message: "Monthly gift not available for this tier" }
@@ -102,7 +102,7 @@ export async function GET(
     // החזרת מידע על המתנה הזמינה
     return NextResponse.json({
       available: true,
-      tier: customer.premiumClubTier,
+      tier: customer.tier,
       gift: tier.benefits.monthlyGift,
     })
   } catch (error) {
@@ -138,14 +138,14 @@ export async function POST(
       where: { id: customerId },
       select: {
         id: true,
-        premiumClubTier: true,
+        tier: true,
         email: true,
         firstName: true,
         lastName: true,
       },
     })
 
-    if (!customer || !customer.premiumClubTier) {
+    if (!customer || customer.tier === "REGULAR") {
       return NextResponse.json(
         { error: "Customer not found or not a premium club member" },
         { status: 404 }
@@ -179,7 +179,7 @@ export async function POST(
     }
 
     // מציאת הרמה של הלקוח
-    const tier = config.tiers?.find((t: any) => t.slug === customer.premiumClubTier)
+    const tier = config.tiers?.find((t: any) => t.slug === customer.tier)
     if (!tier?.benefits?.monthlyGift) {
       return NextResponse.json(
         { error: "Monthly gift not available for this tier" },
@@ -219,7 +219,7 @@ export async function POST(
         entityType: "customer",
         entityId: customerId,
         payload: {
-          tier: customer.premiumClubTier,
+          tier: customer.tier,
           gift: tier.benefits.monthlyGift,
         },
       },
@@ -241,7 +241,7 @@ export async function POST(
           maxUses: 1,
           usedCount: 0,
           isActive: true,
-          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 ימים
+          endDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 ימים
         },
       })
       couponCode = coupon.code

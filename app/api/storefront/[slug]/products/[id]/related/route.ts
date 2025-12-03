@@ -52,7 +52,7 @@ export async function GET(
 
     if (type === "related") {
       // מוצרים מאותה קטגוריה
-      const categoryIds = product.categories.map((pc) => pc.categoryId)
+      const categoryIds = (product as any).categories.map((pc: any) => pc.categoryId)
       
       if (categoryIds.length > 0) {
         relatedProducts = await prisma.product.findMany({
@@ -92,7 +92,7 @@ export async function GET(
 
       // אם אין מספיק מוצרים, הוסף מוצרים עם תגיות דומות
       if (relatedProducts.length < limit) {
-        const tagNames = product.tags.map((t) => t.name)
+        const tagNames = product.tags.map((t: any) => t.name)
         if (tagNames.length > 0) {
           const additionalProducts = await prisma.product.findMany({
             where: {
@@ -104,7 +104,7 @@ export async function GET(
               },
               id: {
                 not: {
-                  in: [product.id, ...relatedProducts.map((p) => p.id)],
+                  in: [product.id, ...relatedProducts.map((p: any) => p.id)],
                 },
               },
               tags: {

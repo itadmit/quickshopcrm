@@ -592,7 +592,7 @@ export default function OnboardingPage() {
                         <SelectValue placeholder="בחר קטגוריה" />
                       </SelectTrigger>
                       <SelectContent>
-                        {CATEGORIES.map((cat) => (
+                        {CATEGORIES.map((cat: any) => (
                           <SelectItem key={cat} value={cat} className="text-base">
                             {cat}
                           </SelectItem>
@@ -709,7 +709,7 @@ export default function OnboardingPage() {
                   <div>
                     <Label>שיטות תשלום</Label>
                     <div className="mt-2 space-y-3">
-                      {["אשראי", "העברה בנקאית", "מזומן בהזמנה"].map((method) => (
+                      {["אשראי", "העברה בנקאית", "מזומן בהזמנה"].map((method: any) => (
                         <div key={method} className="flex items-center space-x-2 space-x-reverse">
                           <Checkbox
                             id={method}
@@ -718,7 +718,7 @@ export default function OnboardingPage() {
                               if (checked) {
                                 updateShopData("paymentMethods", [...shopData.paymentMethods, method])
                               } else {
-                                updateShopData("paymentMethods", shopData.paymentMethods.filter((m) => m !== method))
+                                updateShopData("paymentMethods", shopData.paymentMethods.filter((m: any) => m !== method))
                               }
                             }}
                           />
@@ -1288,7 +1288,7 @@ export default function OnboardingPage() {
                             <SelectValue placeholder="בחר קטגוריה" />
                           </SelectTrigger>
                           <SelectContent>
-                            {CATEGORIES.map((cat) => (
+                            {CATEGORIES.map((cat: any) => (
                               <SelectItem key={cat} value={cat} className="text-base">
                                 {cat}
                               </SelectItem>
@@ -1405,7 +1405,7 @@ export default function OnboardingPage() {
                       <div>
                         <Label>שיטות תשלום</Label>
                         <div className="mt-2 space-y-3">
-                          {["אשראי", "העברה בנקאית", "מזומן בהזמנה"].map((method) => (
+                          {["אשראי", "העברה בנקאית", "מזומן בהזמנה"].map((method: any) => (
                             <div key={method} className="flex items-center space-x-2 space-x-reverse">
                               <Checkbox
                                 id={method}
@@ -1414,7 +1414,7 @@ export default function OnboardingPage() {
                                   if (checked) {
                                     updateShopData("paymentMethods", [...shopData.paymentMethods, method])
                                   } else {
-                                    updateShopData("paymentMethods", shopData.paymentMethods.filter((m) => m !== method))
+                                    updateShopData("paymentMethods", shopData.paymentMethods.filter((m: any) => m !== method))
                                   }
                                 }}
                               />

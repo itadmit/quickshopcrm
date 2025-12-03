@@ -47,7 +47,7 @@ export default function BlogPage() {
 
     setLoading(true)
     try {
-      const response = await fetch(`/api/blog/posts?shopId=${selectedShop.id}`)
+      const response = await fetch(`/api/blog/posts?shopId=${selectedShop?.id || ""}`)
       if (response.ok) {
         const data = await response.json()
         setPosts(data)
@@ -64,7 +64,7 @@ export default function BlogPage() {
     }
   }
 
-  const filteredPosts = posts.filter((post) =>
+  const filteredPosts = posts.filter((post: any) =>
     post.title.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -141,7 +141,7 @@ export default function BlogPage() {
           </Card>
         ) : (
           <div className="space-y-4">
-            {filteredPosts.map((post) => (
+            {filteredPosts.map((post: any) => (
               <Card key={post.id} className="hover:shadow-lg transition-shadow">
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between">

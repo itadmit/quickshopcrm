@@ -44,7 +44,7 @@ export function ScriptInjector({ shopId, companyId, location }: ScriptInjectorPr
         )
 
         // הזרקת כל הסקריפטים
-        scriptPlugins.forEach((plugin) => {
+        scriptPlugins.forEach((plugin: any) => {
           if (plugin.scriptUrl) {
             // טעינת סקריפט חיצוני
             const script = document.createElement("script")
@@ -71,7 +71,7 @@ export function ScriptInjector({ shopId, companyId, location }: ScriptInjectorPr
 
             if (plugin.config) {
               // החלפת משתנים בתבנית
-              Object.keys(plugin.config).forEach((key) => {
+              Object.keys(plugin.config).forEach((key: any) => {
                 const value = plugin.config[key]
                 processedContent = processedContent.replace(
                   new RegExp(`{{${key}}}`, "g"),
@@ -108,7 +108,7 @@ export function ScriptInjector({ shopId, companyId, location }: ScriptInjectorPr
       const injectedScripts = document.querySelectorAll(
         `script[data-plugin-id]`
       )
-      injectedScripts.forEach((script) => {
+      injectedScripts.forEach((script: any) => {
         if (script.parentNode) {
           script.parentNode.removeChild(script)
         }

@@ -162,7 +162,7 @@ async function getSendGridSettings() {
   try {
     const integration = await prisma.integration.findFirst({
       where: {
-        type: "SENDGRID",
+        type: "SENDGRID" as any,
       },
     })
 

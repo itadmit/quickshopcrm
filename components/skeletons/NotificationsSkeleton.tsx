@@ -20,7 +20,7 @@ export function NotificationsSkeleton() {
 
       {/* Notifications List */}
       <div className="space-y-3">
-        {[1, 2, 3, 4, 5].map((i) => (
+        {[1, 2, 3, 4, 5].map((i: any) => (
           <div key={i} className="bg-white rounded-lg shadow-sm p-4">
             <div className="flex items-start gap-4">
               <div className="w-12 h-12 bg-gray-200 rounded-full"></div>

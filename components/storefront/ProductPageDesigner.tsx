@@ -188,17 +188,17 @@ export function ProductPageDesigner({
 
   const toggleVisibility = (elementId: string) => {
     setElements((prev) =>
-      prev.map((el) => (el.id === elementId ? { ...el, visible: !el.visible } : el))
+      prev.map((el: any) => (el.id === elementId ? { ...el, visible: !el.visible } : el))
     )
   }
 
   const removeElement = (elementId: string) => {
-    setElements((prev) => prev.filter((el) => el.id !== elementId))
+    setElements((prev) => prev.filter((el: any) => el.id !== elementId))
   }
 
   const updateElementStyle = (elementId: string, styleConfig: ElementStyleConfig) => {
     setElements((prev) =>
-      prev.map((el) =>
+      prev.map((el: any) =>
         el.id === elementId
           ? { ...el, config: { ...el.config, style: styleConfig } }
           : el
@@ -537,7 +537,7 @@ export function ProductPageDesigner({
     }
   }
 
-  const selectedElement = settingsElementId ? elements.find((el) => el.id === settingsElementId) : null
+  const selectedElement = settingsElementId ? elements.find((el: any) => el.id === settingsElementId) : null
 
   return (
     <>
@@ -596,9 +596,9 @@ export function ProductPageDesigner({
               {/* כאן נטמיע את התוכן של ProductPageLayoutDesigner ישירות */}
               <div className="space-y-2 mt-6">
                 {elements
-                  .filter((element) => element.type !== "product-gallery")
+                  .filter((element: any) => element.type !== "product-gallery")
                   .map((element, index) => {
-                    const filteredElements = elements.filter((el) => el.type !== "product-gallery")
+                    const filteredElements = elements.filter((el: any) => el.type !== "product-gallery")
                     const actualIndex = filteredElements.findIndex((el) => el.id === element.id)
                     return (
                       <div
@@ -703,7 +703,7 @@ export function ProductPageDesigner({
                         <SelectValue placeholder="בחר מוצר" />
                       </SelectTrigger>
                       <SelectContent>
-                        {filteredProducts.map((product) => (
+                        {filteredProducts.map((product: any) => (
                           <SelectItem key={product.id} value={product.id}>
                             {product.name}
                           </SelectItem>
@@ -978,9 +978,9 @@ export function ProductPageDesigner({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {addableElementTypes.map((type) => (
+                  {addableElementTypes.map((type: any) => (
                     <SelectItem key={type} value={type}>
-                      {elementLabels[type]}
+                      {elementLabels[type as keyof typeof elementLabels]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1078,7 +1078,7 @@ export function ProductPageDesigner({
               onClick={() => {
                 if (editingElementId) {
                   setElements((prev) =>
-                    prev.map((el) =>
+                    prev.map((el: any) =>
                       el.id === editingElementId
                         ? { ...el, config: newElementConfig }
                         : el

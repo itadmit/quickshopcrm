@@ -330,7 +330,7 @@ export function ProductPageClient({
 
   // מחיר נוכחי (כולל תוספות)
   const basePrice = selectedVariant && product.variants
-    ? product.variants.find((v) => v.id === selectedVariant)?.price || product.price
+    ? product.variants.find((v: any) => v.id === selectedVariant)?.price || product.price
     : product.price
   const currentPrice = basePrice + addonsTotal
 
@@ -404,7 +404,7 @@ export function ProductPageClient({
   const renderStars = (rating: number) => {
     return (
       <div className="flex items-center gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
+        {[1, 2, 3, 4, 5].map((star: any) => (
           <Star
             key={star}
             className={`w-4 h-4 ${
@@ -436,7 +436,7 @@ export function ProductPageClient({
         onCartUpdate={fetchCartCount}
         onOpenCart={handleOpenCart}
         cartRefreshKey={cartRefreshKey}
-        navigation={navigation}
+        navigation={navigation ?? undefined}
         theme={theme}
       />
 
@@ -647,7 +647,7 @@ export function ProductPageClient({
                 // הוסף Gift Card Form אחרי variants אם זה gift card product
                 if (element.position === 5 && element.type === "product-quantity" && (product as any).isGiftCard) {
                   const variantPrice = selectedVariant && product.variants
-                    ? product.variants.find((v) => v.id === selectedVariant)?.price || product.price
+                    ? product.variants.find((v: any) => v.id === selectedVariant)?.price || product.price
                     : product.price
                   
                   return (
@@ -717,7 +717,7 @@ export function ProductPageClient({
               </div>
             ) : (
               <div className="space-y-6">
-                {reviews.map((review) => (
+                {reviews.map((review: any) => (
                   <Card key={review.id} className="shadow-sm">
                     <CardContent className="p-6">
                       <div className="flex items-start justify-between mb-4">
@@ -931,7 +931,7 @@ export function ProductPageClient({
                     const optionName = option.name === "Size" ? "מידה" : 
                                       option.name === "Color" ? "צבע" : 
                                       option.name
-                    const isColorOption = option.type === "color" || option.name === "Color" || option.name === "צבע"
+                    const isColorOption = (option as any).type === "color" || option.name === "Color" || option.name === "צבע"
                     
                     return (
                       <div key={option.id}>
@@ -1009,7 +1009,7 @@ export function ProductPageClient({
                             }
                             
                             // בדיקה אם זה דפוס
-                            const isPattern = option.type === "pattern" || (typeof value === 'object' && value.metadata?.pattern)
+                            const isPattern = (option as any).type === "pattern" || (typeof value === 'object' && value.metadata?.pattern)
                             const patternStyle = typeof value === 'object' && value.metadata?.pattern ? value.metadata.pattern : undefined
                             const patternBackgroundSize = typeof value === 'object' && value.metadata?.backgroundSize ? value.metadata.backgroundSize : '12px 12px'
                             const patternBackgroundPosition = typeof value === 'object' && value.metadata?.backgroundPosition ? value.metadata.backgroundPosition : '0 0'
@@ -1031,7 +1031,6 @@ export function ProductPageClient({
                                   style={{
                                     backgroundColor: colorCode,
                                     borderColor: isSelected ? theme.primaryColor : undefined,
-                                    ringColor: isSelected ? theme.primaryColor : undefined,
                                   }}
                                   title={valueLabel}
                                 />
@@ -1054,7 +1053,6 @@ export function ProductPageClient({
                                   }`}
                                   style={{
                                     borderColor: isSelected ? theme.primaryColor : undefined,
-                                    ringColor: isSelected ? theme.primaryColor : undefined,
                                     backgroundImage: patternStyle,
                                     backgroundSize: patternBackgroundSize,
                                     backgroundPosition: patternBackgroundPosition,
@@ -1122,7 +1120,7 @@ export function ProductPageClient({
                   {(() => {
                     let availableQty = product.inventoryQty
                     if (selectedVariant && product.variants) {
-                      const variant = product.variants.find((v) => v.id === selectedVariant)
+                      const variant = product.variants.find((v: any) => v.id === selectedVariant)
                       if (variant) {
                         availableQty = variant.inventoryQty
                       }

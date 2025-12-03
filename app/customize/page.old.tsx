@@ -157,7 +157,7 @@ export default function CustomizePage() {
   const fetchHomePageLayout = async () => {
     if (!selectedShop?.slug) return
     try {
-      const response = await fetch(`/api/storefront/${selectedShop.slug}/home-page-layout`)
+      const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/home-page-layout`)
       if (response.ok) {
         const data = await response.json()
         if (data.sections && Array.isArray(data.sections)) {
@@ -172,7 +172,7 @@ export default function CustomizePage() {
   const fetchProductPageLayout = async () => {
     if (!selectedShop?.slug) return
     try {
-      const response = await fetch(`/api/storefront/${selectedShop.slug}/product-page-layout`)
+      const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/product-page-layout`)
       if (response.ok) {
         const data = await response.json()
         setProductPageLayout(data.layout)
@@ -282,7 +282,7 @@ export default function CustomizePage() {
   const fetchProducts = async () => {
     if (!selectedShop?.slug) return
     try {
-      const response = await fetch(`/api/storefront/${selectedShop.slug}/products?limit=50`)
+      const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/products?limit=50`)
       if (response.ok) {
         const data = await response.json()
         setProducts(data.products || [])
@@ -297,7 +297,7 @@ export default function CustomizePage() {
   const fetchCategories = async () => {
     if (!selectedShop?.slug) return
     try {
-      const response = await fetch(`/api/storefront/${selectedShop.slug}/categories`)
+      const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/categories`)
       if (response.ok) {
         const data = await response.json()
         const categoriesList = Array.isArray(data) ? data : (data.categories || [])
@@ -311,7 +311,7 @@ export default function CustomizePage() {
   const fetchGalleryLayout = async () => {
     if (!selectedShop?.slug) return
     try {
-      const response = await fetch(`/api/storefront/${selectedShop.slug}/product-gallery-layout`)
+      const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/product-gallery-layout`)
       if (response.ok) {
         const data = await response.json()
         if (data.layout) {
@@ -326,7 +326,7 @@ export default function CustomizePage() {
   const fetchCategoryLayout = async () => {
     if (!selectedShop?.slug) return
     try {
-      const response = await fetch(`/api/storefront/${selectedShop.slug}/category-layout`)
+      const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/category-layout`)
       if (response.ok) {
         const data = await response.json()
         if (data.layout) {
@@ -359,7 +359,7 @@ export default function CustomizePage() {
     try {
       // שמירת פריסת גלריה אם יש שינויים
       if (pendingGalleryLayout && pendingGalleryLayout !== galleryLayout) {
-        await fetch(`/api/storefront/${selectedShop.slug}/product-gallery-layout`, {
+        await fetch(`/api/storefront/${selectedShop?.slug || ""}/product-gallery-layout`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ layout: pendingGalleryLayout }),
@@ -369,7 +369,7 @@ export default function CustomizePage() {
 
       // שמירת פריסת קטגוריה אם יש שינויים
       if (pendingCategoryLayout && pendingCategoryLayout !== categoryLayout) {
-        await fetch(`/api/storefront/${selectedShop.slug}/category-layout`, {
+        await fetch(`/api/storefront/${selectedShop?.slug || ""}/category-layout`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ layout: pendingCategoryLayout }),
@@ -379,7 +379,7 @@ export default function CustomizePage() {
 
       // שמירת אלמנטי דף המוצר אם יש שינויים
       if (elements.length > 0) {
-        await fetch(`/api/storefront/${selectedShop.slug}/product-page-layout`, {
+        await fetch(`/api/storefront/${selectedShop?.slug || ""}/product-page-layout`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ elements }),
@@ -437,16 +437,16 @@ export default function CustomizePage() {
     
     switch (pageType) {
       case "home":
-        return `${baseUrl}/shop/${selectedShop.slug}${queryPrefix}`
+        return `${baseUrl}/shop/${selectedShop?.slug || ""}${queryPrefix}`
       case "category":
         if (selectedCategory) {
-          return `${baseUrl}/shop/${selectedShop.slug}/categories/${selectedCategory}${queryPrefix}`
+          return `${baseUrl}/shop/${selectedShop?.slug || ""}/categories/${selectedCategory}${queryPrefix}`
         }
         return ""
       case "product":
         if (selectedProduct) {
           const product = products.find(p => p.id === selectedProduct)
-          return product ? `${baseUrl}/shop/${selectedShop.slug}/products/${product.slug}${queryPrefix}` : ""
+          return product ? `${baseUrl}/shop/${selectedShop?.slug || ""}/products/${product.slug}${queryPrefix}` : ""
         }
         return ""
       default:
@@ -504,7 +504,7 @@ export default function CustomizePage() {
   // שמירת elements ב-localStorage לעדכון בזמן אמת (אחרי ש-elements מוגדר)
   useEffect(() => {
     if (selectedShop?.slug && elements.length > 0) {
-      const storageKey = `productPageLayout_${selectedShop.slug}`
+      const storageKey = `productPageLayout_${selectedShop?.slug || ""}`
       const layoutData = {
         elements,
         timestamp: Date.now()
@@ -574,7 +574,7 @@ export default function CustomizePage() {
             onSave={async (sections) => {
               if (!selectedShop?.slug) return
               
-              const response = await fetch(`/api/storefront/${selectedShop.slug}/home-page-layout`, {
+              const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/home-page-layout`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ sections }),
@@ -600,7 +600,7 @@ export default function CustomizePage() {
                 { value: "left-side", label: "תמונה מימין", desc: "תמונה גדולה מימין ותמונות קטנות מימין" },
                 { value: "masonry", label: "תפזורת", desc: "תמונות בגדלים שונים והטקסט נשאר במקום" },
                 { value: "fixed", label: "קבועה", desc: "תמונות אחת אחרי השנייה והטקסט נשאר במקום" },
-              ].map((option) => {
+              ].map((option: any) => {
                 const currentValue = pendingGalleryLayout || galleryLayout
                 const isSelected = currentValue === option.value
                 const isPending = pendingGalleryLayout === option.value && pendingGalleryLayout !== galleryLayout
@@ -656,7 +656,7 @@ export default function CustomizePage() {
                     <div className="space-y-1 transition-all duration-300 ease-in-out">
                       {elements && elements.length > 0 ? (() => {
                         const filteredElements = elements
-                          .filter((element) => element.type !== "product-gallery") // הסרת גלריה מהרשימה
+                          .filter((element: any) => element.type !== "product-gallery") // הסרת גלריה מהרשימה
                           .sort((a, b) => a.position - b.position)
                   return filteredElements.map((element, index) => {
                       const isExpanded = expandedElements.has(element.id)
@@ -726,7 +726,7 @@ export default function CustomizePage() {
                                 onClick={(e) => {
                                   e.stopPropagation()
                                   setElements((prev) =>
-                                    prev.map((el) => (el.id === element.id ? { ...el, visible: !el.visible } : el))
+                                    prev.map((el: any) => (el.id === element.id ? { ...el, visible: !el.visible } : el))
                                   )
                                   setHasUnsavedChanges(true)
                                 }}
@@ -808,7 +808,7 @@ export default function CustomizePage() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => {
-                                    setElements((prev) => prev.filter((el) => el.id !== element.id))
+                                    setElements((prev) => prev.filter((el: any) => el.id !== element.id))
                                     setHasUnsavedChanges(true)
                                   }}
                                   className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
@@ -842,7 +842,7 @@ export default function CustomizePage() {
                 { value: "list", label: "רשימה", desc: "תצוגת רשימה עם תמונה משמאל" },
                 { value: "compact-grid", label: "רשת צפופה", desc: "תצוגת רשת צפופה עם 6 עמודות" },
                 { value: "large-grid", label: "רשת גדולה", desc: "תצוגת רשת גדולה עם 3 עמודות" },
-              ].map((option) => {
+              ].map((option: any) => {
                 const currentValue = pendingCategoryLayout || categoryLayout
                 const isSelected = currentValue === option.value
                 const isPending = pendingCategoryLayout === option.value && pendingCategoryLayout !== categoryLayout
@@ -994,7 +994,7 @@ export default function CustomizePage() {
             <Palette className="w-5 h-5 text-emerald-600" />
             <span className="font-semibold text-gray-900">התאמה אישית</span>
             <Badge variant="outline" className="text-xs">
-              {selectedShop.name}
+              {selectedShop?.name || ""}
             </Badge>
             <Badge variant="secondary" className="text-xs">
               תבנית: New York
@@ -1063,7 +1063,7 @@ export default function CustomizePage() {
                   <SelectValue placeholder="בחר קטגוריה" />
                 </SelectTrigger>
                 <SelectContent>
-                  {categories.map((cat) => (
+                  {categories.map((cat: any) => (
                     <SelectItem key={cat.id} value={cat.id}>
                       {cat.name}
                     </SelectItem>
@@ -1081,7 +1081,7 @@ export default function CustomizePage() {
                   <SelectValue placeholder="בחר מוצר" />
                 </SelectTrigger>
                 <SelectContent>
-                  {products.map((prod) => (
+                  {products.map((prod: any) => (
                     <SelectItem key={prod.id} value={prod.id}>
                       {prod.name}
                     </SelectItem>
@@ -1282,14 +1282,14 @@ export default function CustomizePage() {
               </div>
             ) : (
               <div className="space-y-2">
-                {customizerSections.map((section) => (
+                {customizerSections.map((section: any) => (
                   <div key={section.id}>
                     {section.children ? (
                       <div className="space-y-1">
                         <div className="px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                           {section.title}
                         </div>
-                        {section.children.map((child) => {
+                        {section.children.map((child: any) => {
                           const Icon = child.icon
                           return (
                             <button
@@ -1385,7 +1385,7 @@ export default function CustomizePage() {
                 elementName={elementLabels[selectedElement.type]}
                 currentConfig={selectedElement.config?.style}
                 onSave={(styleConfig) => {
-                  const updatedElements = elements.map((el) =>
+                  const updatedElements = elements.map((el: any) =>
                     el.id === settingsElementId
                       ? { ...el, config: { ...el.config, style: styleConfig } }
                       : el
@@ -1432,9 +1432,9 @@ export default function CustomizePage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {addableElementTypes.map((type) => (
+                  {addableElementTypes.map((type: any) => (
                     <SelectItem key={type} value={type}>
-                      {elementLabels[type]}
+                          {elementLabels[type as keyof typeof elementLabels]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -1532,7 +1532,7 @@ export default function CustomizePage() {
               onClick={() => {
                 if (editingElementId) {
                   setElements((prev) =>
-                    prev.map((el) =>
+                    prev.map((el: any) =>
                       el.id === editingElementId
                         ? { ...el, config: newElementConfig }
                         : el
@@ -1599,7 +1599,7 @@ export default function CustomizePage() {
                 }
                 
                 try {
-                  const response = await fetch(`/api/storefront/${selectedShop.slug}/product-page-templates`, {
+                  const response = await fetch(`/api/storefront/${selectedShop?.slug || ""}/product-page-templates`, {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({

@@ -60,14 +60,14 @@ export async function GET(req: NextRequest) {
     const shopsActive = shops.length
 
     const productsTotal = products.length
-    const productsPublished = products.filter((p) => p.status === "PUBLISHED").length
+    const productsPublished = products.filter((p: any) => p.status === "PUBLISHED").length
 
     const ordersTotal = orders.length
-    const ordersPending = orders.filter((o) => o.status === "PENDING").length
+    const ordersPending = orders.filter((o: any) => o.status === "PENDING").length
 
     // Calculate revenue - רק הזמנות שהושלמו (PAID, PROCESSING, SHIPPED, DELIVERED, COMPLETED)
     const completedStatuses = ['PAID', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'COMPLETED', 'CONFIRMED']
-    const completedOrders = orders.filter((order) => 
+    const completedOrders = orders.filter((order: any) => 
       completedStatuses.includes(order.status.toUpperCase())
     )
     
@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
     const now = new Date()
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
     const revenueThisMonth = completedOrders
-      .filter((order) => new Date(order.createdAt) >= startOfMonth)
+      .filter((order: any) => new Date(order.createdAt) >= startOfMonth)
       .reduce((sum, order) => sum + order.total, 0)
 
     // Get recent notifications
@@ -116,7 +116,7 @@ export async function GET(req: NextRequest) {
         total: revenueTotal,
         thisMonth: revenueThisMonth,
       },
-      recentNotifications: recentNotifications.map((n) => ({
+      recentNotifications: recentNotifications.map((n: any) => ({
         id: n.id,
         title: n.title,
         message: n.message,

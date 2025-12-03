@@ -316,7 +316,7 @@ export function MobileListView({
       )}
 
     <div className={cn("space-y-2", className)}>
-      {items.map((item) => {
+      {items.map((item: any) => {
         const isSelected = selectedItems.has(item.id)
 
         return (
@@ -411,7 +411,7 @@ export function MobileListView({
                     {/* Additional Metadata (for orders: date, phone) */}
                     {item.metadata && item.metadata.length > 0 && (
                       <>
-                        {item.metadata.map((meta, index) => {
+                        {item.metadata.map((meta: any, index: number) => {
                           // First item (date) - show if showSku is true
                           if (index === 0 && displaySettings.showSku) {
                             return (
@@ -483,7 +483,7 @@ export function MobileListView({
                     {/* Additional Badges (for orders: payment status, etc.) */}
                     {item.badges && item.badges.length > 0 && displaySettings.showBadges && (
                       <div className="flex flex-col gap-0.5 items-end">
-                        {item.badges.map((badge, index) => (
+                        {item.badges.map((badge: any, index: number) => (
                           <Badge
                             key={index}
                             variant={badge.variant}
@@ -526,7 +526,7 @@ export function MobileListView({
               {item.actions && expandedItems.has(item.id) && (
                 <div className="mt-3 pt-3 border-t border-gray-100">
                   <div className="grid grid-cols-4 gap-1.5">
-                    {item.actions.map((action, idx) => (
+                    {item.actions.map((action: any, idx: number) => (
                       <button
                         key={idx}
                         onClick={(e) => {

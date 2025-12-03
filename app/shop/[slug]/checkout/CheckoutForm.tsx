@@ -388,7 +388,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
     if (!hasTrackedCheckout.current) {
       trackInitiateCheckout(
         trackEvent,
-        cart.items.map((item) => ({
+        cart.items.map((item: any) => ({
           id: item.variantId || item.product.id, // אם יש variant, נשלח את ה-variant ID
           name: item.variant?.name 
             ? `${item.product.name} - ${item.variant.name}` 
@@ -529,7 +529,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
         const order = await response.json()
         
         // Purchase event
-        const items = cart.items.map((item) => ({
+        const items = cart.items.map((item: any) => ({
           id: item.variantId || item.productId, // אם יש variant, נשלח את ה-variant ID
           name: item.variant?.name 
             ? `${item.product.name} - ${item.variant.name}` 
@@ -780,7 +780,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                   </div>
 
                   {/* Custom Fields */}
-                  {shop.checkoutSettings?.customFields?.filter(field => field.enabled).map((field) => (
+                  {shop.checkoutSettings?.customFields?.filter(field => field.enabled).map((field: any) => (
                     <div key={field.id}>
                       <Label htmlFor={`custom-${field.id}`} className="text-sm font-medium text-gray-700">
                         {field.label}
@@ -933,7 +933,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                           if (value === "new") {
                             setFormData((prev) => ({ ...prev, selectedAddressId: "", address: "", houseNumber: "", apartment: "", floor: "", city: "", zip: "" }))
                           } else {
-                            const selectedAddr = savedAddresses.find((addr) => addr.id === value)
+                            const selectedAddr = savedAddresses.find((addr: any) => addr.id === value)
                             if (selectedAddr) {
                               setFormData((prev) => ({
                                 ...prev,
@@ -956,7 +956,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="new">הוסף כתובת חדשה</SelectItem>
-                          {savedAddresses.map((addr) => (
+                          {savedAddresses.map((addr: any) => (
                             <SelectItem key={addr.id} value={addr.id}>
                               {addr.firstName} {addr.lastName} - {addr.city}, {addr.address} {addr.houseNumber}{addr.apartment ? `, דירה ${addr.apartment}` : ''}
                             </SelectItem>
@@ -981,7 +981,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                           setFormData((prev) => ({ ...prev, city: option.value, selectedAddressId: "" }))
                           setSelectedCityForStreets(option.value)
                         }}
-                        options={citySearch.cities.map((city) => ({
+                        options={citySearch.cities.map((city: any) => ({
                           value: city.cityName,
                           label: city.cityName,
                         }))}
@@ -1005,7 +1005,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
                         onSelect={(option) => {
                           setFormData((prev) => ({ ...prev, address: option.value, selectedAddressId: "" }))
                         }}
-                        options={streetSearch.streets.map((street) => ({
+                        options={streetSearch.streets.map((street: any) => ({
                           value: street.streetName,
                           label: street.streetName,
                         }))}
@@ -1482,7 +1482,7 @@ export function CheckoutForm({ shop, cart, customerData, slug }: CheckoutFormPro
           <div className="border-t mt-12">
             <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
               <div className="flex flex-wrap justify-center gap-6 text-sm">
-                {shop.checkoutSettings.footerLinks.map((link) => (
+                {shop.checkoutSettings.footerLinks.map((link: any) => (
                   <a
                     key={link.id}
                     href={link.url}

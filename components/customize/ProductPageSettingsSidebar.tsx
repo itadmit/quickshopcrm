@@ -60,14 +60,14 @@ export function ProductPageSettingsSidebar({
   const [selectedElement, setSelectedElement] = useState<ProductPageElement | null>(null)
 
   useEffect(() => {
-    const element = elements.find((el) => el.id === elementId)
+    const element = elements.find((el: any) => el.id === elementId)
     setSelectedElement(element || null)
   }, [elementId, elements])
 
   const handleSaveStyle = (styleConfig: any) => {
     if (!selectedElement) return
 
-    const updatedElements = elements.map((el) =>
+    const updatedElements = elements.map((el: any) =>
       el.id === elementId
         ? { 
             ...el, 

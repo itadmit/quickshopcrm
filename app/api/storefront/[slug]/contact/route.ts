@@ -49,11 +49,11 @@ export async function POST(
       },
       select: {
         id: true,
-        premiumClubTier: true,
+        tier: true,
       },
     })
 
-    if (customer?.premiumClubTier) {
+    if (customer?.tier && customer.tier !== "REGULAR") {
       const premiumClubPlugin = await prisma.plugin.findFirst({
         where: {
           slug: 'premium-club',
@@ -67,7 +67,7 @@ export async function POST(
       if (premiumClubPlugin?.config) {
         const config = premiumClubPlugin.config as any
         if (config.enabled && config.benefits?.vipSupport) {
-          const tier = config.tiers?.find((t: any) => t.slug === customer.premiumClubTier)
+          const tier = config.tiers?.find((t: any) => t.slug === customer.tier)
           isVipSupport = tier?.benefits?.vipSupport || false
         }
       }
@@ -97,7 +97,7 @@ export async function POST(
           entityType: "customer",
           entityId: customer.id,
           payload: {
-            tier: customer.premiumClubTier,
+            tier: customer.tier,
             subject: data.subject || "ללא נושא",
             priority: "high",
           },

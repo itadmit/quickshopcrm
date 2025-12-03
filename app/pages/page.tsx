@@ -82,7 +82,7 @@ export default function PagesPage() {
     }
   }
 
-  const filteredPages = pages.filter((page) =>
+  const filteredPages = pages.filter((page: any) =>
     page.title.toLowerCase().includes(search.toLowerCase())
   )
 
@@ -186,7 +186,7 @@ export default function PagesPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y">
-                    {filteredPages.map((page) => (
+                    {filteredPages.map((page: any) => (
                       <tr key={page.id} className="hover:bg-gray-50">
                         <td className="p-4">
                           <div className="font-medium">{page.title}</div>
@@ -226,7 +226,7 @@ export default function PagesPage() {
                               {page.isPublished && (
                                 <DropdownMenuItem
                                   onClick={() => {
-                                    const url = `/shop/${selectedShop.slug}/pages/${page.slug}`
+                                    const url = `/shop/${selectedShop?.slug || ""}/pages/${page.slug}`
                                     window.open(url, "_blank")
                                   }}
                                   className="flex flex-row-reverse items-center gap-2 cursor-pointer"

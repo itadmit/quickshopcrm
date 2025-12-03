@@ -50,7 +50,7 @@ export async function createOrUpdateContact(params: {
     },
   })
 
-  let contact
+  let contact: any
   if (existingContact) {
     // עדכון Contact קיים
     contact = await prisma.contact.update({
@@ -87,7 +87,7 @@ export async function createOrUpdateContact(params: {
     )
 
     const newCategoryTypes = categoryTypes.filter(
-      (ct) => !existingCategoryTypes.includes(ct)
+      (ct) => !existingCategoryTypes.includes(ct as any)
     )
 
     if (newCategoryTypes.length > 0) {
@@ -95,13 +95,13 @@ export async function createOrUpdateContact(params: {
       const categories = await prisma.contactCategory.findMany({
         where: {
           shopId,
-          type: { in: newCategoryTypes },
+          type: { in: newCategoryTypes as any },
         },
       })
 
       // יצירת assignments
       await Promise.all(
-        categories.map((category) =>
+        categories.map((category: any) =>
           prisma.contactCategoryAssignment.create({
             data: {
               contactId: contact.id,
@@ -158,12 +158,12 @@ export async function createOrUpdateContact(params: {
       const categories = await prisma.contactCategory.findMany({
         where: {
           shopId,
-          type: { in: categoryTypes },
+          type: { in: categoryTypes as any },
         },
       })
 
       await Promise.all(
-        categories.map((category) =>
+        categories.map((category: any) =>
           prisma.contactCategoryAssignment.create({
             data: {
               contactId: contact.id,
@@ -252,6 +252,7 @@ export async function initContactCategories(shopId: string) {
 
   return results
 }
+
 
 
 

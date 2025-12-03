@@ -500,7 +500,7 @@ export default function SettingsPage() {
               <p className="text-sm text-gray-500 mt-1">נהל את ההגדרות שלך</p>
             </div>
             <nav className="p-2">
-              {tabs.map((tab) => {
+              {tabs.map((tab: any) => {
                 const Icon = tab.icon
                 const isActive = activeTab === tab.key
                 return (
@@ -1065,7 +1065,7 @@ export default function SettingsPage() {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {users.map((user) => {
+                      {users.map((user: any) => {
                         const isAdminUser = user.role === 'ADMIN' || user.role === 'SUPER_ADMIN'
                         const isEditing = editingUserId === user.id
                         const permissions = userPermissions[user.id] || {}
@@ -1138,7 +1138,7 @@ export default function SettingsPage() {
                             ) : isEditing ? (
                               <div className="space-y-3">
                                 <div className="border rounded-lg p-4 space-y-3 max-h-[400px] overflow-y-auto">
-                                  {sidebarPermissions.map((perm) => {
+                                  {sidebarPermissions.map((perm: any) => {
                                     const hasPermission = permissions[perm.key] === true
                                     return (
                                       <div
@@ -1170,7 +1170,7 @@ export default function SettingsPage() {
                               </div>
                             ) : (
                               <div className="space-y-2">
-                                {sidebarPermissions.map((perm) => {
+                                {sidebarPermissions.map((perm: any) => {
                                   const hasPermission = permissions[perm.key] === true
                                   return (
                                     <div

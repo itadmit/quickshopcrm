@@ -33,7 +33,7 @@ export function OrdersSkeleton() {
 
         {/* Mobile Cards Skeleton */}
         <div className="space-y-2">
-          {[1, 2, 3, 4, 5].map((i) => (
+          {[1, 2, 3, 4, 5].map((i: any) => (
             <Card key={i} className="border-0 shadow-sm">
               <CardContent className="p-3">
                 <div className="flex items-center gap-3">
@@ -75,7 +75,7 @@ export function OrdersSkeleton() {
               </div>
               {/* Table Rows */}
               <div className="divide-y divide-gray-200">
-                {[1, 2, 3, 4, 5].map((i) => (
+                {[1, 2, 3, 4, 5].map((i: any) => (
                   <div key={i} className="grid grid-cols-7 gap-4 px-6 py-4">
                     <div className="flex items-center gap-2">
                       <div className="w-4 h-4 bg-gray-100 rounded animate-pulse"></div>

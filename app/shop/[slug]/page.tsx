@@ -154,6 +154,6 @@ export default async function ShopPage({ params }: { params: { slug: string } })
   // טעינת ניווט מהשרת
   const navigation = await getShopNavigation(slug, "HEADER")
 
-  return <ShopPageClient shop={shop} products={products} slug={slug} theme={theme} navigation={navigation} />
+  return <ShopPageClient shop={shop} products={products} slug={slug} theme={theme} navigation={navigation ?? null} />
 }
 

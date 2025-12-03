@@ -140,7 +140,7 @@ export function MediaPicker({
     const fileArray = Array.from(files)
     
     // הוספת קבצים להעלאה למצב
-    const tempFileIds = fileArray.map((f) => `temp-${Date.now()}-${Math.random()}`)
+    const tempFileIds = fileArray.map((f: any) => `temp-${Date.now()}-${Math.random()}`)
     setUploadingFiles(tempFileIds)
 
     try {
@@ -196,7 +196,7 @@ export function MediaPicker({
         })
         // הוספת התמונות החדשות לרשימה
         setFiles((prev) => [
-          ...uploadedFiles.map((path) => ({
+          ...uploadedFiles.map((path: any) => ({
             id: `new-${Date.now()}-${Math.random()}`,
             name: path.split("/").pop() || "תמונה",
             path,
@@ -210,7 +210,7 @@ export function MediaPicker({
         ])
         // בחירת התמונות החדשות
         const newSelected = new Set(selected)
-        uploadedFiles.forEach((path) => newSelected.add(path))
+        uploadedFiles.forEach((path: any) => newSelected.add(path))
         setSelected(newSelected)
       }
 
@@ -249,7 +249,7 @@ export function MediaPicker({
       })
 
       if (response.ok) {
-        setFiles((prev) => prev.filter((f) => f.path !== filePath))
+        setFiles((prev) => prev.filter((f: any) => f.path !== filePath))
         setSelected((prev) => {
           const newSet = new Set(prev)
           newSet.delete(filePath)
@@ -306,7 +306,7 @@ export function MediaPicker({
       const results = await Promise.allSettled(deletePromises)
       
       // ספירת הצלחות וכישלונות
-      const successful = results.filter((r) => r.status === "fulfilled").length
+      const successful = results.filter((r: any) => r.status === "fulfilled").length
       const failed = results.length - successful
 
       if (successful > 0) {
@@ -316,7 +316,7 @@ export function MediaPicker({
         })
         
         // הסרת התמונות שנמחקו מהרשימה
-        setFiles((prev) => prev.filter((f) => !selectedArray.includes(f.path)))
+        setFiles((prev) => prev.filter((f: any) => !selectedArray.includes(f.path)))
         setSelected(new Set())
       } else {
         toast({
@@ -479,7 +479,7 @@ export function MediaPicker({
                 })}
 
                 {/* קבצים קיימים */}
-                {files.map((file) => {
+                {files.map((file: any) => {
                   const isSelected = selected.has(file.path)
                   const isDeleting = deleting.has(file.path)
 

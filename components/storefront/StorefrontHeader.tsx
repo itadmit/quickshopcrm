@@ -20,7 +20,7 @@ import { GiftVariantModalHandler } from "./GiftVariantModalHandler"
 import { MegaMenu } from "./MegaMenu"
 import { useShopTheme } from "@/hooks/useShopTheme"
 import { useCart } from "@/hooks/useCart"
-import { useNavigation } from "@/hooks/useNavigation"
+import { useNavigation, type Navigation, type NavigationItem } from "@/hooks/useNavigation"
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetBody } from "@/components/ui/sheet"
 import { cn } from "@/lib/utils"
 
@@ -31,25 +31,6 @@ interface Shop {
   logo: string | null
 }
 
-interface NavigationItem {
-  type: "link" | "page" | "category"
-  label: string
-  url?: string
-  pageId?: string
-  pageSlug?: string
-  categoryId?: string
-  categorySlug?: string
-  children?: NavigationItem[]
-  image?: string
-  columnTitle?: string
-}
-
-interface Navigation {
-  id: string
-  name: string
-  location: string
-  items: NavigationItem[]
-}
 
 interface ThemeSettings {
   primaryColor: string
@@ -87,7 +68,7 @@ interface ThemeSettings {
 interface StorefrontHeaderProps {
   slug: string
   shop: Shop | null
-  navigation?: Navigation | null
+  navigation?: Navigation | null | undefined
   cartItemCount?: number
   onCartUpdate?: () => void
   onOpenCart?: (callback: () => void) => void
@@ -315,7 +296,7 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
       return (
         <MegaMenu
           key={index}
-          item={item}
+          item={item as any}
           slug={slug}
         />
       )
@@ -523,7 +504,7 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
         const isMobile = window.innerWidth < 768 // md breakpoint
         if (isMobile) {
           // בודק אם הגובה גדול מהגובה המינימלי (מעיד על ירידת שורה)
-          const minHeight = (theme.messagesFontSize || DEFAULT_THEME.messagesFontSize) * 1.5
+          const minHeight = ((theme?.messages as any)?.fontSize || DEFAULT_THEME.messagesFontSize) * 1.5
           setMessageWraps(element.scrollHeight > minHeight * 1.2)
         } else {
           setMessageWraps(false)
@@ -660,8 +641,8 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
               className="text-center relative overflow-hidden"
               style={{
                 color: theme.messagesTextColor || theme.topBarTextColor || DEFAULT_THEME.topBarTextColor,
-                fontSize: `${theme.messagesFontSize || DEFAULT_THEME.messagesFontSize}px`,
-                minHeight: `${(theme.messagesFontSize || DEFAULT_THEME.messagesFontSize) * 1.5}px`,
+                fontSize: `${(theme as any).messagesFontSize || DEFAULT_THEME.messagesFontSize}px`,
+                minHeight: `${((theme as any).messagesFontSize || DEFAULT_THEME.messagesFontSize) * 1.5}px`,
               }}
             >
               {theme.messagesType === "rotating" ? (
@@ -676,10 +657,10 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
                       opacity: isAnimating ? 0 : 1,
                     }}
                   >
-                    {theme.messages[currentMessageIndex]}
+                    {theme.messages![currentMessageIndex]}
                   </div>
                   {/* ההודעה הבאה - נכנסת מלמטה */}
-                  {isAnimating && theme.messages.length > 1 && (
+                  {isAnimating && theme.messages && theme.messages.length > 1 && (
                     <div
                       key={`next-${nextMessageIndex}`}
                       className="transition-all ease-in-out absolute top-0 left-0 right-0"
@@ -689,13 +670,13 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
                         opacity: isAnimating ? 1 : 0,
                       }}
                     >
-                      {theme.messages[nextMessageIndex]}
+                      {theme.messages![nextMessageIndex]}
                     </div>
                   )}
                 </div>
               ) : (
                 <div>
-                  {theme.messages.map((msg, idx) => (
+                  {theme.messages!.map((msg, idx) => (
                     <span key={idx}>
                       {msg}
                       {idx < theme.messages!.length - 1 && " • "}
@@ -921,7 +902,7 @@ export function StorefrontHeader({ slug, shop, navigation: initialNavigation, ca
               className="absolute -top-1 -right-1 text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium"
               style={{ 
                 backgroundColor: theme.primaryColor,
-                color: theme.primaryTextColor || '#ffffff',
+                color: (theme as any).primaryTextColor || '#ffffff',
               }}
             >
               {cartItemCount > 9 ? "9+" : cartItemCount}

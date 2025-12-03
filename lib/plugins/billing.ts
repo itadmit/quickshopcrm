@@ -176,8 +176,8 @@ export async function subscribeToPlugin(
       currencyCode: "ILS",
       chargeMethod: 1, // Charge
       createToken: true, // חשוב! יוצר token
-      customerName: baseSubscription.paymentDetails?.customerName as string,
-      customerEmail: baseSubscription.paymentDetails?.customerEmail as string,
+      customerName: (baseSubscription.paymentDetails as any)?.customerName as string,
+      customerEmail: (baseSubscription.paymentDetails as any)?.customerEmail as string,
       items: [
         {
           name: plugin.name,

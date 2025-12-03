@@ -150,7 +150,7 @@ export default function IntegrationsPage() {
       .catch(console.error)
 
     // Load shop settings for payment methods
-    fetch(`/api/shops/${selectedShop.id}`)
+    fetch(`/api/shops/${selectedShop?.id || ""}`)
       .then(res => res.json())
       .then(data => {
         if (data.shop && data.shop.settings) {
@@ -452,7 +452,7 @@ export default function IntegrationsPage() {
 
     setBankTransferLoading(true)
     try {
-      const res = await fetch(`/api/shops/${selectedShop.id}`, {
+      const res = await fetch(`/api/shops/${selectedShop?.id || ""}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -494,7 +494,7 @@ export default function IntegrationsPage() {
 
     setBankTransferLoading(true)
     try {
-      const res = await fetch(`/api/shops/${selectedShop.id}`, {
+      const res = await fetch(`/api/shops/${selectedShop?.id || ""}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -551,7 +551,7 @@ export default function IntegrationsPage() {
         minOrderAmount: cashMinOrderEnabled ? parseFloat(cashMinOrderAmount) : null,
       }
 
-      const res = await fetch(`/api/shops/${selectedShop.id}`, {
+      const res = await fetch(`/api/shops/${selectedShop?.id || ""}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -678,7 +678,7 @@ export default function IntegrationsPage() {
 
     setCashLoading(true)
     try {
-      const res = await fetch(`/api/shops/${selectedShop.id}`, {
+      const res = await fetch(`/api/shops/${selectedShop?.id || ""}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -727,7 +727,7 @@ export default function IntegrationsPage() {
               <p className="text-sm text-gray-500 mt-1">{selectedShop?.name || "בחר חנות"}</p>
             </div>
             <nav className="p-2">
-              {integrationCategories.map((category) => {
+              {integrationCategories.map((category: any) => {
                 const Icon = category.icon
                 const isActive = activeCategory === category.key
                 return (
@@ -1017,7 +1017,7 @@ export default function IntegrationsPage() {
                 </Card>
 
                 {/* ספקי תשלום */}
-                {paymentProviders.map((provider) => {
+                {paymentProviders.map((provider: any) => {
                   const isExpanded = expandedProvider === provider.id
                   const isPayPlus = provider.id === "payplus"
                   const isPayPal = provider.id === "paypal"
@@ -1346,7 +1346,7 @@ export default function IntegrationsPage() {
             {/* Shipping Category */}
             {activeCategory === "shipping" && (
               <div className="space-y-6">
-                {shippingProviders.map((provider) => {
+                {shippingProviders.map((provider: any) => {
                   const isExpanded = expandedProvider === provider.id
                   const isFocus = provider.id === "focus"
                   const isConnected = isFocus ? focusConnected : false

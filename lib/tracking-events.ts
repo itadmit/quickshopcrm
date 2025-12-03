@@ -151,7 +151,7 @@ export function trackViewCart(
     value: total,
     currency: "ILS",
     num_items: items.reduce((sum, item) => sum + item.quantity, 0),
-    contents: items.map((item) => ({
+    contents: items.map((item: any) => ({
       id: item.id,
       name: item.name,
       price: item.price,
@@ -177,7 +177,7 @@ export function trackInitiateCheckout(
     value: total,
     currency: "ILS",
     num_items: items.reduce((sum, item) => sum + item.quantity, 0),
-    contents: items.map((item) => ({
+    contents: items.map((item: any) => ({
       id: item.id,
       name: item.name,
       price: item.price,
@@ -226,7 +226,7 @@ export function trackPurchase(
     currency: "ILS",
     tax: order.tax,
     shipping: order.shipping,
-    contents: order.items.map((item) => ({
+    contents: order.items.map((item: any) => ({
       id: item.id,
       name: item.name,
       price: item.price,

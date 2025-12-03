@@ -44,7 +44,7 @@ export async function GET(
       )
     }
 
-    if (!order.shippingProvider || !order.shippingSentAt) {
+    if (!order.shippingMethod || !order.shippedAt) {
       return NextResponse.json(
         { error: "ההזמנה לא נשלחה לחברת משלוחים" },
         { status: 400 }
@@ -55,7 +55,7 @@ export async function GET(
     const integration = await prisma.integration.findFirst({
       where: {
         companyId: session.user.companyId,
-        type: `${order.shippingProvider.toUpperCase()}_SHIPPING` as any,
+        type: `${order.shippingMethod?.toUpperCase() || 'UNKNOWN'}_SHIPPING` as any,
         isActive: true,
       },
     })
@@ -68,7 +68,7 @@ export async function GET(
     }
 
     // טעינת provider
-    const provider = getShippingProvider(order.shippingProvider)
+    const provider = getShippingProvider(order.shippingMethod || '')
     if (!provider) {
       return NextResponse.json(
         { error: "חברת משלוחים לא נתמכת" },
@@ -77,7 +77,7 @@ export async function GET(
     }
 
     // קבלת סטטוס
-    const shipmentId = (order.shippingData as any)?.shipmentId || order.shippingTrackingNumber
+    const shipmentId = (order.customFields as any)?.shippingData?.shipmentId || order.trackingNumber
     if (!shipmentId) {
       return NextResponse.json(
         { error: "מספר משלוח לא נמצא" },
@@ -95,9 +95,12 @@ export async function GET(
     await prisma.order.update({
       where: { id: order.id },
       data: {
-        shippingStatus: status.status,
-        shippingStatusUpdatedAt: status.lastUpdate || new Date(),
-        shippingTrackingNumber: status.trackingNumber || order.shippingTrackingNumber,
+        trackingNumber: status.trackingNumber || order.trackingNumber,
+        customFields: {
+          ...((order.customFields as any) || {}),
+          shippingStatus: status.status,
+          shippingStatusUpdatedAt: status.lastUpdate || new Date(),
+        },
       },
     })
 

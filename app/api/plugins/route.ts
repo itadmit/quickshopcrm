@@ -81,8 +81,8 @@ export async function GET(req: NextRequest) {
     // מיזוג התוספים עם מצב ההתקנה
     const pluginsWithStatus = availablePlugins.map(plugin => {
       // חיפוש תוסף מותקן - קודם ספציפי לחנות/חברה, אחר כך גלובלי
-      const installed = installedPlugins.find(p => p.slug === plugin.slug)
-      const subscription = activeSubscriptions.find(s => s.pluginId === installed?.id)
+      const installed = installedPlugins.find((p: any) => p.slug === plugin.slug)
+      const subscription = activeSubscriptions.find((s: any) => s.pluginId === installed?.id)
       
       // תמחור - עדיפות לנתונים מהדאטאבייס (אם הסופר אדמין ערך)
       const isFree = installed?.isFree !== undefined ? installed.isFree : (plugin.isFree ?? true)

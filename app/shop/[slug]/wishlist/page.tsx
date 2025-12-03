@@ -100,7 +100,7 @@ export default function WishlistPage() {
     if (!customerId) return
 
     // מציאת הפריט לפני ההסרה כדי לשלוח אירוע
-    const itemToRemove = wishlistItems.find((item) => item.id === itemId)
+    const itemToRemove = wishlistItems.find((item: any) => item.id === itemId)
 
     try {
       const response = await fetch(
@@ -223,7 +223,7 @@ export default function WishlistPage() {
           </Card>
         ) : (
           <div className="space-y-4">
-            {wishlistItems.map((item) => {
+            {wishlistItems.map((item: any) => {
               const product = item.product
               const variant = item.variant
               // אם יש וריאציה, נשתמש במחיר שלה, אחרת נשתמש בפונקציה שמתחשבת בוריאציות

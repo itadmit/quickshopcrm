@@ -296,3 +296,4 @@ model ProductCategory {
 **גרסה**: 1.0  
 **מחבר**: AI Assistant
 
+

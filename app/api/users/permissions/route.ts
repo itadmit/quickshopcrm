@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
 
     // המרה למערך של שמות הרשאות
     const permissionMap: Record<string, boolean> = {}
-    permissions.forEach((perm) => {
+    permissions.forEach((perm: any) => {
       permissionMap[perm.permission] = true
     })
 

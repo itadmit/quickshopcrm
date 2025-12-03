@@ -38,7 +38,7 @@ export async function GET(
     }
 
     // Get all applicable definitions for this product
-    const categoryIds = product.categories.map((pc) => pc.categoryId)
+    const categoryIds = (product as any).categories.map((pc: any) => pc.categoryId)
     
     const definitions = await prisma.customFieldDefinition.findMany({
       where: {
@@ -57,8 +57,8 @@ export async function GET(
     })
 
     // Merge definitions with values
-    const result = definitions.map((def) => {
-      const value = product.customFieldValues.find((v) => v.definitionId === def.id)
+    const result = definitions.map((def: any) => {
+      const value = product.customFieldValues.find((v: any) => v.definitionId === def.id)
       return {
         definition: def,
         value: value?.value || null,
@@ -167,7 +167,7 @@ export async function PUT(
 
     // Batch upsert all values
     const results = await Promise.all(
-      values.map((item) =>
+      values.map((item: any) =>
         prisma.customFieldValue.upsert({
           where: {
             productId_definitionId: {

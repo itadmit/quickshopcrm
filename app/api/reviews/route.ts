@@ -141,8 +141,6 @@ export async function POST(req: NextRequest) {
         title: data.title,
         comment: data.comment,
         images: data.images || [],
-        videos: data.videos || [],
-        tags: data.tags || [],
         isApproved: false, // דורש אישור
       },
     })
