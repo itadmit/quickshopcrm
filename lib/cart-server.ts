@@ -22,9 +22,9 @@ export async function findCart(
     cart = await prisma.cart.findFirst({
       where: { 
         shopId, 
-        customerId, 
-        updatedAt: { gt: new Date() } 
+        customerId
       },
+      orderBy: { updatedAt: 'desc' }
     })
     
     
@@ -33,9 +33,9 @@ export async function findCart(
       const sessionCart = await prisma.cart.findFirst({
         where: { 
           shopId, 
-          sessionId, 
-          updatedAt: { gt: new Date() } 
+          sessionId
         },
+        orderBy: { updatedAt: 'desc' }
       })
       
       if (sessionCart) {
@@ -102,9 +102,9 @@ export async function findCart(
     cart = await prisma.cart.findFirst({
       where: { 
         shopId, 
-        sessionId, 
-        updatedAt: { gt: new Date() } 
+        sessionId
       },
+      orderBy: { updatedAt: 'desc' }
     })
     
     

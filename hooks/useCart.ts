@@ -139,12 +139,9 @@ export function useCart(slug: string, customerId?: string | null) {
       const data = await response.json()
       return data
     },
-    onSuccess: async (data: Cart) => {
-      // עדכון ה-cache עם הנתונים החדשים
+    onSuccess: (data: Cart) => {
+      // עדכון ה-cache עם הנתונים החדשים מהשרת
       queryClient.setQueryData(['cart', slug, customerId], data)
-      
-      // רענון העגלה מהשרת כדי לוודא שהכל מסונכרן
-      await queryClient.invalidateQueries({ queryKey: ['cart', slug, customerId] })
       
       // טיפול במתנות שדורשות בחירת וריאציה
       if (data.giftsRequiringVariantSelection && data.giftsRequiringVariantSelection.length > 0) {

@@ -239,12 +239,8 @@ export async function POST(
     }
 
     const body = await req.json()
-    console.log('📦 Request body:', body)
-    
     const data = addToCartSchema.parse(body)
     const customerId = req.headers.get("x-customer-id") || null
-    
-    console.log('👤 Customer ID:', customerId)
 
     // טיפול בחבילה (bundle)
     if (data.bundleId) {
@@ -324,7 +320,7 @@ export async function POST(
       expiresAt.setDate(expiresAt.getDate() + 30)
 
       if (cart) {
-        await prisma.cart.update({
+        cart = await prisma.cart.update({
           where: { id: cart.id },
           data: {
             items,
@@ -333,7 +329,7 @@ export async function POST(
           },
         })
       } else {
-        await prisma.cart.create({
+        cart = await prisma.cart.create({
           data: {
             shopId: shop.id,
             sessionId,
@@ -344,7 +340,92 @@ export async function POST(
         })
       }
 
-      return NextResponse.json({ success: true, message: "Bundle added to cart" })
+      // חישוב העגלה המעודכנת
+      const calculation = await calculateCart(
+        shop.id,
+        items as any[],
+        cart.couponCode,
+        customerId,
+        shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
+        null
+      )
+
+      // הוספת מוצרי מתנה לעגלה בפועל
+      const giftItems = calculation.items.filter(item => item.isGift)
+      const existingGiftIds = new Set(
+        items.map((item: any) => `${item.productId}-${item.variantId || 'null'}-${item.isGift ? 'gift' : 'normal'}`)
+      )
+      
+      let updatedItems = [...items]
+      let hasNewGifts = false
+      
+      for (const giftItem of giftItems) {
+        const giftKey = `${giftItem.productId}-${giftItem.variantId || 'null'}-gift`
+        if (!existingGiftIds.has(giftKey)) {
+          updatedItems.push({
+            productId: giftItem.productId,
+            variantId: giftItem.variantId || null,
+            quantity: giftItem.quantity,
+            isGift: true,
+            giftDiscountId: giftItem.giftDiscountId,
+          })
+          hasNewGifts = true
+        }
+      }
+      
+      // עדכון העגלה עם מוצרי המתנה אם יש חדשים
+      if (hasNewGifts) {
+        cart = await prisma.cart.update({
+          where: { id: cart.id },
+          data: { items: updatedItems },
+        })
+        
+        // חישוב מחדש עם הפריטים המעודכנים
+        const updatedCalculation = await calculateCart(
+          shop.id,
+          updatedItems as any[],
+          cart.couponCode,
+          customerId,
+          shop.taxEnabled && shop.taxRate ? shop.taxRate : null,
+          null
+        )
+        
+        return NextResponse.json({
+          id: cart.id,
+          items: updatedCalculation.items,
+          subtotal: updatedCalculation.subtotal,
+          tax: updatedCalculation.tax,
+          shipping: updatedCalculation.shipping,
+          discount: updatedCalculation.automaticDiscount + updatedCalculation.couponDiscount + updatedCalculation.customerDiscount,
+          customerDiscount: updatedCalculation.customerDiscount > 0 ? updatedCalculation.customerDiscount : undefined,
+          couponDiscount: updatedCalculation.couponDiscount > 0 ? updatedCalculation.couponDiscount : undefined,
+          automaticDiscount: updatedCalculation.automaticDiscount > 0 ? updatedCalculation.automaticDiscount : undefined,
+          automaticDiscountTitle: updatedCalculation.automaticDiscountTitle || undefined,
+          total: updatedCalculation.total,
+          couponCode: cart.couponCode,
+          couponStatus: updatedCalculation.couponStatus,
+          endDate: cart.expiresAt,
+          giftsRequiringVariantSelection: updatedCalculation.giftsRequiringVariantSelection,
+        })
+      }
+
+      return NextResponse.json({
+        id: cart.id,
+        items: calculation.items,
+        subtotal: calculation.subtotal,
+        tax: calculation.tax,
+        shipping: calculation.shipping,
+        discount: calculation.automaticDiscount + calculation.couponDiscount + calculation.customerDiscount,
+        customerDiscount: calculation.customerDiscount > 0 ? calculation.customerDiscount : undefined,
+        couponDiscount: calculation.couponDiscount > 0 ? calculation.couponDiscount : undefined,
+        automaticDiscount: calculation.automaticDiscount > 0 ? calculation.automaticDiscount : undefined,
+        automaticDiscountTitle: calculation.automaticDiscountTitle || undefined,
+        total: calculation.total,
+        couponCode: cart.couponCode,
+        couponStatus: calculation.couponStatus,
+        endDate: cart.expiresAt,
+        giftsRequiringVariantSelection: calculation.giftsRequiringVariantSelection,
+      })
     }
 
     // טיפול במוצר רגיל (קוד קיים)
@@ -365,24 +446,45 @@ export async function POST(
       return NextResponse.json({ error: "Product not found" }, { status: 404 })
     }
 
-    // בדיקת מלאי - רק אם המוצר לא מאפשר מכירה בלי מלאי
-    const sellWhenSoldOut = (product.customFields as any)?.sellWhenSoldOut ?? false
-    if (!sellWhenSoldOut) {
-      if (data.variantId) {
-        const variant = await prisma.productVariant.findUnique({
-          where: { id: data.variantId },
-        })
-        // בדיקה אם יש מספיק מלאי ב-variant
-        if (variant) {
-          // אם יש מעקב מלאי ב-variant, בדוק את המלאי
-          if (variant.inventoryQty !== null && variant.inventoryQty < data.quantity) {
-            return NextResponse.json(
-              { error: "אין מספיק מלאי למוצר זה" },
-              { status: 400 }
-            )
-          }
+    // בדיקת variant - אם צוין, צריך לוודא שהוא שייך למוצר
+    if (data.variantId) {
+      const variant = await prisma.productVariant.findUnique({
+        where: { id: data.variantId },
+        select: {
+          id: true,
+          productId: true,
+          inventoryQty: true,
+        },
+      })
+      
+      if (!variant) {
+        return NextResponse.json(
+          { error: "Variant not found" },
+          { status: 404 }
+        )
+      }
+      
+      if (variant.productId !== product.id) {
+        return NextResponse.json(
+          { error: "Variant does not belong to this product" },
+          { status: 400 }
+        )
+      }
+      
+      // בדיקת מלאי - רק אם המוצר לא מאפשר מכירה בלי מלאי
+      const sellWhenSoldOut = (product.customFields as any)?.sellWhenSoldOut ?? false
+      if (!sellWhenSoldOut) {
+        if (variant.inventoryQty !== null && variant.inventoryQty < data.quantity) {
+          return NextResponse.json(
+            { error: "אין מספיק מלאי למוצר זה" },
+            { status: 400 }
+          )
         }
-      } else {
+      }
+    } else {
+      // בדיקת מלאי - רק אם המוצר לא מאפשר מכירה בלי מלאי
+      const sellWhenSoldOut = (product.customFields as any)?.sellWhenSoldOut ?? false
+      if (!sellWhenSoldOut) {
         // בדיקה אם יש מספיק מלאי במוצר עצמו
         if (product.inventoryQty !== null && product.inventoryQty < data.quantity) {
           return NextResponse.json(
@@ -410,8 +512,6 @@ export async function POST(
     
 
     const items = cart ? (cart.items as any[]) : []
-    console.log('📋 Current items in cart:', items.length)
-    console.log('🔍 Current items details:', JSON.stringify(items, null, 2))
     
     // מציאת פריט קיים - עכשיו גם לוקחים בחשבון addons
     const existingItemIndex = items.findIndex(
@@ -438,19 +538,7 @@ export async function POST(
       }
     )
 
-    console.log('🔎 Looking for existing item:', {
-      productId: data.productId,
-      variantId: data.variantId,
-      existingItemIndex,
-      found: existingItemIndex >= 0
-    })
-
     if (existingItemIndex >= 0) {
-      console.log('✏️ Updating existing item quantity:', {
-        oldQuantity: items[existingItemIndex].quantity,
-        addQuantity: data.quantity,
-        newQuantity: items[existingItemIndex].quantity + data.quantity
-      })
       items[existingItemIndex].quantity += data.quantity
       // עדכון isGift ו-giftDiscountId אם זה מתנה
       if (data.isGift) {
@@ -464,12 +552,6 @@ export async function POST(
         items[existingItemIndex].giftCardData = data.giftCardData
       }
     } else {
-      console.log('➕ Adding new item to cart:', {
-        productId: data.productId,
-        variantId: data.variantId || null,
-        quantity: data.quantity,
-        addons: data.addons,
-      })
       items.push({
         productId: data.productId,
         variantId: data.variantId || null,
@@ -859,7 +941,6 @@ export async function PUT(
     // יישום קופון
     if (body.couponCode !== undefined) {
       if (body.couponCode) {
-        console.log('🎫 Applying coupon:', body.couponCode, 'for shop:', shop.id)
         // בדיקת קופון בסיסית
         const coupon = await prisma.coupon.findUnique({
           where: { code: body.couponCode },
@@ -879,19 +960,7 @@ export async function PUT(
           },
         })
 
-        console.log('🎫 Coupon found:', coupon ? {
-          id: coupon.id,
-          code: coupon.code,
-          isActive: coupon.isActive,
-          shopId: coupon.shopId,
-          type: coupon.type,
-          buyQuantity: coupon.buyQuantity,
-          payQuantity: coupon.payQuantity,
-          payAmount: coupon.payAmount,
-        } : 'NOT FOUND')
-
         if (!coupon) {
-          console.log('❌ Coupon not found')
           return NextResponse.json(
             { error: "Invalid coupon code" },
             { status: 400 }
@@ -899,7 +968,6 @@ export async function PUT(
         }
 
         if (!coupon.isActive) {
-          console.log('❌ Coupon is not active')
           return NextResponse.json(
             { error: "Coupon is not active" },
             { status: 400 }
@@ -907,7 +975,6 @@ export async function PUT(
         }
 
         if (coupon.shopId !== shop.id) {
-          console.log('❌ Coupon shop mismatch:', coupon.shopId, 'vs', shop.id)
           return NextResponse.json(
             { error: "Invalid coupon code" },
             { status: 400 }
@@ -1118,18 +1185,6 @@ export async function DELETE(
     }
 
     const cartItems = (cart.items as any[]) || []
-    console.log('🗑️ DELETE - Before filter:', {
-      cartItems: cartItems.length,
-      productIdToDelete: productId,
-      variantIdToDelete: variantId,
-      addonsToMatch: addonsToMatch,
-      items: cartItems.map((item: any) => ({
-        productId: item.productId,
-        variantId: item.variantId,
-        addons: item.addons,
-        hasAddons: (item.addons || []).length > 0
-      }))
-    })
 
     const items = cartItems.filter((item: any) => {
       // מונע מחיקת מוצרי מתנה
@@ -1196,30 +1251,7 @@ export async function DELETE(
       const itemAddonsStr = JSON.stringify(normalizedItemAddons)
       const queryAddonsStr = JSON.stringify(normalizedQueryAddons)
       
-      const shouldRemove = itemAddonsStr === queryAddonsStr
-      
-      console.log('🔍 Item check with addons:', {
-        productId: item.productId,
-        variantId: item.variantId,
-        hasItemAddons,
-        hasQueryAddons,
-        itemAddonsRaw: itemAddons,
-        queryAddonsRaw: addonsToMatch,
-        itemAddonsNormalized: normalizedItemAddons,
-        queryAddonsNormalized: normalizedQueryAddons,
-        itemAddonsStr,
-        queryAddonsStr,
-        isGift: item.isGift,
-        shouldRemove,
-        willKeep: !shouldRemove
-      })
-      
-      return !shouldRemove
-    })
-
-    console.log('🗑️ DELETE - After filter:', {
-      itemsRemaining: items.length,
-      itemsRemoved: cartItems.length - items.length
+      return itemAddonsStr !== queryAddonsStr
     })
 
     // חישוב מחדש של העגלה כדי לבדוק אם המתנות עדיין רלוונטיות
@@ -1251,7 +1283,7 @@ export async function DELETE(
     })
 
     // אם אין פריטים, החזר עגלה ריקה עם couponStatus
-    if (!items || items.length === 0) {
+    if (!filteredItems || filteredItems.length === 0) {
       let couponStatus = undefined
       if (updatedCart.couponCode) {
         const coupon = await prisma.coupon.findUnique({
@@ -1299,7 +1331,7 @@ export async function DELETE(
     // חישוב העגלה המעודכנת
     const calculation = await calculateCart(
       shop.id,
-      items as any[],
+      filteredItems as any[],
       updatedCart.couponCode,
       customerId,
       shop.taxEnabled && shop.taxRate ? shop.taxRate : null,

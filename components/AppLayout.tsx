@@ -18,11 +18,15 @@ interface AppLayoutProps {
   hideHeader?: boolean
 }
 
+function SearchParamsWrapper({ children }: { children: (searchParams: URLSearchParams | null) => React.ReactNode }) {
+  const searchParams = useSearchParams()
+  return <>{children(searchParams)}</>
+}
+
 function AppLayoutContent({ children, title, hideSidebar, hideHeader }: AppLayoutProps) {
   const { data: session, status } = useSession()
   const router = useRouter()
   const pathname = usePathname()
-  const searchParams = useSearchParams()
   const t = useTranslations()
   const locale = useLocale()
   const { toast } = useToast()
@@ -81,8 +85,7 @@ function AppLayoutContent({ children, title, hideSidebar, hideHeader }: AppLayou
     }
   }, [status, session, router, toast, pathname])
 
-  // בדיקה אם יש פרמטר blocked ב-URL
-  const isBlocked = searchParams?.get("blocked") === "true"
+  // shouldShowBlock מחושב ב-SearchParamsWrapper
   const shouldShowBlock = !checkingSubscription && 
                           subscriptionInfo && 
                           !subscriptionInfo.isActive && 
@@ -103,7 +106,14 @@ function AppLayoutContent({ children, title, hideSidebar, hideHeader }: AppLayou
 
   return (
     <>
-      {shouldShowBlock && <SubscriptionBlock subscriptionInfo={subscriptionInfo} />}
+      <Suspense fallback={null}>
+        <SearchParamsWrapper>
+          {(searchParams) => {
+            const isBlocked = searchParams?.get("blocked") === "true"
+            return shouldShowBlock && !isBlocked ? <SubscriptionBlock subscriptionInfo={subscriptionInfo} /> : null
+          }}
+        </SearchParamsWrapper>
+      </Suspense>
       <div className="flex h-screen" style={{ backgroundColor: '#f7f9fe' }} dir={dir}>
         {!hideSidebar && (
           <div className="hidden md:block">
@@ -130,39 +140,10 @@ function AppLayoutContent({ children, title, hideSidebar, hideHeader }: AppLayou
 }
 
 export function AppLayout({ children, title, hideSidebar = false, hideHeader = false }: AppLayoutProps) {
-  const locale = useLocale()
-  const dir = locale === 'he' ? 'rtl' : 'ltr'
-  
   return (
-    <Suspense fallback={
-      <div className="flex h-screen" style={{ backgroundColor: '#f7f9fe' }} dir={dir}>
-        {!hideSidebar && (
-          <div className="hidden md:block">
-            <Sidebar />
-          </div>
-        )}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          {!hideHeader && <Header title={title} />}
-          <main className="flex-1 overflow-y-auto">
-            <div className="min-h-full flex flex-col">
-              <div className="flex-1 p-4 md:p-6">
-                <div className="max-w-7xl mx-auto">
-                  <div className="animate-pulse space-y-4">
-                    <div className="h-8 bg-gray-200 rounded w-1/4"></div>
-                    <div className="h-64 bg-gray-200 rounded"></div>
-                  </div>
-                </div>
-              </div>
-              <Footer />
-            </div>
-          </main>
-        </div>
-      </div>
-    }>
-      <AppLayoutContent title={title} hideSidebar={hideSidebar} hideHeader={hideHeader}>
-        {children}
-      </AppLayoutContent>
-    </Suspense>
+    <AppLayoutContent title={title} hideSidebar={hideSidebar} hideHeader={hideHeader}>
+      {children}
+    </AppLayoutContent>
   )
 }
 
