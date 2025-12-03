@@ -19,6 +19,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:production": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/deploy-migrations.ts",
     "db:studio": "prisma studio",
+    "cron:test": "ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/test-cron-jobs.ts",
     "db:reset": "prisma migrate reset",
     "db:status": "prisma migrate status",
     "worker": "ts-node workers/automation-worker.ts",
