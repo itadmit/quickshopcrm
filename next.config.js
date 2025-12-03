@@ -17,6 +17,8 @@ const nextConfig = {
   
   // Use standalone output to reduce build trace issues
   output: 'standalone',
+  // Disable output file tracing to avoid micromatch recursion on Vercel
+  outputFileTracing: false,
   
   // Experimental features for better performance
   experimental: {
