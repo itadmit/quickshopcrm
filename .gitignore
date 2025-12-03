@@ -61,9 +61,7 @@ next-env.d.ts
 
 # uploads
 /uploads/*
-!/uploads/.gitkeep
 /public/uploads/*
-!/public/uploads/.gitkeep
 
 # prisma
 /prisma/migrations
@@ -77,11 +75,7 @@ Thumbs.db
 .LSOverride
 
 # IDE
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
+.vscode
 .idea
 *.iml
 *.ipr
