@@ -17,14 +17,23 @@ export const dynamic = 'force-dynamic'
  */
 export async function GET(req: NextRequest) {
   try {
-    // Verify this is a Vercel Cron request
+    // Verify cron secret to prevent unauthorized access
+    // Vercel Cron sends: Authorization: Bearer ${CRON_SECRET}
     const authHeader = req.headers.get('authorization')
+    const cronSecret = process.env.CRON_SECRET || 'change-this-in-production'
     
-    // Vercel Cron sends a special header
-    const isVercelCron = authHeader === `Bearer ${process.env.CRON_SECRET}`
-    
-    if (!isVercelCron && process.env.NODE_ENV === 'production') {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    // In production, require authentication. In development, allow if secret matches or if no secret is set
+    if (process.env.NODE_ENV === 'production') {
+      if (authHeader !== `Bearer ${cronSecret}`) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
+    } else {
+      // In development, warn if no secret is set but allow for testing
+      if (!process.env.CRON_SECRET) {
+        console.warn('⚠️  CRON_SECRET not set - allowing request in development mode')
+      } else if (authHeader !== `Bearer ${cronSecret}`) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
     }
 
     console.log('🛒 Starting abandoned cart check...')
