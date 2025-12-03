@@ -86,10 +86,10 @@ export function useCart(slug: string, customerId?: string | null) {
       
       return response.json() as Promise<Cart>
     },
-    staleTime: 2000, // 2 שניות - מפחית קריאות מיותרות
+    staleTime: 1000, // 1 שנייה - מפחית קריאות מיותרות אבל מאפשר עדכון מהיר
     gcTime: 5 * 60 * 1000, // 5 דקות ב-cache
     refetchOnWindowFocus: false, // לא לרענן כל פעם שחוזרים לחלון
-    refetchOnMount: false, // לא לרענן כל פעם שהקומפוננטה עולה
+    refetchOnMount: true, // רענון כשהקומפוננטה עולה כדי לוודא שהעגלה מעודכנת
   })
   
   // Add to cart mutation
@@ -139,8 +139,12 @@ export function useCart(slug: string, customerId?: string | null) {
       const data = await response.json()
       return data
     },
-    onSuccess: (data: Cart) => {
+    onSuccess: async (data: Cart) => {
+      // עדכון ה-cache עם הנתונים החדשים
       queryClient.setQueryData(['cart', slug, customerId], data)
+      
+      // רענון העגלה מהשרת כדי לוודא שהכל מסונכרן
+      await queryClient.invalidateQueries({ queryKey: ['cart', slug, customerId] })
       
       // טיפול במתנות שדורשות בחירת וריאציה
       if (data.giftsRequiringVariantSelection && data.giftsRequiringVariantSelection.length > 0) {
