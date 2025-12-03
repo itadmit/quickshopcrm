@@ -4,9 +4,6 @@ const withNextIntl = createNextIntlPlugin('./i18n.ts')
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Standalone build - מקטין את גודל ה-build ומאיץ deployment
-  output: 'standalone',
-  
   // Performance optimizations
   swcMinify: true, // מינימיזציה מהירה יותר עם SWC
   reactStrictMode: true, // בדיקות טובות יותר
