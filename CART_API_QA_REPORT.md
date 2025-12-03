@@ -151,10 +151,12 @@
 7. ✅ הוספת מוצר עם variant - צריך לבדוק
 
 ### בדיקות אוטומטיות מומלצות:
-- [ ] Unit tests לכל endpoint
-- [ ] Integration tests לזרימות מלאות
-- [ ] Load testing לעגלות מרובות
-- [ ] Security testing (XSS, SQL injection)
+- [ ] Unit tests לכל endpoint - דורש מסד נתונים פעיל
+- [ ] Integration tests לזרימות מלאות - דורש מסד נתונים פעיל
+- [ ] Load testing לעגלות מרובות - דורש כלים חיצוניים (k6, Artillery)
+- [ ] Security testing (XSS, SQL injection) - דורש מסד נתונים פעיל
+
+**הערה:** בדיקות אוטומטיות דורשות מסד נתונים פעיל. ניתן להריץ בדיקות ידניות דרך ה-UI או API clients.
 
 ---
 
