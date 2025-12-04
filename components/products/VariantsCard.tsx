@@ -8,7 +8,8 @@ import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Package, Plus, Trash2, X } from "lucide-react"
+import { Package, Plus, Trash2, X, Upload, Image as ImageIcon } from "lucide-react"
+import { MediaPicker } from "@/components/media/MediaPicker"
 
 interface Option {
   id: string
@@ -40,6 +41,8 @@ interface VariantsCardProps {
   onOptionsChange: (options: Option[]) => void
   onVariantsChange: (variants: Variant[]) => void
   onDefaultVariantChange?: (variantId: string | null) => void
+  shopId?: string
+  productId?: string
 }
 
 // Popular colors mapping (Hebrew)
@@ -75,8 +78,51 @@ export function VariantsCard({
   onOptionsChange,
   onVariantsChange,
   onDefaultVariantChange,
+  shopId,
+  productId,
 }: VariantsCardProps) {
   const [colorDetectionTimers, setColorDetectionTimers] = useState<Record<string, NodeJS.Timeout>>({})
+  const [mediaPickerOpen, setMediaPickerOpen] = useState<Record<string, boolean>>({})
+  const [selectedOptionForGallery, setSelectedOptionForGallery] = useState<string | null>(null)
+  
+  // Check if any option has images
+  const hasImagesInOptions = options.some(opt => 
+    opt.values.some((val: any) => {
+      if (typeof val === 'object' && val?.metadata?.images) {
+        const images = Array.isArray(val.metadata.images) ? val.metadata.images : [val.metadata.images]
+        return images.length > 0
+      }
+      return false
+    })
+  )
+  
+  // State for enabling galleries - defaults to true if images exist
+  const [enableValueGalleries, setEnableValueGalleries] = useState(hasImagesInOptions)
+  
+  // Auto-select first option with images
+  useEffect(() => {
+    if (hasImagesInOptions && !selectedOptionForGallery) {
+      const firstOptionWithImages = options.find(opt => 
+        opt.values.some((val: any) => {
+          if (typeof val === 'object' && val?.metadata?.images) {
+            const images = Array.isArray(val.metadata.images) ? val.metadata.images : [val.metadata.images]
+            return images.length > 0
+          }
+          return false
+        })
+      )
+      if (firstOptionWithImages) {
+        setSelectedOptionForGallery(firstOptionWithImages.id)
+      }
+    }
+  }, [options, hasImagesInOptions, selectedOptionForGallery])
+
+  // Auto-enable galleries when images are detected
+  useEffect(() => {
+    if (hasImagesInOptions && !enableValueGalleries) {
+      setEnableValueGalleries(true)
+    }
+  }, [hasImagesInOptions])
 
   // Cleanup color detection timers on unmount
   useEffect(() => {
@@ -780,6 +826,147 @@ export function VariantsCard({
                 </Card>
               ))}
             </div>
+
+            {/* Option Value Galleries */}
+            {enabled && options.length > 0 && (
+              <div className="space-y-4 pt-6 border-t">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-semibold">גלריות לערכי אפשרויות</h3>
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      id="enable-value-galleries"
+                      checked={enableValueGalleries}
+                      onCheckedChange={(checked) => setEnableValueGalleries(checked === true)}
+                    />
+                    <Label htmlFor="enable-value-galleries" className="text-sm cursor-pointer">
+                      הפעל גלריות
+                    </Label>
+                  </div>
+                </div>
+
+                {enableValueGalleries && (
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-sm font-medium mb-2 block">בחר אפשרות לגלריה</Label>
+                      <Select
+                        value={selectedOptionForGallery || ""}
+                        onValueChange={setSelectedOptionForGallery}
+                      >
+                        <SelectTrigger className="w-full">
+                          <SelectValue placeholder="בחר אפשרות" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {options.map((opt) => (
+                            <SelectItem key={opt.id} value={opt.id}>
+                              {opt.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-gray-600 mt-2">
+                        לכל ערך באפשרות הנבחרת תהיה גלריית תמונות נפרדת
+                      </p>
+                    </div>
+
+                    {selectedOptionForGallery && (() => {
+                      const selectedOption = options.find(opt => opt.id === selectedOptionForGallery)
+                      if (!selectedOption) return null
+                      
+                      return (
+                        <div className="space-y-3">
+                          {selectedOption.values.map((value: any, valueIndex: number) => {
+                            const valueKey = `${selectedOption.id}-${valueIndex}`
+                            const displayValue = typeof value === 'string' ? value : (value?.label || value?.id || String(value))
+                            const valueImages = typeof value === 'object' && value?.metadata?.images 
+                              ? (Array.isArray(value.metadata.images) ? value.metadata.images : [value.metadata.images])
+                              : []
+
+                            const handleImagesUpdate = (newImages: string[]) => {
+                              const updatedValue = typeof value === 'string' 
+                                ? { id: value, label: value, metadata: { images: newImages } }
+                                : { ...value, metadata: { ...value.metadata, images: newImages } }
+                              const optionIndex = options.findIndex(opt => opt.id === selectedOptionForGallery)
+                              const updatedOptions = [...options]
+                              const updatedValues = [...updatedOptions[optionIndex].values]
+                              updatedValues[valueIndex] = updatedValue
+                              updatedOptions[optionIndex] = { ...updatedOptions[optionIndex], values: updatedValues }
+                              onOptionsChange(updatedOptions)
+                            }
+
+                            return (
+                              <Card key={valueKey} className="p-4">
+                                <div className="flex items-center justify-between mb-3">
+                                  <h4 className="font-medium">{displayValue} ({valueImages.length} תמונות)</h4>
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                      const key = `gallery-${valueKey}`
+                                      setMediaPickerOpen(prev => ({ ...prev, [key]: true }))
+                                    }}
+                                  >
+                                    <Upload className="w-4 h-4 ml-2" />
+                                    בחר קבצים
+                                  </Button>
+                                </div>
+                                
+                                {valueImages.length > 0 ? (
+                                  <div className="grid grid-cols-4 gap-2">
+                                    {valueImages.map((img, idx) => (
+                                      <div key={idx} className="relative aspect-square rounded border overflow-hidden">
+                                        <img src={img} alt={`${displayValue} ${idx + 1}`} className="w-full h-full object-cover" />
+                                        <button
+                                          type="button"
+                                          onClick={() => {
+                                            const newImages = valueImages.filter((_, i) => i !== idx)
+                                            handleImagesUpdate(newImages)
+                                          }}
+                                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center">
+                                    <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                                    <p className="text-sm text-gray-500">אין תמונות</p>
+                                  </div>
+                                )}
+
+                                {shopId && (
+                                  <MediaPicker
+                                    open={mediaPickerOpen?.[`gallery-${valueKey}`] || false}
+                                    onOpenChange={(open) => {
+                                      setMediaPickerOpen(prev => ({ ...prev, [`gallery-${valueKey}`]: open }))
+                                    }}
+                                    onSelect={(files) => {
+                                      const newFiles = files.filter(file => !valueImages.includes(file))
+                                      if (newFiles.length > 0) {
+                                        handleImagesUpdate([...valueImages, ...newFiles])
+                                      }
+                                      setMediaPickerOpen(prev => ({ ...prev, [`gallery-${valueKey}`]: false }))
+                                    }}
+                                    selectedFiles={valueImages}
+                                    shopId={shopId}
+                                    entityType="product-option-value"
+                                    entityId={valueKey}
+                                    multiple={true}
+                                    title={`בחר תמונות ל-${displayValue}`}
+                                  />
+                                )}
+                              </Card>
+                            )
+                          })}
+                        </div>
+                      )
+                    })()}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Variants Table */}
             {variants.length > 0 && (
