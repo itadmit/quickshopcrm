@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Package, Plus, Trash2, X, Upload, Image as ImageIcon } from "lucide-react"
-import { MediaPicker } from "@/components/media/MediaPicker"
+import { MediaPicker } from "@/components/MediaPicker"
 
 interface Option {
   id: string
@@ -913,13 +913,13 @@ export function VariantsCard({
                                 
                                 {valueImages.length > 0 ? (
                                   <div className="grid grid-cols-4 gap-2">
-                                    {valueImages.map((img, idx) => (
+                                    {valueImages.map((img: string, idx: number) => (
                                       <div key={idx} className="relative aspect-square rounded border overflow-hidden">
                                         <img src={img} alt={`${displayValue} ${idx + 1}`} className="w-full h-full object-cover" />
                                         <button
                                           type="button"
                                           onClick={() => {
-                                            const newImages = valueImages.filter((_, i) => i !== idx)
+                                            const newImages = valueImages.filter((_: string, i: number) => i !== idx)
                                             handleImagesUpdate(newImages)
                                           }}
                                           className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 hover:bg-red-600"
